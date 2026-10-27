@@ -1,0 +1,92 @@
+/* 【范本】下拉选择器样式：对照 app/src/components/SelectBox.vue */
+
+/* 触发器：原版 `.select-box__content` —— 28px 高、圆角、flex 撑满 */
+.mm-select-box__trigger {
+  display: flex;
+  width: 100%;
+  height: var(--mm-select-h);
+  align-items: center;
+  gap: var(--mm-space-1);
+  padding: 0 var(--mm-space-2);
+  border: none;
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-select-box__trigger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-select-box__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--mm-color-icon);
+}
+
+/* 名字吃掉剩余宽度，箭头固定在右边 */
+.mm-select-box__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-select-box__arrow {
+  flex: 0 0 auto;
+  color: var(--mm-color-icon);
+}
+
+/* 面板：原版 `.select-box__dropdown` —— fixed 定位，宽度跟随触发器 */
+.mm-select-box__panel {
+  position: fixed;
+  top: var(--floating-y, 0);
+  left: var(--floating-x, 0);
+  z-index: var(--mm-z-dropdown);
+  width: var(--floating-width, auto);
+  overflow: hidden;
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  box-shadow: var(--mm-shadow-pop);
+}
+
+/* 选项：原版 `.select-box__item` —— 28px 高、左侧留勾的位置 */
+.mm-select-box__item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: var(--mm-select-h);
+  align-items: center;
+  gap: var(--mm-space-1);
+  padding: 0 var(--mm-space-2);
+  border: none;
+  background: transparent;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-select-box__item:hover,
+.mm-select-box__item--active {
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-select-box__check {
+  position: absolute;
+  left: var(--mm-space-1);
+  color: var(--mm-color-accent);
+}
+
+.mm-select-box__item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

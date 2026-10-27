@@ -1,0 +1,13 @@
+/* 【范本】展开 / 折叠箭头：原版 BaseGroup.vue:66-74 */
+
+/* 原版 `.base-group__chevron`：flex 固定宽度 + 颜色 + 旋转过渡 */
+.mm-chevron {
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+  transition: transform var(--mm-dur-fast, 120ms) ease;
+}
+
+/* 收起态：向下的箭头转成朝右（原版 rotate(-90deg)） */
+.mm-chevron--closed {
+  transform: rotate(-90deg);
+}

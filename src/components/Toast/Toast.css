@@ -1,0 +1,26 @@
+.mm-toast {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--mm-space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mm-space-1);
+  pointer-events: none;
+  z-index: var(--mm-z-toast);
+}
+
+.mm-toast__item {
+  max-width: 90%;
+  padding: var(--mm-space-1) var(--mm-space-2);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  box-shadow: var(--mm-shadow-pop);
+}
+
+.mm-toast__item--error {
+  color: var(--mm-color-error);
+}

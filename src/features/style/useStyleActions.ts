@@ -1,0 +1,551 @@
+/**
+ * 【范本】样式页的全部动作与交互状态。
+ *
+ * 为什么单独成 hook：`GOVERNANCE.md` §0.5 触发条件第 6 条——组件超过 300 行必须拆。
+ * 页面只留骨架和 JSX，动作逻辑（应用 / 增删改 / 拖拽 / 右键菜单）全在这里。
+ *
+ * 返回值刻意与页面里原来的函数同名，页面解构后 JSX 不用改名。
+ */
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useConfirm } from '../../components/Confirm/useConfirm';
+import { useLoading } from '../../components/Loading';
+import { useToast } from '../../components/Toast';
+import type { MenuItem } from '../../components/ContextMenu';
+import {
+  addFontFromLayer,
+  addForegroundColorToLibrary,
+  addGradientFromLayer,
+  addGroupToLibrary,
+  addStyleFromLayer,
+  appendGroupToSwatch,
+  appendItemToSwatch,
+  applyBorderColorToLayer,
+  applyColor,
+  applyFontToLayer,
+  applyGradientToLayer,
+  applyLayerStyle,
+  applyShapeFillToLayer,
+  moveGroupInLibrary,
+  sendGroupToSwatch,
+  sendItemToSwatch,
+  setGroupShowInLibrary
+} from '../../commands/style';
+import type { KuKind } from '../../domain/style-library';
+import { useLongPressDrag } from '../../hooks/useLongPressDrag';
+import { usePersisted } from '../../hooks/usePersisted';
+import {
+  deleteKuGroup,
+  deleteKuItem,
+  moveKuItemTo,
+  readKuGroupId,
+  readKuItem,
+  renameKuGroup,
+  renameKuItem
+} from '../../repo/style-repo';
+import { useStyleLibraryStore } from '../../store/style-library';
+
+/** 默认展开前几组，避免上百组一次性渲染 */
+const DEFAULT_EXPANDED = 1;
+
+/** 右键菜单的目标 */
+export type MenuTarget =
+  | { type: 'group'; groupIndex: number; groupName: string; x: number; y: number }
+  | { type: 'item'; groupIndex: number; itemIndex: number; name: string; x: number; y: number };
+
+/** 正在重命名的目标 */
+export type RenameTarget =
+  | { type: 'group'; groupIndex: number }
+  | { type: 'item'; groupIndex: number; itemIndex: number };
+
+/**
+ * 组末尾「+」的提示语，按库分派（页面的 title 也用它）。
+ *
+ * 逐库照抄原版（对照清单 #61）：
+ * - 颜色「添加当前前景色」`app.v4.js:49991`
+ * - 渐变「添加渐变色，仅支持形状图层」`:50572`
+ * - 字体「添加字体，支持多图层」`:50985`
+ * - 样式「添加样式」`:51378`
+ */
+export const ADD_TITLE: Record<KuKind, string> = {
+  color: '添加当前前景色',
+  gradient: '添加渐变色，仅支持形状图层',
+  font: '添加字体，支持多图层',
+  style: '添加样式'
+};
+
+export function useStyleActions() {
+  const toast = useToast();
+  const loading = useLoading();
+  const confirm = useConfirm();
+
+  const load = useStyleLibraryStore((state) => state.load);
+  const warehouses = useStyleLibraryStore((state) => state.warehouses);
+  const activeIndex = useStyleLibraryStore((state) => state.activeIndex);
+  const activeKind = useStyleLibraryStore((state) => state.activeKind);
+  const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
+  const libraries = useStyleLibraryStore((state) => state.libraries);
+
+  /* 展开的分组记进 prefs：切走再回来保持原样 */
+  const [expandedList, setExpandedList] = usePersisted<number[]>('style.expandedGroups', [0]);
+  /* 组多时每渲染都 new Set 是白跑；列表没变就复用 */
+  const expanded = useMemo(() => new Set(expandedList), [expandedList]);
+  const [menu, setMenu] = useState<MenuTarget | null>(null);
+  const [editing, setEditing] = useState<RenameTarget | null>(null);
+  /* 正在新建的分组：afterIndex = -1 表示追加到末尾（底栏按钮走这条） */
+  const [newGroup, setNewGroup] = useState<{ afterIndex: number } | null>(null);
+
+  const drag = useLongPressDrag();
+  /* 拖拽结束后浏览器仍会派发一次 click，用它挡掉「拖完顺手应用了颜色」 */
+  const draggedRef = useRef(false);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  /* 切仓库或切 tab 时，回到默认展开 */
+  useEffect(() => {
+    setExpandedList(Array.from({ length: DEFAULT_EXPANDED }, (_, i) => i));
+  }, [activeKind, activeIndex, setExpandedList]);
+
+  /** 当前仓库；没有就是 null（拖拽这类静默失败的动作用它） */
+  function currentWarehouse() {
+    return warehouses[activeIndex] ?? null;
+  }
+
+  /** 当前仓库；没有就提示一句（用户主动触发的动作用它） */
+  function requireWarehouse() {
+    const warehouse = currentWarehouse();
+    if (!warehouse) toast.error('没有选中仓库');
+    return warehouse;
+  }
+
+  /**
+   * 折叠 / 展开。
+   * 原版普通点击折叠也写库（`show` 是库文件的真实字段），照此行为；
+   * 写库失败不回滚本地状态——下次 load 会以文件为准。
+   */
+  function toggleGroup(index: number) {
+    const next = !expandedList.includes(index);
+    setExpandedList(
+      next ? [...expandedList, index] : expandedList.filter((item) => item !== index)
+    );
+
+    const warehouse = currentWarehouse();
+    if (!warehouse) return;
+    void setGroupShowInLibrary(warehouse, activeKind, index, next);
+  }
+
+  /**
+   * 组末尾「+」：把「当前 PS 状态」存进这一组，按库分派。
+   *
+   * - 颜色：读前景色
+   * - 渐变：读当前图层的渐变定义
+   * - 字体：读当前文字图层的字体属性
+   * - 样式：让 jsxbin 把图层样式存成 `kuStyle/<groupId>.psd`，成功后重读
+   */
+  async function handleAddItem(groupIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await loading.run(() => {
+      if (activeKind === 'color') {
+        return addForegroundColorToLibrary(warehouse, activeKind, groupIndex);
+      }
+      if (activeKind === 'gradient') {
+        return addGradientFromLayer(warehouse, activeKind, groupIndex);
+      }
+      if (activeKind === 'font') {
+        return addFontFromLayer(warehouse, activeKind, groupIndex);
+      }
+      return addStyleFromLayer(warehouse, activeKind, groupIndex);
+    });
+
+    if (result.ok) {
+      toast.info(activeKind === 'color' ? '已添加当前前景色' : '已添加');
+      void load();
+      return;
+    }
+
+    toast.error(result.message);
+  }
+
+  /** 底栏「添加×分组」：切到对应 tab 再弹输入（原版四个按钮各管一个库） */
+  function startNewGroup(kind: KuKind) {
+    if (kind !== activeKind) setActiveKind(kind);
+    setNewGroup({ afterIndex: (libraries[kind]?.length ?? 0) - 1 });
+  }
+
+  /** 新建分组：afterIndex = -1 表示追加到末尾 */
+  async function handleCreateGroup(name: string, afterIndex: number) {
+    setNewGroup(null);
+
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await loading.run(() =>
+      addGroupToLibrary(warehouse, activeKind, name, afterIndex === -1 ? undefined : afterIndex)
+    );
+
+    if (result.ok) {
+      toast.info('已新建分组');
+      void load();
+      return;
+    }
+
+    toast.error(result.message);
+  }
+
+  async function handleApply(
+    groupIndex: number,
+    itemIndex: number,
+    name: string,
+    event: MouseEvent
+  ) {
+    /* 刚拖完的那次 click 不算「应用」 */
+    if (draggedRef.current) {
+      draggedRef.current = false;
+      return;
+    }
+
+    /* 原始项只从 repo 取：视图模型不带原始数据，避免两套来源 */
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const raw = readKuItem(warehouse, activeKind, groupIndex, itemIndex);
+    if (raw.status !== 'ok') {
+      toast.error(raw.status === 'missing' ? '库文件不存在' : raw.reason);
+      return;
+    }
+
+    if (activeKind === 'color') {
+      /* 修饰键分流：ctrl 只改填充、shift 只改描边，都不按则按图层类型自动处理 */
+      const task = event.ctrlKey || event.metaKey
+        ? applyShapeFillToLayer
+        : event.shiftKey
+          ? applyBorderColorToLayer
+          : applyColor;
+
+      const result = await loading.run(() => task(raw.value));
+      if (result.ok) toast.info(`已应用「${name}」`);
+      else toast.error(result.message);
+      return;
+    }
+
+    if (activeKind === 'gradient') {
+      /* 原版发的是项里的 gradient 字段，不是整个项 */
+      const gradient = raw.value.gradient;
+      if (!gradient) {
+        toast.error('这个渐变项缺少数据');
+        return;
+      }
+      const result = await loading.run(() => applyGradientToLayer(gradient));
+      if (result.ok) toast.info(`已应用「${name}」`);
+      else toast.error(result.message);
+      return;
+    }
+
+    if (activeKind === 'font') {
+      /* 字体走直接调用通道，不走 ps_onJsx */
+      const result = await loading.run(() => applyFontToLayer(raw.value));
+      if (result.ok) toast.info(`已应用「${name}」`);
+      else toast.error(result.message);
+      return;
+    }
+
+    /* style：需要分组 id，jsx 用它定位样式资源 */
+    const groupId = readKuGroupId(warehouse, activeKind, groupIndex);
+    const result = await loading.run(() => applyLayerStyle(raw.value, groupId));
+    if (result.ok) toast.info(`已应用「${name}」`);
+    else toast.error(result.message);
+  }
+
+  /**
+   * 右键菜单项，照抄原版（`app.v4.js:50227-50366`）。
+   *
+   * 项：删除 / 重命名 /[颜色库] 分隔 / 发送到色板 / 追加到色板
+   * 组：创建新组 / 分隔 / 删除 / 重命名 / 分隔 /[颜色库] 发送到色板 / 追加到色板 / 分隔 /
+   *     快速吸色到组 / 分隔 / 发送到仓库… / 移动到仓库…
+   *
+   * 色板与仓库相关命令还没实现，**渲染但置灰**——不静默消失，让人知道有这项功能。
+   */
+  function buildMenuItems(target: MenuTarget): MenuItem[] {
+    if (target.type === 'item') {
+      const shared: MenuItem[] = [
+        { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
+        {
+          label: '重命名',
+          onSelect: () =>
+            setEditing({ type: 'item', groupIndex: target.groupIndex, itemIndex: target.itemIndex })
+        }
+      ];
+      if (activeKind !== 'color') return shared;
+
+      return [
+        ...shared,
+        { label: '', separator: true },
+        {
+          label: '发送到色板',
+          onSelect: () => void handleSendItemToSwatch(target.groupIndex, target.itemIndex)
+        },
+        {
+          label: '追加到色板',
+          onSelect: () => void handleAppendItemToSwatch(target.groupIndex, target.itemIndex)
+        }
+      ];
+    }
+
+    const head: MenuItem[] = [
+      { label: '创建新组', onSelect: () => setNewGroup({ afterIndex: target.groupIndex }) },
+      { label: '', separator: true },
+      { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
+      {
+        label: '重命名',
+        onSelect: () => setEditing({ type: 'group', groupIndex: target.groupIndex })
+      },
+      { label: '', separator: true }
+    ];
+
+    const warehouse: MenuItem[] = [
+      { label: '发送到仓库…', disabled: true },
+      { label: '移动到仓库…', disabled: true }
+    ];
+
+    if (activeKind !== 'color') return [...head, ...warehouse];
+
+    return [
+      ...head,
+      {
+        label: '发送到色板',
+        onSelect: () => void handleSendGroupToSwatch(target.groupIndex)
+      },
+      {
+        label: '追加到色板',
+        onSelect: () => void handleAppendGroupToSwatch(target.groupIndex)
+      },
+      { label: '', separator: true },
+      { label: '快速吸色到组', disabled: true },
+      { label: '', separator: true },
+      ...warehouse
+    ];
+  }
+
+  /** 发送到色板（单项）：整份替换 */
+  async function handleSendItemToSwatch(groupIndex: number, itemIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await sendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex);
+    if (result.ok) {
+      toast.info('已发送到色板');
+      return;
+    }
+    toast.error(result.message);
+  }
+
+  /** 追加到色板（单项） */
+  async function handleAppendItemToSwatch(groupIndex: number, itemIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await appendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex);
+    if (result.ok) {
+      toast.info('已追加到色板');
+      return;
+    }
+    toast.error(result.message);
+  }
+
+  /** 发送到色板（整组替换） */
+  async function handleSendGroupToSwatch(groupIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await sendGroupToSwatch(warehouse, activeKind, groupIndex);
+    if (result.ok) {
+      toast.info('已发送到色板');
+      return;
+    }
+    toast.error(result.message);
+  }
+
+  /** 追加到色板（整组逐项 push） */
+  async function handleAppendGroupToSwatch(groupIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result = await appendGroupToSwatch(warehouse, activeKind, groupIndex);
+    if (result.ok) {
+      toast.info('已追加到色板');
+      return;
+    }
+    toast.error(result.message);
+  }
+
+  /** 删除分组或项：先确认，再写库 */
+  async function handleDelete(target: MenuTarget) {
+    const ok = await confirm({
+      title:
+        target.type === 'group' ? `删除分组「${target.groupName}」？` : `删除「${target.name}」？`,
+      message: '会直接改写库文件，原文件已备份为 .bak'
+    });
+    if (!ok) return;
+
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result =
+      target.type === 'group'
+        ? await deleteKuGroup(warehouse, activeKind, target.groupIndex)
+        : await deleteKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex);
+
+    if (result.status === 'ok') {
+      toast.info('已删除');
+      void load();
+      return;
+    }
+
+    toast.error(result.status === 'missing' ? '库文件不存在' : result.reason);
+  }
+
+  /** 重命名分组或项；写库成功后重读列表 */
+  async function handleRename(target: RenameTarget, name: string) {
+    setEditing(null);
+
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    const result =
+      target.type === 'group'
+        ? await renameKuGroup(warehouse, activeKind, target.groupIndex, name)
+        : await renameKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex, name);
+
+    if (result.status === 'ok') {
+      toast.info('已重命名');
+      void load();
+      return;
+    }
+
+    toast.error(result.status === 'missing' ? '库文件不存在' : result.reason);
+  }
+
+  /**
+   * 长按开始拖拽：项可跨组排序。
+   * 目标列表取整个 `.mm-style__list`，不是当前组容器——跨组拖拽靠这个。
+   */
+  function handleItemMouseDown(event: MouseEvent, groupIndex: number, itemIndex: number) {
+    const node = event.currentTarget as HTMLElement;
+    const list = node.closest('.mm-style__list');
+    if (!(list instanceof HTMLElement)) return;
+
+    drag.start({
+      event: event.nativeEvent,
+      node,
+      axis: 'x',
+      targets: () => Array.from(list.querySelectorAll<HTMLElement>('[data-item-index]')),
+      onEnd: (result) => {
+        draggedRef.current = result.dragged;
+        if (!result.dragged || !result.target) return;
+
+        const toGroup = Number(result.target.dataset.groupIndex);
+        const toIndex = Number(result.target.dataset.itemIndex);
+        if (Number.isNaN(toGroup) || Number.isNaN(toIndex)) return;
+        if (toGroup === groupIndex && toIndex === itemIndex) return;
+
+        void handleMoveItem(groupIndex, itemIndex, toGroup, toIndex, result.position);
+      }
+    });
+  }
+
+  /** 项拖拽落点写回库文件（可跨组） */
+  async function handleMoveItem(
+    fromGroup: number,
+    from: number,
+    toGroup: number,
+    to: number,
+    position: 'before' | 'after'
+  ) {
+    const warehouse = currentWarehouse();
+    if (!warehouse) return;
+
+    const result = await moveKuItemTo(warehouse, activeKind, {
+      from: { group: fromGroup, index: from },
+      to: { group: toGroup, index: to },
+      position
+    });
+
+    if (result.status === 'ok') {
+      toast.info('已调整顺序');
+      void load();
+      return;
+    }
+
+    toast.error(result.status === 'missing' ? '库文件不存在' : result.reason);
+  }
+
+  /** 长按分组标题：纵向排序 */
+  function handleGroupMouseDown(event: MouseEvent, groupIndex: number) {
+    const node = event.currentTarget as HTMLElement;
+    const list = node.closest('.mm-style__list');
+    if (!(list instanceof HTMLElement)) return;
+
+    drag.start({
+      event: event.nativeEvent,
+      node,
+      axis: 'y',
+      targets: () => Array.from(list.querySelectorAll<HTMLElement>('[data-group-head]')),
+      onEnd: (result) => {
+        /* 拖完那次 click 会折叠分组，挡掉 */
+        draggedRef.current = result.dragged;
+        if (!result.dragged || !result.target) return;
+
+        const toIndex = Number(result.target.dataset.groupIndex);
+        if (Number.isNaN(toIndex) || toIndex === groupIndex) return;
+
+        void handleMoveGroup(groupIndex, toIndex, result.position);
+      }
+    });
+  }
+
+  /** 分组拖拽落点写回库文件 */
+  async function handleMoveGroup(from: number, to: number, position: 'before' | 'after') {
+    const warehouse = currentWarehouse();
+    if (!warehouse) return;
+
+    const result = await loading.run(() =>
+      moveGroupInLibrary(warehouse, activeKind, from, to, position)
+    );
+
+    if (result.ok) {
+      toast.info('已调整分组顺序');
+      void load();
+      return;
+    }
+
+    toast.error(result.message);
+  }
+
+  return {
+    expanded,
+    menu,
+    setMenu,
+    editing,
+    setEditing,
+    newGroup,
+    setNewGroup,
+    draggedRef,
+    toggleGroup,
+    handleAddItem,
+    handleSendItemToSwatch,
+    handleAppendItemToSwatch,
+    handleSendGroupToSwatch,
+    handleAppendGroupToSwatch,
+    startNewGroup,
+    handleCreateGroup,
+    handleApply,
+    buildMenuItems,
+    handleDelete,
+    handleRename,
+    handleItemMouseDown,
+    handleGroupMouseDown
+  };
+}

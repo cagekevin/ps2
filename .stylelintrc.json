@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "color-no-hex": true,
+    "declaration-property-value-disallowed-list": {
+      "/^(padding|margin|gap|border-radius|font-size|width|height|top|left|right|bottom)$/": ["/\\d+px/"]
+    }
+  },
+  "ignoreFiles": ["src/styles/tokens.css", "dist/**"]
+}

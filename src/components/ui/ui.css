@@ -1,0 +1,68 @@
+/* 【范本】基础组件样式：只用 Token */
+.mm-btn {
+  height: var(--mm-control-h);
+  padding: 0 var(--mm-space-2);
+  border: none;
+  border-radius: var(--mm-radius-md);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-btn--ghost {
+  background: var(--mm-color-bg-elevated);
+  color: var(--mm-color-text);
+}
+
+.mm-btn--ghost:hover:not(:disabled) {
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-btn--primary {
+  background: var(--mm-color-accent);
+  color: var(--mm-color-text);
+}
+
+.mm-btn--primary:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.mm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-input {
+  height: var(--mm-control-h);
+  padding: 0 var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  outline: none;
+}
+
+.mm-input:focus {
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+}
+
+.mm-input--invalid {
+  border-color: var(--mm-color-error);
+}
+
+.mm-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+  margin-bottom: var(--mm-space-2);
+}
+
+.mm-field__label {
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-field__hint {
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}

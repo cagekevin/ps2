@@ -1,0 +1,94 @@
+/* 【范本】导航样式：参数对齐原版 #nav / .nav-item / .sub-nav-item */
+.mm-nav {
+  flex: 0 0 var(--mm-nav-w);
+  width: var(--mm-nav-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--mm-space-2) 0;
+  background: var(--mm-color-bg-panel);
+}
+
+/* 原版 .nav-item：40×40、无圆角、cursor:default */
+.mm-nav__item {
+  position: relative;
+  width: var(--mm-nav-w);
+  height: var(--mm-nav-w);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-icon);
+  text-decoration: none;
+  box-sizing: border-box;
+  cursor: default;
+}
+
+.mm-nav__item svg {
+  width: var(--mm-icon-lg);
+  height: var(--mm-icon-lg);
+}
+
+/* 原版 .nav-item-active：background-color #434343 */
+.mm-nav__item--active,
+.mm-nav__item:hover {
+  background: var(--mm-color-nav-active);
+  color: var(--mm-color-text);
+}
+
+/* 原版 .tips：left:40px、padding 0 20px、右侧圆角，hover 滑出页面名 */
+.mm-nav__item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 100%;
+  top: 0;
+  z-index: var(--mm-z-nav);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--mm-space-5);
+  border-radius: 0 var(--mm-radius-md) var(--mm-radius-md) 0;
+  background: var(--mm-color-nav-active);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mm-nav__item:hover::after {
+  opacity: 1;
+}
+
+/* 原版底部 .sub-nav-item：26×26、图标 16、hover 换底加边 */
+.mm-nav__item--sub {
+  width: var(--mm-nav-item-sub);
+  height: var(--mm-nav-item-sub);
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-radius-md);
+}
+
+.mm-nav__item--sub svg {
+  width: var(--mm-icon-md);
+  height: var(--mm-icon-md);
+}
+
+.mm-nav__item--sub:hover {
+  background: var(--mm-color-nav-sub-hover);
+  border-color: var(--mm-color-border-checked);
+}
+
+.mm-nav__item--sub::after {
+  content: none;
+}
+
+.mm-nav__item--disabled {
+  opacity: 0.45;
+}
+
+.mm-nav__spacer {
+  flex: 1;
+}

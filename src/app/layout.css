@@ -1,0 +1,69 @@
+.mm-layout {
+  display: flex;
+  height: 100vh;
+  /* 原版内容区底色 #363636；#535353 只用于底栏 */
+  background: var(--mm-color-bg-page);
+  color: var(--mm-color-text);
+}
+
+.mm-layout__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mm-layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: var(--mm-space-2) var(--mm-space-3);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
+}
+
+.mm-layout__title {
+  font-size: var(--mm-font-md);
+}
+
+.mm-layout__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-2);
+}
+
+.mm-layout__debug {
+  padding: 0 var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-sm);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+  text-decoration: none;
+}
+
+.mm-layout__debug:hover,
+.mm-layout__debug--active {
+  color: var(--mm-color-text);
+  border-color: var(--mm-color-accent);
+}
+
+.mm-layout__version {
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+/*
+ * 不能 overflow: auto：页面自己管滚动（样式页的列表滚动、底栏贴底都靠 height:100%）。
+ * 这里一旦出现滚动容器，子页面的 flex 高度就被内容撑开，底栏会跑到内容后面去。
+ */
+.mm-layout__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mm-loading {
+  padding: var(--mm-space-3);
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text-dim);
+}

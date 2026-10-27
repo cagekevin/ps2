@@ -1,0 +1,51 @@
+/* 右键菜单：位置由 useFloatingPosition 写入的 CSS 变量决定 */
+.mm-menu {
+  position: fixed;
+  top: var(--floating-y, 0);
+  left: var(--floating-x, 0);
+  z-index: var(--mm-z-tooltip);
+  min-width: 120px;
+  padding: var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  box-shadow: var(--mm-shadow-md);
+}
+
+.mm-menu__item {
+  display: block;
+  width: 100%;
+  padding: var(--mm-space-1) var(--mm-space-2);
+  border: none;
+  border-radius: var(--mm-radius-sm);
+  background: transparent;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-menu__item:hover {
+  background: var(--mm-color-nav-active);
+}
+
+.mm-menu__item--danger {
+  color: var(--mm-color-error);
+}
+
+/* 原版 `.menu-hr{margin:5px 0;border:0;border-bottom:1px solid rgba(0,0,0,.15)}` */
+.mm-menu__hr {
+  margin: var(--mm-space-1) 0;
+  border: 0;
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
+}
+
+/* 未实现的命令：看得见但点不动 */
+.mm-menu__item:disabled {
+  color: var(--mm-color-text-dim);
+  cursor: not-allowed;
+}
+
+.mm-menu__item:disabled:hover {
+  background: transparent;
+}

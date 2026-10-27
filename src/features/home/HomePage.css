@@ -1,0 +1,104 @@
+/* 【范本】feature 样式：只用 Token 变量，禁止色值与 px；通用控件样式在 components/ui */
+.mm-home {
+  padding: var(--mm-space-3);
+}
+
+.mm-home__row {
+  margin: 0 0 var(--mm-space-2);
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text);
+}
+
+.mm-home__actions {
+  display: flex;
+  gap: var(--mm-space-2);
+}
+
+.mm-home__message {
+  margin: var(--mm-space-2) 0 0;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-home__diag {
+  margin-top: var(--mm-space-3);
+  padding: var(--mm-space-2);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+}
+
+.mm-home__diag-title {
+  margin: var(--mm-space-1) 0;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-home__diag-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mm-space-2);
+}
+
+.mm-home__copy {
+  padding: 0 var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-sm);
+  background: transparent;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+  cursor: pointer;
+}
+
+.mm-home__copy:hover {
+  color: var(--mm-color-text);
+  border-color: var(--mm-color-accent);
+}
+
+.mm-home__log {
+  margin-top: var(--mm-space-2);
+  padding: var(--mm-space-2);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+}
+
+.mm-home__log-actions {
+  display: flex;
+  gap: var(--mm-space-1);
+}
+
+.mm-home__log-body {
+  max-height: 240px;
+  margin: var(--mm-space-1) 0 0;
+  overflow: auto;
+  font-size: var(--mm-font-xs);
+  line-height: 1.4;
+  color: var(--mm-color-text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.mm-home__diag-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mm-space-2);
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text);
+}
+
+.mm-home__diag-row--bad {
+  color: var(--mm-color-error);
+}
+
+.mm-home__diag-key {
+  flex: 0 0 auto;
+}
+
+.mm-home__diag-value {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

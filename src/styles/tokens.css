@@ -1,0 +1,122 @@
+/* 唯一允许写原始色值与 px 的文件 */
+:root {
+  /* 原始值 */
+  --mm-gray-900: #2b2b2b;
+  --mm-gray-800: #3f3f3f;
+  --mm-gray-700: #535353;
+  --mm-gray-600: #434343;
+  --mm-gray-500: #4b4b4b;
+  --mm-gray-400: #6e6e6e;
+  --mm-gray-300: #b8b8b8;
+  --mm-blue-500: #0f7df2;
+  --mm-green-500: #4caf50;
+  --mm-red-500: #e05252;
+
+  /* 语义色 */
+  --mm-color-bg-panel: var(--mm-gray-700);
+  --mm-color-bg-elevated: var(--mm-gray-800);
+  --mm-color-bg-hover: rgba(255, 255, 255, 0.08);
+  --mm-color-text: #d6d6d6;
+  --mm-color-text-dim: #9a9a9a;
+  /* 原版 hover 纯白 #fff（对照清单 #11 / #66） */
+  --mm-color-text-inverse: #ffffff;
+  --mm-color-border: rgba(0, 0, 0, 0.5);
+  --mm-color-accent: var(--mm-blue-500);
+  --mm-color-ok: var(--mm-green-500);
+  --mm-color-error: var(--mm-red-500);
+
+  /* 导航（对齐原版 #nav 与 .nav-item 参数） */
+  --mm-color-nav-active: var(--mm-gray-600);
+  --mm-color-nav-sub-hover: var(--mm-gray-500);
+  --mm-color-icon: var(--mm-gray-300);
+  --mm-color-border-checked: var(--mm-gray-400);
+  --mm-nav-w: 40px;
+  --mm-nav-item-sub: 26px;
+
+  /* 形状 */
+  --mm-radius-sm: 2px;
+  --mm-radius-md: 4px;
+  --mm-radius-pill: 999px;
+  --mm-border-w: 1px;
+  --mm-shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  /* 间距：4 的倍数 */
+  --mm-space-1: 4px;
+  --mm-space-2: 8px;
+  --mm-space-3: 12px;
+  --mm-space-4: 16px;
+  --mm-space-5: 20px;
+
+  /* 尺寸 */
+  --mm-control-h: 24px;
+  --mm-control-h-sm: 20px;
+  /* 原版分组头行高 22px（对照清单 #62） */
+  --mm-group-head-h: 22px;
+  /* 原版下拉触发器 / 选项都是 28px */
+  --mm-select-h: 28px;
+  --mm-icon-sm: 14px;
+  --mm-icon-md: 16px;
+  --mm-icon-lg: 24px;
+  --mm-font-xs: 11px;
+  --mm-font-sm: 12px;
+  --mm-font-md: 13px;
+
+  /* 精确间距：原版是 3/5/6/7/10/14/15px，不是 4 的倍数 */
+  --mm-space-exact-3: 3px;
+  --mm-space-exact-5: 5px;
+  --mm-space-exact-6: 6px;
+  --mm-space-exact-7: 7px;
+  --mm-space-exact-10: 10px;
+
+  /* 样式页四库格子：原版逐个 scoped 段实测，不共用一套 */
+  --mm-swatch-w: 25px;
+  --mm-swatch-h: 25px;
+  --mm-gradient-w: 50px;
+  --mm-gradient-h: 26px;
+  --mm-font-card-w: 70px;
+  --mm-font-card-h: 44px;
+  --mm-style-thumb: 26px;
+
+  /* 样式页结构尺寸 */
+  --mm-warehouse-h: 36px;
+  --mm-bottom-bar-h: 26px;
+  /* 底栏按钮比图标宽一圈，图标之间才有呼吸感 */
+  --mm-bottom-btn-w: 30px;
+  --mm-tab-line-h: 20px;
+
+  /* 底栏颜色/渐变两个按钮的方块（原版是彩色方块与蓝方块，不是图标） */
+  --mm-swatch-rainbow: linear-gradient(
+    135deg,
+    #ff4d4d 0%,
+    #ffd93d 25%,
+    #4dd964 50%,
+    #4db8ff 75%,
+    #b44dff 100%
+  );
+  --mm-swatch-blue: #4db8ff;
+
+  /* 层级：原版浮层是 1101（菜单）/ 1000（弹窗），Toast 100，Loading 200 */
+  --mm-z-nav: 10;
+  --mm-z-toast: 100;
+  --mm-z-loading: 200;
+  --mm-z-dropdown: 1000;
+  --mm-z-tooltip: 1100;
+
+  /* 样式页专用色：页面底 #363636、仓库条 #282828（原版 --c-surface / --c-warehouse） */
+  --mm-color-bg-page: #363636;
+  --mm-color-bg-warehouse: #282828;
+  --mm-color-bottom-bar: var(--mm-gray-700);
+  /* 原版底栏按钮 hover：纯 #222 底色，**无描边**（对照清单 #90） */
+  --mm-color-bottom-hover: #222;
+  /* 原版底栏分隔竖线 1×13 #333，左右各 8px（对照清单 #92） */
+  --mm-color-verline: #333;
+  --mm-verline-h: 13px;
+  --mm-color-bottom-hover: rgba(0, 0, 0, 0.2);
+  --mm-color-icon-hover-border: var(--mm-gray-600);
+  /* 原版 `.select-switch{color:#006fff}`，比全局蓝略深 */
+  --mm-color-tab-active: #006fff;
+  --mm-color-swatch-hover: #d5d5d5;
+  --mm-color-style-thumb: rgba(0, 0, 0, 0.3);
+  --mm-color-card: var(--mm-gray-700);
+  --mm-color-card-hover: var(--mm-gray-600);
+}

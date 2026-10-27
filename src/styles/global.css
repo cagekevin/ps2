@@ -1,0 +1,24 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  /* 原版 --c-surface / --c-bg 都是 #363636；#535353 只用于底栏 */
+  background: var(--mm-color-bg-page);
+  color: var(--mm-color-text);
+  font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
+  font-size: var(--mm-font-md);
+  -webkit-user-select: none;
+}
+
+button {
+  font-family: inherit;
+}

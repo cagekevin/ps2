@@ -1,0 +1,11 @@
+.mm-inline-edit {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-accent);
+  border-radius: var(--mm-radius-sm);
+  background: var(--mm-color-bg);
+  color: var(--mm-color-text);
+  font-size: inherit;
+  outline: none;
+}

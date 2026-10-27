@@ -1,0 +1,361 @@
+/**
+ * 样式面板。
+ *
+ * 规格照 `app/src/pages/style/index.css`（它已对齐原版 scoped 段）：
+ *   仓库条 36px → tabs 四等分带竖线 → 滚动列表 → 底栏 26px 图标条。
+ *
+ * 四库格子尺寸**不共用一套**（原版就是四段独立 scoped）：
+ *   颜色 25×25 无圆角 / 渐变 50×26 r4 / 字体 70×44 r4 / 样式 26×26 无圆角。
+ */
+.mm-style {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--mm-color-bg-page);
+}
+
+/* ---------- 仓库条 ---------- */
+.mm-style__warehouse {
+  display: flex;
+  flex: 0 0 var(--mm-warehouse-h);
+  align-items: center;
+  padding: 0 var(--mm-space-exact-10);
+  background: var(--mm-color-bg-warehouse);
+}
+
+/* 触发器通栏：原版 `.style-warehouse__row` 是 width:100% 的 flex 行 */
+.mm-style__warehouse.mm-select-box__trigger {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+/* 仓库名在原版是蓝色（`--c-accent`） */
+.mm-style__warehouse .mm-select-box__label {
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-md);
+}
+
+/* ---------- tabs：四等分 + 1px 竖线 ---------- */
+.mm-style__tabs {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: var(--mm-space-exact-10) 0;
+}
+
+.mm-style__tab-cell {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+
+.mm-style__tab {
+  /* 原版 `.w95`：文字块宽 95%（对照清单 #8） */
+  width: 95%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  text-align: center;
+  cursor: pointer;
+}
+
+/* 原版 `.switch-context-wrap:hover p{color:#fff}`（对照清单 #11）。
+   放在 --active 之前：两者特异性相同，靠书写顺序让选中态压过 hover */
+.mm-style__tab:hover {
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-style__tab--active {
+  color: var(--mm-color-tab-active);
+}
+
+.mm-style__tab-line {
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-tab-line-h);
+  background: var(--mm-color-border);
+}
+
+/* ---------- 滚动区 ---------- */
+.mm-style__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------- 组 ---------- */
+.mm-style__group {
+  margin-bottom: var(--mm-space-1);
+  padding: 0 0 0 var(--mm-space-exact-10);
+}
+
+/* 渐变 / 样式库的组容器左右都有 10px */
+.mm-style__group--wide {
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-style__group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  width: 100%;
+  height: var(--mm-group-head-h);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* 原版 `.base-group-mian:hover p, :hover svg{color:#fff}`（对照清单 #66） */
+.mm-style__group-head:hover .mm-style__group-name,
+.mm-style__group-head:hover .mm-chevron {
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-style__group-name {
+  flex: 1;
+  /* 原版 `p.ml8`：名称离箭头 8px（对照清单 #64） */
+  margin-left: var(--mm-space-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-style__count {
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
+
+/* ---------- 项容器 ---------- */
+.mm-style__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-exact-5);
+  padding-top: var(--mm-space-exact-5);
+}
+
+/* 颜色：行距 6 */
+.mm-style__items--color {
+  row-gap: var(--mm-space-exact-6);
+  padding-top: var(--mm-space-exact-6);
+}
+
+/* 样式：横向 6 / 行距 7 */
+.mm-style__items--style {
+  column-gap: var(--mm-space-exact-6);
+  row-gap: var(--mm-space-exact-7);
+  padding-top: var(--mm-space-exact-7);
+}
+
+/* ---------- 项 ---------- */
+.mm-style__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  border: var(--mm-border-w) solid transparent;
+  background: transparent;
+  color: var(--mm-color-icon);
+  cursor: pointer;
+}
+
+.mm-style__item--color {
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+}
+
+/* 渐变块原版无默认边框，hover 才加 */
+.mm-style__item--gradient {
+  width: var(--mm-gradient-w);
+  height: var(--mm-gradient-h);
+  border: none;
+  border-radius: var(--mm-radius-md);
+}
+
+.mm-style__item--font {
+  width: var(--mm-font-card-w);
+  height: var(--mm-font-card-h);
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: var(--mm-space-exact-3) var(--mm-space-exact-5);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-card);
+}
+
+.mm-style__item--style {
+  width: var(--mm-style-thumb);
+  height: var(--mm-style-thumb);
+  background: var(--mm-color-style-thumb);
+}
+
+/* hover 只改边框（原版四段一致） */
+.mm-style__item--color:hover,
+.mm-style__item--gradient:hover {
+  border-color: var(--mm-color-swatch-hover);
+}
+
+.mm-style__item--font:hover {
+  border-color: var(--mm-color-text);
+}
+
+.mm-style__item--style:hover {
+  border-color: var(--mm-color-icon-hover-border);
+}
+
+/* --mm-swatch 可能是色值或 url(...)，必须用 background 简写 */
+.mm-style__swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--mm-swatch) center / cover no-repeat;
+}
+
+.mm-style__thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: pixelated;
+}
+
+/* 重命名项时占一个格子。宽度按字体卡片给，颜色/渐变也能放下输入框 */
+.mm-style__item--editing {
+  width: var(--mm-font-card-w);
+  height: var(--mm-font-card-h);
+  padding: 0 var(--mm-space-exact-3);
+  border-color: var(--mm-color-accent);
+  background: var(--mm-color-bg-elevated);
+  cursor: default;
+}
+
+/* 字体卡片内文 */
+.mm-style__font-family {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-style__meta {
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
+
+/* ---------- 各组末尾的「+」 ---------- */
+.mm-style__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-card);
+  color: var(--mm-color-icon);
+  cursor: pointer;
+}
+
+.mm-style__add--color {
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+}
+
+.mm-style__add--gradient {
+  width: var(--mm-gradient-w);
+  height: var(--mm-gradient-h);
+}
+
+.mm-style__add--font {
+  width: var(--mm-font-card-w);
+  height: var(--mm-font-card-h);
+}
+
+.mm-style__add--style {
+  width: var(--mm-style-thumb);
+  height: var(--mm-style-thumb);
+}
+
+.mm-style__add:hover {
+  background: var(--mm-color-card-hover);
+}
+
+/* ---------- 底栏：26px 图标条 ---------- */
+.mm-style__bottom {
+  display: flex;
+  flex: 0 0 var(--mm-bottom-bar-h);
+  height: var(--mm-bottom-bar-h);
+  align-items: center;
+  background: var(--mm-color-bottom-bar);
+}
+
+.mm-style__bottom-btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--mm-bottom-btn-w);
+  height: var(--mm-bottom-bar-h);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--mm-border-w) solid transparent;
+  background: transparent;
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+.mm-style__bottom-btn:hover:not(:disabled) {
+  /* 原版 `.bottom-hover:hover{background-color:#222}`：纯底色，无描边（对照清单 #90） */
+  border-color: transparent;
+  background: var(--mm-color-bottom-hover);
+}
+
+.mm-style__bottom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 竖线：1×13 #333，左右各 8px（对照清单 #92） */
+.mm-style__bottom-divider {
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-verline-h);
+  margin: 0 var(--mm-space-2);
+  background: var(--mm-color-verline);
+}
+
+/* ---------- 三态 ---------- */
+.mm-style__hint {
+  margin: 0;
+  padding: var(--mm-space-4) 0;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+}
+
+.mm-style__hint--error {
+  color: var(--mm-color-error);
+}
+
+.mm-style__retry {
+  margin-left: var(--mm-space-1);
+  border: none;
+  background: transparent;
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
