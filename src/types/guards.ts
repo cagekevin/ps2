@@ -10,3 +10,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): value is T[] {
   return Array.isArray(value) && value.every(guard);
 }
+
+export function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}

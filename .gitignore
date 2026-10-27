@@ -3,3 +3,5 @@ dist/
 .codebuddy/
 *.tsbuildinfo
 .vite/
+.DS_Store
+**/.DS_Store

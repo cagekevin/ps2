@@ -4,9 +4,10 @@
  * 所有失败都返回 Result（全仓唯一形状，见 types/result.ts），码区分缺文件 / 读坏 / IO。
  */
 
-import { nodeRequire } from '../core/cep/node';
-import { readTextResult, writeTextAtomic } from '../core/storage';
+import { decodeBase64 } from '../core/cep/base64';
+import { readTextResult } from '../core/storage';
 import { resolveKuGroups } from '../domain/ku-format';
+import { mutateJsonFile, readJsonFile } from './json-file';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
 import {
   decodeStyleIndex,
@@ -26,23 +27,6 @@ import { fail, ok, type Result } from '../types/result';
 
 /** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
 const INDEX_FILE = 'sj_kuStoreInfo.ini';
-
-interface BufferLike {
-  from(data: string, encoding: 'base64'): { toString(encoding: 'utf8'): string };
-}
-
-/**
- * base64 → utf8。
- * 优先 Node Buffer；非 CEP 环境兜底 atob + TextDecoder。
- */
-export function decodeBase64(text: string): string {
-  const mod = nodeRequire<{ Buffer: BufferLike }>('buffer');
-  if (mod?.Buffer) return mod.Buffer.from(text, 'base64').toString('utf8');
-
-  const binary = atob(text);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
 
 /** 读仓库索引 */
 export function readIndex(): Result<StyleWarehouseIndex> {
@@ -65,6 +49,15 @@ function readLibraryText(
   return readTextResult(fileName, 'legacy');
 }
 
+/** 索引里取库文件名；没登记就是 NOT_FOUND */
+function libraryFileName(
+  warehouse: StyleWarehouse | undefined,
+  kind: KuKind
+): Result<string> {
+  const fileName = fileNameOf(warehouse, kind);
+  return fileName ? ok(fileName) : fail('NOT_FOUND', '索引里没有登记这个库的文件名');
+}
+
 /**
  * 读原始组数组（含 id、未知键）。
  * 写操作和「读原始项」都基于它，避免反复解析。
@@ -73,13 +66,10 @@ export function readRawGroups(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind
 ): Result<Record<string, unknown>[]> {
-  const text = readLibraryText(warehouse, kind);
-  if (text.status === 'error') return text;
+  const name = libraryFileName(warehouse, kind);
+  if (name.status === 'error') return name;
 
-  const parsed = parseJson(text.value, '库文件');
-  if (parsed.status === 'error') return parsed;
-
-  return resolveKuGroups(parsed.value, decodeBase64);
+  return readJsonFile(name.value, 'legacy', '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
 }
 
 /** 读某个仓库的某一类库（归一化后的视图模型） */
@@ -163,8 +153,8 @@ type Mutator<T> = (current: T) => T | null;
 /**
  * 【范本】读-改-写库文件。
  *
- * 三条约束都在这里，调用方不需要重复判断：
- *   1. 读失败直接返回，**不执行 mutator**——读不到就写，等于把用户数据换成默认值
+ * 三条约束由 `repo/json-file.ts` 保证，这里只做「库文件名解析 + 库格式解码」：
+ *   1. 读失败直接返回，**不执行 mutator**
  *   2. 写入走 writeTextAtomic（备份 .bak + 串行）
  *   3. 写失败返回 IO_ERROR，不静默成功
  */
@@ -173,19 +163,16 @@ export async function mutateRawGroups(
   kind: KuKind,
   mutator: Mutator<Record<string, unknown>[]>
 ): Promise<Result<void>> {
-  const current = readRawGroups(warehouse, kind);
-  if (current.status === 'error') return current;
+  const name = libraryFileName(warehouse, kind);
+  if (name.status === 'error') return name;
 
-  const next = mutator(current.value);
-  if (next === null) return ok(undefined);
-
-  const fileName = fileNameOf(warehouse, kind);
-  if (!fileName) return fail('NOT_FOUND', '索引里没有登记这个库的文件名');
-
-  const written = await writeTextAtomic(fileName, JSON.stringify(next), 'legacy');
-  if (written.status === 'error') return written;
-
-  return ok(undefined);
+  return mutateJsonFile(
+    name.value,
+    'legacy',
+    '库文件',
+    (raw) => resolveKuGroups(raw, decodeBase64),
+    mutator
+  );
 }
 
 /* ---------------- 写：分组 ---------------- */

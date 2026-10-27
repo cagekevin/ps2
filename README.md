@@ -16,8 +16,9 @@ Photoshop 面板工具，`稿定设计助理` 的自建替代实现。React + Ty
 | 样式面板 · 编辑（删除 / 重命名 / 同组拖拽 / 跨组拖拽 / 新建分组 / 折叠写库） | ✅ 真机（跨组与分组排序待复验） |
 | 添加前景色到分组 | 🔧 待真机 |
 | 导入导出 / 发送色板 / 仓库管理 | ❌ 未实现（入口置灰或提示未实现） |
+| 字体管理（系统字体列表 / 搜索 / 标签 / 评分 / 预览 / 应用 / 标签导入导出） | 🔧 已实现，待真机 |
 
-完整矩阵与剩余缺口：`docs/STYLE-PANEL-GAP.md`。
+完整矩阵与剩余缺口：`docs/plan/STYLE-PANEL-GAP.md`。
 
 ## 技术栈
 
@@ -128,8 +129,11 @@ npm run new:feature
 | `docs/CONVENTIONS.md` | 写法规矩（命名、分层、类型、横切、Token、禁止清单） | **写代码前必读** |
 | `docs/GOVERNANCE.md` | 何时升级底层、范本制度、体检规则、变更记录 | 加能力 / 交付前 |
 | `docs/PS-CHANNEL-NOTES.md` | PS 通道事实：三条通道、参数序列化、串行队列、env、数据契约、排障 | 调 jsx / 改数据层 |
-| `docs/STYLE-PANEL-GAP.md` | 样式面板现状与剩余缺口 | 排期 |
-| `docs/REVIEW-2026-10-27*.md` | 四次体检报告 | 复盘 |
+| `docs/plan/STYLE-PANEL-GAP.md` | 样式面板现状与剩余缺口 | 排期 |
+| `docs/plan/01-字体管理-2026-10-27.md` | 字体管理页实施计划 | 做第一页 |
+| `docs/plan/02-字体面板-2026-10-27.md` | 字体面板实施计划（9 组件 / 25 个 jsx 契约） | 第二页 |
+| `docs/review/REVIEW-2026-10-27*.md` | 十九次体检/审查报告 | 复盘 |
+| `docs/spec/` | 页面规格（编号 01/02/05，与参考工程 `docs/页面/` 对齐） | 开工前 |
 | `jsx/vendor.README.md` | 官方 jsx 副本来源与依赖 | 升级 vendor |
 | `src/commands/README.md` | 命令层判定标准与写法 | 新增命令 |
 

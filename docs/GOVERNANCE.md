@@ -32,11 +32,10 @@
 | 3 | 需要新的 PS 能力 | `core/ps/<域>.ts` + `jsx/main.jsx` 镜像函数 |
 | 4 | 需要新接口 | `core/http/endpoints.ts` 登记 |
 | 5 | 引入新依赖 | 评估体积 / 是否原生可替代 / Chromium 103 兼容性 |
-| 6 | 组件超过 300 行 | 拆分子组件或抽 hook |
-| 7 | 出现新的全局状态 | 新建 `store/<域>.ts`，禁止塞进别人的切片 |
-| 8 | 现有类型不够表达 | 扩展 `src/types/`，同步所有调用方 |
-| 9 | 现有约定与实际冲突 | 改约定，不改代码里的「特例」 |
-| 10 | 发现范本已经过时 | 先更新范本，再推广 |
+| 6 | 出现新的全局状态 | 新建 `store/<域>.ts`，禁止塞进别人的切片 |
+| 7 | 现有类型不够表达 | 扩展 `src/types/`，同步所有调用方 |
+| 8 | 现有约定与实际冲突 | 改约定，不改代码里的「特例」 |
+| 9 | 发现范本已经过时 | 先更新范本，再推广 |
 
 ---
 
@@ -85,7 +84,7 @@
 | 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） | ✅ 真机 |
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 | ⚠️ 待真机 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） | ✅ 真机 |
-| 字体应用 | `src/core/ps/font.ts` | 直接调通道，先检查再应用 | ✅ 真机 |
+| 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用（真机）；`ztgl_*` 系统字体列表/应用（待真机） | ⚠️ 待真机 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL | ⚠️ 待真机（缩略图待复验） |
 | 命令层 | `src/commands/README.md` | 命令判定标准与写法 | — 规范 |
 | 鉴权 | `src/core/auth/index.ts` | token + 版本化 key | ⚠️ 未使用 |
@@ -104,7 +103,9 @@
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
 | 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 + kuListOf/kuEnsureListOf | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
-| 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result，不做业务判断 | ✅ 真实数据 |
+| 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result；`mutateRawGroups` 走 `json-file` | ✅ 真实数据 |
+| 数据写入口 | `src/repo/json-file.ts` | 库文件 / 字体标签星级 / 色板的唯一「读 → 改 → 写」；首次创建显式分支 | ⚠️ 待真机 |
+| 串行队列 | `src/core/serial/index.ts` | 按 key 串行，只保证顺序、不传递失败 | ✅ 单测 |
 | 业务切片 | `src/store/style-library.ts` | 只读投影，失败原样保留 | ✅ 真实数据 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
 | UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口 | ✅ 真机 |
@@ -119,7 +120,6 @@
 | 文件对话框 | `src/core/dialog/index.ts` | CEP fs API，取消返回 null | ⚠️ 待真机 |
 | 仓库容器 | `src/repo/ku-archive.ts` | .kux 导出导入 + id 重发 + 回收 | ⚠️ 待真机 |
 | 容器编解码 | `src/domain/ku-io.ts` | 纯函数（app 移植） | ✅ 单测（app 背书） |
-| 解码契约 | `src/types/decode.ts` | Decoded / DecodeFail | ✅ 单测（app 背书） |
 | Toast | `src/components/Toast/index.tsx` | 禁止 alert | ✅ 真机 |
 | Loading | `src/components/Loading/index.tsx` | 全屏加载唯一入口，文案栈 | ✅ 真机 |
 | Spin 转圈 | `src/components/Spin/index.tsx` | 裸圈 / 带文案 / 局部遮罩三模式（照原版 NewSpin） | ✅ 真机 |
@@ -136,10 +136,13 @@
 | 定位算法 | `src/hooks/floating-position.ts` | 纯函数，翻转与夹取 | ✅ 单测 |
 | 长按拖拽 | `src/hooks/useLongPressDrag.ts` | 300ms 长按 + 克隆占位 + 落点判定 | ✅ 真机 |
 | 落点计算 | `src/domain/reorder.ts` | 纯函数，四分支 splice 收敛 | ✅ 单测 |
+| 列表分页 | `src/hooks/usePagedList.ts` | 每页 30 + 触底追加，筛选变化回第一屏 | ⚠️ 待真机 |
+| 触底加载 | `src/hooks/useInfiniteScroll.ts` | 全项目唯一 `IntersectionObserver` | ⚠️ 待真机 |
 | 右键菜单 | `src/components/ContextMenu/index.tsx` | 定位走 hook，菜单项由调用方给 | ✅ 真机 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 | ✅ 真机 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 | ✅ 真机 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 | ✅ 真机 |
+| 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口 | ⚠️ 待真机 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 | ✅ 真机 |
 | 组件样式 | `src/components/ui/ui.css` | 基础控件形状 | ✅ 编译 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页 | ✅ 真机 |
@@ -259,7 +262,7 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 
 ### 7.4 体检输出
 
-每次体检产出一份报告，放在 `docs/REVIEW-YYYY-MM-DD.md`，包含：
+每次体检产出一份报告，放在 `docs/review/REVIEW-YYYY-MM-DD[-N].md`，包含：
 
 1. 总体结论（乱不乱）
 2. 横切使用矩阵（含状态）
@@ -286,21 +289,42 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 |---|---|---|
 | 2026-10-27 | 建立约定、边界、范本制度 | 全项目 |
 | 2026-10-27 | 目标环境定为 CEP 12 / Chromium 103 | 构建配置 |
-| 2026-10-27 | 完成首次体检，修复 5 项（见 `REVIEW-2026-10-27.md`） | core/cep、app、types |
+| 2026-10-27 | 完成首次体检，修复 5 项（见 `docs/review/REVIEW-2026-10-27.md`） | core/cep、app、types |
 | 2026-10-27 | 新增定期体检规则（第七节）与 AI 主动询问义务 | 治理流程 |
 | 2026-10-27 | 应用类 PS 能力改为调用官方 jsx 副本（`jsx/vendor.jsx`），不自己实现 | `core/ps/style.ts`、`jsx/` |
-| 2026-10-27 | 第二次体检：清死字段 `psReady`、启用 `usePersisted`、补目录树（见 `REVIEW-2026-10-27-2.md`） | store、hooks、docs |
+| 2026-10-27 | 第二次体检：清死字段 `psReady`、启用 `usePersisted`、补目录树（见 `docs/review/REVIEW-2026-10-27-2.md`） | store、hooks、docs |
 | 2026-10-27 | 体检清单加第 7 项「公共能力没写进页面」（规则在 `CONVENTIONS.md` §4.8） | docs |
-| 2026-10-27 | 第三次体检：删掉有 bug 的旧形状实现 `core/ps/shape.ts` + jsx `mm_shape_*`，修正 `core/ps` 文档树（见 `REVIEW-2026-10-27-3.md`） | core/ps、jsx、docs |
-| 2026-10-27 | 第四次体检：`StylePage` 717→245 行（抽 `useStyleActions` + 4 组件），hook 内 8 处重复取仓库收敛（见 `REVIEW-2026-10-27-4.md`） | features/style |
-| 2026-10-27 | 第五次体检：补 `useConfirm()` 命令式入口（文档规定但原本不存在），删除流程改 `await`（见 `REVIEW-2026-10-27-5.md`） | components/Confirm、app、features/style |
-| 2026-10-27 | 第六次体检：四个「+」接通 + 色板四条命令；色板根入 `storage.ROOTS`；`emitAppEvent` 转正（见 `REVIEW-2026-10-27-6.md`） | core/ps、repo、commands、features/style |
-| 2026-10-27 | 第七次体检：hover 浮层 / 拖图取色 / 快速吸色接通；图片解码出页面（`core/image` 新建）；`ErrorCode` 加 `CANCELLED`（见 `REVIEW-2026-10-27-7.md`） | core/cep、core/image、features/style |
-| 2026-10-27 | 第八次体检：用户反馈模式 9 处重复收敛为 `runWithToast` / `runWithFeedback`（见 `REVIEW-2026-10-27-8.md`） | features/style |
-| 2026-10-27 | 第九次体检：导入导出接通（ku-io 移植 + ku-archive + dialog）；修 `fs()!` 断言、坏 JSON 吞掉、菜单定位收进 `ContextMenu.anchor`（见 `REVIEW-2026-10-27-9.md`） | repo、core/dialog、domain |
-| 2026-10-27 | 第十次体检：数据流走查（jsx 契约 / 编码方向 / 回收顺序全对上）；修 `CANCELLED` 取消误报为静默（见 `REVIEW-2026-10-27-10.md`） | features/style |
+| 2026-10-27 | 第三次体检：删掉有 bug 的旧形状实现 `core/ps/shape.ts` + jsx `mm_shape_*`，修正 `core/ps` 文档树（见 `docs/review/REVIEW-2026-10-27-3.md`） | core/ps、jsx、docs |
+| 2026-10-27 | 第四次体检：`StylePage` 717→245 行（抽 `useStyleActions` + 4 组件），hook 内 8 处重复取仓库收敛（见 `docs/review/REVIEW-2026-10-27-4.md`） | features/style |
+| 2026-10-27 | 第五次体检：补 `useConfirm()` 命令式入口（文档规定但原本不存在），删除流程改 `await`（见 `docs/review/REVIEW-2026-10-27-5.md`） | components/Confirm、app、features/style |
+| 2026-10-27 | 第六次体检：四个「+」接通 + 色板四条命令；色板根入 `storage.ROOTS`；`emitAppEvent` 转正（见 `docs/review/REVIEW-2026-10-27-6.md`） | core/ps、repo、commands、features/style |
+| 2026-10-27 | 第七次体检：hover 浮层 / 拖图取色 / 快速吸色接通；图片解码出页面（`core/image` 新建）；`ErrorCode` 加 `CANCELLED`（见 `docs/review/REVIEW-2026-10-27-7.md`） | core/cep、core/image、features/style |
+| 2026-10-27 | 第八次体检：用户反馈模式 9 处重复收敛为 `runWithToast` / `runWithFeedback`（见 `docs/review/REVIEW-2026-10-27-8.md`） | features/style |
+| 2026-10-27 | 第九次体检：导入导出接通（ku-io 移植 + ku-archive + dialog）；修 `fs()!` 断言、坏 JSON 吞掉、菜单定位收进 `ContextMenu.anchor`（见 `docs/review/REVIEW-2026-10-27-9.md`） | repo、core/dialog、domain |
+| 2026-10-27 | 第十次体检：数据流走查（jsx 契约 / 编码方向 / 回收顺序全对上）；修 `CANCELLED` 取消误报为静默（见 `docs/review/REVIEW-2026-10-27-10.md`） | features/style |
 | 2026-10-27 | 新增 `docs/PS-CHANNEL-NOTES.md`：三条通道、参数序列化、串行队列、env 注入、LayerKind、库文件数据契约、CEP 坑、排障速查 | docs |
-| 2026-10-27 | 重写 `docs/STYLE-PANEL-GAP.md` 为「现状 + 剩余缺口」，列出已失效的旧结论 | docs |
+| 2026-10-27 | 重写 `docs/plan/STYLE-PANEL-GAP.md` 为「现状 + 剩余缺口」，列出已失效的旧结论 | docs |
 | 2026-10-27 | 新增工程 `README.md` 与 `CHANGELOG.md`；修正 `jsx/vendor.README.md`（来源、函数表、通道、返回值）与本节检查链、范本状态 | 全项目 |
 | 2026-10-27 | **形状收口·第二批**：`JSON.parse` 直写 9→1（`parseJson(text, label)` 落 `types/json.ts`）；`raw.ts` 扩成约定值+JSON+err 信封唯一解析处；删死导出 14 个；删死横切链 `core/color`+`types/color`+`ShapeStyle`；`getDocumentInfo` TS+jsx 同轮删；`kuListOf`/`kuEnsureListOf` 收敛 list 判据；jsx 裸 catch 补声明。有副作用的项（jsx `parseColor`、双解析合并）维持登记不收 | types、core、repo、domain、jsx |
+| 2026-10-27 | 明确测试边界：只测纯逻辑（`.test.ts`），TSX / UI 不写测试；新增 `AGENTS.md` 作为 AI 代理前置阅读门槛 | docs、AGENTS.md |
+| 2026-10-27 | docs 目录分层：体检报告 → `docs/review/`，计划与缺口 → `docs/plan/`，页面规格 → `docs/spec/`；根下只留 `CONVENTIONS` / `GOVERNANCE` / `PS-CHANNEL-NOTES` 三份标准；§7.4 输出路径同步 | docs |
 | 2026-10-27 | **形状收口**：全仓唯一结果形状 `Result{status, value\|code, reason, detail}`；删除 `ReadOutcome` / `SwatchRead` / `JsxCall` / `toResult`（`types/read.ts` 整个删掉）；三态改由码承载（`NOT_FOUND` / `CORRUPT` / `IO_ERROR`）；`PS_ERROR` 拆 5 个子码；新增 `core/ps/raw.ts`（raw 约定值唯一解析，表驱动）；删死函数 `getLayerKind` / `getLayerName`。纯形状改动，读写行为不变。jsx `parseColor` 合并有副作用（碰 PS 运行时），明确不收、另行登记 | types、core、repo、domain、commands、features |
+| 2026-10-27 | 约定升级（字体管理前置）：`store` 允许 `repo`/`domain`；补「首次创建文件」规则；`ztgl_*` 直调通道；§13 允许「每页 30 + 触底」分片渲染 | docs |
+| 2026-10-27 | 新增 `repo/json-file.ts` 作为唯一「读→改→写」入口，`style-repo.mutateRawGroups` 改为调用它（收敛两套写法） | repo |
+| 2026-10-27 | 字体底层：`core/ps/font` 加 `ztgl_*` 两个能力；`domain/font-*` + `classification`；`repo/font-repo`；`commands/font`；`store/font`；`hooks/usePagedList` / `useInfiniteScroll`；`StateHint` 上移 | core、domain、repo、commands、store、hooks、components |
+| 2026-10-27 | 字体管理页仍待真机（`ztgl_*` 返回形态、`SysFont2.json` 首建、应用字面）；下一步 `REVIEW-2026-10-27-11` | docs |
+| 2026-10-27 | 第十一次体检：字体 M1 底层落地（core/domain/repo/commands/store/hooks）；`json-file` 收敛；P1 色板与导入导出写入口进报告（见 `docs/review/REVIEW-2026-10-27-11.md`） | core、domain、repo、commands、store、hooks、components、docs |
+| 2026-10-27 | 字体管理 M2：页面/列表/搜索/标签/评分/预览/应用，33 行清单全部落点；`ContextMenu` 加 `inside`；Toast 层级提到弹窗之上（见 `docs/review/REVIEW-2026-10-27-12.md`） | features/font-manage、components、styles、app、README |
+| 2026-10-27 | 第十三审查（操作序列/并发/输入法）：`mutateJsonFile` 读改写整体排队；`isImeEnter`；弹层 `autoFocus`；字体名 CSS 转义（见 `docs/review/REVIEW-2026-10-27-13.md`） | repo、components/ui、features/font-manage |
+| 2026-10-27 | 第十四审查（目录/依赖/放置）：修正 `CONVENTIONS` §3 依赖表与 §4.8/§16 说明；删除 `core/storage.readJson`（`core/prefs` 自读）；`.DS_Store` 入 ignore 并删除（见 `docs/review/REVIEW-2026-10-27-14.md`） | docs、core/storage、core/prefs、.gitignore |
+| 2026-10-27 | 字体 M3：标签导入导出（任意路径读写、CEP 对话框、导入前校验、覆盖写 `.bak`、`star` 原样保留）；新增 4 条解析单测（见 `docs/review/REVIEW-2026-10-27-15.md`） | core/storage、core/dialog、commands/font、domain/font-meta、features/font-manage |
+| 2026-10-27 | 架构债清理：`types/decode.ts` 删除（`ku-io`/`ku-archive` 迁 `Result`）；删除同步 `writeJson`，prefs 走 `writeTextAtomic`；归档导入导出统一走 storage（`.bak` + 串行）；页面 P2 修焦点陷阱 / 应用防重入 / 新建失败保留输入 | types、domain、repo、core、features |
+| 2026-10-27 | 重复实现专项：队列收敛到 `core/serial`；文件读写正文共用内部实现；base64 收敛到 `core/cep/base64`；font-repo 读写工厂；标签/星级校验共用；`ku-archive` 去掉直连 fs 并修「按 utf8 复制图片」bug（见 `docs/review/REVIEW-2026-10-27-16.md`） | core、repo、domain、types |
+| 2026-10-27 | 第十七审查（外部意见对账）：删 `withStars`/`mergeFontStars`/`FontItem.star`；「缺失=空」收敛到 `font-repo.readMetaFile`；`parseErrEnvelope` 改 `Result<number>`（无 null 通道，同一 raw 只解析一次）；`json-file` 拆三个入口、布尔参数与死导出删除；`dropped` 接进 UI；删 `classificationRead`；新增 `repo/json-file.test.ts`（见 `docs/review/REVIEW-2026-10-27-17.md`） | core、repo、domain、commands、store、features |
+| 2026-10-27 | 取消「组件 ≤ 300 行」硬限制：按职责拆分，不按行数；§二 原第 6 条删除后重编号，同步 `CONVENTIONS` §13/§17/§19、`AGENTS.md`、样式页注释与字体管理计划 | docs、AGENTS.md、features/style |
+| 2026-10-27 | 新增注释规则（`AGENTS.md` §5）：三处注释位置 + 五条禁止，只写现状与原因 | AGENTS.md |
+| 2026-10-27 | 第十八审查（数据可恢复性与诊断）：`core/storage` 补 `restoreBackup`/`absolutePath`/`backupPath`，失败提示带路径；导入改「先评分后标签 + 失败回滚」；`tools/probe-data.mjs` 增字体段（未加面板自检入口）；`CONVENTIONS` §4.5 补 `.bak` 三条事实（见 `docs/review/REVIEW-2026-10-27-18.md`） | core、repo、commands、tools、docs |
+| 2026-10-27 | 第十九审查（代码质量）：修字重弹层冒泡误触、CSS 字体名转义收口、字形 key、收回 4 个无外部消费者的导出；登记 10 条结构性建议（文件体积、重复常量、输入框、token 命名等）（见 `docs/review/REVIEW-2026-10-27-19.md`） | features、hooks、repo、docs |
+| 2026-10-27 | 第十九审查 P1/P2 补齐：`useFontManage` 拆 `useTagActions`（425→285/206）、CSS 拆三文件（957→433/282/244）、`apply` 用 ref 稳定；字号 token 收敛；无障碍与重复提交/焦点还原；列表 key 与无字面项灰态（见 `docs/review/REVIEW-2026-10-27-19.md`） | features/font-manage、components、styles、docs |
+| 2026-10-27 | 授权链删除（无数据源）：`FontLicense` + `license-paths` + `.mm-font__license*` + 5 个 license token 删除；`commercials`/`presets` 不再解码、不再进 `Classification`；`matchFilter` 只剩语言，`filterFonts` 不再接收分类数据。应用字面判据收到 `domain/font-item.resolveFontFace`（缺名字即 `VALIDATION`） | features/font-manage、domain、commands、styles |
+| 2026-10-27 | 形状收尾（P2）：`StateHint` props 改两支联合（`result` / `empty` 不能同时传，`Result\|null` 通道删除）；`parseTagArchive` 与 `decodeRawRecords` 的失败全部带 `detail`（`tags[0].arr` / `root[1]`），校验循环合并为一处；列表灰态与命令共用 `resolveFontFace` | components/StateHint、domain、repo、features/font-manage |

@@ -9,6 +9,7 @@
  * 约定值来自原版面板与我们的 jsx/main.jsx（详见 docs/PS-CHANNEL-NOTES.md §三）。
  */
 
+import { isRecord } from '../../types/guards';
 import { parseJson } from '../../types/json';
 import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/result';
 
@@ -39,14 +40,34 @@ export function parseJsxRaw(raw: string): Result<unknown> {
 }
 
 /**
- * 官方直调函数（ys_*）的 err 信封：`{ err: number }`。
- * err === 1 表示宿主侧失败（如字体缺失）；解析不出按「没有 err 字段」处理，由调用方定语义。
+ * 官方直调**读**函数的哨兵：宿主说「数据已写文件，不在这里」。
+ * 目前只有 `ztgl_initSystemList` 返回它（数据写 `SysFont2.json`）。
+ * 全仓判 `'ok'/'OK'` 只许在这里。
  */
-export function parseErrEnvelope(raw: string): number | null {
-  const parsed = parseJson(raw, 'jsx err 信封');
-  if (parsed.status !== 'ok') return null;
-  const err = (parsed.value as { err?: unknown }).err;
-  return typeof err === 'number' ? err : null;
+export function isOkSentinel(raw: string): boolean {
+  const trimmed = raw.trim();
+  return trimmed === 'ok' || trimmed === 'OK';
+}
+
+/**
+ * 官方直调函数（ys_*）的 err 信封：`{ err: number }`。
+ *
+ * **没有 `null` 通道**：信封不成立（不是 JSON / 没有 err 字段）一律返回 `CORRUPT`，
+ * 由调用方决定「算失败」还是「按可用处理」——不允许默默当成成功。
+ */
+export function parseErrEnvelope(raw: string): Result<number> {
+  const parsed = parseJsxRaw(raw);
+  if (parsed.status === 'error') return parsed;
+  return errOf(parsed.value, raw);
+}
+
+/** 已解析的值 → err 字段（避免同一段 raw 解析两次） */
+export function errOf(value: unknown, raw: string): Result<number> {
+  const err = isRecord(value) ? value.err : undefined;
+  if (typeof err !== 'number') {
+    return failWithDetail('CORRUPT', '返回里没有 err 字段', `raw:${raw.slice(0, 120)}`);
+  }
+  return ok(err);
 }
 
 /**
@@ -59,9 +80,11 @@ export function parseErrEnvelope(raw: string): number | null {
 export function parseDataEnvelope(raw: string): Result<unknown> {
   const parsed = parseJsxRaw(raw);
   if (parsed.status === 'error') return parsed;
-  const value = parsed.value;
-  if (value && typeof value === 'object' && 'data' in value) {
-    return ok((value as { data: unknown }).data);
-  }
-  return ok(value);
+  return ok(dataOf(parsed.value));
+}
+
+/** 已解析的值 → data 载荷（同一段 raw 只解析一次） */
+export function dataOf(value: unknown): unknown {
+  if (isRecord(value) && 'data' in value) return value.data;
+  return value;
 }

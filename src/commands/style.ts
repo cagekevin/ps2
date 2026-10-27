@@ -39,7 +39,7 @@ import {
   createGradientItem,
   type GradientLibraryItem
 } from '../domain/image-color';
-import { readSwatchItems, writeSwatchItems } from '../repo/swatch-repo';
+import { updateSwatchItems } from '../repo/swatch-repo';
 import { emitAppEvent } from '../core/cep/bridge';
 import type { DropPosition } from '../domain/reorder';
 import type { KuKind, StyleWarehouse } from '../domain/style-library';
@@ -182,13 +182,20 @@ export async function addStyleFromLayer(
  */
 const SWATCH_EVENT = 'com.fengzi.event.seban';
 
-/** 写色板并广播；写失败返回错误（不让用户以为发送成功） */
-async function persistSwatch(items: unknown[]): Promise<Result<void>> {
-  const written = await writeSwatchItems(items);
+/** 改色板并广播；写失败返回错误（不让用户以为发送成功） */
+async function persistSwatchUpdate(
+  mutator: (items: unknown[]) => unknown[] | null
+): Promise<Result<void>> {
+  const written = await updateSwatchItems(mutator);
   if (written.status === 'error') return written;
 
   emitAppEvent(SWATCH_EVENT, 'GengXin');
   return ok(undefined);
+}
+
+/** 整份替换色板 */
+function persistSwatch(items: unknown[]): Promise<Result<void>> {
+  return persistSwatchUpdate(() => items);
 }
 
 /** 发送到色板（单项）：整份替换为 `[项]`（原版 `:50348-50355`） */
@@ -214,10 +221,7 @@ export async function appendItemToSwatch(
   const raw = readKuItem(warehouse, kind, groupIndex, itemIndex);
   if (raw.status === 'error') return raw;
 
-  const swatch = readSwatchItems();
-  if (swatch.status === 'error') return swatch;
-
-  return persistSwatch([...swatch.value, raw.value]);
+  return persistSwatchUpdate((current) => [...current, raw.value]);
 }
 
 /** 发送到色板（整组替换为该组 list，原版 `:50260-50268`） */
@@ -241,10 +245,7 @@ export async function appendGroupToSwatch(
   const group = readKuGroupItems(warehouse, kind, groupIndex);
   if (group.status === 'error') return group;
 
-  const swatch = readSwatchItems();
-  if (swatch.status === 'error') return swatch;
-
-  return persistSwatch([...swatch.value, ...group.value]);
+  return persistSwatchUpdate((current) => [...current, ...group.value]);
 }
 
 /**
@@ -363,11 +364,7 @@ export function applyGradientPair(pair: [string, string]): Promise<Result<void>>
  */
 export async function saveExtractedToSwatch(hexes: string[]): Promise<Result<void>> {
   const items = hexes.map((hex) => ({ name: '未命名', color: { hex: hex.replace('#', '') } }));
-  const written = await writeSwatchItems(items);
-  if (written.status === 'error') return written;
-
-  emitAppEvent('com.fengzi.event.seban', 'GengXin');
-  return ok(undefined);
+  return persistSwatch(items);
 }
 
 /** 提取色新建「提取颜色组」分组（原版 `saveColor` 经 appBus 让样式页建组，这里直接写库） */

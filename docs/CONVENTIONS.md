@@ -141,7 +141,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 | 状态 | Zustand | 按 feature 切片 |
 | 请求 | 原生 `fetch` | 禁止 axios |
 | 样式 | 原生 CSS + 变量 | 禁止 CSS-in-JS、禁止 UI 框架 |
-| 测试 | Vitest + Testing Library | `core` 必须有单测 |
+| 测试 | Vitest（node 环境） | 只测纯逻辑；TSX / UI 不写测试 |
 
 新增依赖需说明：体积、能否用原生替代、是否影响 CEP。单个 > 30 KB 需单独确认。
 
@@ -176,6 +176,7 @@ src/
 │  ├─ paths/      路径拼接与资源 URL
 │  ├─ ps/         PS 原子能力（init/layer/style/font/env/diag）
 │  ├─ env/        版本、设备、环境
+│  ├─ serial/     按 key 串行（读改写队列）
 │  └─ logger/     日志
 ├─ domain/        纯业务模型与归一化（零 IO、零 UI、可单测）
 ├─ repo/          数据访问：读文件 → Result，不做业务判断
@@ -187,28 +188,35 @@ src/
 ├─ assets/        静态资源（SVG sprite）
 ├─ styles/        tokens.css、global.css
 ├─ types/         全局类型
+├─ main.tsx       入口（挂 root）
+├─ App.tsx        应用装配（Providers + Router + Layout，无业务）
 └─ app/           router、layout、providers、layer-watcher
 ```
+
+`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
 
 ### 依赖方向（只允许向下）
 
 ```
-features → commands → store → core
+features → commands → store → repo → core
     ↓          ↓         ↓
-components ──────────→ core
+components → hooks ──────→ core
+任意层 → types
 ```
 
 | 层 | 允许 import | 禁止 import |
 |---|---|---|
 | `core` | `types`、`core` 内部其他模块 | `commands`、`store`、`components`、`features`、`app` |
-| `store` | `core`、`types` | `commands`、`features`、`components` |
-| `components` | `core/logger`、`types` | `commands`、`features`、`store` |
-| `domain` | `types` | 其他所有层 |
-| `repo` | `core/storage`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
+| `store` | `core`、`domain`、`repo`、`types` | `commands`、`features`、`components` |
+| `components` | `hooks`、`core/logger`、`types`、`components` 内部 | `commands`、`features`、`store` |
+| `domain` | `types`、`domain` 内部 | `core`、`repo`、`commands`、`store`、`components`、`features`、`app` |
+| `repo` | `core/storage`、`core/logger`、`core/cep/node`、`core/cep/bridge`、`core/paths`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
 | `hooks` | `core`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
 | `commands` | `core`、`domain`、`repo`、`store`、`types` | `features`、`components`、`app` |
 | `features` | 所有下层 | 其他 `features` |
 | `app` | 全部 | - |
+
+`repo` 允许用 core 的 IO/路径原语（`nodeRequire('fs'/'buffer')`、`getUserDataPath`），但**不许**绕过 `core/storage` 去写库文件；导入导出这种「整份归档」是唯一需要外部路径的场景。
 
 跨 feature 复用的逻辑必须上移到 `core` 或 `components`，不允许 feature 互相 import。
 
@@ -318,12 +326,28 @@ TypeScript 类型在运行时被擦除，`as` 断言不做任何校验。因此�
 2. **每次写都备份**：用 `writeTextAtomic`，它会先把原文件复制成 `<文件>.bak` 再替换。
 3. **同一文件串行写**：`writeTextAtomic` 内部按文件名排队，并发调用不会互相覆盖。
 
-回滚方式：把 `<文件>.bak` 复制回 `<文件>`。
+回滚方式：把 `<文件>.bak` 复制回 `<文件>`；代码入口是 `core/storage.restoreBackup`（它不会轮换 `.bak`，回滚本身不毁退路）。
+
+**`.bak` 的三条事实（别写成「有备份就安全」）**：
+
+1. **只保留上一版**：连续写两次后，`.bak` 里是上一次的内容，更早的版本没了。
+2. **首次创建没有 `.bak`**：没有原文就没有可备份的东西。
+3. **错误提示必须带路径**：读写失败的 `reason` 里要能看到文件绝对路径，否则用户不知道自己数据在哪、备份在哪。
 
 **不允许**：
 - 直接 `writeText` 覆盖用户数据文件（只允许写自己新建的配置文件）
 - 写失败后静默返回，不记日志
 - 读到 `NOT_FOUND` 就当「首次使用」直接初始化写回
+- 提示用户「已备份为 .bak」却不给回滚方法（要么给路径，要么给命令）
+
+**首次创建文件（唯一例外）**：
+
+用户主动「新增」而目标文件**确实不存在**时，允许走显式 `create` 分支：
+
+1. 先 `exists()` 确认真不存在；存在则必须走读改写（禁止覆盖）
+2. 无原文 ⇒ 不写 `.bak`（没有可备份的东西）
+3. 只在用户动作的路径上调用（新建标签 / 第一次评分），不允许在读链路里顺手创建
+4. 禁止把 `NOT_FOUND` 当空数组塞进 mutate——两种意图必须分开写
 
 ### 4.6 写操作只有一个入口：mutate
 
@@ -351,7 +375,7 @@ mutateRawGroups(warehouse, kind, (groups) => {
 | 原版前端 | 实际发出 | 用在哪 |
 |---|---|---|
 | `jsxHistory(fn, args, label)` | `ps_onJsx('{"f":fn,"arr":args,"n":label}')` | 渐变、图层样式 |
-| `jsx(fn, args)` | `fn(args)` 直接调 | 字体（`ys_checkUseFont` / `ys_useFont`） |
+| `jsx(fn, args)` | `fn(args)` 直接调 | 字体（`ys_checkUseFont` / `ys_useFont` / `ztgl_initSystemList` / `ztgl_setFont`） |
 
 判断方法：看 app 的 `cep/transport.ts` 里调用点用的是 `jsxHistory` 还是 `jsx`，**不要凭 `ys_` 前缀推断**。
 
@@ -395,6 +419,11 @@ evalScript("ps_onJsx('" + JSON.stringify(r) + "')")
 | 2 次 | 抽到 `hooks/` 或 `components/` |
 | 3 次以上 | 抽到 `hooks/` 并配单测（边界条件开始变多） |
 
+两条解释，避免把「按需抽象」执行成「按次数机械搬运」：
+
+- **与业务无关的通用交互原语**（分页、触底、浮层定位、点外关闭）即使当前只有 1 个调用方，也放 `hooks/`；「1 次留在页面」约束的是**业务逻辑**。
+- **纯数据常量**（SVG path、固定文案表）不算抽象，可以留在组件目录或 feature 根，不必为了「1 次」塞回组件文件。
+
 反例（真实发生过）：`HomePage` 里自己 `setInterval` 轮询图层类型，第二个页面出现时必然复制一份。已收敛到 `app/layer-watcher.tsx`，页面只读 `store`。
 
 检查命令（体检时跑，期望输出为空）：
@@ -413,7 +442,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 日志 | `core/logger` | `log.info/warn/error(msg, ctx?)` | 组件里 `console.*` |
 | 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>` | feature 里写 `fetch` |
 | 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
-| 存储 | `core/storage` | `readTextResult/readJson/writeTextAtomic/writeJson` | 组件里直接用 `cep.fs` |
+| 存储 | `core/storage` | `readTextResult/writeTextAtomic`；导入导出用 `readTextAt/writeTextAtAtomic/copyFileAt` | 组件里直接用 `cep.fs` |
 | CEP | `core/cep` | `callJsx(fn, args)`、`emitAppEvent(type, data)` | 组件里 `evalScript` |
 | 环境 | `core/env` | `APP_TITLE`、`APP_VERSION`、`extensionId` | 各处重复取版本 |
 | 主题 | `styles/tokens.css` | CSS 变量 | 组件里写死色值 |
@@ -537,7 +566,7 @@ core/ps/
 ├─ init.ts      jsx 加载 + 能力探测
 ├─ layer.ts     选择、类型、名称
 ├─ style.ts     颜色 / 渐变 / 图层样式应用
-├─ font.ts      字体应用（先检查再应用）
+├─ font.ts      字体应用（ys_* 先检查再应用；ztgl_* 系统字体列表/应用）
 ├─ document.ts  文档信息
 ├─ env.ts       环境变量注入
 └─ diag.ts      能力诊断
@@ -547,6 +576,7 @@ core/ps/
 
 - 一个动作一个函数，动词在前：`getLayerState`、`applyStyleColor`
 - jsx 侧同名镜像：`mm_layer_getState`、`mm_style_applyColor`
+- **字体有两条通道，不要合并**：样式库字体项走 `ys_checkUseFont` / `ys_useFont`（参数 `encodeText`）；系统字体列表走 `ztgl_initSystemList` / `ztgl_setFont`（直调、明文参数）
 - **形状改色不要另起一套**：`mm_style_setShapeColor` 已覆盖填充/描边/开关，旧的 `mm_shape_*` 已删除
 - **批量操作必须在 jsx 内循环**，一次 `evalScript` 完成，禁止前端循环调用
 - **写操作统一包撤销组**：jsx 内用 `app.activeDocument.suspendHistory(名称, "fn()")`
@@ -615,10 +645,9 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 
 - 页面级 `React.lazy` 动态导入
 - 禁止 barrel 文件（`index.ts` 聚合导出），直接引具体文件
-- 列表超过 100 项启用虚拟滚动；分组列表默认折叠，只展开前几组
+- 列表超过 100 项必须分片渲染：优先虚拟滚动；整页长列表允许「每页 30 + 触底加载」（禁止一次性渲染全部）；分组列表默认折叠，只展开前几组
 - 长列表（如样式库 108 组 508 项）不一次性渲染，先折叠再看
 - 大计算用 `useMemo`，事件处理用 `useCallback`，但不要无脑包
-- 单个组件文件不超过 300 行，超出就拆
 
 ---
 
@@ -636,8 +665,10 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 
 ## 15. 测试
 
-- `core` 层纯函数：必须有单测
-- 组件：Testing Library，只测交互结果，不测实现细节
+- 只写 `src/**/*.test.ts`，只测纯逻辑（`core` 纯函数、`domain`、`repo`、`types`）
+- **TSX 一律不写测试**：页面、组件、hook 的渲染与交互都不测；禁止 `.test.tsx` / `.spec.tsx`
+- 禁止安装 `@testing-library/*`、`jsdom`、`happy-dom`；`vitest.config.ts` 保持 `environment: 'node'`、`include: ['src/**/*.test.ts']`
+- UI 里值得测的算法先迁到 `domain/` 或 `core/` 再测；UI 行为靠真机（CEP 面板）验证
 - CEP 交互：mock `core/cep`，不在测试里真的调 PS
 
 ---
@@ -645,10 +676,11 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 ## 16. 新增一个 feature 的流程
 
 1. 建目录 `features/<name>/`
-2. 文件：`<Name>Page.tsx`、`components/`、`hooks/`、`api.ts`、`types.ts`
-3. 在 `app/router.tsx` 注册路由（懒加载）
-4. 需要全局状态时在 `store/` 加切片，不要塞进别人的切片
-5. 需要复用的逻辑上移到 `core`，不要复制
+2. 必须：`<Name>Page.tsx`；动作多时同目录 `use<Name>.ts`；有子组件时 `components/`
+3. `api.ts`、`types.ts`、`hooks/` **按需**，不要为了对齐结构造空目录
+4. 在 `app/router.tsx` 注册路由（懒加载），在 `app/nav-config.ts` 把入口改 `implemented: true`
+5. 需要全局状态时在 `store/` 加切片，不要塞进别人的切片
+6. 需要复用的逻辑上移到 `core` / `hooks` / `components`，不要复制；跨 feature 复用禁止互相 import
 
 ---
 
@@ -661,7 +693,6 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 - 新增 `any`（桥接层除外）
 - barrel 导出
 - feature 互相 import
-- 巨型组件（> 300 行）
 - 未经说明新增依赖
 - 使用 fengzi / psz / SheJiZhuLi 等旧命名
 
@@ -687,5 +718,5 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 - [ ] PS 操作走 `core/ps`，批量只发一次 `evalScript`
 - [ ] 写操作有撤销组
 - [ ] 异步状态有 loading / error 处理
-- [ ] 组件 < 300 行，样式用变量
+- [ ] 组件按职责拆分（不按行数），样式用变量
 - [ ] 命名符合第 1 节

@@ -11,22 +11,39 @@
  */
 
 import { log } from '../logger';
-import { readJson, writeJson } from '../storage';
+import { readTextResult, writeTextAtomic } from '../storage';
+import { isRecord } from '../../types/guards';
+import { parseJson } from '../../types/json';
 import { ok, type Result } from '../../types/result';
 
 export type PrefKey =
   | 'style.activeKind'
   | 'style.activeWarehouse'
   | 'style.expandedGroups'
-  | 'nav.lastPath';
+  | 'nav.lastPath'
+  | 'font.previewMode'
+  | 'font.previewText';
 
 const FILE = 'prefs.json';
 
 let cache: Record<string, unknown> | null = null;
 let flushTimer: number | null = null;
 
+/** 偏好文件是「读不到就用默认值」的显式特例，不走通用 Result 读入口 */
+function readPrefsFile(): Record<string, unknown> {
+  const text = readTextResult(FILE, 'data');
+  if (text.status === 'error') return {};
+
+  const parsed = parseJson(text.value, '偏好文件');
+  if (parsed.status === 'error') {
+    log.warn('偏好文件解析失败', { reason: parsed.reason });
+    return {};
+  }
+  return isRecord(parsed.value) ? parsed.value : {};
+}
+
 function load(): Record<string, unknown> {
-  if (!cache) cache = readJson<Record<string, unknown>>(FILE, {}, 'data');
+  if (!cache) cache = readPrefsFile();
   return cache;
 }
 
@@ -40,15 +57,15 @@ export function setPref(key: PrefKey, value: unknown): void {
   scheduleFlush();
 }
 
-/** 立即落盘；失败原样上抛（writeText 内部已记日志） */
-export function flushPrefs(): Result<void> {
+/** 立即落盘；失败原样上抛（writeTextAtomic 内部已记日志） */
+export async function flushPrefs(): Promise<Result<void>> {
   if (flushTimer !== null) {
     window.clearTimeout(flushTimer);
     flushTimer = null;
   }
   if (!cache) return ok(undefined);
 
-  const result = writeJson(FILE, cache, 'data');
+  const result = await writeTextAtomic(FILE, JSON.stringify(cache), 'data');
   if (result.status === 'error') log.error('偏好写入失败', { reason: result.reason });
   return result;
 }

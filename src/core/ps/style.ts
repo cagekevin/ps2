@@ -162,7 +162,9 @@ export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
   );
   if (call.status === 'error') return call;
 
-  if (parseErrEnvelope(call.value) === 1) {
+  const err = parseErrEnvelope(call.value);
+  if (err.status === 'error') return err;
+  if (err.value === 1) {
     return failWithDetail('PS_ERROR', '保存图层样式失败', `raw:${call.value}`);
   }
 

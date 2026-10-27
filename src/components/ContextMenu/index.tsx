@@ -28,13 +28,15 @@ interface ContextMenuProps {
   /** 锚点元素（工具栏按钮弹出菜单场景）：组件自己算位置，调用方不碰 getBoundingClientRect */
   anchor?: HTMLElement | null;
   items: MenuItem[];
+  /** 触发器也算内部，点触发器等调用方自己 toggle（否则 mousedown 先关、click 又开） */
+  inside?: () => Array<HTMLElement | null>;
   onClose: () => void;
 }
 
-export function ContextMenu({ x, y, anchor, items, onClose }: ContextMenuProps) {
+export function ContextMenu({ x, y, anchor, items, inside, onClose }: ContextMenuProps) {
   const { floatingRef, update } = useFloatingPosition({ placement: 'bottom-start' });
 
-  useDismiss(true, floatingRef, onClose);
+  useDismiss(true, floatingRef, onClose, inside ? { inside } : {});
 
   /* 渲染后立刻定位，避免先出现在 (0,0) 再跳过去 */
   useLayoutEffect(() => {

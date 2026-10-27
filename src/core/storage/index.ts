@@ -14,7 +14,7 @@
 import { nodeRequire } from '../cep/node';
 import { getUserDataPath } from '../cep/bridge';
 import { log } from '../logger';
-import { parseJson } from '../../types/json';
+import { runSerial } from '../serial';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 
 export type StorageRoot = 'data' | 'legacy' | 'swatch';
@@ -35,6 +35,7 @@ export const ROOTS: Record<StorageRoot, string> = {
 interface NodeFs {
   readFileSync(path: string, encoding: 'utf8'): string;
   writeFileSync(path: string, data: string, encoding: 'utf8'): void;
+  copyFileSync(from: string, to: string): void;
   existsSync(path: string): boolean;
   mkdirSync(path: string, options: { recursive: boolean }): void;
   unlinkSync(path: string): void;
@@ -68,56 +69,114 @@ export function exists(name: string, root: StorageRoot = 'data'): boolean {
   }
 }
 
+/** 读文件正文的唯一实现：凡是「路径 → 文本」都走这里 */
+function readTextFile(absPath: string, label: string): Result<string> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+
+  try {
+    if (!fs.existsSync(absPath)) return fail('NOT_FOUND', '文件不存在');
+    return ok(stripBom(fs.readFileSync(absPath, 'utf8')));
+  } catch (error) {
+    log.warn('读取文件失败', { label, absPath, error });
+    return failWithDetail('IO_ERROR', `文件存在但读取失败：${absPath}`, String(error));
+  }
+}
+
 /**
  * 带失败码的读取：NOT_FOUND = 文件不存在，IO_ERROR = 存在但读不到。
  * repo 层用它，语义由码承载（全仓唯一结果形状，见 types/result.ts）。
  */
 export function readTextResult(name: string, root: StorageRoot = 'data'): Result<string> {
+  return readTextFile(filePath(root, name), `${root}:${name}`);
+}
+
+/* 读 JSON 的唯一入口是 `repo/json-file.ts:readJsonFile`（Result 形状）。
+ * `core/prefs` 是「偏好文件读不到就用默认值」的特例，它在自己文件内处理，
+ * 不在这里再开一个吞失败的 `readJson`。 */
+
+/** 读任意绝对路径（用户经文件对话框选中的导入文件）；只读，不写库 */
+export function readTextAt(absPath: string): Result<string> {
+  return readTextFile(absPath, absPath);
+}
+
+function dirnameOf(absPath: string): string {
+  const index = Math.max(absPath.lastIndexOf('/'), absPath.lastIndexOf('\\'));
+  return index <= 0 ? absPath : absPath.slice(0, index);
+}
+
+/** 写文件的唯一实现；`backup` 决定是否把原文复制到 `.bak` */
+function writeTextFile(absPath: string, text: string, backup: boolean): Result<void> {
   const fs = getFs();
   if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
-  if (!exists(name, root)) return fail('NOT_FOUND', '文件不存在');
-
   try {
-    return ok(stripBom(fs.readFileSync(filePath(root, name), 'utf8')));
+    if (backup && fs.existsSync(absPath)) {
+      fs.writeFileSync(`${absPath}.bak`, fs.readFileSync(absPath, 'utf8'), 'utf8');
+    }
+    fs.mkdirSync(dirnameOf(absPath), { recursive: true });
+    fs.writeFileSync(absPath, text, 'utf8');
+    return ok(undefined);
   } catch (error) {
-    log.warn('readText 失败', { name, root, error });
-    return failWithDetail('IO_ERROR', '文件存在但读取失败', String(error));
-  }
-}
-
-function writeText(name: string, text: string, root: StorageRoot = 'data'): boolean {
-  const fs = getFs();
-  if (!fs) return false;
-  try {
-    fs.mkdirSync(filePath(root, '').replace(/\/$/, ''), { recursive: true });
-    fs.writeFileSync(filePath(root, name), text, 'utf8');
-    return true;
-  } catch (error) {
-    log.error('writeText 失败', { name, root, error });
-    return false;
+    log.error('写入文件失败', { absPath, backup, error });
+    return failWithDetail('IO_ERROR', `写入失败：${absPath}`, String(error));
   }
 }
 
 /**
- * 读 JSON。
- * 顶层可以是对象或数组——官方 sj_kuStoreInfo.ini 是 `{index, list}`，
- * 不能只接受数组。结构是否合法由调用方判断。
+ * 回滚到上一版：把 `<文件>.bak` 写回 `<文件>`。
+ *
+ * - 有 `.bak` → 写回原文；
+ * - 没有 `.bak` → 说明这个文件是**刚创建的**，删掉它，回到「不存在」状态；
+ * - 回滚**不再轮换 `.bak`**（否则回滚本身会把唯一的退路毁掉）。
+ *
+ * 注意：`.bak` 只保留**上一版**。连续写两次之后，`.bak` 里是上一次的内容，
+ * 更早的版本已经没有了——这不是 bug，是「单版本备份」的固有代价。
  */
-export function readJson<T>(name: string, fallback: T, root: StorageRoot = 'data'): T {
-  const result = readTextResult(name, root);
-  if (result.status === 'error') return fallback;
+export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<void> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
-  const parsed = parseJson(result.value, `文件 ${name}`);
-  if (parsed.status === 'error') {
-    log.warn('readJson 解析失败', { name, root, reason: parsed.reason });
-    return fallback;
+  const target = filePath(root, name);
+  const backup = `${target}.bak`;
+
+  try {
+    if (!fs.existsSync(backup)) {
+      if (fs.existsSync(target)) fs.unlinkSync(target);
+      return ok(undefined);
+    }
+    fs.writeFileSync(target, fs.readFileSync(backup, 'utf8'), 'utf8');
+    return ok(undefined);
+  } catch (error) {
+    log.error('回滚失败', { name, root, error });
+    return failWithDetail('IO_ERROR', `回滚失败：${target}`, String(error));
   }
-  return parsed.value as T;
 }
 
-/** 同一文件的写操作串行化：并发写会互相覆盖 */
-const writeQueues = new Map<string, Promise<Result<void>>>();
+/** 二进制文件复制（导入覆盖前的旧文件回收；不能按 utf8 读图片/PSD） */
+export function copyFileAt(fromAbs: string, toAbs: string): Result<void> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+
+  try {
+    fs.mkdirSync(dirnameOf(toAbs), { recursive: true });
+    fs.copyFileSync(fromAbs, toAbs);
+    return ok(undefined);
+  } catch (error) {
+    log.warn('复制文件失败', { fromAbs, toAbs, error });
+    return failWithDetail('IO_ERROR', '复制失败', String(error));
+  }
+}
+
+/**
+ * 写任意绝对路径（导出产物）。导出文件由用户在系统对话框里确认，属**覆盖意图明确**的新文件，
+ * 不生成 `.bak`；同路径写仍串行。
+ */
+export function writeTextAtAtomic(absPath: string, text: string): Promise<Result<void>> {
+  return runSerial(`write:${absPath}`, () =>
+    Promise.resolve(writeTextFile(absPath, text, false))
+  );
+}
 
 /**
  * 原子写：先备份原文件为 `<文件>.bak`，再写新内容；同一文件并发调用串行执行。
@@ -132,31 +191,8 @@ export function writeTextAtomic(
   text: string,
   root: StorageRoot = 'data'
 ): Promise<Result<void>> {
-  const key = `${root}:${name}`;
-  const previous = writeQueues.get(key) ?? Promise.resolve(ok(undefined));
-
-  const task = previous.then(() => {
-    const fs = getFs();
-    if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
-
-    const target = filePath(root, name);
-    const backup = `${target}.bak`;
-
-    try {
-      if (fs.existsSync(target)) {
-        fs.writeFileSync(backup, fs.readFileSync(target, 'utf8'), 'utf8');
-      }
-      fs.mkdirSync(filePath(root, '').replace(/\/$/, ''), { recursive: true });
-      fs.writeFileSync(target, text, 'utf8');
-      return ok(undefined);
-    } catch (error) {
-      log.error('writeTextAtomic 失败', { name, root, error });
-      return failWithDetail('IO_ERROR', '写入失败', String(error));
-    }
-  });
-
-  writeQueues.set(key, task);
-  return task;
+  const target = filePath(root, name);
+  return runSerial(`write:${target}`, () => Promise.resolve(writeTextFile(target, text, true)));
 }
 
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
@@ -175,13 +211,4 @@ export function removeFile(name: string, root: StorageRoot = 'data'): Result<voi
   }
 }
 
-export function writeJson(name: string, value: unknown, root: StorageRoot = 'data'): Result<void> {
-  try {
-    return writeText(name, JSON.stringify(value), root)
-      ? ok(undefined)
-      : failWithDetail('IO_ERROR', '写入失败', `file:${name}`);
-  } catch (error) {
-    log.error('writeJson 序列化失败', { name, root, error });
-    return failWithDetail('IO_ERROR', '写入失败', String(error));
-  }
-}
+

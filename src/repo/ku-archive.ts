@@ -7,12 +7,21 @@
  * 导入前必须给内层文件发新 id（`remapKuContainer`，契约 §5.2），否则同名文件会覆盖本地。
  * 编解码纯函数在 `domain/ku-io.ts`（app 移植）；本文件只管磁盘与索引。
  */
-import { nodeRequire } from '../core/cep/node';
-import { getUserDataPath } from '../core/cep/bridge';
-import { ROOTS, writeTextAtomic } from '../core/storage';
+import { userSubPath } from '../core/paths';
+import {
+  ROOTS,
+  copyFileAt,
+  readTextAt,
+  readTextResult,
+  removeFile,
+  writeTextAtomic,
+  writeTextAtAtomic
+} from '../core/storage';
 import { log } from '../core/logger';
 import { fileNameOf, kuGuid } from '../domain/style-library';
-import { readIndex, decodeBase64 } from './style-repo';
+import { replaceJsonFile } from './json-file';
+import { decodeBase64, encodeBase64 } from '../core/cep/base64';
+import { readIndex } from './style-repo';
 import {
   encodeKuContainer,
   isSafeKuEntryName,
@@ -23,34 +32,14 @@ import {
   type KuFileEntry,
   type KuRawGroup
 } from '../domain/ku-io';
-import { isDecodeFail } from '../types/decode';
+
 import { normalizeStyleIndex, type StyleWarehouse, type StyleWarehouseIndex } from '../domain/style-library';
 import { fail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 
-interface FsLike {
-  readFileSync(path: string, encoding: 'utf8'): string;
-  writeFileSync(path: string, data: string, encoding: 'utf8'): void;
-  existsSync(path: string): boolean;
-  mkdirSync(path: string, options: { recursive: boolean }): void;
-  unlinkSync(path: string): void;
-}
-
-function fs(): FsLike | null {
-  return nodeRequire<FsLike>('fs');
-}
-
-function utf8ToB64(text: string): string {
-  const mod = nodeRequire<{
-    Buffer: { from(data: string, encoding: 'utf8'): { toString(encoding: 'base64'): string } };
-  }>('buffer');
-  if (mod?.Buffer) return mod.Buffer.from(text, 'utf8').toString('base64');
-  return btoa(unescape(encodeURIComponent(text)));
-}
-
 function userDir(): string {
-  return `${getUserDataPath()}/${ROOTS.legacy.replace(/^\//, '')}`;
+  return userSubPath(ROOTS.legacy.replace(/^\//, ''));
 }
 
 /** 库数据里引用的旁路图（app `sidecarNamesOf` :138-164） */
@@ -79,21 +68,20 @@ function sidecarNamesOf(kind: 'style' | 'gradient', groups: readonly KuRawGroup[
 }
 
 function sidecarNamesOfWarehouse(warehouse: StyleWarehouse): Result<string[]> {
-  const fileSystem = fs();
-  if (!fileSystem) return fail('IO_ERROR', 'Node 文件模块不可用');
-
   const names: string[] = [];
   for (const kind of ['style', 'gradient'] as const) {
     const fileName = fileNameOf(warehouse, kind);
     if (!fileName) continue;
 
-    const path = `${userDir()}/${fileName}`;
-    if (!fileSystem.existsSync(path)) continue; // 库文件不存在 = 这个库没导出过，跳过
+    /* 库文件不存在 = 这个库没导出过，跳过；读坏 / IO 失败必须中止
+       （跳过会让导出的包少几张旁路图，而用户以为导全了） */
+    const text = readTextResult(fileName, 'legacy');
+    if (text.status === 'error') {
+      if (text.code === 'NOT_FOUND') continue;
+      return text;
+    }
 
-    /* 读到了但解析失败必须中止（app 同位置同规则）：跳过会让导出的包
-       少几张旁路图，而用户以为导全了——「读不到」和「读不懂」不许同待遇 */
-    const text = fileSystem.readFileSync(path, 'utf8');
-    const parsed = parseJson(text, fileName);
+    const parsed = parseJson(text.value, fileName);
     if (parsed.status === 'error') return parsed;
     if (!Array.isArray(parsed.value)) return fail('CORRUPT', `${fileName} 顶层不是数组`);
     names.push(...sidecarNamesOf(kind, parsed.value as KuRawGroup[]));
@@ -106,10 +94,10 @@ export function kuArchiveDefaultName(current: boolean): string {
   return `样式仓库_${current ? '当前' : '全部'}_${day}.kux`;
 }
 
-export function exportKuArchive(current: boolean, targetPath: string): Result<void> {
-  const fileSystem = fs();
-  if (!fileSystem) return fail('IO_ERROR', 'Node 文件模块不可用');
-
+export async function exportKuArchive(
+  current: boolean,
+  targetPath: string
+): Promise<Result<void>> {
   const index = readIndex();
   if (index.status === 'error') return index;
 
@@ -127,34 +115,25 @@ export function exportKuArchive(current: boolean, targetPath: string): Result<vo
       if (!fileName) continue;
       /* 契约 §2.5：读不到就写 false，不中断 */
       let data: string | false = false;
-      try {
-        data = utf8ToB64(fileSystem.readFileSync(`${userDir()}/${fileName}`, 'utf8'));
-      } catch (error) {
-        log.warn('导出：库文件读不到', { fileName, error });
-      }
+      const read = readTextResult(fileName, 'legacy');
+      if (read.status === 'ok') data = encodeBase64(read.value);
+      else log.warn('导出：库文件读不到', { fileName, reason: read.reason });
       arrFileData.push({ name: fileName, data });
     }
     const sidecars = sidecarNamesOfWarehouse(warehouse);
     if (sidecars.status === 'error') return sidecars;
     for (const name of sidecars.value) {
       let data: string | false = false;
-      try {
-        data = utf8ToB64(fileSystem.readFileSync(`${userDir()}/${name}`, 'utf8'));
-      } catch (error) {
-        log.warn('导出：旁路图读不到', { name, error });
-      }
+      const read = readTextResult(name, 'legacy');
+      if (read.status === 'ok') data = encodeBase64(read.value);
+      else log.warn('导出：旁路图读不到', { name, reason: read.reason });
       arrFileData.push({ name, data });
     }
   }
 
   if (!arrFileData.length) return fail('VALIDATION', '没有可导出的库文件（索引与磁盘不符）');
 
-  try {
-    fileSystem.writeFileSync(targetPath, encodeKuContainer({ arrFileData, store }), 'utf8');
-  } catch (error) {
-    return fail('IO_ERROR', `写入导出文件失败：${String(error)}`);
-  }
-  return ok(undefined);
+  return writeTextAtAtomic(targetPath, encodeKuContainer({ arrFileData, store }));
 }
 
 /* ---------------- 导入 ---------------- */
@@ -187,23 +166,19 @@ function validateContainer(file: KuContainerFile): Result<void> {
   return ok(undefined);
 }
 
-/** 覆盖导入后清理旧文件：先复制进 `.deleted-<时间戳>/` 再删（复制失败就保留原件） */
+/**
+ * 覆盖导入后清理旧文件：先复制进 `.deleted-<时间戳>/` 再删（复制失败就保留原件）。
+ * 用 `copyFileAt` 走二进制复制——旧实现按 utf8 读写，PNG/PSD 旁路图会被写坏。
+ */
 function recycleOldFiles(names: readonly string[]): void {
-  const fileSystem = fs();
-  if (!fileSystem) return;
   const dir = `${userDir()}/.deleted-${Date.now()}`;
   for (const name of names) {
-    try {
-      fileSystem.mkdirSync(dir, { recursive: true });
-      fileSystem.writeFileSync(
-        `${dir}/${name}`,
-        fileSystem.readFileSync(`${userDir()}/${name}`, 'utf8'),
-        'utf8'
-      );
-      fileSystem.unlinkSync(`${userDir()}/${name}`);
-    } catch (error) {
-      log.warn('替换导入：旧文件回收失败（保留原件）', { name, error });
+    const copied = copyFileAt(`${userDir()}/${name}`, `${dir}/${name}`);
+    if (copied.status === 'error') {
+      log.warn('替换导入：旧文件回收失败（保留原件）', { name, reason: copied.reason });
+      continue;
     }
+    removeFile(name, 'legacy');
   }
 }
 
@@ -213,7 +188,7 @@ export interface KuImportResult {
 
 /** 索引写回：原始 JSON 上改（保未知键），走 writeTextAtomic（.bak） */
 async function writeIndexRaw(next: Record<string, unknown>): Promise<Result<void>> {
-  return writeTextAtomic('sj_kuStoreInfo.ini', JSON.stringify(next), 'legacy');
+  return replaceJsonFile('sj_kuStoreInfo.ini', 'legacy', next);
 }
 
 /** 旧索引引用的全部文件，用于覆盖导入后的回收 */
@@ -238,19 +213,12 @@ export async function importKuArchive(
   append: boolean,
   sourcePath: string
 ): Promise<Result<KuImportResult>> {
-  const fileSystem = fs();
-  if (!fileSystem) return fail('IO_ERROR', 'Node 文件模块不可用');
+  const read = readTextAt(sourcePath);
+  if (read.status === 'error') return read;
 
-  let text: string;
-  try {
-    text = fileSystem.readFileSync(sourcePath, 'utf8');
-  } catch {
-    return fail('IO_ERROR', '读取导入文件失败');
-  }
-
-  const decoded = parseKuContainer(text);
-  if (isDecodeFail(decoded)) {
-    return fail('CORRUPT', `导入文件结构不认识：${decoded.fail}`);
+  const decoded = parseKuContainer(read.value);
+  if (decoded.status === 'error') {
+    return fail(decoded.code, `导入文件结构不认识：${decoded.reason}`);
   }
   const imported = decoded.value;
 
@@ -258,11 +226,11 @@ export async function importKuArchive(
   if (safe.status === 'error') return safe;
 
   const remapped = remapKuContainer(imported, kuGuid, {
-    encode: utf8ToB64,
+    encode: encodeBase64,
     decode: decodeBase64
   });
-  if (isDecodeFail(remapped)) {
-    return fail('CORRUPT', `导入文件内层结构不认识：${remapped.fail}`);
+  if (remapped.status === 'error') {
+    return fail(remapped.code, `导入文件内层结构不认识：${remapped.reason}`);
   }
   const file = remapped.value;
 
@@ -275,14 +243,10 @@ export async function importKuArchive(
   /* 写内层文件：b64 → utf8 落盘（remap 已换新 id，不会覆盖本地同名）；已有文件先 .bak */
   for (const entry of file.arrFileData) {
     if (typeof entry.data !== 'string') continue;
-    const target = `${userDir()}/${entry.name}`;
-    try {
-      if (fileSystem.existsSync(target)) {
-        fileSystem.writeFileSync(`${target}.bak`, fileSystem.readFileSync(target, 'utf8'), 'utf8');
-      }
-      fileSystem.writeFileSync(target, decodeBase64(entry.data), 'utf8');
-    } catch (error) {
-      return fail('IO_ERROR', `写入 ${entry.name} 失败：${String(error)}`);
+    /* 写内层文件统一走 storage：自动 `.bak` + 同文件串行 */
+    const written = await writeTextAtomic(entry.name, decodeBase64(entry.data), 'legacy');
+    if (written.status === 'error') {
+      return fail(written.code, `写入 ${entry.name} 失败：${written.reason}`);
     }
   }
 
@@ -290,10 +254,10 @@ export async function importKuArchive(
   const nextIndex = normalizeStyleIndex(file.store);
   const incoming = (nextIndex.list as StyleWarehouse[]).map((warehouse) => ({ ...warehouse }));
   if (append && before.status === 'ok') {
-    const parsed = parseJson(
-      fileSystem.readFileSync(`${userDir()}/sj_kuStoreInfo.ini`, 'utf8'),
-      '本地索引'
-    );
+    const local = readTextResult('sj_kuStoreInfo.ini', 'legacy');
+    if (local.status === 'error') return local;
+
+    const parsed = parseJson(local.value, '本地索引');
     if (parsed.status === 'error') return fail('CORRUPT', '本地索引读不懂，无法追加导入');
     const raw = isRecord(parsed.value) ? parsed.value : {};
     const list = Array.isArray(raw.list) ? raw.list : [];

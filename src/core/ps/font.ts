@@ -12,13 +12,17 @@
  *
  * 参数必须先 `encodeText` 编码（原版 `Xv`），jsx 侧解码。
  * raw 的解析统一走 `./raw.ts`，本文件不写 JSON.parse。
+ *
+ * 本文件同时承载**第二条字体通道**（字体管理页）：
+ *   `ztgl_initSystemList` / `ztgl_setFont` —— 直调、明文参数、**不 encodeText**。
+ * 两条通道服务不同数据（样式库字体项 vs 系统字体列表），不要合并。
  */
 
-import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
+import { callJsx, LONG_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
-import { parseDataEnvelope, parseErrEnvelope, parseJsxRaw } from './raw';
+import { dataOf, errOf, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 /**
  * 检查字体是否可用。
@@ -31,8 +35,10 @@ export async function checkFontUsable(item: Record<string, unknown>): Promise<Re
   const call = await callJsx('ys_checkUseFont', [payload]);
   if (call.status === 'error') return call;
 
-  /* 返回结构未公开时按可用处理，不阻断正常流程 */
-  return ok(parseErrEnvelope(call.value) !== 1);
+  const err = parseErrEnvelope(call.value);
+  /* 信封不成立（返回结构未公开）时按可用处理，不阻断正常流程；UNVERIFIED */
+  if (err.status === 'ok' && err.value === 1) return ok(false);
+  return ok(true);
 }
 
 /**
@@ -52,14 +58,14 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
   const value = parsed.value;
 
   if (value === false) return fail('VALIDATION', '当前图层不是文字图层');
-  if (value && typeof value === 'object' && (value as { err?: unknown }).err === 1) {
+
+  const err = errOf(value, call.value);
+  if (err.status === 'ok' && err.value === 1) {
     return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
   }
 
   /* 信封拆包走 raw.ts——这里只判「fonts 是否非空」，不认识返回形状 */
-  const envelope = parseDataEnvelope(call.value);
-  if (envelope.status === 'error') return envelope;
-  const data = envelope.value;
+  const data = dataOf(value);
   if (
     !data ||
     typeof data !== 'object' ||
@@ -81,7 +87,53 @@ export async function applyFont(item: Record<string, unknown>): Promise<Result<v
   if (call.status === 'error') return call;
 
   const err = parseErrEnvelope(call.value);
-  if (err === 1) {
+  if (err.status === 'error') return err;
+  if (err.value === 1) {
+    return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
+  }
+
+  return ok(undefined);
+}
+
+/* ---------------- 系统字体列表（字体管理页） ---------------- */
+
+/**
+ * 读系统字体列表（原版字体管理页 `ztgl_initSystemList`）。
+ *
+ * 直调通道，长超时。返回**原始字符串**：字体数组 JSON，或 `ok` 哨兵
+ * （哨兵表示数据已写到 `SysFont2.json`，调用方重读文件）。
+ * 归一化不在这里做——`core` 不能 import `domain`。
+ */
+export async function getSystemFontList(): Promise<Result<string>> {
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+
+  return callJsx('ztgl_initSystemList', [], { timeout: LONG_TIMEOUT });
+}
+
+/**
+ * 应用系统字体（原版字体管理页 `ztgl_setFont(hjm, mz, zz)`）。
+ *
+ * 直调通道；三个参数是**明文**，不要 `encodeText`（与 `ys_useFont` 的区别）。
+ * `{err:1}` = 字体缺失；`-1` 等约定值统一交给 `unwrapRaw`。
+ */
+export async function setFontByNames(
+  postScriptName: string,
+  name: string,
+  weight: string
+): Promise<Result<void>> {
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+
+  const call = await callJsx('ztgl_setFont', [postScriptName, name, weight], {
+    timeout: WRITE_TIMEOUT
+  });
+  if (call.status === 'error') return call;
+
+  const unwrapped = unwrapRaw(call.value);
+  if (unwrapped.status === 'error') return unwrapped;
+
+  const err = parseErrEnvelope(call.value);
+  if (err.status === 'error') return err;
+  if (err.value === 1) {
     return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
   }
 

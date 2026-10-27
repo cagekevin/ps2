@@ -1,0 +1,378 @@
+/**
+ * check-events.mjs
+ * 编译期（静态）校验 EventBus 契约登记表（contracts.js 的 EVENTS）的两面自洽：
+ *
+ *  ① 正向（代码 → 表）：任何对 eventBus 入口（publish / subscribe / subscribeOnce）
+ *     传入的**字面量**事件名，必须已在 EVENTS 登记。漏登记 → 报错（exit 1）。
+ *     （防裸事件名拼错 / 漏登记，原本只在运行时静默暴露）
+ *
+ *  ①b【TD-13-1 母体修复·常量引用】经常量的事件名（`const CREDIT_GATE_EVENT = 'agent:credit-gate'`
+ *     后 `publish(CREDIT_GATE_EVENT, ...)`）**同样纳入正/反向校验**。历史盲区：原实现只认字面量，
+ *     常量引用的事件全部逃过守卫 → 登记表可长期 `from:[]/to:[]` 虚假标死（如 agent:credit-gate）。
+ *     做法：前置 pass 收集全仓 `const X = 'event:name'` 建映射，再解析 `fn(CONST)` 回真实事件名。
+ *
+ *  ② 反向（表 → 代码）：EVENTS 表的 `to` / `from` 必须与代码实测的
+ *     `subscribe('key'` / `publish('key'`（字面量或常量引用）调用自洽。
+ *     - 表 `to: []` 但代码里实际有 `subscribe('key'` → 报「登记表 to 滞后于代码」
+ *       （即历史误判根因：表标无订阅方、实际已被订阅，导致误判为死事件）
+ *     - 表 `to` 列了 `file:NN` 但代码对应文件里完全没有 `subscribe('key'` → 报「登记表 to 指向 stale」
+ *     （from 同理）
+ *     - 匹配按**文件级**判断，`to` 的 `:NN` 行号仅作审计参考、不做逐行硬匹配：
+ *       目标文件内任意行有该事件即视为命中，避免文件增删行使行号漂移却误报红（系统性根因，见 matchesRef）。
+ *
+ * 背景：与 check-storage-keys.mjs 对称。EVENTS 表是唯一事实来源，但靠人工维护会
+ * 行号漂移、登记滞后于代码。本脚本把「表与代码一致性」变为 CI 可拦截的事实，
+ * 而非靠人工审计 / AI 读表自述下结论。零新依赖（复用 esbuild 已装）。
+ *
+ * 界限：
+ *  - 只在「可执行代码」里拦截：纯注释行（// /* *）整行跳过，避免登记表/文档示例里
+ *    的随手字符串因滞后于登记表而误报红。
+ *  - 动态拼接/变量事件名无法静态判定，由运行时自洽，本脚本不拦（与存储键白名单一致）。
+ *  - 仅 eventBus.js 导出的 publish/subscribe/subscribeOnce 视为事件总线入口；
+ *    其余模块内部同名 subscribe(cb) 第一个参数是回调非事件名，正则会排除。
+ *
+ * 【★闸的申诉口 · 三问（2026-09-14 入规 → 架构师心法 §零.4.2）】
+ *   Q1 守什么：**红线闸** —— EVENTS 登记表 + 双向校验（CLAUDE §5.4.6 P0 红线）。
+ *   Q2 何时该改：新增事件 → **登记真源、并让 `from`/`to` 与代码实测自洽**；
+ *               若表 `to: []` 而代码实测有 `subscribe` → 是**登记表滞后，先修表**；
+ *               **禁止**据此判"死事件"并删发布逻辑（这正是本闸存在的理由，见文件头 ①b/②）。
+ *   Q3 怎么改：改 `src/components/base/core/contracts.ts::EVENTS`；本闸**无豁免清单**（动态拼接由运行时自洽）。
+ *
+ * 用法：
+ *   node scripts/check-events.mjs                 # 校验全部 components
+ *   node scripts/check-events.mjs src/App.jsx     # 指定文件
+ */
+import { build } from 'esbuild';
+import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { join, resolve, extname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { defaultTargets, SCAN_EXTS } from './check-targets.mjs';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const root = resolve(__dirname, '..');
+
+// 事件总线入口函数名（第一个参数为事件名）
+const EVENT_FNS = new Set(['publish', 'subscribe', 'subscribeOnce']);
+
+// 字面量事件名正则：fn('name' 或 "name"，可含冒号/_/-（领域:动作 命名）
+const LITERAL_EVENT_RE = new RegExp(
+  `\\b(${[...EVENT_FNS].join('|')})\\s*\\(\\s*(['"])([a-zA-Z0-9:_-]+)\\2`,
+  'g',
+);
+
+// 【TD-13-1 母体修复】常量引用的事件名正则：fn(CONST_NAME, ...)。
+// 历史根因：反向校验只认字面量，凡「事件名经 const 常量引用」（如 CREDIT_GATE_EVENT）的
+// publish/subscribe 全部落在守卫盲区 → 登记表可长期 from:[]/to:[] 虚假标死而不被发现。
+// 故先扫全仓 `export const X = '事件名'` 建「常量名 → 字面量事件名」映射，再按映射解析常量引用。
+const CONST_EVENT_REF_RE = new RegExp(
+  `\\b(${[...EVENT_FNS].join('|')})\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*[,)]`,
+  'g',
+);
+// 常量声明：`const NAME = 'event:name'` / `export const NAME = "event:name"`（同一行）。
+// ⚠️ **不要求值里含 `:`** —— 事件名不必都带冒号（既有 `presets-changed` 就没有）；原正则写死 `x:y`
+// 形态 ⇒ 该常量的引用解析会**静默失效**，闸报「实测: 无」（TD-08-69 实测踩到）。
+// ⇒ 改为抽**任意字符串值**，再由 `EVENTS` 登记键过滤（更准：只认真正登记过的事件名）。
+const CONST_DECL_RE = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])([^'"\n]+)\2/g;
+
+// ── 加载事件登记表 ──
+let EVENTS = {};
+try {
+  const mod = await import(
+    pathToFileURL(resolve(root, 'src/components/base/core/contracts.ts')).href
+  );
+  EVENTS = mod.EVENTS || {};
+} catch (e) {
+  console.error('  ✖ 无法加载 contracts.ts 事件登记表：', e.message);
+  process.exit(1);
+}
+
+function isRegistered(name) {
+  return name in EVENTS;
+}
+
+const args = process.argv.slice(2);
+const targets =
+  args.length > 0
+    ? args.map((a) => resolve(root, a))
+    : (() => {
+        // 默认扫 components + hooks（扫描根见 check-targets.mjs），并补扫 src 根目录的关键组件
+        // （如 App.jsx 不在 components 下，却含事件总线订阅，漏扫会导致反向校验误报）
+        const base = defaultTargets(root);
+        const rootSrc = join(root, 'src');
+        for (const name of readdirSync(rootSrc)) {
+          const full = join(rootSrc, name);
+          if (statSync(full).isFile() && SCAN_EXTS.includes(extname(name))) {
+            base.push(full);
+          }
+        }
+        return base;
+      })();
+
+let violations = 0;
+
+// 反向校验所需：实测每个事件名在代码中的 publish / subscribe 位置
+const actualPublish = new Map(); // eventName -> ['rel:line', ...]
+const actualSubscribe = new Map(); // eventName -> ['rel:line', ...]
+// 【TD-13-1 母体修复】常量名 → 事件名字面量（`const CREDIT_GATE_EVENT = 'agent:credit-gate'`）；
+// 值 null 表示同名常量声明冲突（不解析）。供 publish(CONST)/subscribe(CONST) 解析成真实事件名。
+// 收集（独立前置 pass）：`const X = 'event:name'` 可能声明在 contracts.ts（主循环跳过该文件，
+// 但常量正是在此定义）或任意被扫文件 → 先全量收集，再在主循环里解析 fn(CONST)。
+const CONST_EVENT_NAMES = new Map();
+for (const file of [resolve(root, 'src/components/base/core/contracts.ts'), ...targets]) {
+  let src;
+  try {
+    src = readFileSync(file, 'utf8');
+  } catch {
+    continue;
+  }
+  CONST_DECL_RE.lastIndex = 0;
+  let m;
+  while ((m = CONST_DECL_RE.exec(src)) !== null) {
+    const name = m[1];
+    const ev = m[3];
+    // 只收录「值确实是已登记事件名」的常量（比"必须含冒号"更准，且容忍无冒号事件名）
+    if (!Object.prototype.hasOwnProperty.call(EVENTS, ev)) continue;
+    if (CONST_EVENT_NAMES.has(name) && CONST_EVENT_NAMES.get(name) !== ev)
+      CONST_EVENT_NAMES.set(name, null);
+    else CONST_EVENT_NAMES.set(name, ev);
+  }
+}
+
+const pushLoc = (map, name, loc) => {
+  if (!map.has(name)) map.set(name, []);
+  map.get(name).push(loc);
+};
+
+for (const file of targets) {
+  const rel = file.replace(root + '/', '');
+  let src;
+  try {
+    src = readFileSync(file, 'utf8');
+  } catch {
+    continue;
+  }
+  // 跳过登记表自身与 eventBus 定义（其含文档示例，且自身是校验目标）
+  // 扩展名无关：contracts.ts / eventBus.ts 均可能改后缀，故按不含扩展名的 basename 判断
+  const relNoExt = rel.slice(0, rel.length - extname(rel).length);
+  if (relNoExt.endsWith('contracts') || relNoExt.endsWith('eventBus')) continue;
+
+  // 语法校验（esbuild，确保 JSX .jsx 也能读；失败仅警告不阻断扫描）
+  try {
+    await build({
+      entryPoints: [file],
+      bundle: false,
+      write: false,
+      format: 'esm',
+      loader: { '.jsx': 'jsx' },
+      jsx: 'automatic',
+      logLevel: 'silent',
+    });
+  } catch {
+    /* 语法问题交给 tsc（type-check）与 test:smoke 的 esbuild 检查，本脚本不重复报错。
+       （原写「交给 check-jsx」——该闸 2026-09-15 已删：判据被上面两者完全覆盖，属冗余闸。） */
+  }
+
+  const lines = src.split('\n');
+  const eventFns = [...EVENT_FNS].join('|');
+  // 跨行调用合并：处理「fn( 与 '事件名' 分处两行」的多行展开写法。
+  // （2026-09-06 修：`subscribe(` 与事件名分处两行的写法曾被逐行扫描漏检，
+  //   导致反向校验把登记表 .to 误报为 stale。register 表行号本仅作审计，此处让多行调用也能被捕获。）
+  const CALL_OPEN_RE = new RegExp(`\\b(?:${eventFns})\\s*\\(`, 'g');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNo = i + 1;
+    // 跳过纯注释行：静态门禁只针对可执行代码里的裸字面量，
+    // 登记表/文档/代码内示例引用因可能滞后于登记表，不应触发红建。
+    const t = line.trim();
+    if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*') || t.startsWith('*/'))
+      continue;
+
+    LITERAL_EVENT_RE.lastIndex = 0;
+    let m;
+    let hasLiteralOnThisLine = false;
+    while ((m = LITERAL_EVENT_RE.exec(line)) !== null) {
+      hasLiteralOnThisLine = true;
+      const fn = m[1];
+      const name = m[3];
+      const loc = `${rel}:${lineNo}`;
+      if (!isRegistered(name)) {
+        violations++;
+        console.error(`  ✖ ${loc}  裸事件名未登记: ${fn}('${name}')`);
+        continue;
+      }
+      // 收集实测位置，供下方反向校验
+      if (fn === 'publish') pushLoc(actualPublish, name, loc);
+      else pushLoc(actualSubscribe, name, loc); // subscribe / subscribeOnce
+    }
+
+    // 【TD-13-1】常量引用：fn(CONST) → 经 CONST_EVENT_NAMES 解析为真实事件名。
+    // 与字面量同样纳入「正向登记校验 + 反向实测位置收集」，消除守卫盲区。
+    if (!hasLiteralOnThisLine) {
+      CONST_EVENT_REF_RE.lastIndex = 0;
+      let cr;
+      while ((cr = CONST_EVENT_REF_RE.exec(line)) !== null) {
+        const fn = cr[1];
+        const constName = cr[2];
+        const resolved = CONST_EVENT_NAMES.get(constName);
+        if (!resolved) continue; // 非事件常量（如普通变量）/ 冲突 → 不判（避免误报）
+        hasLiteralOnThisLine = true;
+        const loc = `${rel}:${lineNo}`;
+        if (!isRegistered(resolved)) {
+          violations++;
+          console.error(`  ✖ ${loc}  常量事件名未登记: ${fn}(${constName} → '${resolved}')`);
+          continue;
+        }
+        if (fn === 'publish') pushLoc(actualPublish, resolved, loc);
+        else pushLoc(actualSubscribe, resolved, loc);
+      }
+    }
+
+    // 本行已有事件名（字面量/常量）命中 → 无需再做跨行合并（避免重复计数）
+    if (hasLiteralOnThisLine) continue;
+
+    // 找出本行中「到行尾仍未闭合」的事件总线调用：取其从 fn( 之后的括号净深
+    CALL_OPEN_RE.lastIndex = 0;
+    let leftover = 0;
+    let oc;
+    while ((oc = CALL_OPEN_RE.exec(line)) !== null) {
+      // 从本调用 fn( 起算该调用到行尾的净括号深度（>0 表示跨到下一行）
+      const tail = line.slice(oc.index + oc[0].length);
+      let depth = 1;
+      for (const ch of tail) {
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+      }
+      if (depth > leftover) leftover = depth;
+    }
+    if (leftover <= 0) continue;
+
+    // 向后合并直到括号配对（跳过注释行）
+    let merged = line;
+    let k = i + 1;
+    while (k < lines.length && leftover > 0) {
+      const nextLine = lines[k];
+      merged += '\n' + nextLine;
+      const cand = nextLine.trim();
+      if (!cand.startsWith('//') && !cand.startsWith('*')) {
+        for (const ch of nextLine) {
+          if (ch === '(') leftover++;
+          else if (ch === ')') leftover--;
+        }
+      }
+      k++;
+    }
+    // 在合并片段找该跨行调用的事件名（若存在）
+    LITERAL_EVENT_RE.lastIndex = 0;
+    let mm;
+    let guard = 0;
+    while ((mm = LITERAL_EVENT_RE.exec(merged)) !== null && guard++ < 10) {
+      const name = mm[3];
+      const fn = mm[1];
+      const upTo = merged.slice(0, mm.index);
+      // 仅当事件名出现在本行 fn( 之后（跨行场景），且不在本行已处理范围 —— 用 fn 起始兜底防误并
+      const realLine = lineNo + (upTo.match(/\n/g) || []).length;
+      const loc = `${rel}:${realLine}`;
+      if (!isRegistered(name)) {
+        violations++;
+        console.error(`  ✖ ${loc}  裸事件名未登记: ${fn}('${name}')`);
+        continue;
+      }
+      if (fn === 'publish') pushLoc(actualPublish, name, loc);
+      else pushLoc(actualSubscribe, name, loc);
+      break; // 一个多行调用只取第一个事件名
+    }
+  }
+}
+
+// ── ② 反向校验：EVENTS 表的 to / from 必须与代码实测自洽 ──
+// 表中引用形如 'file:NN' / ['file:NN', ...]，file 可能是简写文件名（含扩展名）
+// 或相对路径。实际调用位置 actual* 已是 'relPath:line'（相对 src/components）。
+// 匹配策略：用实际位置的 basename 与表 filename 比对，行号若表给定则比对。
+function parseRefs(ref) {
+  if (ref == null) return [];
+  const arr = Array.isArray(ref) ? ref : [ref];
+  return arr
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+    .map((s) => {
+      const idx = s.lastIndexOf(':');
+      // 支持两种写法：'file:NN'（含行号）或 'file'（仅文件名，省略行号）
+      if (idx === -1) return { file: s, line: null };
+      const file = s.slice(0, idx);
+      const line = s.slice(idx + 1);
+      return { file, line: line === '' || isNaN(Number(line)) ? null : Number(line) };
+    });
+}
+
+// 取 relPath 的 basename（兼容 Windows 反斜杠）
+function basename(p) {
+  const norm = p.replace(/\\/g, '/');
+  return norm.slice(norm.lastIndexOf('/') + 1);
+}
+
+// 判断一个实测位置 'rel:line' 是否落在 ref 指向的文件内（事件名已由外层按 name 过滤）。
+// 【行号漂移容错 · 系统根因】表 ref 的 'file:NN' 行号仅作审计参考（供报错定位），**不做逐行硬匹配**：
+//   代码任意增删行（加注释/抽函数/改 import）都会让行号下移/上移，若按行号硬拦，会把「行号漂移」
+//   误报为「登记失效」，让 prebuild/prettest 在改动无关时反复红建（本脚本 :13 注释已承认该痛点）。
+//   改为只要求「该事件在 ref 指向的文件内存在（任意行）」即视为登记命中；只有当目标文件内
+//   完全找不到该事件的 publish/subscribe 时才判 stale —— 那才是真正的登记失效（订阅被删/文件改名）。
+function matchesRef(loc, ref) {
+  const idx = loc.lastIndexOf(':');
+  const file = loc.slice(0, idx);
+  return basename(file) === ref.file;
+}
+
+for (const [name, entry] of Object.entries(EVENTS)) {
+  if (typeof entry !== 'object' || entry === null) continue;
+
+  // from 对应 publish
+  const fromRefs = parseRefs(entry.from);
+  const realPublish = actualPublish.get(name) || [];
+  if (fromRefs.length === 0 && realPublish.length > 0) {
+    violations++;
+    console.error(
+      `  ✖ EVENTS['${name}'].from 滞后于代码：表中无 from，但代码实测有 publish -> ${realPublish.join(', ')}`,
+    );
+  }
+  for (const ref of fromRefs) {
+    const hit = realPublish.some((loc) => matchesRef(loc, ref));
+    if (!hit) {
+      violations++;
+      console.error(
+        `  ✖ EVENTS['${name}'].from 指向 stale/漂移: 表中 ${ref.file}${ref.line != null ? ':' + ref.line : ''} 未匹配到 publish('${name}')（实测: ${realPublish.join(', ') || '无'}）`,
+      );
+    }
+  }
+
+  // to 对应 subscribe / subscribeOnce
+  const toRefs = parseRefs(entry.to);
+  const realSubscribe = actualSubscribe.get(name) || [];
+  if (toRefs.length === 0 && realSubscribe.length > 0) {
+    violations++;
+    console.error(
+      `  ✖ EVENTS['${name}'].to 滞后于代码：表中 to:[] 但代码实测有 subscribe -> ${realSubscribe.join(', ')}（历史误判根因：表标无订阅方、实际已被订阅）`,
+    );
+  }
+  for (const ref of toRefs) {
+    const hit = realSubscribe.some((loc) => matchesRef(loc, ref));
+    if (!hit) {
+      violations++;
+      console.error(
+        `  ✖ EVENTS['${name}'].to 指向 stale/漂移: 表中 ${ref.file}${ref.line != null ? ':' + ref.line : ''} 未匹配到 subscribe('${name}')（实测: ${realSubscribe.join(', ') || '无'}）`,
+      );
+    }
+  }
+}
+
+if (violations === 0) {
+  console.log(`\n事件契约校验通过 ✔（已扫描 ${targets.length} 个文件，登记表与代码双向自洽）`);
+  process.exit(0);
+} else {
+  console.error(`\n发现 ${violations} 处事件契约问题 ✖`);
+  console.error('① 裸事件名未登记 或 ② 登记表 to/from 与代码实测不一致（滞后/漂移/stale）。');
+  console.error(
+    '请同步更新 src/components/base/core/contracts.ts 的 EVENTS（禁止仅凭表内 to:[] 判定死事件）。',
+  );
+  process.exit(1);
+}

@@ -27,7 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'custom', name: '自定义框架', path: '/custom', icon: 'icon-nav_zidingyikuangjia', shortcut: 'm', implemented: false },
   { key: 'common', name: '常用功能', path: '/common', icon: 'icon-nav_changyonggongneng', shortcut: 'a', implemented: false },
   { key: 'font', name: '字体面板', path: '/font', icon: 'icon-nav_zitimianban', shortcut: 't', implemented: false },
-  { key: 'font-manage', name: '字体管理', path: '/font-manage', icon: 'icon-nav_zitiguanli', shortcut: 'h', implemented: false },
+  { key: 'font-manage', name: '字体管理', path: '/font-manage', icon: 'icon-nav_zitiguanli', shortcut: 'h', implemented: true },
   { key: 'style', name: '样式面板', path: '/style', icon: 'icon-nav_yangshiku', shortcut: 'u', implemented: true },
   { key: 'action', name: '动作管理', path: '/action', icon: 'icon-nav_dongzuoku', shortcut: 'w', implemented: false },
   { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: false },

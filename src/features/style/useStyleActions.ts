@@ -1,7 +1,7 @@
 /**
  * 【范本】样式页的全部动作与交互状态。
  *
- * 为什么单独成 hook：`GOVERNANCE.md` §0.5 触发条件第 6 条——组件超过 300 行必须拆。
+ * 为什么单独成 hook：读库 / 应用 / 增删改 / 拖拽 / 右键菜单都在这里，页面不必持有这些状态。
  * 页面只留骨架和 JSX，动作逻辑（应用 / 增删改 / 拖拽 / 右键菜单）全在这里。
  *
  * 返回值刻意与页面里原来的函数同名，页面解构后 JSX 不用改名。
@@ -422,7 +422,7 @@ export function useStyleActions() {
     const ok = await confirm({
       title:
         target.type === 'group' ? `删除分组「${target.groupName}」？` : `删除「${target.name}」？`,
-      message: '会直接改写库文件，原文件已备份为 .bak'
+      message: '会直接改写库文件，原文件已备份为同目录下的 .bak（回滚：把 .bak 复制回同名文件）'
     });
     if (!ok) return;
 

@@ -92,7 +92,7 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 
 - ExtendScript 单线程，**并发发多条时返回顺序不保证**：快速连点 3 个色块，最后生效的可能不是最后点的那个。
 - 实现是 Promise 链先进先出；某条失败不影响后续（`evalQueue` 永远 resolve）。
-- 超时：默认 30s，字体写操作 60s。**超时后队列放行**，但 PS 侧可能仍在执行——日志会写「队列放行」，看到这句不要以为已经取消。
+- 超时：默认 30s，写操作 60s，系统字体表 300s（`LONG_TIMEOUT`）。**超时后队列放行**，但 PS 侧可能仍在执行——日志会写「队列放行」，看到这句不要以为已经取消。
 - 轮询类调用传 `{ silent: true }`，不写 info 日志（`core/ps/layer.ts:40`）。
 
 ---
@@ -236,6 +236,27 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 ```
 
 只给字体用，不要套到其它调用上。解码（原版 `qv`）目前没有调用方，需要时照 `app` 的 `domain/translate.ts:52-60` 抄，别自己推。
+
+### 11.1 系统字体列表（字体管理页，另一条直调）
+
+| 调用 | 通道 | 超时 | 参数 / 返回 |
+|---|---|---|---|
+| `ztgl_initSystemList` | 直调 `jsx()` | `LONG_TIMEOUT` 300s | 无参；返回字体数组，或 `"ok"` 哨兵（数据写 `SysFont2.json` 的 `{ arr: [...] }`） |
+| `ztgl_setFont` | 直调 `jsx()` | `WRITE_TIMEOUT` 60s | `(hjm, mz, zz)` 三个**明文**字符串，**不要 `encodeText`**；`{err:1}` = 字体缺失 |
+
+与 §十一 开头那条（`ys_checkUseFont` / `ys_useFont`）的区别：`ys_*` 服务**样式库字体项**，参数要编码；`ztgl_*` 服务**系统字体列表**。两条通道不要合并。
+
+### 11.2 err 信封的判据（2026-10-27 收紧）
+
+`parseErrEnvelope` 现在返回 `Result<number>`，**没有 `null` 通道**：
+
+- 返回不是 JSON、或不是 `{ err: number }` → `CORRUPT`（detail 带原始值）
+- 写操作（`ys_useFont` / `ztgl_setFont` / `ys_AddStyle`）遇到 `CORRUPT` 直接失败 —— 原来「解析不出来 = 当成功」是**假成功**，字体没换却提示成功
+- 读操作（`ys_checkUseFont`）保留「信封不成立按可用处理」，因为它只是探测，不该阻断正常流程（UNVERIFIED）
+
+真机必须确认这几个函数返回的就是 `{err:number}`；若 PS 返回别的形状，这里会从「假成功」变成「真失败」，属有意改动。
+
+这两个函数在 `vendor.jsx` 里已经存在，**不写 `jsx/main.jsx` 镜像**——`GOVERNANCE.md` §二 #3 的例外，理由是能力来自官方副本而非自有实现。
 
 ---
 

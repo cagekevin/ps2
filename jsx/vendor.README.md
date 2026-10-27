@@ -34,6 +34,8 @@ jsxbin 加密但**能直接 `$.evalFile` 执行**，不需要解密。加载必�
 | `ps_ysBtnUseStyle` | 应用图层样式 | 经 `ps_onJsx` |
 | `ys_checkUseFont` | 字体可用性检查 | 直调（参数需 `encodeText`） |
 | `ys_useFont` | 应用字体 | 直调（参数需 `encodeText`） |
+| `ztgl_initSystemList` | 读系统字体列表（字体管理页） | 直调（长超时 300s） |
+| `ztgl_setFont` | 应用系统字体（字体管理页） | 直调（三个明文参数） |
 
 **不再使用 `ys_useStyleColor`**。颜色应用已改为自有 `jsx/main.jsx` 的 `mm_style_applyColor`（移植自色板面板明文实现），原因：`ys_useStyleColor` 在「自动填充」关闭时只改前景色、不碰图层，返回 `1` 但图层没变。
 

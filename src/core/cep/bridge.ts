@@ -43,6 +43,9 @@ const DEFAULT_TIMEOUT = 30_000;
 /** 写操作超时比读长：应用字体 / 保存图层样式要遍历图层或写 PSD */
 export const WRITE_TIMEOUT = 60_000;
 
+/** 批量 / 初始化：系统字体表要扫全机字体，原版同样给长超时 */
+export const LONG_TIMEOUT = 300_000;
+
 /**
  * ExtendScript 是单线程的，并发发多条 evalScript 时返回顺序不保证。
  * 表现：快速连点 3 个色块，最后生效的可能不是最后点的那个。

@@ -1,0 +1,471 @@
+#!/usr/bin/env node
+/**
+ * 【元层闸 · 静态度量】在册闸的**扫描根必须存在**、其"基数自检"不得缺失，且脚本头部必须带【申诉口】三问。
+ *
+ * 【2026-09-24 · 两道元层闸合一】本文件原为 `check-gate-vitals.mjs`（扫描根/基数自检），另一道
+ *   `check-gates.mjs`（申诉口三问）已于同日**并入本闸**。为什么合并：两道闸的**输入完全相同**
+ *   （都读 `gates.manifest.json` + 各闸脚本头部源码），却各解析一遍、各起一个 node 进程；
+ *   且 `gates` 的判据形态恰是本文件「剥掉注释」段自批的那种 —— **判"文件里出现了什么词"，
+ *   不是"代码做了什么"**（它只检查头部含 4 个字符串）。合并后元层只留一道闸：一次读 manifest、
+ *   一次读脚本头，两条判据一起出。判据**一条未减**。删闸回改清单见
+ *   `gates.manifest.json::_design.audit2026-09-24`。
+ *
+ * ★闸的申诉口
+ *   Q1 守什么：**结构偏好闸**。它守的不是代码，而是**其它闸的眼睛**。
+ *   Q2 何时该改：① 新增闸 → 在 `GATES` 表里登记它的扫描根与本闸的"自检类型"；
+ *              ② 某闸确实无扫描根（如 type-check 交给 tsc）→ 在表里写 `roots: null` + 理由；
+ *              ③ 某闸的扫描根**合理地不存在** → 先问"这个闸还有存在意义吗"，有则登记豁免并写理由；
+ *              ④ 申诉口的**锚点 / 标签句式**升级时 → 改下方 `ANCHOR` / `LABELS`（本脚本自身同步）。
+ *   Q3 怎么改：**只收窄不放宽**。新增豁免必须写明"为什么这个根不存在是正常的"。
+ *              注：本闸只读脚本头、不改任何判定 ⇒ **不会**拦住"让同一语义份数下降"的动作
+ *              （收口/下沉/去重），不构成成本倒挂源。
+ *
+ * 【为什么存在 · 以及为什么是"静态"而不是"跑一遍"（2026-09-16 两次改版留痕）】
+ *
+ *   母体：**扫描型闸靠"字面目录路径"锚定，目录随重构改名 ⇒ 扫 0 ⇒ 仍打印 ✅**。
+ *   实证：`TD-22-53`（`check-arch` 规则 4/6 守护的 `videoEditor/core/`、`hooks/` 随 cutia
+ *   搬迁消失，两条规则**空转很久**却照常绿灯，而闸的产物被下游当真相用）；
+ *   `TD-02-9`（`check-node-data` 解析正则因 `.ts` 化静默失效，长期报 `palette (0)` 却通过 check:health）。
+ *
+ *   ⚠️ **第一版设计是错的，必须记下来防重走**：
+ *   我最初把本闸写成"**跑所有在册闸，从输出里抓扫描基数，0 就判红**"。
+ *   实测 **8.9 秒**（其它闸全在 2 秒内），是全仓最慢的闸 —— 因为它把整个 push 阶段**又跑了一遍**。
+ *   更要命的是：这个代价换来的是**几乎不会发生的场景**——
+ *   绝大多数闸的扫描根就是 `join(ROOT, 'src')`，而 **`src/` 永远存在**；
+ *   真正会消失的是 `check-arch` 内部那种**子目录**（如 `videoEditor/core/`），
+ *   而那类**已经由 `check-arch` 自己的 `assertScanned()` 覆盖**。
+ *   ⇒ 结论：**"跑一遍"是过度设计。这个信息是静态的，根本不需要执行任何闸就能拿到。**
+ *
+ *   【正确形态 = 静态度量】只做两件**零成本**的事：
+ *     ① 读闸脚本源码，抽出它的**扫描根常量**，检查**该目录/文件是否存在**（`existsSync`，毫秒级）；
+ *     ② 检查闸源码里**有没有"基数自检"**（扫到 0 时 fail-loud），没有则提示补。
+ *   实测耗时 **< 0.1 秒**（原 8.9 秒 → 降 99%）。
+ *
+ * 【诚实边界（写进闸里，不假装覆盖）】
+ *   本闸是**静态近似**，不等于"那个闸真的扫到了 N 个"。它能抓的是**目录消失**这类
+ *   结构性失效（也正是两条实证弯路的成因）。运行时才暴露的失效（如正则写错、
+ *   解析器被 `.ts` 化打瞎）由各闸**自己的基数自检**负责 —— 本闸同时检查"你有没有那个自检"，
+ *   两者配合才完整。
+ *   同理，申诉口检查只保证"**头部写了那 4 个字符串**"，不保证三问内容有实质 —— 那是**存在性**
+ *   检查，不是质量检查（这正是把原 `gates` 并入本闸、不再单独供养一道闸的理由）。
+ */
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join, relative } from 'node:path';
+
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const MANIFEST = join(ROOT, 'scripts', 'gates.manifest.json');
+
+const argv = process.argv.slice(2);
+const JSON_OUT = argv.includes('--json');
+
+/**
+ * 剥掉注释后再做特征匹配。
+ * 【为什么必须剥（本仓两轮实证）】首版闸在全文上匹配 ⇒ `check-silent-catch.mjs` 的**文件头注释**里
+ * 写了一句「经 scripts/gates-run.mjs」就被误判；同款教训 `TD-22-50`：守卫把注释里的 `<BaseView>`
+ * 算成违规。**判据要判"代码做了什么"，不是"文件里出现了什么词"。**
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '') // 块注释（含 JSDoc）
+    .replace(/(^|[^:])\/\/.*$/gm, '$1'); // 行注释（避开 http:// 之类）
+}
+
+/**
+ * **非闸助手白名单** —— `scripts/check-*.mjs` 里**不独立运行**的那些。
+ *
+ * 【为什么需要这张表（TD-17-17 的治法）】
+ *   闸体系的登记真源是 `gates.manifest.json`。但**登记表天然看不见"该登记而未登记"的东西** ——
+ *   一个脚本可以物理存在、顶着 `check-` 前缀、却从没被任何闸跑过（= 孤儿闸：
+ *   它**从没红过**，也就没人知道它坏了）。2026-09-18 实测曾同时存在
+ *   `check-token-mirror.mjs`（带 1 条真实违规）+ `check-css-globals.mjs`（基线文件不存在），
+ *   **长期并存且无人发现** —— 因为它们根本不在任何清单里（见 17 区日志弯路 1）。
+ *
+ * 【判据（双向对账 · 独立枚举两边再求差）】
+ *   左侧 = 物理存在的 `scripts/check-*.mjs`（**目录 glob，不读任何登记表**）；
+ *   右侧 = manifest 的 `gates` + `healthOnly` 引用到的脚本。
+ *   左侧有、右侧无 ⇒ 必须**要么**是误命名（改掉 `check-` 前缀）**要么**登记进 manifest；
+ *   **唯一合法的第三态 = 本表**（真·非闸助手），且**必须写明"被谁用"**（防它变成藏孤儿的地方）。
+ *
+ * ⚠️ **本表是白名单，故必须自带防滥用的判据**（否则它会变成"把孤儿塞进来就绿"的绕行道，形态④）：
+ *   ① 每项必须写 `usedBy`（至少 1 个真实 import 它的脚本），本闸会**实跑 grep 校验它真的被引用**；
+ *   ② 本表只允许放**纯导出、零执行体**的脚本（本闸检查它没有顶层 `process.exit` / `main()` 调用）；
+ *   ③ 脚本若同时"不在 manifest"且"没人 import" ⇒ 报红（那才是真孤儿）。
+ */
+const NON_GATE_HELPERS = {
+  'check-targets.mjs': {
+    usedBy: [
+      'scripts/check-events.mjs',
+      'scripts/check-node-handles.mjs',
+      'scripts/check-node-types.mjs',
+      'scripts/check-storage-keys.mjs',
+      'scripts/mv-sync-refs.mjs',
+      'scripts/extract-tailwind.mjs',
+    ],
+    why: '各 check-* 共享的【默认扫描根】唯一事实源（纯 export，无执行体；被 6 个脚本 import，不单独跑）',
+  },
+};
+
+/**
+ * 在册闸的扫描根登记表 —— **唯一真源，新增闸时在此登记一行**。
+ *
+ * 字段：
+ *   roots    —— 闸依赖的扫描根（相对仓库根）。`null` = 该闸无扫描根（如交给外部工具）。
+ *   selfCheck—— 该闸是否带"扫到 0 即 fail-loud"的自检。`'own'` = 自己实现了；
+ *               `'external'` = 由外部消费方保证（如 tsc）；缺失则本闸提示补。
+ *   why      —— 无扫描根 / 无自检时的理由（**必填**，防"一句话绕过"）。
+ */
+const GATES = {
+  api: {
+    roots: null,
+    selfCheck: null,
+    why: '契约登记表比对（读 contracts.ts 与 router.ts），非目录遍历',
+  },
+  'node-types': { roots: ['src'], selfCheck: 'own', why: '' },
+  'node-handles': { roots: ['src'], selfCheck: 'own', why: '' },
+  'node-data': { roots: ['src'], selfCheck: 'own', why: '' },
+  keys: { roots: ['src'], selfCheck: 'own', why: '' },
+  'type-check': {
+    roots: null,
+    selfCheck: 'external',
+    why: '由 tsc 负责遍历，tsc 自身对"无输入"会报错',
+  },
+  any: { roots: ['src'], selfCheck: 'own', why: '' },
+  // ⚠️ 原 `catch` 行已于 2026-09-18 删除：该闸（check-silent-catch.mjs）在 2026-09-17 按用户裁定
+  //   整体退役（豁免标记机制与错误透传判据冲突），但本登记表漏删 → 本闸长期报「GATES 有、闸清单无」。
+  //   留痕：**删闸时必须同时删本表登记行**，否则元层闸会一直背着一条假警告（警告疲劳 = 形态②）。
+  // ⚠️ 原 `strict-src` 行已于 2026-09-24 删除：该闸并入 `type-check`（tsconfig 早已
+  //   `noImplicitAny: true` ⇒ 两条 tsc 命令等价），见 `gates.manifest.json::_design.tsc`。
+  // ⚠️ 原 `gates` 行已于 2026-09-24 删除：该闸（申诉口三问）**并入本闸**，其判据见下方「1c」节。
+  // ⚠️ 原 `nonnull` 行已于 2026-10-20 删除：该闸（check-nonnull.mjs）的使命是「存量 792 处只降不升」；
+  //   存量清零后 `.eslintrc.cjs` 的 `no-non-null-assertion` 直接改 `error` 接管防线，闸按设计退役。
+  events: { roots: ['src'], selfCheck: 'own', why: '' },
+  arch: {
+    roots: ['src'],
+    selfCheck: 'own',
+    why: '内部子规则（如 videoEditor/engine、ui、types）另有 assertScanned 逐条自检',
+  },
+  'dead-code': { roots: ['src'], selfCheck: 'own', why: '' },
+  'gate-vitals': {
+    roots: null,
+    selfCheck: null,
+    why: '元层（本闸）：静态度量其它闸，自身不扫描代码',
+  },
+  'upload-dirs': {
+    roots: ['src', 'localTool/src'],
+    selfCheck: 'own',
+    why: '',
+  },
+};
+
+if (!existsSync(MANIFEST)) {
+  console.error(`❌ 找不到闸清单：${MANIFEST}`);
+  process.exit(2);
+}
+const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+const registered = (manifest.gates ?? []).map((g) => g.id);
+
+// ── 1. 登记表与闸清单必须双向一致（防"新增闸忘了登记"= 清单必漏）─────────────
+const missing = registered.filter((id) => !(id in GATES));
+const stale = Object.keys(GATES).filter((id) => !registered.includes(id));
+
+/** 从闸的 cmd 里取脚本名（只看 `manifest.gates`） */
+const scriptOf = (id) => {
+  const g = (manifest.gates ?? []).find((x) => x.id === id);
+  if (!g) return null;
+  const m = /scripts\/([\w.-]+\.(?:mjs|cjs|js))/.exec(g.cmd);
+  return m ? m[1] : null;
+};
+
+// ── 2. 逐闸静态体检 ─────────────────────────────────────────────────────────
+const findings = []; // {id, level, msg}
+
+/**
+ * ── 1b. **物理脚本 ↔ 清单** 双向对账（TD-17-17）────────────────────────────
+ *
+ * 上方 1 是"登记表 ↔ 清单"对账；这里补的是**更外一层**：
+ * **磁盘上真实存在的 `scripts/check-*.mjs` ↔ 清单**。
+ * 少了这一层，一个脚本可以物理存在却**从没被任何闸跑过**（孤儿闸）——
+ * 它从没红过，所以没人发现它坏了（2026-09-18 实证两个，见 NON_GATE_HELPERS 头注释）。
+ *
+ * 判据：**独立枚举物理目录**（不读任何登记表 —— 读登记表就看不见"该登记而未登记"的）。
+ */
+const CHECK_SCRIPT_DIR = join(ROOT, 'scripts');
+const physicalCheckScripts = readdirSync(CHECK_SCRIPT_DIR)
+  // 【2026-09-24 审计修正】原正则只认 `.mjs` ⇒ **`.cjs` 形态的孤儿闸整个在盲区里**
+  // （实测：造 `check-__probe_orphan.cjs` 假孤儿，本闸完全不报；同批的 `.mjs` 版被正常报出）。
+  // 而本仓确有 `.cjs` 闸（`check-api-contract.cjs`）⇒ 一个 `.cjs` 孤儿可以永远不被跑、
+  // 永远不红而无人知晓 —— 那正是本闸要治的病本身。故 glob 纳入 `.cjs`
+  // （不收 `.js`：本仓 `check-*` 无 `.js` 形态，收了只会误伤）。
+  .filter((f) => /^check-.*\.(mjs|cjs)$/.test(f))
+  .sort();
+// 清单引用到的脚本名（gates + healthOnly 两段都要算，否则 healthOnly 里的会被误判为孤儿）
+const referencedScripts = new Set();
+for (const g of [...(manifest.gates ?? []), ...(manifest.healthOnly ?? [])]) {
+  const m = /scripts\/([\w.-]+\.(?:mjs|cjs|js))/.exec(String(g.cmd ?? ''));
+  if (m) referencedScripts.add(m[1]);
+}
+const orphanGates = physicalCheckScripts.filter(
+  (f) => !referencedScripts.has(f) && !(f in NON_GATE_HELPERS),
+);
+// 白名单防滥用：① 真的被 import（实跑 grep）② 纯导出无执行体
+for (const [helper, meta] of Object.entries(NON_GATE_HELPERS)) {
+  const p = join(CHECK_SCRIPT_DIR, helper);
+  if (!existsSync(p)) {
+    findings.push({
+      id: 'gate-vitals',
+      level: 'error',
+      msg: `非闸助手白名单里的 ${helper} 已不存在 → 删该白名单行（幽灵预留 M6）`,
+    });
+    continue;
+  }
+  const src = readFileSync(p, 'utf8');
+  for (const user of meta.usedBy ?? []) {
+    const up = join(ROOT, user);
+    if (!existsSync(up)) {
+      findings.push({
+        id: 'gate-vitals',
+        level: 'error',
+        msg: `非闸助手 ${helper} 声称被 ${user} 使用，但该文件不存在（白名单必须写真实消费者）`,
+      });
+      continue;
+    }
+    if (!readFileSync(up, 'utf8').includes(helper)) {
+      findings.push({
+        id: 'gate-vitals',
+        level: 'error',
+        msg: `非闸助手 ${helper} 声称被 ${user} import，但该文件里搜不到 ${helper} → 它不是助手，是孤儿闸`,
+      });
+    }
+  }
+  // 纯导出判定：顶层不得有 process.exit / main 调用（用剥注释后的源码判，防注释误伤）
+  if (/(?:^|\n)\s*(?:process\.exit\(|\w*[Mm]ain\s*\()/.test(stripComments(src))) {
+    findings.push({
+      id: 'gate-vitals',
+      level: 'error',
+      msg: `非闸助手 ${helper} 含顶层执行体（process.exit / main 调用）→ 它是闸，必须进 manifest，不许待在助手白名单`,
+    });
+  }
+}
+for (const f of orphanGates) {
+  findings.push({
+    id: 'gate-vitals',
+    level: 'error',
+    msg: `孤儿闸：scripts/${f} 物理存在，但既不在 gates.manifest.json，也不在 NON_GATE_HELPERS 助手白名单 → 它**从没被任何闸跑过**（从没红过 = 没人知道它坏了）。处置：登记进 manifest，或（若确为非闸助手）加白名单并写明 usedBy`,
+  });
+}
+
+/**
+ * ── 1c. 【申诉口】三问（原 `check-gates.mjs` 判据 · 2026-09-24 并入）───────────
+ *
+ * 【原来为什么要单独一道闸】2026-09-14 把「闸的成本守恒律」入规（`架构师心法.md §零.4`），
+ *   并给当时 14 道闸逐个补了【申诉口】（守什么 / 何时该改 / 怎么改，锚点 `★闸的申诉口`）。
+ *   但那条规定当时**只活在注释与文档里** —— 而本仓已反复实证「**红线只写在注释里 → 必回潮**」。
+ *   没有机器约束：① 新加的闸不会写申诉口；② 已有句式各自漂移（无法机器读）；
+ *   ③ "闸能不能被挑战"重新变成只有人记得的口头约定 → 成本倒挂会以新形态复发。
+ *
+ * 【判据（真源仍是 `gates.manifest.json`，本脚本不另立清单）】
+ *   从 manifest 的 `gates` + `healthOnly` 读 `cmd`，解析出其中的**脚本文件**，逐个校验：
+ *     · 脚本存在；
+ *     · 头部 JSDoc（首个**块注释结束符**之前）同时含锚点 `ANCHOR` 与三行标签 `LABELS`。
+ *   `cmd` 不是 node 脚本的（如 `npm run type-check` = tsc 本体）→ **明确列出"跳过"**，不静默略过。
+ *   解析到的脚本数为 0（manifest 改了形状 / 路径失效）→ 当场报错，绝不"静默 0 违规"。
+ */
+const ANCHOR = '★闸的申诉口';
+const LABELS = ['Q1 守什么：', 'Q2 何时该改：', 'Q3 怎么改：'];
+
+/** 从 `cmd` 里解析出仓库内的脚本文件（相对 ROOT）；非脚本命令返回 null */
+const scriptFromCmd = (cmd) => {
+  const m = String(cmd || '').match(/(?:^|\s)([\w./-]+\.(?:mjs|cjs))/);
+  return m ? m[1].replace(/\\/g, '/') : null;
+};
+
+const appealEntries = [...(manifest.gates ?? []), ...(manifest.healthOnly ?? [])];
+const skippedNonScript = [];
+let appealChecked = 0;
+for (const g of appealEntries) {
+  const rel = scriptFromCmd(g.cmd);
+  if (!rel) {
+    skippedNonScript.push(`${g.id}（cmd 非脚本：${g.cmd}）`);
+    continue;
+  }
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) {
+    findings.push({ id: g.id, level: 'error', msg: `闸清单指向的脚本不存在：${rel}` });
+    continue;
+  }
+  appealChecked++;
+  const text = readFileSync(abs, 'utf8');
+  // 头部 = 首个 `*/` 之前（约定：脚本头 JSDoc 必须自洽，见 CLAUDE §五.2）
+  const close = text.indexOf('*/');
+  const head = close >= 0 ? text.slice(0, close) : text.slice(0, 4000);
+  const lack = [];
+  if (!head.includes(ANCHOR)) lack.push(`锚点「${ANCHOR}」`);
+  for (const label of LABELS) if (!head.includes(label)) lack.push(`标签「${label}」`);
+  if (lack.length) {
+    findings.push({ id: g.id, level: 'error', msg: `${rel} 缺【申诉口】：${lack.join(' · ')}` });
+  }
+}
+if (appealChecked === 0) {
+  findings.push({
+    id: 'gate-vitals',
+    level: 'error',
+    msg: '申诉口检查解析到 0 个脚本闸（manifest 形状变了 / 路径失效）—— 拒绝"静默 0 违规"',
+  });
+}
+
+for (const id of registered) {
+  const meta = GATES[id];
+  if (!meta) {
+    findings.push({
+      id,
+      level: 'error',
+      msg: '未在 GATES 登记表里登记（新增闸必须登记：扫描根 + 自检类型）',
+    });
+    continue;
+  }
+  // 2a. 扫描根必须存在
+  if (meta.roots) {
+    for (const r of meta.roots) {
+      if (!existsSync(join(ROOT, r))) {
+        findings.push({
+          id,
+          level: 'error',
+          msg: `扫描根不存在：${r} → 该闸会**扫 0 但照常打印通过**（TD-22-53 同款）`,
+        });
+      }
+    }
+  }
+  // 2b. 无扫描根必须写明理由
+  if (!meta.roots && !meta.why) {
+    findings.push({
+      id,
+      level: 'error',
+      msg: 'roots 为 null 但未写 why（防"一句话绕过"，理由必填）',
+    });
+  }
+  // 2c. 有扫描根就应有基数自检
+  if (meta.roots && !meta.selfCheck) {
+    findings.push({
+      id,
+      level: 'warn',
+      msg: '有扫描根但未声明基数自检 → 建议加"扫到 0 即 fail-loud"（TD-02-9 同款）',
+    });
+  }
+  // 2d. 声称自己实现了自检 → 源码里应能找到痕迹（防"声明了但没做"）
+  if (meta.selfCheck === 'own') {
+    const s = scriptOf(id);
+    if (!s) {
+      // 【2026-09-24 审计修正】原版是 `if (s)` 直接跳过 ⇒ cmd 写法一变（解析不出脚本路径），
+      // 这条"声称有自检"的校验就**静默消失**（假绿面）。改为显式告警，让"没校验"看得见。
+      findings.push({
+        id,
+        level: 'warn',
+        msg: "登记为 selfCheck:'own'，但 cmd 里解析不出脚本路径 ⇒ 自检痕迹**未被校验**（原版此处静默跳过）",
+      });
+    } else {
+      const p = join(ROOT, 'scripts', s);
+      if (existsSync(p)) {
+        const src = stripComments(readFileSync(p, 'utf8'));
+        /*
+         * 自检的**形态**（本仓实测的几种真实写法，别只认一种）：
+         *   · `if (files.length === 0) { ...; process.exit(1) }`   ← check-silent-catch:99
+         *   · `if (count === 0) { ... }`                            ← check-arch:71（assertScanned）
+         *   · `if (codes.size === 0) { ... }`                       ← check-silent-catch:67
+         *   · `if (X.length === 0 && Y.size === 0) { ... }`         ← check-arch:824
+         *   · `if (raw.trim().length === 0) { ... }`                ← check-dead-code:137（字符串判空）
+         *   · `if (parsed === 0) { ... }`                           ← check-dead-code:234（解析结果判 0，
+         *        带 `rawHits > 0 &&` 前置 → 属「扫 0 却绿灯」的正解，必须认）
+         * 故判据 = **存在"某集合/字符串/计数判 0"且附近有 fail-loud（exit/throw/console.error）**
+         *  —— 不要求两个条件在同一行（实测常分处两行）。
+         *
+         * 【2026-09-18 修正】原正则只认 `.length|.size === 0`，漏掉 `raw.trim().length === 0`（两段式）
+         *   与 `parsed === 0`（裸计数）⇒ 对 check-dead-code 误报「无集合判 0」。
+         *   教训同 check-dead-code 自身：**判据要判"代码做了什么"，不是"长得像不像我预期的样子"**
+         *   —— 过窄的检测器会把真防线报成假防线（与本闸要治的病相反，但同样是"看不准"）。
+         */
+        const zeroCheck =
+          /(?:\.length|\.size)\s*===?\s*0/.test(src) || // 集合/字符串长度判 0
+          /\b\w+\s*===?\s*0\b/.test(src) || // 裸计数判 0（如 parsed === 0 / count === 0）
+          /\bassertScanned\b/.test(src); // 本仓收敛后的命名约定
+        const failLoud = /process\.exit\(\s*[1-9]/.test(src) || /throw new Error/.test(src);
+        if (!(zeroCheck && failLoud)) {
+          findings.push({
+            id,
+            level: 'warn',
+            msg: `登记为 selfCheck:'own'，但源码未同时找到"集合判 0"（${zeroCheck ? '有' : '无'}）与"fail-loud"（${failLoud ? '有' : '无'}）痕迹（脚本 ${s}）`,
+          });
+        }
+      }
+    }
+  }
+}
+// 3. 清单里有、登记表没有 → 已在上方 missing 里
+for (const id of missing) {
+  if (!findings.some((f) => f.id === id)) {
+    findings.push({ id, level: 'error', msg: '闸清单里有，但 GATES 登记表没有' });
+  }
+}
+for (const id of stale)
+  findings.push({
+    id,
+    level: 'warn',
+    msg: 'GATES 登记表里有，但闸清单已无此闸（可能已退役，请删登记行）',
+  });
+
+const errors = findings.filter((f) => f.level === 'error');
+const warns = findings.filter((f) => f.level === 'warn');
+
+if (JSON_OUT) {
+  console.log(JSON.stringify({ registered, appealChecked, skippedNonScript, findings }, null, 2));
+  process.exit(errors.length ? 1 : 0);
+}
+
+console.log('🩺 元层闸（闸的闸 · 零执行）—— 扫描根存在性 + 基数自检 + 【申诉口】三问');
+console.log(
+  `   真源 ${relative(ROOT, MANIFEST).replace(/\\/g, '/')} ｜ 在册 ${registered.length} 道`,
+);
+console.log(`   申诉口检查 ${appealChecked} 个脚本闸 ｜ 扫 0 却绿灯 = 闸最危险的失败模式\n`);
+
+for (const id of registered) {
+  const meta = GATES[id];
+  const roots = meta?.roots
+    ? meta.roots.join(',')
+    : '（无·' + (meta?.why?.slice(0, 24) ?? '?') + '…）';
+  const bad = findings.filter((f) => f.id === id);
+  const mark = bad.some((f) => f.level === 'error') ? '❌' : bad.length ? '⚠️ ' : '✅';
+  console.log(`   ${mark} ${id.padEnd(14)} 扫描根: ${roots}`);
+}
+
+if (skippedNonScript.length) {
+  console.log('\n   跳过（非脚本命令，已明确列出、非静默略过）：');
+  for (const s of skippedNonScript) console.log(`     - ${s}`);
+}
+
+if (errors.length) {
+  console.log(`\n   ❌ ${errors.length} 处错误：`);
+  for (const f of errors) console.log(`      ${f.id}: ${f.msg}`);
+  console.log(`
+   ── 怎么修 ──
+   ① **扫描根不存在**：先读那道闸的判据 —— 它的守护对象是不是被改名/搬迁/删除了？
+      · 对象已不存在 → **删该规则**（M6 幽灵预留），原处留「已删 · 退役留痕」注释；
+      · 对象仍在但路径写错 → 修路径，**并加"扫到 0 即 fail-loud"自检**；
+      · 确认"扫 0 正常" → 在 GATES 登记 reasons 里写清理由。
+   ② **新增闸没登记** → 在 GATES 表加一行（扫描根 + selfCheck + why）。这是**唯一需要手写的地方**，
+      但它**不是"闸清单"**（清单已在 gates.manifest.json）—— 它只是"本闸认识的扫描根"，
+      漏了会被本闸当场点名（不像手写清单那样静默失效）。
+   ③ **缺【申诉口】** → 在该脚本文件头 JSDoc 里补（照抄任一在册闸的【★闸的申诉口 · 三问】段）：
+      ${ANCHOR} · 三问（2026-09-14 入规 → 架构师心法 §零.4.2）
+      ${LABELS[0]}<红线闸 | 结构偏好闸 | 正确性闸（零豁免口）| 编排器> —— 依据
+      ${LABELS[1]}<它拦住了"让同一语义份数下降"的动作时 → 该改；或其它触发条件>
+      ${LABELS[2]}<优先改真源 / 清单只收窄 / 改完跑闸探针先红后绿（node scripts/probe.mjs）>
+`);
+}
+if (warns.length) {
+  console.log(`\n   ⚠️  ${warns.length} 处警告（不判红）：`);
+  for (const f of warns) console.log(`      ${f.id}: ${f.msg}`);
+}
+
+if (errors.length) process.exit(1);
+console.log('\n   ✅ 全部闸的扫描根存在、基数自检声明齐备、在册脚本闸均带【申诉口】三问');
+process.exit(0);

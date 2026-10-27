@@ -1,0 +1,265 @@
+/* 字体列表：列表项 / 字重 / 星级 / 授权 / 预览文字 */
+/* ---------- 字体列表 ---------- */
+.mm-font__list {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.mm-font__item {
+  padding: var(--mm-space-3) var(--mm-page-pad-x);
+  background: var(--mm-color-bg-page);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-row-border);
+  cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: var(--mm-font-item-est);
+}
+
+/* 没有 PostScript 名：列表仍显示，标灰提示「点不了」 */
+.mm-font__item--unavailable {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.mm-font__item--none {
+  --mm-font-item-est: var(--mm-font-item-est-none);
+}
+
+.mm-font__item--small {
+  --mm-font-item-est: var(--mm-font-item-est-sm);
+}
+
+.mm-font__item--medium {
+  --mm-font-item-est: var(--mm-font-item-est-md);
+}
+
+.mm-font__item--large {
+  --mm-font-item-est: var(--mm-font-item-est-lg);
+}
+
+.mm-font__item--extra-large {
+  --mm-font-item-est: var(--mm-font-item-est-xl);
+}
+
+.mm-font__item:hover,
+.mm-font__item--active {
+  background: var(--mm-color-row-hover);
+}
+
+.mm-font__item-body {
+  min-width: 0;
+}
+
+.mm-font__name-row {
+  position: relative;
+  height: var(--mm-row-head-h);
+  line-height: 1;
+}
+
+.mm-font__family {
+  display: inline-block;
+  max-width: calc(100% - var(--mm-name-reserve));
+  overflow: hidden;
+  font-size: var(--mm-font-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+.mm-font__family--name-only {
+  color: var(--mm-color-text-name);
+  font-family: var(--mm-preview-family, inherit);
+  font-size: var(--mm-name-size);
+  line-height: var(--mm-name-lh);
+  font-weight: 400;
+  padding-bottom: var(--mm-space-exact-15);
+}
+
+.mm-font__actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: none;
+  align-items: center;
+  gap: var(--mm-space-1);
+  padding: 0 var(--mm-space-2);
+}
+
+.mm-font__item:hover .mm-font__actions,
+.mm-font__item--active .mm-font__actions {
+  display: flex;
+}
+
+.mm-font__act {
+  width: var(--mm-tag-chip-w);
+  height: var(--mm-tag-chip-w);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mm-radius-sm);
+  background: transparent;
+  color: var(--mm-color-icon-page);
+  cursor: pointer;
+}
+
+.mm-font__act:hover {
+  color: var(--mm-color-text-inverse);
+}
+
+/* 星级 */
+.mm-font__rating {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.mm-font__star {
+  padding: 0 0 0 var(--mm-space-1);
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-star);
+  font-size: var(--mm-font-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mm-font__star--on {
+  color: var(--mm-color-star-on);
+}
+
+/* 预览文字 */
+.mm-font__preview {
+  margin: 0;
+  padding: var(--mm-space-3) 0;
+  color: var(--mm-color-text-preview);
+  font-family: var(--mm-preview-family, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-font__preview--small {
+  font-size: var(--mm-preview-sm);
+  line-height: var(--mm-preview-sm-lh);
+}
+
+.mm-font__preview--medium {
+  font-size: var(--mm-preview-md);
+  line-height: var(--mm-preview-md-lh);
+}
+
+.mm-font__preview--large {
+  font-size: var(--mm-preview-lg);
+  line-height: var(--mm-preview-lg-lh);
+}
+
+.mm-font__preview--extra-large {
+  font-size: var(--mm-preview-xl);
+  line-height: var(--mm-preview-xl-lh);
+}
+
+/* 字重 */
+.mm-font__weight {
+  position: relative;
+}
+
+.mm-font__weight-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mm-space-2) 0 var(--mm-space-4);
+}
+
+.mm-font__weight-list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font__glyph {
+  width: var(--mm-weight-glyph);
+  height: var(--mm-weight-glyph);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-radius-md);
+  background: transparent;
+  color: var(--mm-color-text-chip);
+  font-family: var(--mm-glyph-font, inherit);
+  font-size: var(--mm-font-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mm-font__glyph--current {
+  border-color: var(--mm-color-border-checked);
+}
+
+.mm-font__weight-count {
+  flex: 0 0 auto;
+  width: var(--mm-weight-count);
+  height: var(--mm-weight-count);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--mm-border-w) solid var(--mm-color-surface-raised);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-surface-raised);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mm-font__weight-menu {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  z-index: var(--mm-z-dropdown);
+  min-width: var(--mm-weight-menu-min-w);
+  padding: var(--mm-space-4) 0 var(--mm-space-2);
+  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-input-page);
+  box-shadow: var(--mm-shadow-pop);
+}
+
+.mm-font__weight-option {
+  position: relative;
+  width: 100%;
+  padding: 0 var(--mm-space-5) var(--mm-space-4) var(--mm-space-exact-30);
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-text-inverse);
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-17);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mm-font__weight-check {
+  position: absolute;
+  left: var(--mm-space-5);
+  top: var(--mm-space-1);
+}
+
+/* 哨兵与底栏 */
+.mm-font__sentinel {
+  height: var(--mm-border-w);
+  list-style: none;
+}

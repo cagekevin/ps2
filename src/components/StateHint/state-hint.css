@@ -1,0 +1,20 @@
+/* 空态 / 失败提示：样式跟组件走，页面不再各自定义 */
+.mm-state-hint {
+  margin: 0;
+  padding: var(--mm-space-4) 0;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+}
+
+.mm-state-hint--error {
+  color: var(--mm-color-error);
+}
+
+.mm-state-hint__retry {
+  margin-left: var(--mm-space-1);
+  border: none;
+  background: transparent;
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}

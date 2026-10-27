@@ -41,6 +41,8 @@ export const VENDOR_FUNCS = [
   'ps_ysBtnUseStyle',
   'ys_checkUseFont',
   'ys_useFont',
+  'ztgl_initSystemList',
+  'ztgl_setFont',
   'Sys_setSystemEnvInfo'
 ] as const;
 

@@ -8,7 +8,7 @@
   align-items: center;
   gap: var(--mm-space-1);
   pointer-events: none;
-  z-index: var(--mm-z-toast);
+  z-index: var(--mm-z-toast-top);
 }
 
 .mm-toast__item {

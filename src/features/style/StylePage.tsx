@@ -5,7 +5,7 @@
  *
  * 本文件只做**骨架和 JSX**：动作（应用 / 增删改 / 拖拽 / 右键菜单）全在
  * `useStyleActions`，单项渲染在 `components/ItemView`。
- * 拆分依据 `GOVERNANCE.md` §0.5 触发条件第 6 条：组件超过 300 行必须拆。
+ * 拆分依据：动作与单项渲染各自独立成模块，页面只负责组装（不设行数上限）。
  */
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -38,7 +38,7 @@ import { BottomBar } from './components/BottomBar';
 import { ImgColorDialog } from './components/ImgColorDialog';
 import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
-import { StateHint } from './components/StateHint';
+import { StateHint } from '../../components/StateHint';
 import { ADD_TITLE, useStyleActions } from './useStyleActions';
 import './StylePage.css';
 
@@ -174,7 +174,7 @@ export default function StylePage() {
             }}
           />
         ) : (
-          <span className="mm-style__hint">未找到仓库</span>
+          <StateHint empty="未找到仓库" />
         )}
         {loadingLibrary ? <span className="mm-style__loading">读取中…</span> : null}
       </div>
@@ -322,7 +322,7 @@ export default function StylePage() {
             })}
 
             {!groups?.length && !newGroup && result?.status === 'ok' ? (
-              <p className="mm-style__hint">这个库是空的</p>
+              <StateHint empty="这个库是空的" />
             ) : null}
 
             {/* 空库时没有「某组之后」，直接渲染在列表里 */}

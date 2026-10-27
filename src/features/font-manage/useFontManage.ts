@@ -1,0 +1,295 @@
+/**
+ * 字体管理页的动作与交互状态。
+ *
+ * 页面只做组装：读数据走 store（repo 投影），写操作走 commands，
+ * 命令成功后自己重读受影响的投影（不订阅 onChange）。
+ *
+ * 标签相关（弹层 / 右键 / 新建改名 / 导入导出）在 `useTagActions.ts`；
+ * 本文件负责数据、筛选、分页、应用与预览。
+ */
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import { useToast } from '../../components/Toast';
+import {
+  applyFontFaceToLayer,
+  loadFontList,
+  rateFont,
+  type FontListRead
+} from '../../commands/font';
+import { resolveFontFace, type FontItem } from '../../domain/font-item';
+import {
+  filterFonts,
+  hasActiveFilter,
+  usableCategories as usableCategoriesOf,
+  type FilterState
+} from '../../domain/font-filter';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { usePagedList } from '../../hooks/usePagedList';
+import { defaultPreviewText, useFontStore } from '../../store/font';
+import type { Result } from '../../types/result';
+import type { HeaderMenuAction } from './components/PageHeader';
+import { fontFamilyValue } from './css';
+import { useTagActions } from './useTagActions';
+
+export function useFontManage() {
+  const toast = useToast();
+
+  const tags = useFontStore((state) => state.tags);
+  const tagsRead = useFontStore((state) => state.tagsRead);
+  const stars = useFontStore((state) => state.stars);
+  const starsRead = useFontStore((state) => state.starsRead);
+  const classification = useFontStore((state) => state.classification);
+  const classificationDegraded = useFontStore((state) => state.classificationDegraded);
+  const previewMode = useFontStore((state) => state.previewMode);
+  const previewText = useFontStore((state) => state.previewText);
+  const loadTags = useFontStore((state) => state.loadTags);
+  const loadStars = useFontStore((state) => state.loadStars);
+  const loadClassification = useFontStore((state) => state.loadClassification);
+  const setPreviewMode = useFontStore((state) => state.setPreviewMode);
+  const setPreviewText = useFontStore((state) => state.setPreviewText);
+  const cyclePreview = useFontStore((state) => state.cyclePreview);
+
+  const [loadResult, setLoadResult] = useState<Result<FontListRead> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState('');
+  const [activeTag, setActiveTag] = useState('');
+  const [filterState, setFilterState] = useState<FilterState>({});
+  const [activeFamily, setActiveFamily] = useState('');
+  const [weightIndex, setWeightIndex] = useState<Record<string, number>>({});
+  const [showTextPanel, setShowTextPanel] = useState(false);
+
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const aliveRef = useRef(true);
+  const requestSeq = useRef(0);
+  const applyingRef = useRef(false);
+
+  /* 字重索引用 ref 读：让 `apply` 的引用稳定，列表行不会因一次应用全部重渲染 */
+  const weightIndexRef = useRef(weightIndex);
+  useEffect(() => {
+    weightIndexRef.current = weightIndex;
+  }, [weightIndex]);
+
+  const fonts = useMemo(
+    () => (loadResult?.status === 'ok' ? loadResult.value.fonts : []),
+    [loadResult]
+  );
+  const dropped = loadResult?.status === 'ok' ? loadResult.value.dropped : 0;
+  /* 失败态单独给出去：`StateHint` 的类型要求「有 result 就是 Error」，不再收 `Result | null` */
+  const loadError = loadResult?.status === 'error' ? loadResult : null;
+
+  const runLoad = useCallback(async (force = false) => {
+    const seq = ++requestSeq.current;
+    setLoading(true);
+
+    const result = await loadFontList(force);
+    if (!aliveRef.current || seq !== requestSeq.current) return;
+
+    setLoadResult(result);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    void runLoad();
+    loadTags();
+    loadStars();
+    loadClassification();
+
+    return () => {
+      aliveRef.current = false;
+    };
+  }, [runLoad, loadTags, loadStars, loadClassification]);
+
+  const tagMap = useMemo(() => new Map(tags.map((tag) => [tag.text, tag.arr])), [tags]);
+  /* 1000+ 字体时不让每次按键都阻塞输入（Chromium 103 支持 useDeferredValue） */
+  const deferredKeyword = useDeferredValue(keyword);
+
+  const filtered = useMemo(
+    () =>
+      filterFonts(fonts, {
+        keyword: deferredKeyword,
+        tag: activeTag,
+        tagFonts: activeTag ? tagMap.get(activeTag) : undefined,
+        state: filterState
+      }),
+    [fonts, deferredKeyword, activeTag, tagMap, filterState]
+  );
+
+  const resetKey = `${deferredKeyword}\u0000${activeTag}\u0000${JSON.stringify(filterState)}`;
+  const { visible, hasMore, loadMore } = usePagedList(filtered, resetKey);
+  const sentinelRef = useInfiniteScroll({
+    root: listRef,
+    onReach: loadMore,
+    enabled: hasMore
+  });
+
+  const categories = useMemo(() => usableCategoriesOf(classification), [classification]);
+  const hasFilter = hasActiveFilter({ keyword, tag: activeTag, state: filterState });
+  const countLabel = activeTag || '全部';
+  const countText = hasFilter
+    ? `${countLabel}(${filtered.length})`
+    : `${countLabel}(${fonts.length})`;
+
+  const notify = useCallback(
+    async (task: Promise<Result<unknown>>, success: string): Promise<boolean> => {
+      const result = await task;
+      if (result.status === 'error') {
+        toast.error(result.reason);
+        return false;
+      }
+      toast.info(success);
+      return true;
+    },
+    [toast]
+  );
+
+  const currentWeight = useCallback(
+    (family: string) => weightIndex[family] ?? 0,
+    [weightIndex]
+  );
+
+  /* 只决定预览用什么字面渲染：缺名字时回落到家族名只影响观感，与「能不能应用」是两件事 */
+  const previewFamilyOf = useCallback(
+    (font: FontItem) => {
+      const index = weightIndex[font.family] ?? 0;
+      const ps = font.postScriptNames[index] ?? font.postScriptNames[0] ?? font.family;
+      return fontFamilyValue(ps, font.family);
+    },
+    [weightIndex]
+  );
+
+  const sampleOf = useCallback(
+    (font: FontItem) => previewText || defaultPreviewText(font.family),
+    [previewText]
+  );
+
+  /* 灰态与点击共用同一个判据：现在这个字重能不能应用 */
+  const faceErrorOf = useCallback(
+    (font: FontItem) => {
+      const face = resolveFontFace(font, weightIndex[font.family] ?? 0);
+      return face.status === 'error' ? face.reason : '';
+    },
+    [weightIndex]
+  );
+
+  const apply = useCallback(
+    async (font: FontItem, variantIndex?: number) => {
+      /* 一次只发一条 ztgl_setFont：连点不会排一串重复调用 */
+      if (applyingRef.current) return;
+      applyingRef.current = true;
+
+      const index = variantIndex ?? weightIndexRef.current[font.family] ?? 0;
+
+      try {
+        /* 文案取同一判据；失败原因由命令层原样返回，这里不预判 */
+        const face = resolveFontFace(font, index);
+        const suffix = face.status === 'ok' ? ` · ${face.value.weight}` : '';
+        const ok = await notify(applyFontFaceToLayer(font, index), `已应用 ${font.family}${suffix}`);
+        if (!ok) return;
+
+        setWeightIndex((current) => ({ ...current, [font.family]: index }));
+        setActiveFamily(font.family);
+      } finally {
+        applyingRef.current = false;
+      }
+    },
+    [notify]
+  );
+
+  const rate = useCallback(
+    async (family: string, value: number) => {
+      const ok = await notify(rateFont(family, value), '已更新评分');
+      if (ok) loadStars();
+    },
+    [notify, loadStars]
+  );
+
+  const refresh = useCallback(() => {
+    void runLoad(true);
+  }, [runLoad]);
+
+  const clearFilters = useCallback(() => {
+    setKeyword('');
+    setActiveTag('');
+    setFilterState({});
+  }, []);
+
+  const tagActions = useTagActions({
+    tags,
+    activeTag,
+    setActiveTag,
+    loadTags,
+    loadStars,
+    notify
+  });
+
+  const { handleImportTags, handleExportTags } = tagActions;
+
+  const onMenuSelect = useCallback(
+    (action: HeaderMenuAction) => {
+      if (action === 'refresh') refresh();
+      else if (action === 'preview') cyclePreview();
+      else if (action === 'import-tags') void handleImportTags();
+      else if (action === 'export-tags') void handleExportTags();
+    },
+    [refresh, cyclePreview, handleImportTags, handleExportTags]
+  );
+
+  /** 失败原因只有一个出口（标签、评分、分类共用） */
+  function reasonOf(read: Result<unknown> | null): string {
+    return read?.status === 'error' ? read.reason : '';
+  }
+
+  const tagsDropped = tagsRead?.status === 'ok' ? tagsRead.value.dropped : 0;
+  const starsDropped = starsRead?.status === 'ok' ? starsRead.value.dropped : 0;
+
+  return {
+    loadResult,
+    loading,
+    loadError,
+    fonts,
+    visible,
+    sentinelRef,
+    listRef,
+    dropped,
+    keyword,
+    setKeyword,
+    activeTag,
+    setActiveTag,
+    filterState,
+    setFilterState,
+    categories,
+    countText,
+    hasFilter,
+    clearFilters,
+    activeFamily,
+    currentWeight,
+    previewFamilyOf,
+    sampleOf,
+    faceErrorOf,
+    previewMode,
+    previewText,
+    setPreviewMode,
+    setPreviewText,
+    showTextPanel,
+    setShowTextPanel,
+    apply,
+    rate,
+    refresh,
+    tags,
+    tagsError: reasonOf(tagsRead),
+    tagsDropped,
+    starsError: reasonOf(starsRead),
+    starsDropped,
+    stars,
+    classificationDegraded,
+    ...tagActions,
+    onMenuSelect
+  };
+}

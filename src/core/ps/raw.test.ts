@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
+import { isOkSentinel, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 describe('unwrapRaw', () => {
   it('约定失败码折成对应子码，detail 带原始值', () => {
@@ -44,16 +44,35 @@ describe('parseJsxRaw', () => {
   });
 });
 
+describe('isOkSentinel', () => {
+  it('ok / OK / 带空白都算哨兵', () => {
+    expect(isOkSentinel('ok')).toBe(true);
+    expect(isOkSentinel('OK')).toBe(true);
+    expect(isOkSentinel('  ok\n')).toBe(true);
+  });
+
+  it('其它值不算哨兵', () => {
+    expect(isOkSentinel('1')).toBe(false);
+    expect(isOkSentinel('{"arr":[]}')).toBe(false);
+  });
+});
+
 describe('parseErrEnvelope', () => {
   it('解析 {err:1}', () => {
-    expect(parseErrEnvelope('{"err":1}')).toBe(1);
+    const parsed = parseErrEnvelope('{"err":1}');
+    expect(parsed.status).toBe('ok');
+    if (parsed.status === 'ok') expect(parsed.value).toBe(1);
   });
 
-  it('没有 err 字段返回 null', () => {
-    expect(parseErrEnvelope('{"data":1}')).toBeNull();
+  it('没有 err 字段 → CORRUPT（不再有 null 通道）', () => {
+    const parsed = parseErrEnvelope('{"data":1}');
+    expect(parsed.status).toBe('error');
+    if (parsed.status === 'error') expect(parsed.code).toBe('CORRUPT');
   });
 
-  it('不是 JSON 返回 null（调用方自己定语义）', () => {
-    expect(parseErrEnvelope('garbage')).toBeNull();
+  it('不是 JSON → CORRUPT', () => {
+    const parsed = parseErrEnvelope('garbage');
+    expect(parsed.status).toBe('error');
+    if (parsed.status === 'error') expect(parsed.code).toBe('CORRUPT');
   });
 });

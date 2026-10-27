@@ -41,7 +41,18 @@ const WHITELIST = [
   /* 仓库图标（仓库条左侧） */
   'iconmorencangku',
   /* 选中勾（下拉列表当前项） */
-  'icongouxuan'
+  'icongouxuan',
+  /* 字体管理页：搜索 / 筛选 / 更多菜单 / 刷新 / 关闭 / 删除 */
+  'iconsousuo',
+  'iconguolv',
+  'icongengduocaidan',
+  'iconshuaxin',
+  'iconguanbi',
+  'iconshanchu',
+  /* 字体管理页：标签 / 眼睛（预览档位）/ 字号（预览文案） */
+  'iconbiaoqian',
+  'iconxianshi',
+  'iconzihaodaxiao1'
 ];
 
 if (!existsSync(SPRITE)) {

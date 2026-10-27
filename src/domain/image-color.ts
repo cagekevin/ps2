@@ -3,7 +3,7 @@
 //             这里拆成「纯算法（本文件主体）」+「可注入的 canvas 缝（readPixelsFromImage）」
 // 谁在用：`/style` 页图片取色（原版 `getImgHex`，app.v4.js:54682-54693 → `nS(t, 350, 10, cb)`）
 // 关于 throw：本文件的 `throw new Error(...)` 全是**开发者断言**（注入缺失 / 尺寸非法），
-//   读者是写代码的人，不上 UI —— 不是失败表达，别改成 `DecodeFail`。
+//   读者是写代码的人，不上 UI —— 不是失败表达，别改成 `Result`/`fail`。
 // 禁止：本文件不碰 document / window / new Image；像素来源必须由调用方注入，
 //       因为 jsdom 没有真实 canvas 像素能力（见文件末「jsdom 边界」）
 

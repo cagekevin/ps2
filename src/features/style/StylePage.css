@@ -412,23 +412,6 @@
   background: var(--mm-color-verline);
 }
 
-/* ---------- 三态 ---------- */
-.mm-style__hint {
-  margin: 0;
-  padding: var(--mm-space-4) 0;
-  color: var(--mm-color-text-dim);
-  font-size: var(--mm-font-sm);
-}
-
-.mm-style__hint--error {
-  color: var(--mm-color-error);
-}
-
-.mm-style__retry {
-  margin-left: var(--mm-space-1);
-  border: none;
-  background: transparent;
-  color: var(--mm-color-accent);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
+/* ---------- 三态 ----------
+ * 空态 / 失败提示已上移到 `components/StateHint`，页面不再自定义。
+ */
