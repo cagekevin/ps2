@@ -6,13 +6,14 @@
 
 import { nodeRequire } from '../core/cep/node';
 import { readTextResult, writeTextAtomic } from '../core/storage';
-import { parseJson } from '../domain/json';
 import { resolveKuGroups } from '../domain/ku-format';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
 import {
   decodeStyleIndex,
   fileNameOf,
+  kuEnsureListOf,
   kuGuid,
+  kuListOf,
   readKuGroups,
   type KuGroup,
   type KuKind,
@@ -20,6 +21,7 @@ import {
   type StyleWarehouseIndex
 } from '../domain/style-library';
 import { isRecord } from '../types/guards';
+import { parseJson } from '../types/json';
 import { fail, ok, type Result } from '../types/result';
 
 /** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
@@ -47,7 +49,7 @@ export function readIndex(): Result<StyleWarehouseIndex> {
   const text = readTextResult(INDEX_FILE, 'legacy');
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value);
+  const parsed = parseJson(text.value, '仓库索引');
   if (parsed.status === 'error') return parsed;
 
   return decodeStyleIndex(parsed.value);
@@ -74,7 +76,7 @@ export function readRawGroups(
   const text = readLibraryText(warehouse, kind);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value);
+  const parsed = parseJson(text.value, '库文件');
   if (parsed.status === 'error') return parsed;
 
   return resolveKuGroups(parsed.value, decodeBase64);
@@ -89,11 +91,6 @@ export function readLibrary(
   if (text.status === 'error') return text;
 
   return readKuGroups(kind, text.value, decodeBase64);
-}
-
-/** 读库文件原文（导出、诊断用） */
-export function readKuFileText(fileName: string): Result<string> {
-  return readTextResult(fileName, 'legacy');
 }
 
 /**
@@ -111,7 +108,7 @@ export function readKuGroupItems(
   const text = readLibraryText(warehouse, kind);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value);
+  const parsed = parseJson(text.value, '库文件');
   if (parsed.status === 'error') return parsed;
 
   const groups = parsed.value;
@@ -139,8 +136,7 @@ export function readKuItem(
   const group = groups.value[groupIndex];
   if (!group) return fail('CORRUPT', `分组 ${groupIndex} 不存在`);
 
-  const list = Array.isArray(group.list) ? group.list : [];
-  const item = list[itemIndex];
+  const item = (kuListOf(group) ?? [])[itemIndex];
   if (!isRecord(item)) return fail('CORRUPT', `项 ${itemIndex} 不存在`);
 
   return ok(item);
@@ -190,25 +186,6 @@ export async function mutateRawGroups(
   if (written.status === 'error') return written;
 
   return ok(undefined);
-}
-
-/**
- * 【范本】读-改-写仓库索引。
- * 约束同 mutateRawGroups：读失败不写、写走原子替换。
- */
-export async function mutateIndex(
-  mutator: Mutator<StyleWarehouseIndex>
-): Promise<Result<StyleWarehouseIndex>> {
-  const current = readIndex();
-  if (current.status === 'error') return current;
-
-  const next = mutator(current.value);
-  if (next === null) return current;
-
-  const written = await writeTextAtomic(INDEX_FILE, JSON.stringify(next), 'legacy');
-  if (written.status === 'error') return written;
-
-  return ok(next);
 }
 
 /* ---------------- 写：分组 ---------------- */
@@ -298,8 +275,8 @@ export function renameKuItem(
   name: string
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
-    const list = groups[groupIndex]?.list;
-    if (!Array.isArray(list)) return null;
+    const list = kuListOf(groups[groupIndex]);
+    if (!list) return null;
     const item = list[itemIndex];
     if (!isRecord(item)) return null;
     item.name = name;
@@ -314,8 +291,8 @@ export function deleteKuItem(
   itemIndex: number
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
-    const list = groups[groupIndex]?.list;
-    if (!Array.isArray(list) || itemIndex < 0 || itemIndex >= list.length) return null;
+    const list = kuListOf(groups[groupIndex]);
+    if (!list || itemIndex < 0 || itemIndex >= list.length) return null;
     list.splice(itemIndex, 1);
     return groups;
   });
@@ -331,8 +308,7 @@ export function addKuItem(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
     if (!group) return null;
-    if (!Array.isArray(group.list)) group.list = [];
-    (group.list as unknown[]).push(item);
+    kuEnsureListOf(group).push(item);
     return groups;
   });
 }
@@ -345,12 +321,7 @@ export function moveKuItemTo(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     /* applyItemDrop 改的是数组本身，所以要让每个组都持有真实数组 */
-    const lists = groups.map((group) => {
-      if (!Array.isArray(group.list)) group.list = [];
-      return group.list as unknown[];
-    });
-
-    applyItemDrop(lists, move);
+    applyItemDrop(groups.map(kuEnsureListOf), move);
     return groups;
   });
 }

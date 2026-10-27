@@ -14,6 +14,7 @@
 import { nodeRequire } from '../cep/node';
 import { getUserDataPath } from '../cep/bridge';
 import { log } from '../logger';
+import { parseJson } from '../../types/json';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 
 export type StorageRoot = 'data' | 'legacy' | 'swatch';
@@ -106,12 +107,13 @@ function writeText(name: string, text: string, root: StorageRoot = 'data'): bool
 export function readJson<T>(name: string, fallback: T, root: StorageRoot = 'data'): T {
   const result = readTextResult(name, root);
   if (result.status === 'error') return fallback;
-  try {
-    return JSON.parse(result.value) as T;
-  } catch (error) {
-    log.warn('readJson 解析失败', { name, root, error });
+
+  const parsed = parseJson(result.value, `文件 ${name}`);
+  if (parsed.status === 'error') {
+    log.warn('readJson 解析失败', { name, root, reason: parsed.reason });
     return fallback;
   }
+  return parsed.value as T;
 }
 
 /** 同一文件的写操作串行化：并发写会互相覆盖 */

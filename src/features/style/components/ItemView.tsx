@@ -8,7 +8,7 @@
 import type { CSSProperties, MouseEvent } from 'react';
 import { InlineEdit } from '../../../components/InlineEdit';
 import { userAssetUrl } from '../../../core/paths';
-import type { KuItem, KuKind } from '../../../domain/style-library';
+import { fontFamilyOf, type KuItem, type KuKind } from '../../../domain/style-library';
 
 interface Props {
   kind: KuKind;
@@ -79,8 +79,30 @@ export function ItemView({
         onContextMenu={menu}
         onMouseDown={down}
       >
-        <span className="mm-style__font-family">{preview?.family || item.name}</span>
-        <span className="mm-style__meta">{preview?.size}</span>
+        {preview ? (
+          <>
+            {/* 四件套（原版 render `:50956-50971`，对照清单 #24）：
+                字体数 + N点 + 5×5 色点 一行，「中文字」预览一行 */}
+            <span className="mm-style__font-head">
+              <span className="mm-style__font-count">{preview.count}</span>
+              <span className="mm-style__font-size">{preview.size}</span>
+              {preview.color ? (
+                <span
+                  className="mm-style__font-dot"
+                  style={{ '--mm-dot-color': preview.color } as CSSProperties}
+                />
+              ) : null}
+            </span>
+            <span
+              className="mm-style__font-sample"
+              style={{ '--mm-sample-font': fontFamilyOf(preview) } as CSSProperties}
+            >
+              中文字
+            </span>
+          </>
+        ) : (
+          <span className="mm-style__font-family">{item.name}</span>
+        )}
       </button>
     );
   }

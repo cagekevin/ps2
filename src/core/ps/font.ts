@@ -11,25 +11,14 @@
  * 颜色 / 渐变 / 图层样式走调度，字体不走——这是两条不同的通道。
  *
  * 参数必须先 `encodeText` 编码（原版 `Xv`），jsx 侧解码。
+ * raw 的解析统一走 `./raw.ts`，本文件不写 JSON.parse。
  */
 
-import { callJsx } from '../cep/bridge';
+import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
-
-/** 写操作超时比读长：应用字体会遍历文本图层 */
-const WRITE_TIMEOUT = 60_000;
-
-/** 解析宿主返回的 `err` 字段：1 表示字体缺失 */
-function hostErr(raw: string): number | null {
-  try {
-    const parsed = JSON.parse(raw) as { err?: unknown };
-    return typeof parsed.err === 'number' ? parsed.err : null;
-  } catch {
-    return null;
-  }
-}
+import { parseErrEnvelope, parseJsxRaw } from './raw';
 
 /**
  * 检查字体是否可用。
@@ -43,7 +32,7 @@ export async function checkFontUsable(item: Record<string, unknown>): Promise<Re
   if (call.status === 'error') return call;
 
   /* 返回结构未公开时按可用处理，不阻断正常流程 */
-  return ok(hostErr(call.value) !== 1);
+  return ok(parseErrEnvelope(call.value) !== 1);
 }
 
 /**
@@ -58,22 +47,19 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
   const call = await callJsx('ys_getFontInfo', []);
   if (call.status === 'error') return call;
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(call.value);
-  } catch {
-    return failWithDetail('CORRUPT', '字体属性格式异常', `raw:${call.value}`);
-  }
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  const value = parsed.value;
 
-  if (parsed === false) return fail('VALIDATION', '当前图层不是文字图层');
-  if (parsed && typeof parsed === 'object' && (parsed as { err?: unknown }).err === 1) {
+  if (value === false) return fail('VALIDATION', '当前图层不是文字图层');
+  if (value && typeof value === 'object' && (value as { err?: unknown }).err === 1) {
     return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
   }
 
   const data =
-    parsed && typeof parsed === 'object' && 'data' in parsed
-      ? (parsed as { data: unknown }).data
-      : parsed;
+    value && typeof value === 'object' && 'data' in value
+      ? (value as { data: unknown }).data
+      : value;
   if (
     !data ||
     typeof data !== 'object' ||
@@ -94,7 +80,7 @@ export async function applyFont(item: Record<string, unknown>): Promise<Result<v
   const call = await callJsx('ys_useFont', [payload], { timeout: WRITE_TIMEOUT });
   if (call.status === 'error') return call;
 
-  const err = hostErr(call.value);
+  const err = parseErrEnvelope(call.value);
   if (err === 1) {
     return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
   }

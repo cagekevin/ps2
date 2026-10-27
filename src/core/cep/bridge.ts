@@ -45,6 +45,9 @@ export function isCep(): boolean {
 /** 单条脚本超时：PS 卡住时不能让整个通道永久挂起 */
 const DEFAULT_TIMEOUT = 30_000;
 
+/** 写操作超时比读长：应用字体 / 保存图层样式要遍历图层或写 PSD */
+export const WRITE_TIMEOUT = 60_000;
+
 /**
  * ExtendScript 是单线程的，并发发多条 evalScript 时返回顺序不保证。
  * 表现：快速连点 3 个色块，最后生效的可能不是最后点的那个。
@@ -202,14 +205,7 @@ export function getExtensionId(): string {
   return window.__adobe_cep__?.getExtensionID() ?? '';
 }
 
-/** 监听应用级 CEP 事件 */
-export function onAppEvent(type: string, handler: (data: unknown) => void): void {
-  const cep = window.__adobe_cep__;
-  if (!cep) return;
-  cep.addEventListener(type, (event) => handler(event.data));
-}
-
-/** 广播应用级 CEP 事件 */
+/* 广播应用级 CEP 事件 */
 export function emitAppEvent(type: string, data: unknown): void {
   const CSEventCtor = window.CSEvent;
   const cep = window.__adobe_cep__;

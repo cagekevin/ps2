@@ -64,7 +64,7 @@ async function load(): Promise<PsCapability> {
     return capability;
   }
 
-  const coreMissing = await probe(['mm_layer_getState', 'mm_style_applyColor', 'mm_doc_getInfo']);
+  const coreMissing = await probe(['mm_layer_getState', 'mm_style_applyColor']);
   if (coreMissing.length) {
     log.error('自有 jsx 函数缺失', { missing: coreMissing });
     return capability;
@@ -110,9 +110,4 @@ export async function requireCore(): Promise<boolean> {
 export async function requireVendor(): Promise<boolean> {
   const capability = await ensurePsReady();
   return capability.vendor;
-}
-
-/** 仅测试用：重置加载状态 */
-export function resetPsReady(): void {
-  pending = null;
 }

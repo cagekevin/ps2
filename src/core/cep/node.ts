@@ -20,11 +20,6 @@ function getRequire(): RequireFn | null {
   return null;
 }
 
-/** Node 是否可用（决定能否读写文件） */
-export function hasNode(): boolean {
-  return getRequire() !== null;
-}
-
 /** 取 Node 内置模块；不可用或加载失败返回 null，不抛 */
 export function nodeRequire<T>(name: string): T | null {
   const req = getRequire();

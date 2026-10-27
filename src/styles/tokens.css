@@ -60,8 +60,12 @@
   --mm-font-xs: 11px;
   --mm-font-sm: 12px;
   --mm-font-md: 13px;
+  /* 原版 `.block-context` 的中文字预览 14px（对照清单 #24） */
+  --mm-font-lg: 14px;
 
-  /* 精确间距：原版是 3/5/6/7/10/14/15px，不是 4 的倍数 */
+  /* 精确间距：原版是 1/2/3/5/6/7/10px，不是 4 的倍数 */
+  --mm-space-exact-1: 1px;
+  --mm-space-exact-2: 2px;
   --mm-space-exact-3: 3px;
   --mm-space-exact-5: 5px;
   --mm-space-exact-6: 6px;

@@ -9,6 +9,19 @@
 
 ### 形状收口（唯一结果形状）
 
+#### 第二批：解析与死代码收口
+
+- `JSON.parse` 直写 9 → 1：`parseJson(text, label)` 落 `types/json.ts`（label 必填，失败原因说清是哪份文本；落 types 是因为 core/domain/repo 都要用，types 是唯一共同下层）
+- `core/ps/raw.ts` 扩成 raw 协议唯一解析处：`unwrapRaw`（约定值）+ `parseJsxRaw`（JSON）+ `parseErrEnvelope`（err 信封）；`hostErr` ×2、`WRITE_TIMEOUT` ×2 重复定义收掉
+- 删死导出 14 个（`onAppEvent` / `hasNode` / `APP_NAME` / `isInCep` / `clearLog` / `removePref` / `resetPrefs` / `getDocumentInfo` / `resetPsReady` / `readKuFileText` / `mutateIndex` / `isString` / `isFiniteNumber` / `useLoadingVisible`）
+- 删死横切链：`core/color` + `color.test.ts` + `types/color.ts` + `ShapeStyle`（生产零引用，被自己的测试养着；颜色换算全在 jsx）
+- `getDocumentInfo` TS + jsx `mm_doc_getInfo` 同轮删（避免再造 jsx 死镜像）；`init.ts` 探测列表同步
+- `kuListOf` / `kuEnsureListOf` 收敛 `group.list` 判据（读/跳过 vs 写前补齐，两种语义两个函数）
+- jsx 3 处裸 `catch` 补「为何可不抛」声明（零行为）
+- 明确不收（有副作用，维持登记）：jsx `parseColor` 合并、`readKuGroupItems` 双解析、`readJson` 容错语义
+
+### 形状收口（唯一结果形状）
+
 - `Result` 统一为 `{ status: 'ok'; value } | { status: 'error'; code; reason; detail }`，全仓只此一种
 - 删除 `ReadOutcome`（`types/read.ts` 整个删掉）、`SwatchRead`、`JsxCall`、`toResult` 转换层
 - 文件三态改由码承载：`NOT_FOUND`（不重试）/ `CORRUPT`（不重试）/ `IO_ERROR`（可重试），语义与判定原则不变

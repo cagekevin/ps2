@@ -55,7 +55,3 @@ export function useLoading(): LoadingActions {
   if (!actions) throw new Error('useLoading 必须在 LoadingProvider 内使用');
   return actions;
 }
-
-export function useLoadingVisible(): boolean {
-  return useContext(VisibleContext);
-}

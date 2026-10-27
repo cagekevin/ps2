@@ -7,6 +7,7 @@
 import { callJsx } from '../cep/bridge';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore } from './init';
+import { parseJsxRaw } from './raw';
 
 export interface VendorDiag {
   /** 每个字段是 typeof 的结果，'function' 才算可用 */
@@ -30,9 +31,7 @@ export async function diagVendor(): Promise<Result<VendorDiag>> {
   const call = await callJsx('mm_diag_vendor');
   if (call.status === 'error') return call;
 
-  try {
-    return ok(JSON.parse(call.value) as VendorDiag);
-  } catch {
-    return failWithDetail('CORRUPT', '诊断结果无法解析', `raw:${call.value}`);
-  }
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  return ok(parsed.value as VendorDiag);
 }

@@ -11,6 +11,7 @@ function mm_c(id) { return charIDToTypeID(id); }
 /* ---------------- 日志 ---------------- */
 
 function mm_log(message) {
+	/* 日志属「尽力而为」：写不进去也不许影响业务，吞掉是故意的（刀 4 例外） */
 	try {
 		var file = new File(Folder.temp.fsName + "/maomao-jsx.log");
 		file.encoding = "UTF8";
@@ -253,6 +254,8 @@ function mm_style_applyColor(param) {
 		} else if (kind === LayerKind.SOLIDFILL) {
 			var hasFill = true;
 			var hasStroke = false;
+			/* 探测描边信息：老版本 PS / 非标准形状读不到 AGMStrokeStyleInfo，
+			   读不到时按「有填充无描边」的默认走，不能因此中断整个上色 */
 			try {
 				var ref = new ActionReference();
 				ref.putEnumerated(mm_s("contentLayer"), mm_s("ordinal"), mm_s("targetEnum"));
@@ -275,6 +278,8 @@ function mm_style_applyColor(param) {
 				app.foregroundColor.rgb.blue
 			);
 		} else if (kind === LayerKind.TEXT) {
+			/* 文字图层改色：锁定/关联文字（如缺失字体）会抛，抛了就保持原色，
+			   不能因为改色失败把前面的前景色设置回滚 */
 			try { layer.textItem.color = color; } catch (e) { }
 		}
 
@@ -403,17 +408,5 @@ function mm_diag_vendor() {
 		}
 
 		return JSON.stringify(out);
-	});
-}
-
-/* ---------------- 文档 ---------------- */
-
-function mm_doc_getInfo() {
-	return mm_safe("mm_doc_getInfo", function () {
-		if (!app.documents.length) return "no-doc";
-		var doc = app.activeDocument;
-		var width = Math.round(doc.width.as("px"));
-		var height = Math.round(doc.height.as("px"));
-		return doc.name + "|" + width + "|" + height + "|" + doc.mode + "|" + doc.layers.length;
 	});
 }

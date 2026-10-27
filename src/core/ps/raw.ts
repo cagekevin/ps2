@@ -3,11 +3,13 @@
  *
  * 全仓只有两处允许认识这些约定值：
  *   core/cep/bridge.ts  —— 构造线上字符串（拼 evalScript）
- *   本文件              —— 解析返回值
+ *   本文件              —— 解析返回值（约定值 / JSON / err 信封）
  * 新增约定值必须先登记 `RAW_FAILURES` 这张表，不许在能力函数里手写字符串比较。
  *
  * 约定值来自原版面板与我们的 jsx/main.jsx（详见 docs/PS-CHANNEL-NOTES.md §三）。
  */
+
+import { parseJson } from '../../types/json';
 import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/result';
 
 const RAW_FAILURES: Record<string, { code: ErrorCode; reason: string }> = {
@@ -29,4 +31,20 @@ export function unwrapRaw(raw: string): Result<void> {
   const hit = RAW_FAILURES[trimmed];
   if (hit) return failWithDetail(hit.code, hit.reason, `raw:${trimmed}`);
   return ok(undefined);
+}
+
+/** raw 是 JSON → 解析；不是 → CORRUPT（detail 带原始值，排障不用翻日志） */
+export function parseJsxRaw(raw: string): Result<unknown> {
+  return parseJson(raw, 'jsx 返回值');
+}
+
+/**
+ * 官方直调函数（ys_*）的 err 信封：`{ err: number }`。
+ * err === 1 表示宿主侧失败（如字体缺失）；解析不出按「没有 err 字段」处理，由调用方定语义。
+ */
+export function parseErrEnvelope(raw: string): number | null {
+  const parsed = parseJson(raw, 'jsx err 信封');
+  if (parsed.status !== 'ok') return null;
+  const err = (parsed.value as { err?: unknown }).err;
+  return typeof err === 'number' ? err : null;
 }

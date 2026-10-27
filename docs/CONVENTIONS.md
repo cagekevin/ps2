@@ -174,8 +174,7 @@ src/
 │  ├─ auth/       token
 │  ├─ storage/    本地文件（双根：Maomao / SheJiZhuLi）
 │  ├─ paths/      路径拼接与资源 URL
-│  ├─ ps/         PS 原子能力（init/layer/style/font/document/env/diag）
-│  ├─ color/      颜色转换
+│  ├─ ps/         PS 原子能力（init/layer/style/font/env/diag）
 │  ├─ env/        版本、设备、环境
 │  └─ logger/     日志
 ├─ domain/        纯业务模型与归一化（零 IO、零 UI、可单测）
@@ -408,7 +407,7 @@ evalScript("ps_onJsx('" + JSON.stringify(r) + "')")
 | `addEventListener` | `hooks/*`（如 `useDismiss`） | 调 hook |
 | `getBoundingClientRect` | `hooks/useFloatingPosition` | 调 hook |
 | `localStorage` | `core/prefs` | `hooks/usePersisted` |
-| `JSON.parse` | `domain/*` | 调 domain 函数 |
+| `JSON.parse` | `types/json.ts` | 调 `parseJson`（label 必填） |
 | `evalScript` / `callJsx` | `core/ps/*` | 调 `commands` |
 
 **判断标准：两处以上就抽。**

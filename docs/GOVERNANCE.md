@@ -88,24 +88,22 @@
 | 字体应用 | `src/core/ps/font.ts` | 直接调通道，先检查再应用 | ✅ 真机 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL | ⚠️ 待真机（缩略图待复验） |
 | 命令层 | `src/commands/README.md` | 命令判定标准与写法 | — 规范 |
-| 颜色 | `src/core/color/index.ts` | 唯一颜色编解码 | ✅ 单测 |
 | 鉴权 | `src/core/auth/index.ts` | token + 版本化 key | ⚠️ 未使用 |
 | 环境 | `src/core/env/index.ts` | 版本号、扩展 ID | ✅ 真机 |
 | 网络 | `src/core/http/client.ts` | 唯一请求入口 | ⚠️ 未实测 |
 | 接口登记 | `src/core/http/endpoints.ts` | 标注来源与验证状态 | ⚠️ 未实测 |
 | PS 初始化 | `src/core/ps/init.ts` | jsx 加载保证 | ✅ 真机 |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换 | ✅ 真机 |
-| PS 文档 | `src/core/ps/document.ts` | 分隔符解析在 core | ⚠️ 未调用 |
 | PS 样式 | `src/core/ps/style.ts` | 颜色走自有移植版，渐变/样式走 `ps_onJsx` | ✅ 真机 |
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖 | ✅ 真机 |
 | PS 环境 | `src/core/ps/env.ts` | 注入官方 jsx 所需环境变量 | ✅ 真机 |
 | 样式命令 | `src/commands/style.ts` | 颜色 / 渐变 / 字体 / 图层样式 / 修饰键 | ✅ 真机 |
 | 类型 | `src/types/result.ts` | 全仓唯一结果形状（status/code/reason/detail） | ✅ 单测 |
-| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值唯一解析处（表驱动） | ⚠️ 待单测 |
+| JSON 解析 | `src/types/json.ts` | 唯一的文本 → unknown 入口（label 必填） | ✅ 单测 |
+| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值 / JSON / err 信封唯一解析处（表驱动） | ✅ 单测 |
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
-| 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 | ✅ 真实数据 |
+| 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 + kuListOf/kuEnsureListOf | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
-| JSON 解析 | `src/domain/json.ts` | 唯一的文本 → unknown 入口 | ✅ 单测 |
 | 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result，不做业务判断 | ✅ 真实数据 |
 | 业务切片 | `src/store/style-library.ts` | 只读投影，失败原样保留 | ✅ 真实数据 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
@@ -290,4 +288,5 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 | 2026-10-27 | 新增 `docs/PS-CHANNEL-NOTES.md`：三条通道、参数序列化、串行队列、env 注入、LayerKind、库文件数据契约、CEP 坑、排障速查 | docs |
 | 2026-10-27 | 重写 `docs/STYLE-PANEL-GAP.md` 为「现状 + 剩余缺口」，列出已失效的旧结论 | docs |
 | 2026-10-27 | 新增工程 `README.md` 与 `CHANGELOG.md`；修正 `jsx/vendor.README.md`（来源、函数表、通道、返回值）与本节检查链、范本状态 | 全项目 |
+| 2026-10-27 | **形状收口·第二批**：`JSON.parse` 直写 9→1（`parseJson(text, label)` 落 `types/json.ts`）；`raw.ts` 扩成约定值+JSON+err 信封唯一解析处；删死导出 14 个；删死横切链 `core/color`+`types/color`+`ShapeStyle`；`getDocumentInfo` TS+jsx 同轮删；`kuListOf`/`kuEnsureListOf` 收敛 list 判据；jsx 裸 catch 补声明。有副作用的项（jsx `parseColor`、双解析合并）维持登记不收 | types、core、repo、domain、jsx |
 | 2026-10-27 | **形状收口**：全仓唯一结果形状 `Result{status, value\|code, reason, detail}`；删除 `ReadOutcome` / `SwatchRead` / `JsxCall` / `toResult`（`types/read.ts` 整个删掉）；三态改由码承载（`NOT_FOUND` / `CORRUPT` / `IO_ERROR`）；`PS_ERROR` 拆 5 个子码；新增 `core/ps/raw.ts`（raw 约定值唯一解析，表驱动）；删死函数 `getLayerKind` / `getLayerName`。纯形状改动，读写行为不变。jsx `parseColor` 合并有副作用（碰 PS 运行时），明确不收、另行登记 | types、core、repo、domain、commands、features |

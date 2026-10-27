@@ -11,6 +11,7 @@
  * - 写走 `writeTextAtomic`（.bak 备份 + 串行），写失败调用方必须提示
  */
 import { readTextResult, writeTextAtomic } from '../core/storage';
+import { parseJson } from '../types/json';
 import { fail, ok, type Result } from '../types/result';
 
 /** 色板文件名（原版 `g_FN.color`） */
@@ -28,15 +29,12 @@ export function readSwatchItems(): Result<unknown[]> {
   const text = outcome.value.trim();
   if (text === '') return ok([]);
 
-  try {
-    const parsed: unknown = JSON.parse(text);
-    if (!Array.isArray(parsed)) {
-      return fail('CORRUPT', '色板文件不是数组');
-    }
-    return ok(parsed);
-  } catch {
-    return fail('CORRUPT', '色板文件不是合法 JSON');
+  const parsed = parseJson(text, '色板文件');
+  if (parsed.status === 'error') return parsed;
+  if (!Array.isArray(parsed.value)) {
+    return fail('CORRUPT', '色板文件不是数组');
   }
+  return ok(parsed.value);
 }
 
 /** 写色板全文（整份替换）；旧内容自动进 .bak */

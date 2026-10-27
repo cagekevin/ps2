@@ -14,26 +14,13 @@
  *
  * 项必须是磁盘原始项（含 isFill 等未知键），isFill 加在**顶层**。
  *
- * raw 约定值的解析统一走 `unwrapRaw`（./raw.ts），本文件不写字符串比较。
+ * raw 的解析（约定值 / JSON / err 信封）统一走 `./raw.ts`，本文件不写 JSON.parse。
  */
 
-import { callJsx } from '../cep/bridge';
+import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore, requireVendor } from './init';
-import { unwrapRaw } from './raw';
-
-/** 写操作超时比读长（保存图层样式要写 PSD + 缩略图） */
-const WRITE_TIMEOUT = 60_000;
-
-/** 解析宿主返回的 `err` 字段：1 表示失败 */
-function hostErr(raw: string): number | null {
-  try {
-    const parsed = JSON.parse(raw) as { err?: unknown };
-    return typeof parsed.err === 'number' ? parsed.err : null;
-  } catch {
-    return null;
-  }
-}
+import { parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 /** 官方 jsx 的统一调度入口 */
 const VENDOR_DISPATCH = 'ps_onJsx';
@@ -116,11 +103,9 @@ export async function getForegroundColor(): Promise<Result<Record<string, unknow
   const guard = unwrapRaw(call.value);
   if (guard.status === 'error') return guard;
 
-  try {
-    return ok(JSON.parse(call.value) as Record<string, unknown>);
-  } catch {
-    return failWithDetail('CORRUPT', '前景色返回格式异常', `raw:${call.value}`);
-  }
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  return ok(parsed.value as Record<string, unknown>);
 }
 
 /**
@@ -135,24 +120,21 @@ export async function getGradientInfo(): Promise<Result<unknown>> {
   const call = await callJsx('ys_getGradientInfo', []);
   if (call.status === 'error') return call;
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(call.value);
-  } catch {
-    return failWithDetail('CORRUPT', '渐变数据格式异常', `raw:${call.value}`);
-  }
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  const value = parsed.value;
 
-  if (parsed === false) return fail('VALIDATION', '当前图层没有可读取的渐变');
+  if (value === false) return fail('VALIDATION', '当前图层没有可读取的渐变');
 
-  if (parsed && typeof parsed === 'object' && (parsed as { err?: unknown }).err === 1) {
+  if (value && typeof value === 'object' && (value as { err?: unknown }).err === 1) {
     return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
   }
 
   /* 兼容两种返回：裸载荷，或 {err, data} 信封 */
   const data =
-    parsed && typeof parsed === 'object' && 'data' in parsed
-      ? (parsed as { data: unknown }).data
-      : parsed;
+    value && typeof value === 'object' && 'data' in value
+      ? (value as { data: unknown }).data
+      : value;
   if (data === null || data === undefined) {
     return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
   }
@@ -179,7 +161,7 @@ export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
   );
   if (call.status === 'error') return call;
 
-  if (hostErr(call.value) === 1) {
+  if (parseErrEnvelope(call.value) === 1) {
     return failWithDetail('PS_ERROR', '保存图层样式失败', `raw:${call.value}`);
   }
 

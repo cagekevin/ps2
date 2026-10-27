@@ -11,6 +11,7 @@
  */
 
 import { isArrayOf, isRecord } from '../types/guards';
+import { parseJson } from '../types/json';
 import { fail, ok, type Result } from '../types/result';
 
 export type KuKindName = 'color' | 'gradient' | 'font' | 'style';
@@ -96,17 +97,13 @@ export function decodeKuData(
 function decodeArrayText(content: Result<string>): Result<Record<string, unknown>[]> {
   if (content.status === 'error') return content;
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content.value);
-  } catch {
-    return fail('CORRUPT', '内层不是合法 JSON');
-  }
+  const parsed = parseJson(content.value, '库条目内层');
+  if (parsed.status === 'error') return parsed;
 
-  if (!Array.isArray(parsed)) return fail('CORRUPT', '内层不是数组');
-  if (!isArrayOf(parsed, isRecord)) return fail('CORRUPT', '内层混有非对象项');
+  if (!Array.isArray(parsed.value)) return fail('CORRUPT', '内层不是数组');
+  if (!isArrayOf(parsed.value, isRecord)) return fail('CORRUPT', '内层混有非对象项');
 
-  return ok(parsed);
+  return ok(parsed.value);
 }
 
 /**

@@ -40,11 +40,6 @@ export function setPref(key: PrefKey, value: unknown): void {
   scheduleFlush();
 }
 
-export function removePref(key: PrefKey): void {
-  delete load()[key];
-  scheduleFlush();
-}
-
 /** 立即落盘；失败原样上抛（writeText 内部已记日志） */
 export function flushPrefs(): Result<void> {
   if (flushTimer !== null) {
@@ -62,15 +57,6 @@ function scheduleFlush(): void {
   if (flushTimer !== null) return;
   flushTimer = window.setTimeout(() => {
     flushTimer = null;
-    flushPrefs();
+    void flushPrefs();
   }, 200);
-}
-
-/** 仅测试用 */
-export function resetPrefs(): void {
-  cache = null;
-  if (flushTimer !== null) {
-    window.clearTimeout(flushTimer);
-    flushTimer = null;
-  }
 }

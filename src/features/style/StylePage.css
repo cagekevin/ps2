@@ -241,22 +241,62 @@
   cursor: default;
 }
 
-/* 字体卡片内文 */
-.mm-style__font-family {
+/* ---------- 字体卡片四件套（原版 render `:50956-50971`，对照清单 #24） ---------- */
+
+/* 原版 `.f-alignNone.w100`：数量 / N点 / 色点三件 space-between 一行 */
+.mm-style__font-head {
+  display: flex;
   width: 100%;
+  justify-content: space-between;
+}
+
+/* 原版继承全局 `p{color:#c3c3c3;font-size:12px}` */
+.mm-style__font-count,
+.mm-style__font-size {
   margin: 0;
-  overflow: hidden;
   color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  font-size: var(--mm-font-sm);
+}
+
+/* 原版 `.block-size`：只比 count 多 margin-top:1px */
+.mm-style__font-size {
+  margin-top: var(--mm-space-exact-1);
+}
+
+/* 原版 `.block-color`：5×5 圆点，颜色由项数据给 */
+.mm-style__font-dot {
+  flex: 0 0 auto;
+  width: var(--mm-space-exact-5);
+  height: var(--mm-space-exact-5);
+  margin-top: var(--mm-space-exact-1);
+  border-radius: 50%;
+  background: var(--mm-dot-color, transparent);
+}
+
+/* 原版 `.block-context`：中文字预览，14px / 700 / 白 / 居中 */
+.mm-style__font-sample {
+  width: 100%;
+  margin: var(--mm-space-exact-2) 0 0;
+  overflow: hidden;
+  color: var(--mm-color-text-inverse);
+  font-family: var(--mm-sample-font, inherit);
+  font-size: var(--mm-font-lg);
   font-weight: 700;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mm-style__meta {
-  color: var(--mm-color-text-dim);
-  font-size: var(--mm-font-xs);
+/* 无 fontPreview 的兜底：只显名字 */
+.mm-style__font-family {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- 各组末尾的「+」 ---------- */

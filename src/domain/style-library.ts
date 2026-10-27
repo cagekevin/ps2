@@ -10,8 +10,8 @@
  */
 
 import { isRecord } from '../types/guards';
+import { parseJson } from '../types/json';
 import { fail, ok, type Result } from '../types/result';
-import { parseJson } from './json';
 import { resolveKuGroups } from './ku-format';
 
 /** 四类库，顺序 = tab 顺序（原版 switchval，app.v4.js:54590） */
@@ -83,6 +83,19 @@ export interface KuItem {
   thumb?: string;
 }
 
+/**
+ * 中文字预览的 font-family（原版 `pages/style/index.vue:324-328`）。
+ *
+ * 同一族名写三遍：裸名、引号名、`族名 字重`——不同渲染路径对带空格/字重的
+ * 字体名解析不同，三连写保证 Windows 的「等线 DengXian Light」这类也能命中。
+ * `scriptFamily`（简/繁脚本变体）兜底。
+ */
+export function fontFamilyOf(preview: KuFontPreview): string {
+  if (!preview.family) return '';
+  const { family, weight, scriptFamily } = preview;
+  return `${family},'${family}','${family} ${weight}',${scriptFamily}`;
+}
+
 export interface KuGroup {
   name: string;
   show: boolean;
@@ -99,6 +112,25 @@ export function fileNameOf(warehouse: StyleWarehouse | undefined, kind: KuKind):
 
 export function defaultStyleIndex(): StyleWarehouseIndex {
   return { index: 0, list: [{ name: '默认仓库' }] };
+}
+
+/**
+ * 取一个原始分组的项列表。
+ * `list` 不是数组时返回 undefined——**建空列表还是跳过由调用方决定**，
+ * 这里只收敛「是不是数组」这一个判断（写路径上两种语义都合法）。
+ */
+export function kuListOf(group: Record<string, unknown> | undefined): unknown[] | undefined {
+  const list = group?.list;
+  return Array.isArray(list) ? list : undefined;
+}
+
+/**
+ * 取一个原始分组的项列表，**没有就补空数组**（写回时语义：这个组必须有 list）。
+ * 与 `kuListOf` 的区别：读/跳过用 kuListOf，写前补齐用本函数。
+ */
+export function kuEnsureListOf(group: Record<string, unknown>): unknown[] {
+  if (!Array.isArray(group.list)) group.list = [];
+  return group.list as unknown[];
 }
 
 /** 纯转换，不做判断：缺字段不补假值，index 越界夹到合法范围 */
@@ -228,7 +260,7 @@ export function readKuGroups(
   text: string,
   decode: (base64: string) => string = (base64) => base64
 ): Result<KuGroup[]> {
-  const parsed = parseJson(text);
+  const parsed = parseJson(text, '库文件');
   if (parsed.status === 'error') return parsed;
 
   const source = resolveKuGroups(parsed.value, decode);

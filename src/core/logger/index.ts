@@ -151,16 +151,3 @@ export function readLogText(): string {
     return '';
   }
 }
-
-/** 清空日志文件 */
-export function clearLog(): boolean {
-  const fs = nodeRequire<NodeFs>('fs');
-  const file = logPath();
-  if (!fs || !file) return false;
-  try {
-    fs.writeFileSync(file, '', 'utf8');
-    return true;
-  } catch {
-    return false;
-  }
-}
