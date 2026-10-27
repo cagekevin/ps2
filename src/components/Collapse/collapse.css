@@ -1,0 +1,44 @@
+/* 折叠行：整行高 24 / 箭头位 20×13 / 上下间距 12（官方 .opencom / .open-wrap） */
+.mm-collapse {
+  width: 100%;
+  margin: var(--mm-space-3) 0;
+}
+
+.mm-collapse__head {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  width: 100%;
+  height: var(--mm-collapse-h);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-collapse__head:hover {
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-collapse__arrow {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-collapse-arrow-w);
+  height: var(--mm-collapse-arrow-h);
+}
+
+.mm-collapse__title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-collapse__body {
+  width: 100%;
+}

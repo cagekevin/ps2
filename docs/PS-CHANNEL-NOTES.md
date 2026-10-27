@@ -93,6 +93,7 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 - ExtendScript 单线程，**并发发多条时返回顺序不保证**：快速连点 3 个色块，最后生效的可能不是最后点的那个。
 - 实现是 Promise 链先进先出；某条失败不影响后续（`evalQueue` 永远 resolve）。
 - 超时：默认 30s，写操作 60s，系统字体表 300s（`LONG_TIMEOUT`）。**超时后队列放行**，但 PS 侧可能仍在执行——日志会写「队列放行」，看到这句不要以为已经取消。
+- 文本属性（§11.3）：写操作（`zt_*` / `layer_font_*` / `cy_distributedByPitch`）一律 60s，读操作（`zt_getFontSimpleInfo` / `zt_getCurrentFontInfo` / `zt_getCurrentText`）走默认 30s。`zt_setFontColor` 会拉起系统取色器、用户可能停留很久，超时只放行队列、不取消 PS 侧，所以失败提示后要允许用户重试。
 - 轮询类调用传 `{ silent: true }`，不写 info 日志（`core/ps/layer.ts:40`）。
 
 ---
@@ -109,7 +110,11 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 ```
 
 - 能力分两档：`core`（自有）失败 = 全部不可用；`vendor` 失败 = 只有应用类不可用，读图层照常。
-- `VENDOR_FUNCS` 是**实际在用**的函数清单：`ps_onJsx`、`ys_useGradient`、`ps_ysBtnUseStyle`、`ys_checkUseFont`、`ys_useFont`、`Sys_setSystemEnvInfo`。
+- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-27 常用页 M1 起 **60 项**，机器核对过）：
+  通道 1（`ps_onJsx`）+ 渐变 1（`ys_useGradient`）+ 图层样式 1（`ps_ysBtnUseStyle`）+ 环境 1（`Sys_setSystemEnvInfo`）
+  + 系统字体 2（`ztgl_initSystemList` / `ztgl_setFont`）+ 字体检查/应用/复制 3（`ys_checkUseFont` / `ys_useFont` / `ys_getFontInfo`）
+  + 文本属性 26（`src/core/ps/text.ts`，逐个列在 §11.3 表里；`zt_getTypeUnits` 已取消）
+  + 常用页 25（`src/core/ps/common-use.ts` 的 26 条里 `cy_distributedByPitch` 与文本属性共用，已在上一行计过）。
 - 删掉任何 jsx 函数，必须同步改 `VENDOR_FUNCS` / core 探测列表，否则会出现「函数没了 → 能力永远不可用」的假故障（已发生过一次）。
 
 ---
@@ -257,6 +262,129 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 真机必须确认这几个函数返回的就是 `{err:number}`；若 PS 返回别的形状，这里会从「假成功」变成「真失败」，属有意改动。
 
 这两个函数在 `vendor.jsx` 里已经存在，**不写 `jsx/main.jsx` 镜像**——`GOVERNANCE.md` §二 #3 的例外，理由是能力来自官方副本而非自有实现。
+
+### 11.3 文本属性（字体面板页，第三条直调通道）
+
+清单共 **29 个在用 jsx 函数**：新增 26（3 读 + 23 写），复用 3（`ys_getFontInfo` / `ys_checkUseFont` / `ys_useFont`）。
+`zt_getTypeUnits` 于 2026-10-27 取消（面板不显示单位后缀，读者不需要知道单位），表格保留该行并标注，便于追溯。
+**全部 `UNVERIFIED`**：返回结构没有真机验证过。`core/ps/text.ts` 的读函数只把 raw 交给 `domain` 宽松归一，写函数只认 `{err:number}` 信封与 `raw.ts` 的约定值表——**不许在能力函数里写字符串比较，也不许声称「已验证」**。
+
+| # | jsx | 参数 | 语义 |
+|---|---|---|---|
+| 1 | `zt_getFontSimpleInfo` | 无 | 当前文字图层属性快照；`err === 0` 才覆盖面板，否则保留旧值并提示 |
+| 2 | `zt_getCurrentFontInfo` | 无 | `{ family? }`；字体快选「加当前图层」用 |
+| 3 | `zt_getCurrentText` | 无 | `TranslateItem[]`；总字数超 1000 拦截 |
+| 4 | ~~`zt_getTypeUnits`~~ | 无 | **已取消（2026-10-27）**：读出来只用于显示单位后缀，而面板不需要显示单位；`VENDOR_FUNCS` 已移除 |
+| 5 | `zt_setFontName` | `[hjm, mz, zz]` | 换字面；`hostCode === 1` = 字体缺失 |
+| 6 | `layer_font_setFontSize` | `[size]` | 面板输入的字号 |
+| 7 | `zt_setFontSize` | `[size]` | 层级字号（层级面板点一下） |
+| 8 | `layer_font_setLeading` | `[leading]` | 行距 |
+| 9 | `zt_setFontWordSpacing` | `[tracking]` | 字距 |
+| 10 | `zt_setFontColor` | 无 | 拉起系统取色器，返回 `{ rgb: { r, g, b } }` |
+| 11 | `zt_setFontAllCaps` | `[boolean]` | 全部大写 |
+| 12 | `zt_setFontVision` | `['manual' \| 'opticalKern']` | 文字视觉调整 |
+| 13 | `zt_setFauxItali` | `[boolean]` | 倾斜。**拼写照抄，不要改成 Italic** |
+| 14 | `zt_setFontAddBold` | `[boolean]` | 加粗 |
+| 15 | `zt_setFontJustified` | `[index]` | 段落对齐（属性面板 Ctrl+点击） |
+| 16 | `zt_setTextAlignment` | `[index]` 或 `[index, shift]` | 点文本对齐；**第二参数不传时不能补 `false`** |
+| 17 | `zt_setHorizontalCenters` | `[4]` | 水平居中分布（底部组一第 4 个） |
+| 18 | `zt_verticalCenter` | `[5]` | 垂直平均分布（底部组三第 4 个） |
+| 19 | `zt_setUpDownAlign` | `[index]` | 顶 / 中 / 底对齐 |
+| 20 | `zt_setBackrgoudAlign` | `[3]` / `[4]` | 与背景水平 / 垂直对齐。**拼写照抄（Backrgoud）** |
+| 21 | `zt_alignHorizontal` | 无 | 水平垂直居中对齐；只服务第二入口，本页不放按钮 |
+| 22 | `cy_distributedByPitch` | `[axis, value, 2, filter]` | 按间距分布；axis `1` 水平 / `2` 垂直，第 3 个参数固定 `2` |
+| 23 | `zt_changeTextBranchMerge` | `[mode]` | 拆分/合并的**前置确认**（原版先探一次） |
+| 24 | `zt_textBranchMerge` | `[mode]` | 拆分/合并真正执行；`1` 分行 / `2` 分为单个 / `3` 合并 / `4` 合并为段落 |
+| 25 | `zt_createButton` | `[{ type, isLine, padding }]` | 生成按钮；`type` 1 圆角 / 2 直角 |
+| 26 | `zt_switchFontDirection` | 无 | 切换文本方向 |
+| 27 | `zt_setTranslateText` | `[data, replace]` | 写回译文；`replace` 为真 = 覆盖原文 |
+| 28 | `ys_getFontInfo` | 无 | 复制文字属性，复用 `core/ps/font.getFontInfo` |
+| 29 | `ys_checkUseFont` | `[payload]` | 参数先 `encodeText`，复用 `core/ps/font.checkFontUsable` |
+| 30 | `ys_useFont` | `[payload]` | 参数先 `encodeText`，复用 `core/ps/font.applyFont` |
+
+判定与坑：
+
+1. **通道**：这 27 个新函数里 26 个直调 `jsx()`（原版 `jsx` / `jsxWrite`），不要包 `ps_onJsx`；包错的表现是 `error:缺少必需值`。
+   **例外是 `cy_distributedByPitch`**：原版在文本属性面板用的是 `jsxHistory`（`:1441105`），
+   即调度通道；`core/ps/text.ts` 现在按直调实现，属已登记 P1（与常用页的同一函数两种通道并存，
+   待真机确认 `ps_onJsx` 能调 `cy_*` 后统一成调度）。参数形态两处不同，见 §11.4 第 1 条。
+2. **参数**：全部**明文**。只有表里 29 / 30 两个 `ys_*` 要 `encodeText`；给 `zt_*` 编码会写出乱码字体名或直接失败。
+3. **err 信封（本组比 §11.2 宽松，是刻意的）**：`-1` 等约定值由 `core/ps/raw.ts` 的 `unwrapRaw` 表判定，能力函数不许自己比较字符串；能解析成 `{ err: number }` 时 `1` = 不可用（字体缺失 / 不满足前提）折 `VALIDATION`；**解析不出 `err` 时按成功处理**（这些函数可能返回裸 `1` / 空串，结构没验过）。§11.2 对 `ys_useFont` / `ztgl_setFont` 那条「信封不成立直接失败」仍然有效，两者不要互相套用。UNVERIFIED：真机确认返回形状后，这里必须收紧成只认信封。
+4. **`hostCode === 1` 只有一条处理**：折成 `VALIDATION`「字体不可用」→ 页面只 toast。**任何版本都不做「前往下载」**，不给外链、不弹确认框。
+5. **两处原版拼写错误照抄**：`zt_setFauxItali`、`zt_setBackrgoudAlign`。改成「正确拼写」等于函数不存在。
+6. **`zt_setFontColor` 无参**：返回值是取色结果，不是成功标志；用户在取色器里停留久，60s 超时后队列放行、PS 侧可能仍在执行，页面要给重试。
+7. **`zt_changeTextBranchMerge` 存在性未确认**：参考实现（`ps/src/cep/jsx/font.ts:186-191`）记录它可能是原版派发表的 key（`case 94` 转发到 `zt_textBranchMerge`），不是函数。本仓按计划把它与 `zt_textBranchMerge` 一起登记进 `VENDOR_FUNCS`，**M4 真机首验**；若探测报缺失，整页会按现有规则判「官方能力未就绪」，处理方式只能是照参考实现改调两次 `zt_textBranchMerge` 并从 `VENDOR_FUNCS` 移除——**不允许只在页面层兜**。UNVERIFIED
+8. **撤销组**：这几条是官方实现，撤销组在 vendor 内部（未验）。不要在前端再包一层 `suspendHistory`。
+9. **批量**：本页全是单图层语义，不循环调用；`cy_distributedByPitch` 的批量在 jsx 内部完成。
+
+### 11.4 常用页按钮（第四条直调 + 调度混合通道）
+
+清单共 **26 个**（`04-常用` 页面）：v1 覆盖 11 个（对应 12 条命令，`cy_guideFunction` 一函数两用）
++ 只登记 2 个，其余 13 条排 v2。
+**通道不能一刀切**——原版调用点写的是 `jsxHistory*` 就走 `ps_onJsx`，写的是 `jsx` / `jsxNoCheck` 就直调
+（判断方法同 `CONVENTIONS` §4.7）。实现在 `src/core/ps/vendor.ts`（`runVendor` / `runDirect`）。
+
+| # | jsx | 通道 | 参数 | 语义 | v1 |
+|---|---|---|---|---|---|
+| 1 | `cy_zoom` | 直调 `jsx` | `[倍数]`（`105` / `95`） | 放大 / 缩小 | ✅ |
+| 2 | `cy_transformPosition` | 调度 `jsxHistory` | `[方向文本]` | 翻转 6 向：`左右 / 上下 / 左 / 右 / 下 / 上` | ✅ |
+| 3 | `cy_locationTrade` | 调度 | `[]` | 位置对换 | ✅ |
+| 4 | `cy_LayerReplace` | 调度 | `[]` | 元素替换（**大写 L**） | ✅ |
+| 5 | `cy_exchangeLayerColor` | 调度 | `[]` | 图层颜色互换 | ✅ |
+| 6 | `cy_correctRectangleBlur` | 调度 | `[]` | 修正边缘模糊（派发 key 是拼错的 `cy_coorectBlur`） | ✅ |
+| 7 | `cy_swapWireframeFill` | 调度 | `[]` | 填充线框互换（**既是 key 也是函数名**，`case 36`） | ✅ |
+| 8 | `cy_distributedByPitch` | 调度 | `[axis, gap, sortMode]` | 按间距分布（见下方「两个形态」） | ✅ |
+| 9 | `cy_createSafeAreaGuide` | 调度 `jsxHistoryNoCheck` | `[宽度]` | 参考线：生成安全区 | ✅ |
+| 10 | `cy_guideFunction` | 直调 `jsxNoCheck` | `[1 清除 / 2 切片]` | 参考线：清除 / 切片 | ✅ |
+| 11 | `cy_openDirectory` | 直调 `jsxNoCheck` | **无参** | 打开所在目录 | ✅ |
+| 12 | `cy_getImagePath` | 直调 | `[]` | 选图片（返结构未测） | 只登记 |
+| 13 | `cy_getPsdForFolder` | 直调 | `[]` | 扫文件夹 PSD（jsx 自己弹选目录） | 只登记 |
+| 14 | `cy_insertionImage` | 直调 | `[{path, bLink2, bDelete}]` | 嵌入图片 | v2 |
+| 15 | `Layer_placedLayerRelinkToFile` | 直调 | `[path]` | 转链接智能对象 | v2 |
+| 16 | `cy_embedMultipleImage` | 直调 | `[]` | 嵌入多图片 | v2 |
+| 17 | `cy_smartToLinkSmartObject` | 调度 | `[]` | 转链接智能对象 | v2 |
+| 18 | `cy_linkSmartObjectToSmartObject` | 调度 | `[]` | 转智能对象 | v2 |
+| 19 | `cy_importMultipleImage` | 直调 | `[{path, toLinkObject}]` | 导入多图片 | v2 |
+| 20 | `cy_optimizeDoc` | 直调 | `[配置]` | 优化文档 | v2 |
+| 21 | `cy_batchOptimizeDoc` | 直调 | `[配置, 文件]` | 批量优化（循环在命令层） | v2 |
+| 22 | `cy_customBuildTransform` | 调度 | 7 个平铺参数 | 自定义变换 | v2 |
+| 23 | `cy_ExportImage` | 调度 `jsxHistoryNoCheck` | `[配置对象]` | 导出图片（**大写 E**） | v2 |
+| 24 | `cy_BatchExportLayer` | 调度 `jsxHistoryNoCheck` | `[配置对象]` | 批量导出一级图层 | v2 |
+| 25 | `cy_BatchExportSecondLayer` | 同上 | `[配置对象]` | 批量导出二级图层 | v2 |
+| 26 | `cy_BacthExportPsdToImage` | 调度 | `[file, option]` | 单个 PSD 导图（**Bacth 是官方拼错**） | v2 |
+
+**派发 key → 真实 jsx 函数**（不核这张表就会去调不存在的函数）：
+
+| 派发 key | 真实 jsx 函数 | 依据 |
+|---|---|---|
+| `cy_embedImage` | `cy_insertionImage` | `case 28` |
+| `cy_coorectBlur` | `cy_correctRectangleBlur` | `case 34` |
+| `cy_exportImage` | `cy_ExportImage`（大写 E） | `case 40` |
+| `cy_layerReplace` | `cy_LayerReplace`（大写 L） | `case 66` |
+| `cy_useGride` | `cy_createSafeAreaGuide` | `case 59` |
+| `cy_clearCutGuide` | `cy_guideFunction` | `case 61` |
+| `cy_bacthExportPsdToImage` | `cy_BacthExportPsdToImage`（Bacth） | `case 48` |
+| `cy_swapWireframeFill` | **同名**（函数，不是 key） | `case 36` |
+
+四条判定与坑：
+
+1. **`cy_distributedByPitch` 有两个形态，别合并**：
+   常用页间距面板是 `[axis, gap, sortMode]`（`app.v4.js:1262654`，三参、无 filter）；
+   文本属性面板是 `[axis, value, 2, filter]`（`:1441105`）。第 3 个参数一个是排序模式（1 按图层 / 2 按坐标），
+   一个是固定的 `2`——看着像同一个东西，含义不同。`core/ps/text.distributeByPitch` 只服务文本面板。
+   **通道也相同（两处都是 `jsxHistory`）**：常用页这边走调度，文本面板那边目前是直调，
+   属已登记的 P1（`text.ts` 与 §11.3 第 1 条的例外说明），真机后统一成调度。
+2. **`gap` 是字符串**：原版把输入框原文（经 `ft.b` 补单位，如 `10px`）直接传下去。
+   我方**不补单位**——`appUnit` 属设置页的键，常用页 repo 只读 17 个 `cy*` 键；
+   真机若分布不生效，先把值改成 `10px` 再验（UNVERIFIED）。
+3. **`jsx` 与 `jsxNoCheck` 的差别是「先探选中图层」**：`jsx(fn,args)` 会先跑 `Layer_isSelectLayer()`，
+   返回 `0` / `"false"` 就不执行。我方两条都直调，不做这次预探，
+   没选中图层时的表现退化成一个普通的失败码（`-1` → `PS_REJECTED`），页面 toast 即可。UNVERIFIED
+4. **返回结构全部未验证**：v1 写函数只认 `raw.ts` 的约定值表（`-1` 等）与 `{ err: 1 }` 信封，
+   解析不出结构按成功处理；读函数（`cy_getImagePath` / `cy_getPsdForFolder`）把 raw 原样交出。
+   真机确认后必须收紧，别让宽松解析变成永久契约。
+
+> 这三处拼写**照抄不改**：`cy_BacthExportPsdToImage`、`cy_LayerReplace`、`cy_ExportImage`。
 
 ---
 

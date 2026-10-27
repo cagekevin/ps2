@@ -9,6 +9,7 @@
 
 import { callJsx } from '../cep/bridge';
 import { log } from '../logger';
+import { ROOTS } from '../storage';
 import { ok, type Result } from '../../types/result';
 
 export const PS_ENV = {
@@ -19,7 +20,9 @@ export const PS_ENV = {
   VUE_APP_BASE_SYNC_SERVER: 'https://syncserver.pszhuli.com',
   VUE_APP_UMS: 'https://ums.gaoding.com',
   VUE_APP_BASE_CEP: 'https://cepapp.pszhuli.com',
-  VUE_APP_USER_DIR: '/SheJiZhuLi',
+  /* 官方数据根：与 `storage.ROOTS.legacy` 同一个目录，别在这里写第二份字面量——
+     哪天根改名，jsx 拼的路径会和前端读的目录分叉 */
+  VUE_APP_USER_DIR: ROOTS.legacy,
   VUE_APP_OPTIMAL_DIR: '/Optimal',
   NODE_ENV: 'production',
   VUE_APP_CEP_VERSION: '3.6.2',

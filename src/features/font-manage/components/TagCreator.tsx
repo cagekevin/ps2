@@ -1,7 +1,9 @@
 /** 新建 / 重命名标签：居中弹窗 + 输入 + 取消/确定 */
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
+import { Portal } from '../../../components/Portal';
+import { stopClickPropagation } from '../../../components/ui';
 import { useDismiss } from '../../../hooks/useDismiss';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { TagInput } from './TagInput';
 
 interface Props {
@@ -14,20 +16,10 @@ interface Props {
 export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
   const [text, setText] = useState(initial);
   const [submitting, setSubmitting] = useState(false);
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  /** 打开前的焦点，关闭后还原（不回触发器 = 键盘用户丢失位置） */
-  const opener = useRef<HTMLElement | null>(
-    typeof document === 'undefined' ? null : (document.activeElement as HTMLElement | null)
-  );
+  /* 模态弹窗：焦点陷阱与关闭后还原（规则在 hooks/useFocusTrap，不在组件里各写一遍） */
+  const { containerRef, onKeyDown } = useFocusTrap();
 
-  useDismiss(true, cardRef, onClose);
-
-  useEffect(() => {
-    const target = opener.current;
-    return () => {
-      target?.focus();
-    };
-  }, []);
+  useDismiss(true, containerRef, onClose);
 
   async function submit(): Promise<void> {
     if (!text.trim() || submitting) return;
@@ -39,38 +31,16 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
     }
   }
 
-  /** 焦点陷阱：Tab / Shift+Tab 只在弹窗内循环，不跑到遮罩后的页面 */
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
-    if (event.key !== 'Tab') return;
-
-    const focusables = cardRef.current?.querySelectorAll<HTMLElement>(
-      'input, button:not(:disabled)'
-    );
-    if (!focusables?.length) return;
-
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (!first || !last) return;
-
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  return createPortal(
+  return <Portal>
     <div className="mm-font__modal-mask" onClick={onClose}>
       <div
-        ref={cardRef}
+        ref={containerRef}
         className="mm-font__modal"
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'create' ? '新建标签' : '重命名标签'}
         onKeyDown={onKeyDown}
-        onClick={(event) => event.stopPropagation()}
+        onClick={stopClickPropagation}
       >
         <p className="mm-font__modal-title">{mode === 'create' ? '新建标签' : '重命名标签'}</p>
         <TagInput
@@ -102,7 +72,6 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>,
-    document.body
-  );
+    </div>
+  </Portal>;
 }

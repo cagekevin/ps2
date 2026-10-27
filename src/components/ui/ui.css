@@ -42,10 +42,22 @@
   outline: none;
 }
 
+/* 页内深色输入框（原版 `.inputcom*` / `.switch-input` 那一类）：
+   字体面板、输入弹窗、层级编辑三处原先各写一份同样的声明，收敛到这里 */
+.mm-input--page {
+  height: var(--mm-font-panel-btn-h);
+  padding: 0 var(--mm-space-3);
+  border-color: var(--mm-color-input-page);
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-input-page);
+  font-size: var(--mm-font-md);
+}
+
 .mm-input:focus {
   outline: var(--mm-border-w) solid var(--mm-color-accent);
 }
 
+/* 放在 --page 之后：校验中的边框要压过形状色 */
 .mm-input--invalid {
   border-color: var(--mm-color-error);
 }

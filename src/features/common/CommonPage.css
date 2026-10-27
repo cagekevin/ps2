@@ -1,0 +1,121 @@
+/* 常用页：只用 token（尺寸见 03 计划 §4.1 的本页 scoped 值） */
+.mm-common {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--mm-color-bg-page);
+}
+
+.mm-common__header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-2) var(--mm-page-pad-x);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-row-border);
+}
+
+.mm-common__title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+  font-weight: normal;
+}
+
+.mm-common__body {
+  flex: 1 1 auto;
+  padding: 0 var(--mm-page-pad-x) var(--mm-space-4);
+  overflow: auto;
+}
+
+/* 两个输入框并排，中间留 10（原版两栏之间那档） */
+.mm-common__row {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-exact-10);
+}
+
+/* 档位按钮：高 26 / 内空 6 / 圆角 5 / 右空 6 */
+.mm-common__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-exact-6) var(--mm-space-exact-6);
+  margin-top: var(--mm-space-2);
+}
+
+.mm-common__preset {
+  height: var(--mm-btn-small-h);
+  padding: 0 var(--mm-btn-small-pad);
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-common__preset--quarter {
+  flex: 0 0 var(--mm-btn-quarter);
+}
+
+.mm-common__preset--tenth {
+  flex: 0 0 var(--mm-btn-tenth);
+}
+
+.mm-common__preset:hover {
+  background: var(--mm-color-surface-raised-hover);
+}
+
+/* 翻转 6 向：一排小图标按钮，尺寸沿用 26×26 的工具按钮 */
+.mm-common__flips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-2);
+}
+
+.mm-common__flip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-icon-btn-size);
+  height: var(--mm-icon-btn-size);
+  padding: 0;
+  border: var(--mm-border-w) solid transparent;
+  background: transparent;
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+.mm-common__flip:hover {
+  border-color: var(--mm-color-icon-hover-border);
+  background: var(--mm-color-bg-hover);
+}
+
+/* 分隔线：inset 30 / 高 1 / 上下 5 / rgba(0,0,0,.15) */
+.mm-common__divider {
+  width: var(--mm-divider-inset);
+  height: var(--mm-border-w);
+  margin: var(--mm-space-exact-5) auto;
+  background: var(--mm-color-border-soft);
+}
+
+/* 网格：每行 3 个（每格占宽 33%），行距 15；每行是一个 IconPanelGroup */
+.mm-common__grid {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--mm-space-exact-2);
+}
+
+.mm-common__tile-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  row-gap: var(--mm-common-tile-gap);
+}
+
+/* 面板的宿主：整行宽，落在本行之后（原版是「面板项 width:100% 靠 flex 换行」） */
+.mm-common__tile-row > .mm-icon-panel__host {
+  grid-column: 1 / -1;
+}

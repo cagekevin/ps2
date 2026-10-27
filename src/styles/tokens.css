@@ -109,6 +109,8 @@
   --mm-z-toast-top: 1200;
   --mm-z-loading: 200;
   --mm-z-dropdown: 1000;
+  /* 拖拽浮层（长按拖动时的跟手节点），与下拉/菜单同档 */
+  --mm-z-drag: 999;
   /* 悬停浮层：app 的 --c-sunken（比页面底更暗一档） */
   --mm-color-sunken: #222;
   --mm-describe-max-w: 240px;
@@ -233,4 +235,70 @@
   --mm-filter-panel-max-h: 420px;
   --mm-filter-panel-max-w-gap: 64px;
   --mm-tag-title-shift: -2px;
+
+  /* ---------- 图标按钮 ---------- */
+  /* 原版 .base-icon 是 26×26（比字体管理页的 28 小一档），不能复用 --mm-font-icon-btn */
+  --mm-icon-btn-size: 26px;
+
+  /* ---------- 字体面板页（面板按钮实测） ---------- */
+  /* 面板里的 .btn-small 高 26 */
+  --mm-font-panel-btn-h: 26px;
+  /* 分布弹窗 / 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%） */
+  --mm-font-panel-dialog-w: 220px;
+  --mm-font-panel-dialog-left: 90px;
+  /* 原版 .input-box 遮罩是 rgba(0,0,0,.1)，比弹窗遮罩淡 */
+  --mm-color-mask-faint: rgba(0, 0, 0, 0.1);
+  /* 原版弹窗阴影是 20px 模糊（比 --mm-shadow-pop 的 12px 更散） */
+  --mm-shadow-dialog: 0 4px 20px rgba(0, 0, 0, 0.4);
+  /* 原版 .input-box 的 z-index 是 1001，介于下拉与 tooltip 之间 */
+  --mm-z-input-box: 1001;
+  /* 属性面板颜色块宽 60 */
+  --mm-font-panel-swatch-w: 60px;
+  /* 原版层级编辑器 padding 13px（不是 4 的倍数） */
+  --mm-space-exact-13: 13px;
+
+  /* ---------- 公共输入件（勾选 / 单选 / 输入框 / 折叠行） ---------- */
+  /* 12×12 是全仓定案（`docs/plan/03-常用-2026-10-27.md` §9 第 8 条），字体面板同步改成 12 */
+  --mm-check-size: 12px;
+  --mm-check-radius: 3px;
+  /* 官方 .base-check / .base-radio 的边框是 #707070；
+     不复用 --mm-color-border-checked（#6e6e6e，导航与字体管理页在用），两者不是同一个值 */
+  --mm-color-border-check: #707070;
+  /* 输入框三套宽度：宽 80 / 一半减 5 / 70×30（原版 .inputcom1 / .inputcom-2 / .switch-input） */
+  --mm-input-w-wide: 80px;
+  --mm-input-w-half: calc(50% - 5px);
+  --mm-input-w-compact: 70px;
+  --mm-input-h-compact: 30px;
+  /* 折叠行：整行高 24、箭头位 20×13（原版 .opencom / .open-wrap） */
+  --mm-collapse-h: 24px;
+  --mm-collapse-arrow-w: 20px;
+  --mm-collapse-arrow-h: 13px;
+
+  /* 组件最小 / 最大尺寸：stylelint 的 `min-*` / `max-*` 前缀此前漏检（只匹配精确属性名），
+     补上规则后这几处从裸 px 收到这里 */
+  --mm-modal-min-w: 240px;
+  --mm-modal-max-w: 320px;
+  --mm-menu-min-w: 120px;
+  --mm-log-max-h: 240px;
+
+  /* ---------- 常用页（05-常用-尺寸与状态表」本页 scoped 值） ---------- */
+  /* 功能格是 50×50，内部 svg 才是 32（清单把这俩搞反过，见 03 计划 §0.4） */
+  --mm-common-tile: 50px;
+  --mm-common-tile-icon: 32px;
+  --mm-common-tile-radius: 10px;
+  --mm-common-tile-gap: 15px;
+  --mm-common-tile-bg: #494949;
+  --mm-common-tile-hover-icon: #006fff;
+  /* 角标 3×3，上移 30、左移 -3 */
+  --mm-common-mark: 3px;
+  --mm-common-mark-offset-y: 30px;
+  --mm-common-mark-offset-x: -3px;
+  /* 分隔线：本页 scoped 是 inset 30（全局那条 100% 不用） */
+  --mm-divider-inset: calc(100% - 30px);
+  /* 预设小按钮：高 26、内空 6；四颗 / 十颗 / 半宽 */
+  --mm-btn-small-h: 26px;
+  --mm-btn-small-pad: 6px;
+  --mm-btn-quarter: calc(25% - 4.5px);
+  --mm-btn-tenth: calc(20% - 4.8px);
+  --mm-btn-half: calc(50% - 5px);
 }

@@ -8,7 +8,7 @@
  * 拆分依据：动作与单项渲染各自独立成模块，页面只负责组装（不设行数上限）。
  */
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Portal } from '../../components/Portal';
 import { ContextMenu } from '../../components/ContextMenu';
 import { Chevron } from '../../components/Chevron';
 import { Icon } from '../../components/icons';
@@ -338,16 +338,15 @@ export default function StylePage() {
 
       {/* 悬停浮层：portal 到 body，位置走 useFloatingPosition（照 app 的 style-describe） */}
       {describeContent
-        ? createPortal(
+        ? <Portal>
             <div ref={describeRef} className="mm-style__describe">
               <p className="mm-style__describe-name">{describeContent.name}</p>
               <p className="mm-style__describe-meta">{describeContent.subtitle}</p>
               {describeContent.detail ? (
                 <p className="mm-style__describe-meta">{describeContent.detail}</p>
               ) : null}
-            </div>,
-            document.body
-          )
+            </div>
+          </Portal>
         : null}
 
       {/* 图片取色弹层（原版 imgColor） */}

@@ -59,14 +59,21 @@ export function useFloatingPosition(options: FloatingOptions = {}) {
 
   const { placement: preferred, offset = 4, padding = 4 } = options;
 
+  /**
+   * 定位，并**返回锚点矩形**（`null` = 没定位，元素还没挂上）。
+   *
+   * 返回矩形是为了「面板宽度对齐触发器」这类需求：调用方拿 `rect.width` 设 CSS 变量即可，
+   * 不要为了一个宽度再自己 `getBoundingClientRect()`——那会变成第二个测量入口。
+   */
   const update = useCallback(
-    (reference: FloatingReference | null) => {
+    (reference: FloatingReference | null): FloatingRect | null => {
       const floating = floatingRef.current;
-      if (!reference || !floating) return;
+      if (!reference || !floating) return null;
 
+      const anchor = anchorRect(reference);
       const box = floating.getBoundingClientRect();
       const position = computeFloatingPosition(
-        anchorRect(reference),
+        anchor,
         { width: box.width, height: box.height },
         { width: window.innerWidth, height: window.innerHeight },
         { placement: preferred ?? 'bottom-start', offset, padding }
@@ -75,6 +82,7 @@ export function useFloatingPosition(options: FloatingOptions = {}) {
       setPlacement(position.placement);
       floating.style.setProperty('--floating-x', `${position.left}px`);
       floating.style.setProperty('--floating-y', `${position.top}px`);
+      return anchor;
     },
     [preferred, offset, padding]
   );

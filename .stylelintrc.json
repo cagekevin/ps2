@@ -2,7 +2,9 @@
   "rules": {
     "color-no-hex": true,
     "declaration-property-value-disallowed-list": {
-      "/^(padding|margin|gap|border-radius|font-size|width|height|top|left|right|bottom)$/": ["/\\d+px/"]
+      "/^(min-|max-)?(width|height)$/": ["/\\d+px/"],
+      "/^(padding|padding-[a-z]+|margin|margin-[a-z]+|gap|row-gap|column-gap|border-radius|font-size|top|left|right|bottom|inset)$/": ["/\\d+px/"],
+      "/^(color|background|background-color|border|border-color|border-top|border-right|border-bottom|border-left|fill|stroke|outline|box-shadow)$/": ["/rgba?\\(/", "/hsla?\\(/"]
     }
   },
   "ignoreFiles": ["src/styles/tokens.css", "dist/**"]

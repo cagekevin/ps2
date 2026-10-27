@@ -1,0 +1,73 @@
+/**
+ * 【范本】输入弹窗样式（原版 `.input-box` / `.input-box-main`）
+ *
+ * 位置是原版值：`left: calc(50vw - 90px)` + `top: 30%`，不是居中。
+ * 想「看起来更居中」要先改原版依据，别就地调。
+ */
+
+.mm-input-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mm-z-input-box);
+  background: var(--mm-color-mask-faint);
+}
+
+.mm-input-dialog__main {
+  position: fixed;
+  top: 30%;
+  left: calc(50vw - var(--mm-font-panel-dialog-left));
+  width: var(--mm-font-panel-dialog-w);
+  padding: var(--mm-space-exact-15) var(--mm-space-exact-20);
+  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-float);
+  box-shadow: var(--mm-shadow-dialog);
+}
+
+.mm-input-dialog__head {
+  display: flex;
+  align-items: center;
+}
+
+.mm-input-dialog__title {
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
+
+.mm-input-dialog__grow {
+  flex: 1;
+}
+
+/* 表面（高度 / 边框 / 圆角 / 底色）来自 `ui.css` 的 `.mm-input--page`，这里只给布局 */
+.mm-input-dialog__input {
+  width: 100%;
+  margin-top: var(--mm-space-exact-15);
+}
+
+.mm-input-dialog__error {
+  margin: var(--mm-space-exact-2) 0 0;
+  color: var(--mm-color-error);
+  font-size: var(--mm-font-sm);
+  line-height: 1em;
+}
+
+.mm-input-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-input-dialog__ok {
+  height: var(--mm-font-panel-btn-h);
+  padding: 0 var(--mm-space-5);
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-input-dialog__ok:hover {
+  background: var(--mm-color-surface-raised-hover);
+}

@@ -85,6 +85,9 @@
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 | ⚠️ 待真机 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） | ✅ 真机 |
 | 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用（真机）；`ztgl_*` 系统字体列表/应用（待真机） | ⚠️ 待真机 |
+| 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`（返回结构 UNVERIFIED） | ⚠️ 待真机 |
+| 官方 jsx 通道 | `src/core/ps/vendor.ts` | 两条通道唯一实现：`runVendor`（`ps_onJsx` 调度）/ `runDirect`（直调 60s） | ✅ 调度真机 / ⚠️ 直调沿用 text 结论 |
+| PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄 | ⚠️ 待真机 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL | ⚠️ 待真机（缩略图待复验） |
 | 命令层 | `src/commands/README.md` | 命令判定标准与写法 | — 规范 |
 | 鉴权 | `src/core/auth/index.ts` | token + 版本化 key | ⚠️ 未使用 |
@@ -103,12 +106,20 @@
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
 | 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 + kuListOf/kuEnsureListOf | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
+| 常用页模型 | `src/domain/common-use.ts` | 14 项官方种子（逐字照抄 `configReset`）+ 文件校验 + 视图投影 | ✅ 单测 |
+| 常用页设置 | `src/domain/common-use-options.ts` | 17 个 `cy*` 键白名单 + 投影 + 深合并（数组替换 / 对象逐键） | ✅ 单测 |
 | 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result；`mutateRawGroups` 走 `json-file` | ✅ 真实数据 |
 | 数据写入口 | `src/repo/json-file.ts` | 库文件 / 字体标签星级 / 色板的唯一「读 → 改 → 写」；首次创建显式分支 | ⚠️ 待真机 |
+| 字面板仓库 | `src/repo/font-set-repo.ts` | 5 个 `sj_*` 设置文件；缺失按空/默认读、首次写才创建、`sj_set.json` 只改 `zt*` | ⚠️ 待真机 |
+| 常用页仓库 | `src/repo/common-use-repo.ts` | `sj_commonFunction.json`（根是裸数组，缺失按种子读不写盘）+ `sj_set.json` 的 17 个 `cy*` 键（未知键原样保留） | ⚠️ 待真机 |
 | 串行队列 | `src/core/serial/index.ts` | 按 key 串行，只保证顺序、不传递失败 | ✅ 单测 |
 | 业务切片 | `src/store/style-library.ts` | 只读投影，失败原样保留 | ✅ 真实数据 |
+| 文字属性快照 | `src/store/text.ts` | PS 为唯一真相；读失败保留旧值 + 标 stale，写成功由页面 patch | ⚠️ 待真机 |
+| 字面板切片 | `src/store/font-set.ts` | 设置/快捷字体/层级/最近字体只读投影；设置本地先生效 | ⚠️ 待真机 |
+| 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源各自留失败原因 | ⚠️ 待真机 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
-| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口 | ✅ 真机 |
+| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局） | ✅ 真机 |
+| 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 | ⚠️ 待真机 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头统一，面板宽度跟随触发器 | ✅ 真机 |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox | ✅ 真机 |
 | 折叠箭头 | `src/components/Chevron/index.tsx` | 展开/折叠箭头（会旋转） | ✅ 真机 |
@@ -131,17 +142,31 @@
 | 导航栏 | `src/app/nav-bar.tsx` | 侧边导航 | ✅ 真机 |
 | 图层监听 | `src/app/layer-watcher.tsx` | 唯一图层订阅者，页面只读 store | ✅ 真机 |
 | 状态持久化 | `src/hooks/usePersisted.ts` | 界面偏好，key 强类型 | ⚠️ 待真机 |
+| 全局快捷键 | `src/hooks/useShortcut.ts` | 常驻字母键；负责「打字中 / 带修饰键」两条排除；与 `useDismiss` 分工写在文件头 | ⚠️ 待真机 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 | ✅ 真机 |
-| 浮层定位 | `src/hooks/useFloatingPosition.ts` | 唯一锚点矩形入口 | ✅ 真机 |
+| 浮层定位 | `src/hooks/useFloatingPosition.ts` | 唯一锚点矩形入口（`update` 返回锚点矩形，对齐宽度也用它） | ✅ 真机 |
+| 焦点陷阱 | `src/hooks/useFocusTrap.ts` | 仅模态弹窗：Tab 循环 + 关闭还原焦点 | ⚠️ 待真机 |
+| 受控草稿 | `src/hooks/useDraft.ts` | 输入框本地值：外部值变了才回填，渲染期收敛 | ⚠️ 待真机 |
 | 定位算法 | `src/hooks/floating-position.ts` | 纯函数，翻转与夹取 | ✅ 单测 |
 | 长按拖拽 | `src/hooks/useLongPressDrag.ts` | 300ms 长按 + 克隆占位 + 落点判定 | ✅ 真机 |
 | 落点计算 | `src/domain/reorder.ts` | 纯函数，四分支 splice 收敛 | ✅ 单测 |
 | 列表分页 | `src/hooks/usePagedList.ts` | 每页 30 + 触底追加，筛选变化回第一屏 | ⚠️ 待真机 |
 | 触底加载 | `src/hooks/useInfiniteScroll.ts` | 全项目唯一 `IntersectionObserver` | ⚠️ 待真机 |
 | 右键菜单 | `src/components/ContextMenu/index.tsx` | 定位走 hook，菜单项由调用方给 | ✅ 真机 |
+| 输入弹窗 | `src/components/InputDialog/index.tsx` | 原版 `$inputBox`：位置 50vw-90/top30%、空值拦截、Enter 提交 | ⚠️ 待真机 |
+| 输入弹窗样式 | `src/components/InputDialog/input-dialog.css` | 对齐 `.input-box` / `.input-box-main` | ⚠️ 待真机 |
+| 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 | ⚠️ 待真机 |
+| 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` | ⚠️ 待真机 |
+| 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」 | ⚠️ 待真机 |
+| 展开面板样式 | `src/components/IconPanel/icon-panel.css` | 壳不画背景，面板内容自带 padding/底色 | ⚠️ 待真机 |
+| 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `#707070` / 右空 6；原生 input | ⚠️ 待真机 |
+| 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 | ⚠️ 待真机 |
+| 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` | ⚠️ 待真机 |
+| 折叠行 | `src/components/Collapse/index.tsx` | 整行 100%×24、箭头位 20×13、上下 12；收起不渲染内容 | ⚠️ 待真机 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 | ✅ 真机 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 | ✅ 真机 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 | ✅ 真机 |
+| 命令执行 | `src/hooks/useRunCommand.ts` | 包 loading + 失败提示 + 原因留痕（code/detail 进日志，人话进 toast）；面板/页面不再各写一份 | ⚠️ 待真机 |
 | 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口 | ⚠️ 待真机 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 | ✅ 真机 |
 | 组件样式 | `src/components/ui/ui.css` | 基础控件形状 | ✅ 编译 |
@@ -328,3 +353,34 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 | 2026-10-27 | 第十九审查 P1/P2 补齐：`useFontManage` 拆 `useTagActions`（425→285/206）、CSS 拆三文件（957→433/282/244）、`apply` 用 ref 稳定；字号 token 收敛；无障碍与重复提交/焦点还原；列表 key 与无字面项灰态（见 `docs/review/REVIEW-2026-10-27-19.md`） | features/font-manage、components、styles、docs |
 | 2026-10-27 | 授权链删除（无数据源）：`FontLicense` + `license-paths` + `.mm-font__license*` + 5 个 license token 删除；`commercials`/`presets` 不再解码、不再进 `Classification`；`matchFilter` 只剩语言，`filterFonts` 不再接收分类数据。应用字面判据收到 `domain/font-item.resolveFontFace`（缺名字即 `VALIDATION`） | features/font-manage、domain、commands、styles |
 | 2026-10-27 | 形状收尾（P2）：`StateHint` props 改两支联合（`result` / `empty` 不能同时传，`Result\|null` 通道删除）；`parseTagArchive` 与 `decodeRawRecords` 的失败全部带 `detail`（`tags[0].arr` / `root[1]`），校验循环合并为一处；列表灰态与命令共用 `resolveFontFace` | components/StateHint、domain、repo、features/font-manage |
+| 2026-10-27 | 字体面板 M1（底层到命令）：新增 `core/ps/text.ts`（27 个 `zt_*` 直调，写只认约定值与 `{err:1}`）、`core/http/jsonp.ts`（百度翻译无 CORS）、`domain/{md5,translate,quick-font,font-set,text-info,font-set-clipboard}`、`domain/{free-panel,free-panel-legacy}`（只定形状与 key→命令映射，不写文件）、`repo/font-set-repo.ts`（5 个 `sj_*` 设置文件；缺失按空读、首次写才创建、`sj_set.json` 只改 `zt*`）、`store/{text,font-set}.ts`、`commands/font-set.ts`（20 条）。`hooks/input-method-enter.ts` 由 font-manage 上移（第二处调用），两处 import 同步改。4.1 登记 4 行 | core、domain、repo、store、commands、hooks、features/font-manage（仅 import） |
+| 2026-10-27 | 体检 `REVIEW-2026-10-27-20`（触发 §7.1 #3）：P0×1（`zt_changeTextBranchMerge` 存在性待真机）、P1×2（8 个 M2 未接入的孤儿模块、`store/font-set` 无失败通道）、P2×4；修复：`ime.ts` → `input-method-enter.ts`（三个字母读不出含义）、`panel-constants.ts` → `font-panel-constants.ts`、CONVENTIONS §3 `hooks/` 括注补两项 | docs/review、docs/CONVENTIONS、hooks、features |
+| 2026-10-27 | 字体面板 M2：`features/font-panel` 根页面（`FontPanelPage`）+ 拆分 / 生成按钮 / 粘贴 / 分布四个面板 + `BadgeIcon` / `CheckRow` / `NumberField` + `useFontPanel` + 页面 CSS；`/font` 路由注册、导航 `implemented: true`；`tokens.css` 新增 3 个面板尺寸 token。删除未被使用的 `hooks/useDebouncedCallback.ts`（设置改成立即落盘）。**翻译按钮暂 disabled（M3 接入后移除）** | features/font-panel、app、styles、hooks |
+| 2026-10-27 | 按原版修正 4 处偏离：①`SelectBox` 增 `onRemove`（项内删除，对齐 `dropDowncom` 的 `therrSvg`）与 `inset`（面板 `calc(100% - 20px)/left 10/mt 5`），item 由 `button` 改 `div[role=option]`（嵌套 button 非法）；②新增公共 `components/InputDialog`（原版 `$inputBox`：`left:calc(50vw-90px)`、`top:30%`、宽 220、遮罩 `.1`、z 1001），分布弹窗与层级改名/新建共用，删 `DistributedDialog`；③层级改名/新建文案「请输入新的名字 / 请输入层级名字」+ toast「重命名成功/添加成功/删除成功/更新成功」；④快选触发器去掉左右 10px | components、features/font-panel、docs |
+| 2026-10-27 | 新增 `docs/plan/03-常用-2026-10-27.md`：按 `05-常用.md` 对照清单定 v1（父页面 + 12 类基础按钮 + `comspacing` / `comreference` 两个子面板）、26 个 jsx 表（11 在用 + 2 只登记 + 13 待 v2）、17 条命令、2 个数据文件（`sj_commonFunction.json` + `sj_set.json` 17 键）、M0-M4、真机 10 步；明确 5 个子面板与 4 个 PS 事件排 v2 | docs/plan |
+| 2026-10-27 | `IconPanel` 机制改造：面板改 `createPortal` 落地（节点留在组件子树，消除「打开第一帧读到旧节点」）；删 `panels` Map + 无依赖 effect，只留 `mount/unmount` 计数做 id 重复告警；`IconButton` 增 `ariaExpanded` / `ariaControls`，`trigger` 的 handlers 也带 `aria-controls`；收起时不再调用 `panel(close)` | components/IconPanel、components/IconButton、docs/review |
+| 2026-10-27 | React 最佳实践复查（`REVIEW-21 §6.5`）：修 5 处 —— `NumberField`/`FontHierarchy`/`CreateButtonPanel` 三处 `useEffect` 派生 state 改渲染期收敛（`rerender-derived-state-no-effect`）、`FontColor` 三遍遍历合一次（`js-combine-iterations`）、家族查找改 `useMemo` Map（`js-set-map-lookups`）；`&&` 条件渲染 0 处；登记 3 条不改（图标 barrel、`IconButton` 无 memo、`IconPanel` 刻意无依赖数组） | features/font-panel、docs/review |
+| 2026-10-27 | 补齐 `REVIEW-2026-10-27-20` 的 §7.2 七项（M1 时点）：新增 §4.5 七项表，第 1 项补 `split('\|')` 全仓 0 处与 `ztgl_` 落点（实际调用仅 `core/ps/font.ts`，其余为注释）；原 §4.5 附加三项改为 §4.6；计划 §10.2 的 `§7.2 1/2/7` 同步补这两条查法 | docs/review、docs/plan |
+| 2026-10-27 | 行距「(自动)」按原版补：`FontColor` 显示 `useAutoLeading ? '(自动)' : 数字`（依据 `app.v4.js:1421662`）、`NumberField` 解析改 `parseFloat`（原版 `setFontFormat`，`(自动)` 不提交）、设行距成功后 patch `useAutoLeading: false`。`REVIEW-21 §7` 该项转为已修，未修 6→5 | features/font-panel、docs/review |
+| 2026-10-27 | 补齐 §6.5 段 review：8 个历史段（M0/M1/M2/M3/公共组件/设置页/按原版修正/撤销）逐个补 `§7.2 1/2/7` 三项结论；新增 `§10.9 M4 验收`、`§10.10 代码质量体检` 两个整段 review；两份体检报告补「附加三项」（横切矩阵 / 范本状态 / 视觉一致性） | docs/plan、docs/review |
+| 2026-10-27 | 代码质量体检（并入 `REVIEW-2026-10-27-21` §7）：修 6 项 —— `getTextInfoRaw` 漏判 `err !== 0`（非文字图层会读到残留值）、`SelectBox` 删除钮键盘冒泡导致「删除+选中」、`mergeFontSetSettings` 子对象未与旧值合并（会刷掉别的开关）、`FontHierarchy` 保存预设写两次盘、`store/text` 刷新竞态、属性未读到就摆默认数字；登记 6 项未修（行距「(自动)」显示、`run().then` 重复、`IconPanel` 面板更新依赖、`InputDialog` 焦点陷阱、`as CSSProperties`、quickFont 两次读） | core/ps、components、domain、store、features/font-panel |
+| 2026-10-27 | 字面板 M4 验收（代码侧）：数字对账 9 组件 8/9（翻译未做）、36 文案 31 出现（5 条各有理由）、jsx 29、命令 20、数据文件 5；机器侧六道关全绿；**运行时全部待真机**。体检 `REVIEW-2026-10-27-21`（触发 §7.1 #1+#3）：P0×1（`zt_changeTextBranchMerge`）、P1×2（背景对齐 Shift 参数、`translate` 族无调用方）、P2×4；修复：删 `DEFAULT_APP_UNIT` 孤儿导出 | docs/plan、docs/review、domain |
+| 2026-10-27 | 撤销面板单位后缀链路：删 `core/ps/text.getTypeUnitsRaw`、`VENDOR_FUNCS` 的 `zt_getTypeUnits`（35→34 项）、`store/text.unitLabel`（§3.7 接口回原样）、`domain/units` 的单位映射、`FontColor` 的后缀。原因：该值唯一用途是显示单位，而用户只需知道数值大小、不需要知道单位，原版面板也没有独立单位元素（`:1417720` 把单位拼进值里）。**jsx 口径 30 → 29（4 读 → 3 读）**，计划 §3.1/§3.7/§4.1/§7.2 已同步。设置页 `appUnit` 保留（原版真有），当前无消费者，已如实标注 | core/ps、store、domain、features/font-panel、docs |
+| 2026-10-27 | 字体面板后缀单位按原版补正（**已被上一条撤销**）：`store/text` 加 `unitLabel`，`refresh()` 与属性一起读 `appPreferences.typeUnits`（原版 `:1407034` / `:1408002` / `:1408634`），失败保持原值、默认「点」、未知映射为空；`domain/units.ts` 增 `typeUnitLabel` / `DEFAULT_TYPE_UNITS`。**这是对 §3.7 冻结接口的补正**（原版确有该项数据），已同步改计划 §3.7 | domain、store、features/font-panel、docs |
+| 2026-10-27 | 设置页（`/set`）第一项「单位」：`domain/units.ts`（原版 6 项 `像素(px)/厘米(cm)/毫米(mm)/英尺(in)/点(pt)/派卡(pc)`，文案无空格）、`features/settings` 页面写 `sj_set.json` 的 `appUnit`（失败回滚 UI，对齐原版 `set/index.vue:146-158`）；路由注册、导航 `implemented: true`。**撤销上一版按推断做的「3 项界面偏好 + `core/prefs` 的 `app.unit`」**：原版存 `sj_set.json`，字体面板后缀另取文档属性 `typeUnits` | features/settings、domain、app、core/prefs（删键） |
+| 2026-10-27 | 公共组件 IconButton + IconPanel：`components/IconButton`（`BadgeIcon` 上移，26×26 + 选中态 + 角标）、`components/IconPanel`（`IconPanelGroup` + `IconPanel`：关闭只认触发器、点外/Esc 不关、`exclusive` 开关管互斥、`trigger` 支持自定义触发器即点即开）；`CONVENTIONS` §6 扩到 4 项并写死四条规则；4.1 登记 4 个文件。返工：字体面板顶部 6 图标改用它（`useFontPanel` 删 `panel`/`togglePanel`）、属性区 3 个预设改为 `IconPanelGroup`（字号/行距 `exclusive={false}` 可同时展开）、`BadgeIcon` 删除 | components、docs、features/font-panel |
+| 2026-10-27 | 字体面板 M3：`FontQuick` / `FontHierarchy` / `FontColor` 接入页面；`components/SelectBox` 增可选 `footer?: (close) => ReactNode`（向后兼容，既有调用不变，属范本能力扩展）；图标白名单补 `iconshuru`。**翻译按钮保持 disabled，`translate` 命令与 `domain/translate` 暂不接线（方案未定）**；单位显示因缺少合法通道暂缺，待决策 | features/font-panel、components/SelectBox、components/icons、tools |
+| 2026-10-28 | 常用页 M3（两个子面板）：`features/common/components/SpacingPanel`（间距输入 + 水平/垂直两颗图标按钮 + 按图层/按坐标两个单选）与 `ReferencePanel`（宽度 + 应用 + 清除参考线 + 基于参考线切片）；网格改「每 3 个一行 + 每行一个 `IconPanelGroup`（受控 `openId`）」，`TileButton` 作为 `IconPanel` 的 trigger，面板落在本行之后；`TextField` 增第四档 `fill`；可点判定改为「有面板或命令」。**v2 缺口**：智能参考线勾选框未做 | features/common、components/TextField、docs |
+| 2026-10-28 | **常用页 v1 收尾**：`README` 状态表补字体面板 / 常用页 / 设置三行；`03` 计划新增 §11 交付状态（落地清单 + 三类未清事项 + 数据契约）；`daily/架构日志/01` 按方法要求补「2026-10-28 复算」（`.status` 373→399、构造点仍 1 文件、可选失败字段仍 0），新增 `02-常用页-形状收口.md`（九个量 + 凭据 + 净减 + 退二档）；全仓提交并推送 | docs、README、daily |
+| 2026-10-28 | 事件处理重复收口（`SHAPE-…-常用页.md` §七）：①Enter 提交骨架 6 → 1（`hooks/input-method-enter.enterSubmit`）②全局 keydown 收进 `hooks/useShortcut`（`nav-bar` 不再自己挂，`CONVENTIONS` §4.8 改成两个全局键盘入口）③**修 bug**：右键 `preventDefault` 原先只在 `IconButton` 内部，自定义 trigger 会同时弹系统菜单 → 收进 `IconPanel.onContextMenu` ④取色弹层两处右键删除 2 → 1 ⑤点面板本体挡冒泡 5 → 1（`ui.stopClickPropagation`）。判为不同语义不合并 4 项（三个键盘入口 / InputDialog 的 autoFocus / Portal 与 host / SelectBox 的挡冒泡） | hooks、app、components、features、docs |
+| 2026-10-28 | 反馈族收口（第二轮，`SHAPE-2026-10-28-常用页.md` §六）：「执行一条命令并反馈」的 5 份实现摊开比对后，同形状的 4 份（常用页 3 + `style.runWithToast`）收进 `hooks/useRunCommand` 的四个语义槽（`success` / `quiet` / `reasonOf` / `after`）；`style` 的 `runWithToast` / `runWithFeedback` 只剩两个动词名（各 2 行），`toastFailure` 与写路径共用 `styleReason`（同一判据不再两处）。**判为不同语义不迁 3 处**：`useFontPanel.run`（不包 loading，迁了会给 20 多处加遮罩）、`home`×2（调试页要 `code` 与返回值）、`StylePage:107`（多步解析非单条命令）。`grep "loading.run("` 8 → 5，形状内 5 → 1 | features/style、hooks、commands/README、docs |
+| 2026-10-28 | **形状收口手术**（`docs/review/SHAPE-2026-10-28-常用页.md`）：九个量 + 十五刀逐刀给结论。实测形状 **1 份**（`Result`）、判别位 **1 种**（`.status` 400 处）、可选失败字段 **0**、生产构造点 **1 个文件**（`types/result.ts`）。收口 2 组：①「包 loading + 失败提示」3 → 1（新 `hooks/useRunCommand`，`useCommonPage` / `SpacingPanel` / `ReferencePanel` 的私有 `run()` 全删）②折叠态归一化 2 → 1（`domain.normalizeCollapsed`，store 读与命令写共用）。顺手补刀 14：`run` 不再丢 `code`/`detail`（进日志），`StateHint` 的 CORRUPT / IO_ERROR 把 `detail` 挂 `title`。**退二档 3 条**（自由文本失败 193 处存量 / 测试 5 处 mock 字面量 / `?? ` 默认值），**未收同类 4 处**已在报告 §六点名 | hooks、domain、store、commands、features/common、components/StateHint、docs |
+| 2026-10-28 | react-best-practices 第二轮复核（M3/M4 新增代码，见 `REVIEW-2026-10-28-23` §8）：修 3 项 —— ①`SettingsPage` 改两个派生布尔选择器（不再订阅整个 `options`）；②`hooks/useLongPressDrag.ts:151` 内联 `color:#ffffff` 改 `var(--mm-color-text-inverse)`；③`run(task)` 参数就地重画的 `{status:...}` 联合类型改用 `Result<void>`（`useCommonPage` / `ReferencePanel`）。登记不改 4 项（`BottomBar` 的 8 个 SVG 色值 / filter+切行两趟 / `TileButton` 不加 memo / 面板元素每次新建），各有理由写在报告里 | features/settings、hooks、features/common、docs |
+| 2026-10-28 | 常用页 M4（验收）+ 体检 `REVIEW-2026-10-28-23`：数字对账 8 个口径（组件 5 / class 28+10 / 文案 50+5 / jsx 26 / 命令 17 全部有调用方 / 数据文件 2 / 公共件 5 / token 15，其中 class 与文案的差异已解释、token 计数由 18 改正为 15）；真机 10 步按实际入口修订（第 6 步走设置页、第 8 步 3 个按钮）；补 3 个「命令没有入口」的缺口 —— `setShow` → 设置页「显示的功能项」14 勾选、`resetAll` + `openDirectory` → 页头两个图标按钮；`setCollapsed` 改为只推 store 不再全量重读。**P0（`VENDOR_FUNCS` 60 项探测）仍待真机** | features/common、features/settings、docs |
+| 2026-10-28 | 常用页 M2（页面骨架）：`features/common/{CommonPage,useCommonPage,common-constants}` + `components/TileButton`（50×50 / 圆角 10 / #494949 / 悬停 #222 / 角标 3×3）；缩放区（2 个 `TextField` + 4/4/10/10 档）、变换区（翻转 6 向）、三处折叠、按 `sj_set.json` 的 `cyShowZoom`/`cyShowTransformation` 显隐；设置页新增「常用功能面板」两行；`/common` 路由 + 导航 `implemented: true`；`tokens.css` +15 个 token；`build-icons` 增 `isIconName` 守卫（禁止 `as IconName`）并补 2 个图标；`store/common-use.reasons` 改存 `Result` 供 `StateHint`。**缺口**：每行 `IconPanelGroup` 顺延 M3、`setShow` 无 UI 入口待定 | features/common、features/settings、app、components/icons、styles、store、docs |
+| 2026-10-27 | 影子专项第二轮（用户要求「查到就改完」）：`ui.Input` 加 `variant` + `forwardRef`，六处输入框全部改走它（裸 `<input>` 只剩 `Input` 与 CheckBox/RadioButton 内部）；新增 `components/Portal`（6 处 `createPortal(…,document.body)` 收敛）、`hooks/useDraft`（3 处草稿 state）、`hooks/useFocusTrap`（4 处弹窗统一，`Confirm`/`ImgColorDialog`/`InputDialog` 属有意补强）；`useFloatingPosition.update()` 返回锚点矩形（SelectBox 不再自量）；`--mm-z-drag` + `.mm-drag-float` 取代内联 999；`.mm-modal-mask` 收敛确认框与取色层遮罩；Toast id 改自增计数；`CONVENTIONS` §4.8 补 `core/auth` 的 localStorage 例外、§6 输入框改为「唯一渲染入口」 | components、hooks、features、styles、docs |
+| 2026-10-27 | **影子/私有副本专项**（并入 `REVIEW-2026-10-27-22` §7）：修 6 条 —— ①`.stylelintrc.json` 的 px 规则从前缀漏检补齐（`min-*`/`max-*`/`padding-*`/`margin-*`）并新增 `rgb()/rgba()/hsl()` 禁写，全仓收紧后仅 7 条违规、已全部收进 token；②两处遮罩裸色改 `--mm-color-modal-mask`；③`clampIndex` 两份私有实现收敛到 `domain/font-set.clampListIndex`；④`core/ps/env.ts` 的 `/SheJiZhuLi` 改 `ROOTS.legacy`；⑤`NewGroupRow` 的文本箭头 `▸` 改 `Chevron`；⑥4 处 `min/max` 尺寸进 token。登记未修：输入框 5 份实现、6 处 body portal、`SelectBox` 自量宽度、拖拽 `z-index:999`、弹窗壳三套、草稿 state 三份、焦点陷阱单点 | .stylelintrc.json、styles、components、domain、repo、core/ps、features/style、docs |
+| 2026-10-27 | 体检 `REVIEW-2026-10-27-22`（触发 §7.1 #1 + #3，范围 M0+M1）：七项 5 通过 / 2 不通过（死代码=已知预留、文档漂移=已修）；P0×1（`VENDOR_FUNCS` 一次 +25 的全局探针风险，待真机）、P1×5、P2×3。修复 9 项：jsx 计数口径 12/13 六处、`init.ts` 文本属性 27→26、`CONVENTIONS` §3 目录树补 5 项（prefs/clipboard/dialog/image/dev）、`CheckBox`/`RadioButton` 补 `:focus-visible`、`TextField` 的 `title` 改必填、`Collapse` 补 `aria-controls`、`FlipDirection` 从 commands 转出、`reorder` 队列内长度守卫、**通道口径纠错**（`cy_distributedByPitch` 原版两处都是 `jsxHistory`，§4.7 旧表与 §11.3 写成直调；代码统一登记 P1） | docs/review、components、commands、core/ps、CONVENTIONS、PS-CHANNEL-NOTES |
+| 2026-10-27 | 常用页 M1（底层到命令）：`core/ps/vendor.ts`（调度 / 直调两条通道的唯一实现，`style.ts` / `text.ts` 同步收敛，删掉各自的私有副本）、`core/ps/common-use.ts`（26 个 `cy_*`，v1 覆盖 11 个 / 12 条命令 + 只登记 2）、`VENDOR_FUNCS` 35→60（净增 25，`cy_distributedByPitch` 与文本属性共用）、`domain/{common-use,common-use-options}`（+22 条单测）、`repo/common-use-repo.ts`、`store/common-use.ts`、`commands/common-use.ts`（17 条）；`CONVENTIONS` §5/§8、`PS-CHANNEL-NOTES` §11.4 新增 + §五同步；图标白名单 +4 个悬停图（90 个）。**回源码纠正计划 5 处**（通道不是一刀切、`distribute` 三参、v1 漏 `swapWireframeFill`、`VENDOR_FUNCS` 应为 60、`cya4` 的 title 是空串），已同步改计划 §3.1/§3.5/§3.6/§4.6/§7.4 并记进 §10.2 | core、domain、repo、store、commands、docs、tools |
+| 2026-10-27 | 常用页 M0（约定 + 5 个公共件）：`IconPanelGroup` 加受控 `openId`/`onOpenChange`（不传走内部 state，字体面板零改动）；`CheckBox`（`CheckRow` 上移，14→12 / 圆角 2→3 / 右空 8→6）、`RadioButton`（12×12，`CreateButtonPanel` 两处裸 radio 迁入）、`TextField`（三档定宽 `variant` + 左图标 + Enter 提交，内部渲染 `ui.Input`）、`Collapse`（100%×24 / 箭头位 20×13 / 上下 12）；`CONVENTIONS` §6 由 4 项扩到 7 项并写死 12×12；`PrefKey` 加 `common.collapsed`；图标白名单 +20（网格 14 + 翻转 6）重生成 86 个；`tokens.css` 新增 10 个 token；`FontPanelPage.css` 删 26 行死样式。**`VENDOR_FUNCS` / `PS-CHANNEL-NOTES` §11.4 / §4.1 的 4 行顺延 M1**（与文件同轮，理由见 03 计划 §3.5 补注） | components、docs、styles、core/prefs、tools、features/font-panel |
+| 2026-10-27 | 字体面板 M0（约定与登记）：`CONVENTIONS` §3 目录树补 `core/ps/text.ts`、§5 存储表补「官方设置文件走 repo」、§5 网络行补 `jsonpGet`、§4.7 通道表补文本属性直调、§8 能力层补 `text.ts` 并删已不存在的 `document.ts`、§16 补 `shortcut` / `implemented` 顺序；`PS-CHANNEL-NOTES` 新增 §11.3（30 个文本属性函数，全部 UNVERIFIED）、§四补超时、§五 `VENDOR_FUNCS` 扩到 35 项；`core/ps/init.ts` 登记 27 个新函数；图标白名单补字面板 20 个图标。§4.1 的 4 行（`core/ps/text.ts`、`repo/font-set-repo.ts`、`store/text.ts`、`store/font-set.ts`）与文件**同一轮**登记（M1），理由同 01 计划 §4.1.3：`check:templates` 是双向校验，先登记后建文件会让 `check` 红 | docs、core/ps、components/icons |

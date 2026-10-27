@@ -1,0 +1,85 @@
+/* 功能格：50×50 / 圆角 10 / 默认 #494949 / 悬停与展开 #222（原版 .context-svg-wrap） */
+.mm-common__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mm-space-exact-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+/* 悬停「变白」是有意不做（2026-10-23 判定），这里只换底色与图标色 */
+.mm-common__tile-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-common-tile);
+  height: var(--mm-common-tile);
+  border-radius: var(--mm-common-tile-radius);
+  background: var(--mm-common-tile-bg);
+}
+
+.mm-common__tile:hover .mm-common__tile-box,
+.mm-common__tile--active .mm-common__tile-box {
+  background: var(--mm-color-sunken);
+}
+
+.mm-common__tile:hover .mm-common__tile-icon,
+.mm-common__tile--active .mm-common__tile-icon {
+  color: var(--mm-common-tile-hover-icon);
+}
+
+/* 有悬停图时：默认画 rest，悬停换成 filled（官方 fillSvg 的语义） */
+.mm-common__tile-icon--filled {
+  display: none;
+}
+
+.mm-common__tile--filled:hover .mm-common__tile-icon--rest,
+.mm-common__tile--filled.mm-common__tile--active .mm-common__tile-icon--rest {
+  display: none;
+}
+
+.mm-common__tile--filled:hover .mm-common__tile-icon--filled,
+.mm-common__tile--filled.mm-common__tile--active .mm-common__tile-icon--filled {
+  display: inline-flex;
+}
+
+/* 角标：3×3 点，上移 30、左移 -3（原版 .mark） */
+.mm-common__mark {
+  position: absolute;
+  top: var(--mm-common-mark-offset-y);
+  left: 50%;
+  width: var(--mm-common-mark);
+  height: var(--mm-common-mark);
+  margin-left: var(--mm-common-mark-offset-x);
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-color-accent);
+}
+
+.mm-common__tile-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 灰态沿用 token 里那一个不透明度，不另定值 */
+.mm-common__tile--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-common__tile--disabled:hover .mm-common__tile-box {
+  background: var(--mm-common-tile-bg);
+}
+
+.mm-common__tile--disabled:hover .mm-common__tile-icon {
+  color: inherit;
+}

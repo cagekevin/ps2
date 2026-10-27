@@ -1,14 +1,6 @@
 /* 【范本】图片取色弹层：原版 imgColor 的弹层样式（色圈 28px / 渐变条 42×22 / 双按钮） */
 
-.mm-imgcolor__mask {
-  position: fixed;
-  inset: 0;
-  z-index: var(--mm-z-tooltip);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
-}
+/* 遮罩用 `ui.css` 的 `.mm-modal-mask`（与确认框共用），本文件只画面板本体 */
 
 .mm-imgcolor {
   width: var(--mm-imgcolor-w);

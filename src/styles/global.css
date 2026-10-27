@@ -22,3 +22,23 @@ body {
 button {
   font-family: inherit;
 }
+
+/* 拖拽浮层：`hooks/useLongPressDrag` 在拖拽期间挂这个类。
+   z-index 走 token——hook 里内联写 999 会让层级绕过 tokens.css，改档位时漏掉它 */
+.mm-drag-float {
+  z-index: var(--mm-z-drag);
+}
+
+/* 居中弹窗的遮罩：`Confirm` 与图片取色弹层共用（原先两份逐行相同的规则，
+   连遮罩色都是同一个颜色的两种写法）。放全局而不是某个组件目录，
+   因为它跨组件复用、且必须在任何弹窗渲染前就已加载。
+   `InputDialog` 不在此列——原版它是 `calc(50vw - 90px)` + `top:30%`，刻意不居中 */
+.mm-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mm-z-tooltip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mm-color-modal-mask);
+}

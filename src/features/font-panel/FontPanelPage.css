@@ -1,0 +1,529 @@
+/**
+ * 字体面板页样式（类名前缀统一 `mm-font-panel__`）
+ *
+ * 尺寸与颜色只取 token：面板底色 `--mm-color-sunken`（比页面底暗一档），
+ * 按钮底 `--mm-color-bg-panel`，输入框底 `--mm-color-input-page`，
+ * 分隔线 `--mm-color-verline`。原版值写在 tokens.css 的注释里，这里不复制。
+ */
+
+.mm-font-panel {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  overflow-y: auto;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+}
+
+/* ---------------- 图标行 ---------------- */
+
+.mm-font-panel__icons {
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--mm-space-exact-10) 0;
+}
+
+.mm-font-panel__icon-row--after {
+  margin-top: var(--mm-space-2);
+}
+
+.mm-font-panel__divider {
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-verline-h);
+  background: var(--mm-color-verline);
+}
+
+.mm-font-panel__line {
+  height: var(--mm-border-w);
+  margin: var(--mm-space-exact-10) var(--mm-space-exact-15) var(--mm-space-exact-5);
+  border: 0;
+  background: var(--mm-color-verline);
+}
+
+.mm-font-panel__line--set {
+  margin-bottom: var(--mm-space-exact-10);
+  background: var(--mm-color-sunken);
+}
+
+/* ---------------- 展开面板 ---------------- */
+
+.mm-font-panel__panel {
+  padding: var(--mm-space-exact-15) var(--mm-space-exact-10);
+  background: var(--mm-color-sunken);
+}
+
+.mm-font-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mm-space-3);
+}
+
+.mm-font-panel__row--pad,
+.mm-font-panel__row--tight {
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-font-panel__row--tight {
+  justify-content: flex-start;
+  gap: var(--mm-space-2);
+}
+
+.mm-font-panel__label {
+  flex: 0 0 auto;
+  margin: 0 var(--mm-space-exact-10) 0 0;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+}
+
+/* 勾选 / 单选已上移到 components/CheckBox 与 components/RadioButton（CONVENTIONS §6），
+   本页只保留布局类 `.mm-font-panel__row`；不要在这里再写一遍方框样式 */
+
+/* ---------------- 通用按钮 / 输入 ---------------- */
+
+/* 输入框表面（高度 / 边框 / 圆角 / 底色）来自 `ui.css` 的 `.mm-input--page`，这里只给布局 */
+.mm-font-panel__input-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font-panel__preset-btn {
+  height: var(--mm-font-panel-btn-h);
+  padding: 0 var(--mm-space-3);
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-font-panel__preset-btn:hover,
+.mm-font-panel__wide-btn:hover {
+  background: var(--mm-color-surface-raised-hover);
+}
+
+.mm-font-panel__wide-btn {
+  width: 100%;
+  height: var(--mm-font-panel-btn-h);
+  margin-top: var(--mm-space-exact-10);
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+/* 属性区读取中 / 读取失败：一行提示，不摆默认数字 */
+.mm-font-panel__state {
+  margin: 0;
+  padding: var(--mm-space-exact-10);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+}
+
+/* ---------------- 字体快选 ---------------- */
+
+.mm-font-panel__quick {
+  width: 100%;
+}
+
+/* 原版 `.selectFont` 是整宽、无左右缩进（缩进只在下拉面板上，见 SelectBox inset） */
+.mm-font-panel__quick-row {
+  display: flex;
+  align-items: center;
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-font-panel__quick-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font-panel__quick-add {
+  width: 100%;
+  padding: var(--mm-space-exact-2) var(--mm-space-3);
+  border: 0;
+  border-top: var(--mm-border-w) solid var(--mm-color-border-float);
+  background: transparent;
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-font-panel__quick-add:hover {
+  background: var(--mm-color-bg-hover);
+}
+
+/* 原版字重行：`f-alignNone app-padding mt4` —— 左右 10、上间距 4 */
+.mm-font-panel__quick-weights {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--mm-space-1);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+/* ---------------- 字体属性 ---------------- */
+
+.mm-font-panel__color {
+  padding: 0;
+}
+
+.mm-font-panel__color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-2);
+  margin-top: var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__family,
+.mm-font-panel__weight {
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font-panel__color-label {
+  flex: 0 0 auto;
+  margin: 0 0 0 var(--mm-space-exact-5);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+}
+
+.mm-font-panel__swatch {
+  flex: 0 0 auto;
+  width: var(--mm-font-panel-swatch-w);
+  height: var(--mm-font-panel-btn-h);
+  border: var(--mm-border-w) solid var(--mm-color-sunken);
+  background: var(--mm-font-panel-color, var(--mm-color-swatch));
+  cursor: pointer;
+}
+
+.mm-font-panel__styles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  margin-top: var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__metric {
+  display: flex;
+  align-items: flex-start;
+  margin-top: var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__half {
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font-panel__half--center {
+  display: flex;
+  height: var(--mm-font-panel-btn-h);
+  align-items: center;
+}
+
+/* 原版两栏之间的固定空档 .setNbsp（30px） */
+.mm-font-panel__gutter {
+  flex: 0 0 var(--mm-space-exact-30);
+  width: var(--mm-space-exact-30);
+}
+
+.mm-font-panel__presets {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--mm-space-3);
+  row-gap: var(--mm-space-4);
+  margin-top: var(--mm-space-4);
+  padding: var(--mm-space-exact-10);
+  background: var(--mm-color-sunken);
+}
+
+.mm-font-panel__preset {
+  width: calc((100% - 5 * var(--mm-space-exact-6)) / 6);
+  height: var(--mm-font-panel-btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-font-panel__preset:hover {
+  background: var(--mm-color-surface-raised-hover);
+}
+
+/* ---------------- 层级字号 ---------------- */
+
+.mm-font-panel__hierarchy {
+  width: 100%;
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-font-panel__hierarchy-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__hierarchy-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-font-panel__levels {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-exact-10);
+}
+
+.mm-font-panel__level {
+  width: calc((100% - 5 * var(--mm-space-exact-6)) / 6);
+  height: var(--mm-font-panel-btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-font-panel__level:hover {
+  background: var(--mm-color-surface-raised-hover);
+}
+
+.mm-font-panel__editor {
+  margin-top: var(--mm-space-exact-10);
+  padding: var(--mm-space-exact-13) var(--mm-space-exact-10);
+  background: var(--mm-color-sunken);
+}
+
+.mm-font-panel__editor-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mm-space-exact-2);
+}
+
+/* 表面对齐 `.mm-input--page`；这里只收窄宽度、去掉边框（原版这格没有描边） */
+.mm-font-panel__editor-input {
+  width: var(--mm-space-exact-30);
+  padding: 0 var(--mm-space-exact-2);
+  border-color: transparent;
+  text-align: center;
+}
+
+.mm-font-panel__editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-font-panel__preset-btn--half {
+  width: calc(50% - var(--mm-space-exact-5));
+}
+
+/* ---------------- 拆分 ---------------- */
+
+.mm-font-panel__split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-3);
+}
+
+.mm-font-panel__split-btn {
+  width: calc(50% - var(--mm-space-3));
+  height: var(--mm-font-panel-btn-h);
+  border: var(--mm-border-w) solid var(--mm-color-input-page);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-input-page);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-font-panel__split-btn:hover {
+  border-color: var(--mm-color-border-float-strong);
+  background: var(--mm-color-surface-raised);
+}
+
+/* ---------------- 生成按钮 ---------------- */
+
+.mm-font-panel__quick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-3);
+  margin-top: var(--mm-space-exact-10);
+}
+
+.mm-font-panel__quick-btn {
+  width: calc(12.5% - var(--mm-space-3));
+  height: var(--mm-font-panel-btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-bg-panel);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-font-panel__quick-btn:hover {
+  background: var(--mm-color-surface-raised-hover);
+}
+
+/* ---------------- 粘贴 ---------------- */
+
+.mm-font-panel__paste-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mm-font-panel__paste-row + .mm-font-panel__paste-row {
+  margin-top: var(--mm-space-exact-10);
+}
+
+/* ---------------- 数字输入 ---------------- */
+
+.mm-font-panel__number {
+  display: flex;
+  min-width: 0;
+  height: var(--mm-font-panel-btn-h);
+  align-items: center;
+}
+
+.mm-font-panel__number-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin-right: var(--mm-space-exact-2);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-font-panel__number-box {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  gap: var(--mm-space-exact-2);
+  padding: 0 var(--mm-space-exact-2);
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-field-radius);
+  background: var(--mm-color-input-page);
+  color: var(--mm-color-text);
+}
+
+/* 复合数字框的内层 input：表面由外层 `.mm-font-panel__number-box` 画，这里退成无框 */
+.mm-font-panel__number-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--mm-font-md);
+  text-align: center;
+}
+
+.mm-font-panel__number-suffix {
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
+
+.mm-font-panel__number-caret {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-text-dim);
+  cursor: pointer;
+}
+
+.mm-font-panel__number-caret:hover,
+.mm-font-panel__number-caret--open {
+  color: var(--mm-color-text-strong);
+}
+
+.mm-font-panel__number-caret--open {
+  transform: rotate(180deg);
+}
+
+/* ---------------- 分布弹窗 ---------------- */
+
+/* 弹窗本体走公共 `components/InputDialog`（原版就是同一个 $inputBox），这里只剩它的附加按钮 */
+.mm-font-panel__pin {
+  display: inline-flex;
+  padding: var(--mm-space-exact-1);
+  border: 0;
+  border-radius: var(--mm-radius-sm);
+  background: transparent;
+  color: var(--mm-color-text-dim);
+  cursor: pointer;
+}
+
+.mm-font-panel__pin--on {
+  background: var(--mm-color-bg-hover);
+  color: var(--mm-color-accent);
+}
+
+.mm-font-panel__error {
+  margin: var(--mm-space-exact-2) 0 0;
+  color: var(--mm-color-error);
+  font-size: var(--mm-font-sm);
+  line-height: 1em;
+}
+
+.mm-font-panel__advanced {
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-3);
+  margin-top: var(--mm-space-exact-10);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-md);
+  cursor: pointer;
+}
+
+.mm-font-panel__caret {
+  transform: rotate(-90deg);
+}
+
+.mm-font-panel__caret--open {
+  transform: rotate(0deg);
+}
+
+.mm-font-panel__help {
+  margin-top: var(--mm-space-exact-10);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-md);
+  line-height: var(--mm-line-16);
+}
+
+.mm-font-panel__help p {
+  margin: 0 0 var(--mm-space-exact-3);
+}

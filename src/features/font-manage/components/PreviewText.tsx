@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Icon } from '../../../components/icons';
 import { Input } from '../../../components/ui';
-import { isImeEnter } from '../ime';
+import { enterSubmit } from '../../../hooks/input-method-enter';
 
 interface Props {
   current: string;
@@ -27,9 +27,7 @@ export function PreviewText({ current, onApply }: Props) {
         placeholder="请输入预览文案"
         autoFocus
         onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !isImeEnter(event)) apply();
-        }}
+        onKeyDown={enterSubmit(apply)}
       />
       <button
         type="button"

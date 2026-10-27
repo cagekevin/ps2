@@ -22,7 +22,9 @@ export type PrefKey =
   | 'style.expandedGroups'
   | 'nav.lastPath'
   | 'font.previewMode'
-  | 'font.previewText';
+  | 'font.previewText'
+  /** 常用页三个区域（zoom / transformation / grid）的折叠态，值与 `CommonSection` 同形 */
+  | 'common.collapsed';
 
 const FILE = 'prefs.json';
 

@@ -23,11 +23,15 @@ const ToastContext = createContext<ToastApi | null>(null);
 
 const DURATION = 2600;
 
+/** 自增 key：同毫秒连发两条也不会撞（原先是 `Date.now() + Math.random()`，全仓第二套 id 生成方式） */
+let nextToastId = 0;
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
   const show = useCallback((message: string, kind: ToastKind = 'info') => {
-    const id = Date.now() + Math.random();
+    nextToastId += 1;
+    const id = nextToastId;
     setItems((prev) => [...prev, { id, kind, message }]);
     window.setTimeout(() => {
       setItems((prev) => prev.filter((item) => item.id !== id));

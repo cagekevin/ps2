@@ -57,6 +57,13 @@
   box-shadow: var(--mm-shadow-pop);
 }
 
+/* 原版 .selectFont-dropDown：宽度减 20、左缩 10、上间距 5 */
+.mm-select-box__panel--inset {
+  left: calc(var(--floating-x, 0) + var(--mm-space-exact-10));
+  width: calc(var(--floating-width, 100%) - var(--mm-space-exact-20));
+  margin-top: var(--mm-space-exact-5);
+}
+
 /* 选项：原版 `.select-box__item` —— 28px 高、左侧留勾的位置 */
 .mm-select-box__item {
   position: relative;
@@ -86,7 +93,26 @@
 }
 
 .mm-select-box__item-label {
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
+}
+
+/* 行内删除（原版 dropDowncom 的 therrSvg） */
+.mm-select-box__remove {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-text-dim);
+  cursor: pointer;
+}
+
+.mm-select-box__remove:hover {
+  color: var(--mm-color-text-inverse);
 }

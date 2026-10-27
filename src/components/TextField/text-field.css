@@ -1,0 +1,40 @@
+/* 文本输入框：三档定宽 + 左图标；边框与圆角来自 ui.css 的 .mm-input */
+.mm-text-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+}
+
+.mm-text-field--wide {
+  width: var(--mm-input-w-wide);
+}
+
+.mm-text-field--half {
+  width: var(--mm-input-w-half);
+}
+
+.mm-text-field--compact {
+  width: var(--mm-input-w-compact);
+}
+
+/* 占满剩余宽度：面板里「输入框 + 按钮」同一行时用（定宽会把按钮挤出去） */
+.mm-text-field--fill {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mm-text-field__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+}
+
+/* 宽度由外层容器决定，输入框自己撑满剩余空间 */
+.mm-text-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mm-text-field--compact .mm-text-field__input {
+  height: var(--mm-input-h-compact);
+}

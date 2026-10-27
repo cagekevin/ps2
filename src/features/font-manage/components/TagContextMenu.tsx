@@ -1,6 +1,6 @@
 /** 标签右键浮层：删除 / 重命名（原版 105px 蓝底） */
 import { useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { Portal } from '../../../components/Portal';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { useFloatingPosition } from '../../../hooks/useFloatingPosition';
 
@@ -21,7 +21,7 @@ export function TagContextMenu({ x, y, onRename, onRemove, onClose }: Props) {
     update({ x, y });
   }, [x, y, update]);
 
-  return createPortal(
+  return <Portal>
     <div ref={floatingRef} className="mm-font__tag-ctx" role="menu" aria-label="标签操作">
       <button
         type="button"
@@ -41,7 +41,6 @@ export function TagContextMenu({ x, y, onRename, onRemove, onClose }: Props) {
       >
         重命名
       </button>
-    </div>,
-    document.body
-  );
+    </div>
+  </Portal>;
 }

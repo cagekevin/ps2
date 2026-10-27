@@ -22,26 +22,7 @@ import { ROOTS } from '../storage';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore, requireVendor } from './init';
 import { parseDataEnvelope, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
-
-/** 官方 jsx 的统一调度入口 */
-const VENDOR_DISPATCH = 'ps_onJsx';
-
-async function runVendor(fn: string, args: unknown[], label?: string): Promise<Result<void>> {
-  if (!(await requireVendor())) {
-    return fail('PS_UNREADY', '官方 PS 能力未就绪，应用功能不可用');
-  }
-
-  const payload: Record<string, unknown> = { f: fn, arr: args };
-  if (label) payload.n = label;
-
-  const call = await callJsx(VENDOR_DISPATCH, [payload]);
-  if (call.status === 'error') return call;
-
-  const guard = unwrapRaw(call.value);
-  if (guard.status === 'error') return guard;
-
-  return ok(undefined);
-}
+import { runVendor } from './vendor';
 
 /**
  * 应用颜色。

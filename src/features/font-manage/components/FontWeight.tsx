@@ -4,6 +4,7 @@
  */
 import { useRef, useState, type CSSProperties } from 'react';
 import { Icon } from '../../../components/icons';
+import { stopClickPropagation } from '../../../components/ui';
 import { isAsciiFamily } from '../../../domain/font-lang';
 import type { FontItem } from '../../../domain/font-item';
 import { useDismiss } from '../../../hooks/useDismiss';
@@ -66,7 +67,7 @@ export function FontWeight({ font, current, onSelect }: Props) {
         <div
           className="mm-font__weight-menu"
           /* 下拉的 padding 也是弹层内部：点它不能冒泡成「应用字体」 */
-          onClick={(event) => event.stopPropagation()}
+          onClick={stopClickPropagation}
         >
           {font.weights.map((weight, index) => (
             <button

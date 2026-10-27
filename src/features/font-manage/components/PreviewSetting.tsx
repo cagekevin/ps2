@@ -1,6 +1,6 @@
 /** 底栏预览设置：眼睛（5 档）+ Aa（预览文案输入） */
 import { useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Portal } from '../../../components/Portal';
 import { Icon } from '../../../components/icons';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { PREVIEW_LABEL, PREVIEW_MODES, type PreviewMode } from '../../../store/font';
@@ -34,7 +34,7 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
       </button>
 
       {open
-        ? createPortal(
+        ? <Portal>
             <div
               ref={cardRef}
               className="mm-font__preview-card"
@@ -57,9 +57,8 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
                   <span>{PREVIEW_LABEL[item]}</span>
                 </button>
               ))}
-            </div>,
-            document.body
-          )
+            </div>
+          </Portal>
         : null}
     </div>
   );

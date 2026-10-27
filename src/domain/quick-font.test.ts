@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import type { FontItem } from './font-item';
+import {
+  canAddQuickFont,
+  normalizeQuickFontFile,
+  QUICK_FONT_LIMIT,
+  toQuickFont,
+  type QuickFont
+} from './quick-font';
+
+function font(overrides: Partial<FontItem> = {}): FontItem {
+  return {
+    family: 'MiSans',
+    weights: ['Bold', 'Regular', 'Light'],
+    names: ['MiSans Bold', 'MiSans', 'MiSans Light'],
+    postScriptNames: ['MiSans-Bold', 'MiSans-Regular', 'MiSans-Light'],
+    ...overrides
+  };
+}
+
+function quick(family: string): QuickFont {
+  return { family, name: family, scriptName: `${family}-Regular`, zz: ['Regular'], hjm: ['x'], mz: [family] };
+}
+
+describe('quick-font', () => {
+  it('转换：三个数组按字重顺序重排且保持同索引对齐', () => {
+    const result = toQuickFont(font());
+    expect(result.zz).toEqual(['Light', 'Regular', 'Bold']);
+    expect(result.hjm).toEqual(['MiSans-Light', 'MiSans-Regular', 'MiSans-Bold']);
+    expect(result.mz).toEqual(['MiSans Light', 'MiSans', 'MiSans Bold']);
+    expect(result.name).toBe('MiSans Light');
+    expect(result.scriptName).toBe('MiSans-Light');
+  });
+
+  it('上限 15：满了就不再收', () => {
+    const list = Array.from({ length: QUICK_FONT_LIMIT }, (_, index) => quick(`F${index}`));
+    const result = canAddQuickFont(list, 'NewComer');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('VALIDATION');
+      expect(result.reason).toContain(String(QUICK_FONT_LIMIT));
+    }
+  });
+
+  it('同家族去重：已有就拒绝', () => {
+    const result = canAddQuickFont([quick('MiSans')], 'MiSans');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.reason).toContain('MiSans');
+  });
+
+  it('索引越界：读文件时夹到合法范围，不返回越界索引', () => {
+    const file = { index: 9, list: [quick('A'), quick('B')] };
+    expect(normalizeQuickFontFile(file)).toEqual({ status: 'ok', value: { index: 1, list: file.list } });
+
+    const empty = normalizeQuickFontFile({ index: 3, list: [] });
+    expect(empty).toEqual({ status: 'ok', value: { index: 0, list: [] } });
+  });
+
+  it('坏形状：三个数组不等长（缺键）整份拒绝，指出第几条', () => {
+    const broken = { index: 0, list: [quick('A'), { family: 'B', name: 'B', zz: ['Regular'] }] };
+    const result = normalizeQuickFontFile(broken);
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('CORRUPT');
+      expect(result.detail).toBe('root.list[1]');
+    }
+  });
+});

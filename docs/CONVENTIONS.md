@@ -174,7 +174,11 @@ src/
 │  ├─ auth/       token
 │  ├─ storage/    本地文件（双根：Maomao / SheJiZhuLi）
 │  ├─ paths/      路径拼接与资源 URL
-│  ├─ ps/         PS 原子能力（init/layer/style/font/env/diag）
+│  ├─ prefs/      界面偏好（本地 JSON，非业务数据）
+│  ├─ clipboard/  剪贴板（自动降级）
+│  ├─ dialog/     文件对话框（CEP fs API）
+│  ├─ image/      图片解码（FileReader / canvas）
+│  ├─ ps/         PS 原子能力（init/vendor/layer/style/font/text/common-use/env/diag）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
 │  └─ logger/     日志
@@ -182,12 +186,13 @@ src/
 ├─ repo/          数据访问：读文件 → Result，不做业务判断
 ├─ commands/      业务命令：组合原子能力 + 写库，无 UI
 ├─ store/         状态切片
-├─ hooks/         可复用交互原语（点外关闭、浮层定位、拖拽、持久化）
+├─ hooks/         可复用交互原语（点外关闭、浮层定位、焦点陷阱、受控草稿、拖拽、持久化、输入法回车、分页）
 ├─ components/    纯 UI
 ├─ features/      页面与交互
 ├─ assets/        静态资源（SVG sprite）
 ├─ styles/        tokens.css、global.css
 ├─ types/         全局类型
+├─ dev/           仅开发用的假数据（`preview.ts`，`import.meta.env.DEV` 守卫，生产不加载）
 ├─ main.tsx       入口（挂 root）
 ├─ App.tsx        应用装配（Providers + Router + Layout，无业务）
 └─ app/           router、layout、providers、layer-watcher
@@ -374,10 +379,16 @@ mutateRawGroups(warehouse, kind, (groups) => {
 
 | 原版前端 | 实际发出 | 用在哪 |
 |---|---|---|
-| `jsxHistory(fn, args, label)` | `ps_onJsx('{"f":fn,"arr":args,"n":label}')` | 渐变、图层样式 |
-| `jsx(fn, args)` | `fn(args)` 直接调 | 字体（`ys_checkUseFont` / `ys_useFont` / `ztgl_initSystemList` / `ztgl_setFont`） |
+| `jsxHistory(fn, args, label)` | `ps_onJsx('{"f":fn,"arr":args,"n":label}')` | 渐变、图层样式；常用页里走调度那批（见 `PS-CHANNEL-NOTES` §11.4） |
+| `jsx(fn, args)` | `fn(args)` 直接调 | 字体（`ys_checkUseFont` / `ys_useFont` / `ztgl_initSystemList` / `ztgl_setFont`）、文本属性（`zt_*` / `layer_font_*`） |
 
 判断方法：看 app 的 `cep/transport.ts` 里调用点用的是 `jsxHistory` 还是 `jsx`，**不要凭 `ys_` 前缀推断**。
+
+**同一个函数在不同面板可能用不同通道，也可能用同一通道但参数不同**，两种情况都别混：
+- 参数不同、通道相同：`cy_distributedByPitch` 在常用页是 `[axis, gap, sortMode]`（`:1262654`）、
+  在文本属性面板是 `[axis, value, 2, filter]`（`:1441105`），**两处都是 `jsxHistory`**。
+  `core/ps/text.ts` 目前仍按直调实现，属已登记 P1（待真机确认 `ps_onJsx` 能调 `cy_*` 后统一）
+- 通道不同、函数同族：`cy_zoom` 直调、`cy_transformPosition` 走调度（§11.4 表第 3 列）
 
 调错通道的表现：`EvalScript error.`（脚本层面就炸）或「缺少必需值」（调度器上下文缺失）。
 
@@ -405,9 +416,10 @@ evalScript("ps_onJsx('" + JSON.stringify(r) + "')")
 | 调用 | 唯一位置 | 页面通过什么用 |
 |---|---|---|
 | `setInterval` / `setTimeout` 轮询 | `app/*-watcher.tsx` | 读 `store` |
-| `addEventListener` | `hooks/*`（如 `useDismiss`） | 调 hook |
-| `getBoundingClientRect` | `hooks/useFloatingPosition` | 调 hook |
-| `localStorage` | `core/prefs` | `hooks/usePersisted` |
+| `addEventListener` / `window.addEventListener('keydown')` | `hooks/useDismiss`（Esc 关浮层）/ `hooks/useShortcut`（字母快捷键） | 调 hook；全站只这两个全局键盘入口，别在组件里再挂一个 |
+| `getBoundingClientRect` | `hooks/useFloatingPosition` | 调 hook（要锚点宽度就用 `update()` 的返回值） |
+| `createPortal(…, document.body)` | `components/Portal` | 用 `<Portal>` 包住浮层 |
+| `localStorage` | `core/prefs`（界面偏好）/ `core/auth`（登录 token——凭证不进偏好文件，否则清偏好就掉登录） | `hooks/usePersisted` |
 | `JSON.parse` | `types/json.ts` | 调 `parseJson`（label 必填） |
 | `evalScript` / `callJsx` | `core/ps/*` | 调 `commands` |
 
@@ -440,9 +452,10 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 横切 | 模块 | 对外签名 | 禁止 |
 |---|---|---|---|
 | 日志 | `core/logger` | `log.info/warn/error(msg, ctx?)` | 组件里 `console.*` |
-| 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>` | feature 里写 `fetch` |
+| 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>`；`jsonpGet(url, params, timeoutMs)` 只服务不支持 CORS 的第三方接口（百度翻译），业务代码经 `commands` 调 | feature 里写 `fetch` / 注入 `<script>` |
 | 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
 | 存储 | `core/storage` | `readTextResult/writeTextAtomic`；导入导出用 `readTextAt/writeTextAtAtomic/copyFileAt` | 组件里直接用 `cep.fs` |
+| 官方设置文件 | `repo/*`（内部走 `repo/json-file` + `core/storage`） | `readXxx()` / `updateXxx()`，只改自己那几个键，未知键原样保留（`sj_commonFunction.json` 的根是**裸数组**，不是 `{ index, list }`） | 页面、命令、组件直接读写 `sj_*.json`；用 `core/prefs` 代管官方设置文件 |
 | CEP | `core/cep` | `callJsx(fn, args)`、`emitAppEvent(type, data)` | 组件里 `evalScript` |
 | 环境 | `core/env` | `APP_TITLE`、`APP_VERSION`、`extensionId` | 各处重复取版本 |
 | 主题 | `styles/tokens.css` | CSS 变量 | 组件里写死色值 |
@@ -475,15 +488,38 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 
 官方资源目录：缩略图 `kuStyle/<id>.png`、渐变图 `Gradient/<file>`（大写 G）。
 
-## 6. UI 横切（3 项）
+## 6. UI 横切（7 项）
 
 | 横切 | 入口 | 禁止 |
 |---|---|---|
 | 提示 | `useToast()` | `alert()` |
 | 确认 | `useConfirm()` | `confirm()` |
 | 加载 | `useLoading()` | 各组件自己维护 loading 文案 |
+| 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>` | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关 |
+| 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
+| 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField` | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width` |
 
-统一由 `app/providers.tsx` 挂载，页面内只调 hook。
+Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
+（`hooks/input-method-enter` 里的 `enterSubmit`，判据 + `preventDefault` + 执行三件事一处）。
+
+三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层定宽容器与左图标。
+字体面板、输入弹窗、层级编辑、标签输入、就地编辑**全部渲染 `Input`**，各自的 css 只覆盖
+宽度 / 间距 / 边框色这类局部值——不要在组件里再画一套输入框表面。
+
+尺寸是**全仓定案**（`03` 计划 §9 第 8 条）：勾选 / 单选 `12×12`，右侧距 `6`，
+边框 `1px` `--mm-color-border-check`，勾选圆角 `3`、单选 `50%`。
+官方勾选选中态是换 svg 图标，我方用 accent 底色，属已登记换皮肤（D-51），本轮不改。
+
+`app/providers.tsx` 挂载前三项，页面内只调 hook；`IconPanel` 是普通组件，用在哪就在哪渲染。
+
+**`IconPanel` 的四条定死规则**（原版行为，别按常规浮层改）：
+
+1. 关闭只认触发器：再点同一个 = 关；同组内点另一个 = 顶掉它（互斥时）
+2. **点外部不关、Esc 不关**——和 `ContextMenu` / `useDismiss` 的默认语义相反，所以它不挂 `useDismiss`
+3. 互斥是 `IconPanelGroup` 的开关：`exclusive`（默认 `true`）同组只开一个；
+   字号 / 行距 / 字距那种要同时展开的，传 `exclusive={false}` 或各用一个组
+4. 触发器分两种：默认图标按钮（`icon` + `title`），或 `trigger` 渲染函数（数字框右侧的小箭头这类）
 
 ---
 
@@ -552,8 +588,10 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 
 ### 硬规则
 
-1. 组件里不出现 `px` 字面量（`0` 除外）
-2. 不出现色值，只能用语义变量
+1. 组件里不出现 `px` 字面量（`0` 除外）；`min-*` / `max-*` 与 `padding-*` / `margin-*` 这类**带后缀的属性也算**
+   （`stylelint` 已改为前缀匹配，此前只匹配精确属性名，`min-width: 240px` 这类能过闸）
+2. 不出现色值，只能用语义变量；`hex` / `rgb()` / `rgba()` / `hsl()` **都算色值**
+   （`color-no-hex` 只认 hex，其余由 `declaration-property-value-disallowed-list` 兜）
 3. 间距只用 `--mm-space-*`
 4. 面板宽度 280–360，控件高度 24，字号 12–13，圆角不超过 4
 
@@ -564,10 +602,12 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 ```
 core/ps/
 ├─ init.ts      jsx 加载 + 能力探测
+├─ vendor.ts    官方 jsx 两条通道的唯一实现（调度 ps_onJsx / 直调）
 ├─ layer.ts     选择、类型、名称
 ├─ style.ts     颜色 / 渐变 / 图层样式应用
 ├─ font.ts      字体应用（ys_* 先检查再应用；ztgl_* 系统字体列表/应用）
-├─ document.ts  文档信息
+├─ text.ts      文本属性（zt_* 直调；读返回 raw、写返回 Result<void>）
+├─ common-use.ts 常用页按钮（cy_*，两条通道各占一半，逐个看原版调用点）
 ├─ env.ts       环境变量注入
 └─ diag.ts      能力诊断
 ```
@@ -577,6 +617,9 @@ core/ps/
 - 一个动作一个函数，动词在前：`getLayerState`、`applyStyleColor`
 - jsx 侧同名镜像：`mm_layer_getState`、`mm_style_applyColor`
 - **字体有两条通道，不要合并**：样式库字体项走 `ys_checkUseFont` / `ys_useFont`（参数 `encodeText`）；系统字体列表走 `ztgl_initSystemList` / `ztgl_setFont`（直调、明文参数）
+- **文本属性是第三条通道**：`zt_*` / `layer_font_*` / `cy_distributedByPitch` 全部直调 `jsx()`、明文参数、写操作 60s 超时，参数与返回见 `PS-CHANNEL-NOTES.md` §11.3。这些函数在 `vendor.jsx` 里已存在，**不写 `jsx/main.jsx` 镜像**（同 `ztgl_*` 的例外理由）
+- **常用页按钮是第四条，但不能一刀切**：`cy_*` 里一半走 `ps_onJsx`（原版 `jsxHistory*`）、一半直调（原版 `jsx` / `jsxNoCheck`），**逐个看原版调用点**，同一族也可能不同（`cy_zoom` 直调、`cy_transformPosition` 走调度）。两条通道的实现只有一份：`core/ps/vendor.ts` 的 `runVendor` / `runDirect`。清单与逐条通道见 `PS-CHANNEL-NOTES.md` §11.4
+- **`core/ps` 不 import `domain`**：读函数只返回原始 raw，归一化在 `domain`，编排在 `commands`
 - **形状改色不要另起一套**：`mm_style_setShapeColor` 已覆盖填充/描边/开关，旧的 `mm_shape_*` 已删除
 - **批量操作必须在 jsx 内循环**，一次 `evalScript` 完成，禁止前端循环调用
 - **写操作统一包撤销组**：jsx 内用 `app.activeDocument.suspendHistory(名称, "fn()")`
@@ -678,7 +721,7 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 1. 建目录 `features/<name>/`
 2. 必须：`<Name>Page.tsx`；动作多时同目录 `use<Name>.ts`；有子组件时 `components/`
 3. `api.ts`、`types.ts`、`hooks/` **按需**，不要为了对齐结构造空目录
-4. 在 `app/router.tsx` 注册路由（懒加载），在 `app/nav-config.ts` 把入口改 `implemented: true`
+4. 在 `app/router.tsx` 注册路由（懒加载）；`app/nav-config.ts` 里 `shortcut` 开工时就登记（单字母小写），`implemented` 只在页面能跑通、`npm run check:nav` 双向一致之后才改 `true`——提前置 true 会让导航点到白屏
 5. 需要全局状态时在 `store/` 加切片，不要塞进别人的切片
 6. 需要复用的逻辑上移到 `core` / `hooks` / `components`，不要复制；跨 feature 复用禁止互相 import
 

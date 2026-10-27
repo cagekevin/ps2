@@ -1,0 +1,14 @@
+/**
+ * 【范本】图标 + 展开面板的壳
+ *
+ * 壳本身不画背景：面板内容（`IconPanel` 的 panel）自己带 padding 与底色，
+ * 这样同一个壳既能装深色设置区，也能装浅色表单，不用为每种面板改壳。
+ *
+ * `__host` 是组末尾的空容器，面板通过 portal 落到这里——它的宽度就是面板宽度。
+ */
+
+.mm-icon-panel-group,
+.mm-icon-panel__host,
+.mm-icon-panel__box {
+  width: 100%;
+}

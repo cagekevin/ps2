@@ -24,6 +24,8 @@ const SETTLE = 50;
 const FLOAT_GAP = 5;
 /** 克隆占位标记类，结束时按它找回来删掉 */
 const DRAG_HIDDEN = 'mm-drag-hidden';
+/** 拖拽中的浮层类（层级在 global.css 里走 `--mm-z-drag`，不在这里内联数字） */
+const DRAG_FLOAT = 'mm-drag-float';
 
 export interface LongPressDragResult {
   /** 真的进入过拖拽态；false = 长按期间抬起，按普通点击处理 */
@@ -132,6 +134,7 @@ export function useLongPressDrag() {
       function restore(): void {
         node.style.cssText = nodeCss;
         if (paragraph) paragraph.style.cssText = paragraphCss;
+        node.classList.remove(DRAG_FLOAT);
         if (floatClass) node.classList.remove(floatClass);
       }
 
@@ -141,12 +144,14 @@ export function useLongPressDrag() {
           nodeCss,
           'position: absolute',
           `left:${event.clientX + FLOAT_GAP + offsetX}px`,
-          `top:${event.clientY + FLOAT_GAP + offsetY}px`,
-          'z-index: 999'
+          `top:${event.clientY + FLOAT_GAP + offsetY}px`
         ]
           .filter(Boolean)
           .join(';');
-        if (paragraph) paragraph.style.cssText = `${paragraphCss};color:#ffffff`;
+        /* 拖起来文字变纯白：#fff 走 token（原版 hover 就是纯白，不是 #f5f5f5） */
+        if (paragraph) {
+          paragraph.style.cssText = `${paragraphCss};color:var(--mm-color-text-inverse)`;
+        }
       }
 
       /** 存原样、造克隆占位、给每个候选挂落点判定 */
@@ -160,6 +165,8 @@ export function useLongPressDrag() {
         clone.className += ` ${DRAG_HIDDEN}`;
 
         if (floatClass) node.classList.add(floatClass);
+        /* 层级走类，不走内联 z-index：拖起来的那一刻还要盖过下拉与菜单 */
+        node.classList.add(DRAG_FLOAT);
 
         bound = options.targets();
         for (const element of bound) {

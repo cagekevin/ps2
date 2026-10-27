@@ -2,7 +2,8 @@
  * 标签名输入框（原版 `font-manage__tag__input`）。
  * TagMenu 与 TagCreator 共用一份；两套视觉只差 class。
  */
-import { isImeEnter } from '../ime';
+import { Input } from '../../../components/ui';
+import { enterSubmit } from '../../../hooks/input-method-enter';
 
 interface Props {
   value: string;
@@ -27,16 +28,14 @@ export function TagInput({
 }: Props) {
   return (
     <div className={`mm-font__tag-input mm-font__tag-input--${variant}`}>
-      <input
+      <Input
         className="mm-font__tag-field"
         value={value}
         placeholder={placeholder}
         maxLength={maxLength}
         autoFocus={autoFocus}
         onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !isImeEnter(event)) onEnter();
-        }}
+        onKeyDown={enterSubmit(onEnter)}
       />
       {clearable && value ? (
         <button

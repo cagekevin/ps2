@@ -1,16 +1,8 @@
-.mm-confirm__mask {
-  position: fixed;
-  inset: 0;
-  z-index: var(--mm-z-tooltip);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 40%);
-}
+/* 遮罩用 `ui.css` 的 `.mm-modal-mask`（与图片取色弹层共用），本文件只画面板本体 */
 
 .mm-confirm {
-  min-width: 240px;
-  max-width: 320px;
+  min-width: var(--mm-modal-min-w);
+  max-width: var(--mm-modal-max-w);
   padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);

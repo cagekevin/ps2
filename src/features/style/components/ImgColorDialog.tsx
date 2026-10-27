@@ -8,6 +8,8 @@
  * 落盘 / 应用通过回调交给页面。
  */
 import { useState } from 'react';
+import { stopClickPropagation } from '../../../components/ui';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { buildColorPairGradients } from '../../../domain/image-color';
 import './img-color-dialog.css';
 
@@ -35,6 +37,19 @@ export function ImgColorDialog({
   const [pairs, setPairs] = useState<{ pair: [string, string]; css: string }[]>(() =>
     buildColorPairGradients(initialColors)
   );
+  /* 模态弹层：Tab 只在层内循环，关掉后焦点回到触发它的按钮 */
+  const { containerRef, onKeyDown } = useFocusTrap();
+
+  /**
+   * 右键 = 删除这一项。骨架只写一处：原生右键菜单要挡掉，否则删完还弹系统菜单。
+   * （色块与渐变块两处都用它，别各写一遍 `preventDefault + remove`。）
+   */
+  function contextToRemove(remove: () => void) {
+    return (event: { preventDefault: () => void }) => {
+      event.preventDefault();
+      remove();
+    };
+  }
 
   function removeColorAt(index: number) {
     const hex = hexes[index];
@@ -49,12 +64,15 @@ export function ImgColorDialog({
   }
 
   return (
-    <div className="mm-imgcolor__mask" onClick={onClose}>
+    <div className="mm-modal-mask" onClick={onClose}>
       <div
+        ref={containerRef}
         className="mm-imgcolor"
         role="dialog"
         aria-modal="true"
-        onClick={(event) => event.stopPropagation()}
+        aria-label="提取的颜色"
+        onClick={stopClickPropagation}
+        onKeyDown={onKeyDown}
       >
         <p className="mm-imgcolor__title">提取的颜色</p>
         <div className="mm-imgcolor__row">
@@ -66,10 +84,7 @@ export function ImgColorDialog({
               style={{ background: hex }}
               title="左键应用，右键删除"
               onClick={() => onApplyColor(hex)}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                removeColorAt(index);
-              }}
+              onContextMenu={contextToRemove(() => removeColorAt(index))}
             />
           ))}
         </div>
@@ -102,10 +117,9 @@ export function ImgColorDialog({
               style={{ background: css }}
               title="左键应用，右键删除"
               onClick={() => onApplyGradient(pair)}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                removeGradientAt(pairs.findIndex((g) => g.css === css));
-              }}
+              onContextMenu={contextToRemove(() =>
+                removeGradientAt(pairs.findIndex((g) => g.css === css))
+              )}
             />
           ))}
         </div>

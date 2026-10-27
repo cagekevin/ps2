@@ -25,14 +25,14 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'template', name: '模板库', path: '/template', icon: 'icon-nav_mobanku', shortcut: 'r', implemented: false },
   { key: 'material', name: '素材库', path: '/material', icon: 'icon-nav_sucaiku', implemented: false },
   { key: 'custom', name: '自定义框架', path: '/custom', icon: 'icon-nav_zidingyikuangjia', shortcut: 'm', implemented: false },
-  { key: 'common', name: '常用功能', path: '/common', icon: 'icon-nav_changyonggongneng', shortcut: 'a', implemented: false },
-  { key: 'font', name: '字体面板', path: '/font', icon: 'icon-nav_zitimianban', shortcut: 't', implemented: false },
+  { key: 'common', name: '常用功能', path: '/common', icon: 'icon-nav_changyonggongneng', shortcut: 'a', implemented: true },
+  { key: 'font', name: '字体面板', path: '/font', icon: 'icon-nav_zitimianban', shortcut: 't', implemented: true },
   { key: 'font-manage', name: '字体管理', path: '/font-manage', icon: 'icon-nav_zitiguanli', shortcut: 'h', implemented: true },
   { key: 'style', name: '样式面板', path: '/style', icon: 'icon-nav_yangshiku', shortcut: 'u', implemented: true },
   { key: 'action', name: '动作管理', path: '/action', icon: 'icon-nav_dongzuoku', shortcut: 'w', implemented: false },
   { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: false },
   { key: 'overprint', name: '批量套版', path: '/overprint', icon: 'icon-nav_piliangtaoban', implemented: false },
-  { key: 'set', name: '设置', path: '/set', icon: 'iconyonghushezhi', implemented: false, bottom: true }
+  { key: 'set', name: '设置', path: '/set', icon: 'iconyonghushezhi', implemented: true, bottom: true }
 ];
 
 export const TOP_ITEMS = NAV_ITEMS.filter((item) => !item.bottom);

@@ -4,7 +4,7 @@
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
   z-index: var(--mm-z-tooltip);
-  min-width: 120px;
+  min-width: var(--mm-menu-min-w);
   padding: var(--mm-space-1);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);

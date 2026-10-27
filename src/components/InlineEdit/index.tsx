@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { Input, stopClickPropagation } from '../ui';
 import './inline-edit.css';
 
 interface InlineEditProps {
@@ -39,7 +40,7 @@ export function InlineEdit({ value, onCommit, onCancel }: InlineEditProps) {
   }
 
   return (
-    <input
+    <Input
       ref={inputRef}
       className="mm-inline-edit"
       value={draft}
@@ -49,8 +50,8 @@ export function InlineEdit({ value, onCommit, onCancel }: InlineEditProps) {
         else if (event.key === 'Escape') onCancel();
       }}
       onBlur={() => commit(draft)}
-      /* 避免点击输入框触发外层的选中/展开 */
-      onClick={(event) => event.stopPropagation()}
+      /* 避免点击输入框触发外层的选中/展开（同上：挡一次冒泡） */
+      onClick={stopClickPropagation}
     />
   );
 }

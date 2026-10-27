@@ -52,7 +52,83 @@ const WHITELIST = [
   /* 字体管理页：标签 / 眼睛（预览档位）/ 字号（预览文案） */
   'iconbiaoqian',
   'iconxianshi',
-  'iconzihaodaxiao1'
+  'iconzihaodaxiao1',
+  /* 字体面板页：顶部 6 个操作 + 角标（原版 baseIcon 的第二个 flex 子项） */
+  'iconfanyi',
+  'iconchaifen',
+  'iconanniu',
+  'iconfuzhiwenziyangshi',
+  'iconniantiewenziyangshi',
+  'icongenggaiwenbenfangxiang',
+  'iconjiaobiao',
+  /* 字体面板页：底部 4 组 12 个对齐图标（组四第一个 id 末尾带连字符，是原版的真实 id） */
+  'iconzuoduiqi',
+  'iconchuizhiduiqi',
+  'iconyouduiqi',
+  'iconchuizhijuzhongfenbu',
+  'iconbeijingchuizhiduiqi',
+  'iconchuizhifenbu',
+  'icondingbuduiqi',
+  'iconshuipingduiqi',
+  'icondibuduiqi',
+  'iconshuipingjuzhongfenbu',
+  'iconbeijingshuipingduiqi-',
+  'iconshuipingfenbu',
+  /* 字体面板页：翻译交换 / 分布弹窗固定 / 层级预设 */
+  'iconzhuanhuan',
+  'icongudingxuanxiangye',
+  'iconchangguicengjiyushe',
+  /* 字体面板页：快捷字体的 7 个字重图标（1 上面已登记） */
+  'iconzihaodaxiao2',
+  'iconzihaodaxiao3',
+  'iconzihaodaxiao4',
+  'iconzihaodaxiao5',
+  'iconzihaodaxiao6',
+  'iconzihaodaxiao7',
+  /* 字体面板页：属性面板样式行 + 字号/行距/字距输入 */
+  'iconqingxie',
+  'iconquanbudaxie',
+  'iconwenbenduiqi1',
+  'iconwenbenduiqi2',
+  'iconwenbenduiqi3',
+  'iconshezhizitidaxiao',
+  'iconshezhihangju',
+  'iconshezhijianju',
+  /* 字体面板页：层级预设重命名（删除用 iconshanchu，上面已登记） */
+  'iconshuru',
+  /* 常用页：网格 14 项（顺序即官方 14 项种子，id 不是数字顺序，见 03 计划 §3.2） */
+  'iconqianrutupian',
+  'iconqianruduotupian',
+  'icondaoruduotupian',
+  'iconzidongtianchongyanse',
+  'iconxiuzhengmohu',
+  'icontianchongxiankuanghuhuan',
+  'iconyouhuawendang',
+  'iconzidingyibianhuan',
+  'icondaochutupian',
+  'iconcankaoxiangongju',
+  'iconanjianjufenbu',
+  'iconyuansutihuan',
+  'iconweizhiduihuan',
+  'icontucengyansehuhuan',
+  /* 常用页：放大 / 缩小输入框的左插槽图标（原版 baseInput 的 slot=left） */
+  'iconfangda',
+  'iconsuoxiao',
+  /* 常用页页头两个基础按钮：打开所在目录 / 重置常用项
+     （`iconshuaxin` 前面已登记过，这里只补目录图标） */
+  'iconwenjianjiamulu',
+  /* 常用页：4 个「悬停换图」图标（种子里 fillSvg 是字符串时指向它们） */
+  'iconzidongtianchongyanselan',
+  'iconxiuzhengmohulan',
+  'iconzidingyibianhuanlan',
+  'iconanjianjufenbulan',
+  /* 常用页：翻转 6 向（左右 / 上下 / 左 / 右 / 下 / 上） */
+  'iconzuoyoufanzhuan',
+  'iconshangxiafanzhuan',
+  'iconxiangzuofanzhuan',
+  'iconxiangyoufanzhuan',
+  'iconxiangxiafanzhuan',
+  'iconxiangshangfanzhuan'
 ];
 
 if (!existsSync(SPRITE)) {
@@ -114,6 +190,15 @@ for (const item of picked) {
   lines.push('  },');
 }
 lines.push('};');
+lines.push('');
+lines.push('/**');
+lines.push(' * 名字是否在图标表里。');
+lines.push(' * 文件 / 记忆里来的图标 id 是字符串，渲染前必须过这道守卫——');
+lines.push(' * 不允许 `as IconName`，那是把「图标没了」伪装成「图标画了」。');
+lines.push(' */');
+lines.push('export function isIconName(value: string): value is IconName {');
+lines.push('  return Object.prototype.hasOwnProperty.call(ICONS, value);');
+lines.push('}');
 lines.push('');
 lines.push('export interface IconProps extends Omit<SVGProps<SVGSVGElement>, \'name\'> {');
 lines.push('  name: IconName;');

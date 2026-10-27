@@ -29,11 +29,16 @@ const VENDOR_FILE = 'jsx/vendor.jsx';
 /**
  * 官方 jsx 里我们会用到的入口，缺一个就算 vendor 不可用。
  *
- * **两条通道，别混**：
- *   调度  `ps_onJsx({ f, arr, n })`        —— 渐变、图层样式（原版 jsxHistory）
- *   直调  `ys_checkUseFont` / `ys_useFont` —— 字体（原版 jsxWrite）
+ * **两条通道，别混**（实现只有一份，在 `./vendor.ts`）：
+ *   调度 `ps_onJsx({ f, arr, n })` —— 渐变、图层样式，以及常用页里走调度的按钮（原版 jsxHistory*）
+ *   直调 `fn(a, b)`               —— 字体（`ys_*`，参数 encodeText）、系统字体 / 文本属性 / 常用页另一半
  *
- * 判断依据不是「是不是 ys_ 开头」，而是原版前端用 jsxHistory 还是 jsx。
+ * 判断依据不是「是不是 ys_ / zt_ / cy_ 开头」，而是原版前端用 jsxHistory 还是 jsx：
+ * 同为 `cy_*`，`cy_zoom` 直调而 `cy_transformPosition` 走调度。
+ *
+ * 文本属性 26 个见 `docs/PS-CHANNEL-NOTES.md` §11.3、常用页 26 个见 §11.4，返回结构全部 UNVERIFIED。
+ * `zt_changeTextBranchMerge` 可能是派发表 key 而不是函数（参考实现记录），
+ * 真机探测若报缺失会整页不可用——处理方式写在 §11.3 第 7 条，不在这里兜。
  */
 export const VENDOR_FUNCS = [
   'ps_onJsx',
@@ -41,9 +46,66 @@ export const VENDOR_FUNCS = [
   'ps_ysBtnUseStyle',
   'ys_checkUseFont',
   'ys_useFont',
+  'ys_getFontInfo',
   'ztgl_initSystemList',
   'ztgl_setFont',
-  'Sys_setSystemEnvInfo'
+  'Sys_setSystemEnvInfo',
+  /* 文本属性：读 3（`zt_getTypeUnits` 已取消：面板不再显示单位后缀） */
+  'zt_getFontSimpleInfo',
+  'zt_getCurrentFontInfo',
+  'zt_getCurrentText',
+  /* 文本属性：写 23 */
+  'zt_setFontName',
+  'layer_font_setFontSize',
+  'zt_setFontSize',
+  'layer_font_setLeading',
+  'zt_setFontWordSpacing',
+  'zt_setFontColor',
+  'zt_setFontAllCaps',
+  'zt_setFontVision',
+  'zt_setFauxItali',
+  'zt_setFontAddBold',
+  'zt_setFontJustified',
+  'zt_setTextAlignment',
+  'zt_setHorizontalCenters',
+  'zt_verticalCenter',
+  'zt_setUpDownAlign',
+  'zt_setBackrgoudAlign',
+  'zt_alignHorizontal',
+  'cy_distributedByPitch',
+  'zt_changeTextBranchMerge',
+  'zt_textBranchMerge',
+  'zt_createButton',
+  'zt_switchFontDirection',
+  'zt_setTranslateText',
+  /* 常用页 26（`docs/PS-CHANNEL-NOTES.md` §11.4）：v1 覆盖 11（12 条命令）+ 2 只登记，其余 13 条排 v2；
+     按真实函数名登记，三处原版拼写照抄（Bacth / 大写 L / 大写 E）。
+     `cy_distributedByPitch` 已在上面文本属性块里登记过（两个面板两种参数、同一个函数），这里不重复 */
+  'cy_zoom',
+  'cy_transformPosition',
+  'cy_locationTrade',
+  'cy_LayerReplace',
+  'cy_exchangeLayerColor',
+  'cy_correctRectangleBlur',
+  'cy_swapWireframeFill',
+  'cy_createSafeAreaGuide',
+  'cy_guideFunction',
+  'cy_openDirectory',
+  'cy_getImagePath',
+  'cy_getPsdForFolder',
+  'cy_insertionImage',
+  'Layer_placedLayerRelinkToFile',
+  'cy_embedMultipleImage',
+  'cy_smartToLinkSmartObject',
+  'cy_linkSmartObjectToSmartObject',
+  'cy_importMultipleImage',
+  'cy_optimizeDoc',
+  'cy_batchOptimizeDoc',
+  'cy_customBuildTransform',
+  'cy_ExportImage',
+  'cy_BatchExportLayer',
+  'cy_BatchExportSecondLayer',
+  'cy_BacthExportPsdToImage'
 ] as const;
 
 let pending: Promise<PsCapability> | null = null;

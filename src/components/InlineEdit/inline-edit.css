@@ -1,6 +1,8 @@
+/* 就地编辑：高度跟随父级（不套 `.mm-input` 的 24），边框用强调色表示「正在编辑」 */
 .mm-inline-edit {
   flex: 1 1 auto;
   min-width: 0;
+  height: auto;
   padding: 0 var(--mm-space-1);
   border: var(--mm-border-w) solid var(--mm-color-accent);
   border-radius: var(--mm-radius-sm);

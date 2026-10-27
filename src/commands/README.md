@@ -44,13 +44,25 @@ export function applyColor(item: Record<string, unknown>): Promise<Result<void>>
 }
 ```
 
-页面调用：
+页面调用：**只经 `hooks/useRunCommand`**，不要自己 `loading.run` + `toast.error`
+（那样每加一个面板就再抄一份反馈逻辑；这个 hook 是全仓唯一实现）。
 
 ```tsx
-const result = await loading.run(() => applyColor(item));
-if (result.status === 'ok') toast.info('已应用');
-else toast.error(result.reason);
+const run = useRunCommand();
+
+/* 成功静默 */
+void run(() => zoom(105));
+
+/* 成功给一句、用户取消不出提示、缺文件换个说法 */
+void run(() => applyColor(item), {
+  success: '已应用',
+  quiet: ['CANCELLED'],
+  reasonOf: (result) => (result.code === 'NOT_FOUND' ? '库文件不存在' : result.reason)
+});
 ```
+
+例外（不同语义，别再包一层）：`useFontPanel` 的 `run` 不包 loading（由调用方决定转不转圈）；
+`features/home` 是调试页，要在 toast 里带 `code` 并用返回值渲染。
 
 ## 命名
 

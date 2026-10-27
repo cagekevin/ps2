@@ -3,10 +3,11 @@
  *
  * 删除这类不可撤销操作必须二次确认，不要用 window.confirm（CEP 里样式不可控、阻塞主线程）。
  * 关闭走 useDismiss：点遮罩关闭 + Esc 关闭。
+ * 焦点走 useFocusTrap：Tab 只在弹窗内循环，关掉后回到触发它的按钮。
  */
 
-import { useRef } from 'react';
 import { useDismiss } from '../../hooks/useDismiss';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import './confirm.css';
 
 interface ConfirmProps {
@@ -20,15 +21,23 @@ interface ConfirmProps {
 }
 
 export function Confirm({ open, title, message, confirmText = '删除', onConfirm, onCancel }: ConfirmProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
+  /* 常挂载只切显隐，所以要把 `open` 交给焦点陷阱，否则关掉时焦点不还原 */
+  const { containerRef, onKeyDown } = useFocusTrap(open);
 
-  useDismiss(open, panelRef, onCancel);
+  useDismiss(open, containerRef, onCancel);
 
   if (!open) return null;
 
   return (
-    <div className="mm-confirm__mask">
-      <div className="mm-confirm" ref={panelRef} role="dialog" aria-modal="true">
+    <div className="mm-modal-mask">
+      <div
+        className="mm-confirm"
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onKeyDown={onKeyDown}
+      >
         <p className="mm-confirm__title">{title}</p>
         {message ? <p className="mm-confirm__message">{message}</p> : null}
         <div className="mm-confirm__actions">

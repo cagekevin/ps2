@@ -8,8 +8,8 @@
  */
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
-import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
+import { useRunCommand, type RunOptions } from '../../hooks/useRunCommand';
 import type { MenuItem } from '../../components/ContextMenu';
 import {
   addFontFromLayer,
@@ -81,7 +81,8 @@ export const ADD_TITLE: Record<KuKind, string> = {
 
 export function useStyleActions() {
   const toast = useToast();
-  const loading = useLoading();
+  /* 执行 + 反馈的唯一实现（loading / 成功提示 / 取消静默 / 缺文件文案都在里面） */
+  const run = useRunCommand();
   const confirm = useConfirm();
 
   const load = useStyleLibraryStore((state) => state.load);
@@ -118,10 +119,19 @@ export function useStyleActions() {
     return warehouses[activeIndex] ?? null;
   }
 
-  /** 失败 → toast：缺文件统一说「库文件不存在」，其余原样上抛 reason */
+  /**
+   * 库相关的失败文案：缺文件比通用文案更具体（写库与读库两条路共用这一处）。
+   * 判据只有一份 —— 别在读路径再写一次 `NOT_FOUND ? ... : ...`。
+   */
+  function styleReason(result: Result<unknown>): string {
+    if (result.status !== 'error') return '';
+    return result.code === 'NOT_FOUND' ? '库文件不存在' : result.reason;
+  }
+
+  /** 读库失败 → toast（写库失败由 `useRunCommand` 的 `reasonOf` 走同一个 `styleReason`） */
   function toastFailure(result: Result<unknown>) {
     if (result.status !== 'error') return;
-    toast.error(result.code === 'NOT_FOUND' ? '库文件不存在' : result.reason);
+    toast.error(styleReason(result));
   }
 
   /** 当前仓库；没有就提示一句（用户主动触发的动作用它） */
@@ -131,25 +141,29 @@ export function useStyleActions() {
     return warehouse;
   }
 
+  /**
+   * 执行一条命令并反馈。**实现只有一处**（`hooks/useRunCommand`），这里只留两个动词名，
+   * 因为 27 个调用点按「要不要重读列表」分成两类，改名要动 27 处。
+   *
+   * 语义与原实现逐条对齐：包 loading、成功 info、`CANCELLED` 静默（用户取消不是故障）、
+   * 缺文件统一说「库文件不存在」。
+   */
+  const STYLE_RUN: RunOptions = {
+    quiet: ['CANCELLED'],
+    reasonOf: styleReason
+  };
+
   /** 只提示不刷新（应用类：改的是 PS 图层，不是库文件） */
   async function runWithToast(task: () => Promise<Result<void>>, successText: string): Promise<void> {
-    const result = await loading.run(task);
-    if (result.status === 'ok') {
-      toast.info(successText);
-      return;
-    }
-    /* 用户主动取消（关对话框 / 切走选区）不是故障，静默 */
-    if (result.code === 'CANCELLED') return;
-    toastFailure(result);
+    await run(task, { ...STYLE_RUN, success: successText });
   }
 
-  /** 写库类动作的统一反馈：loading + 成功提示 + 重读列表（失败走 toastFailure） */
+  /** 写库类动作的统一反馈：loading + 成功提示 + 重读列表（成败都重读，与原实现一致） */
   async function runWithFeedback(
     task: () => Promise<Result<void>>,
     successText: string
   ): Promise<void> {
-    await runWithToast(task, successText);
-    void load();
+    await run(task, { ...STYLE_RUN, success: successText, after: () => void load() });
   }
 
   /**

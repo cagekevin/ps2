@@ -70,7 +70,7 @@
 }
 
 .mm-home__log-body {
-  max-height: 240px;
+  max-height: var(--mm-log-max-h);
   margin: var(--mm-space-1) 0 0;
   overflow: auto;
   font-size: var(--mm-font-xs);

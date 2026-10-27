@@ -8,7 +8,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { DEFAULT_PATH } from './nav-config';
 
 const StylePage = lazy(() => import('../features/style/StylePage'));
+const CommonPage = lazy(() => import('../features/common/CommonPage'));
 const FontManagePage = lazy(() => import('../features/font-manage/FontManagePage'));
+const FontPanelPage = lazy(() => import('../features/font-panel/FontPanelPage'));
+const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 
 /** 调试页：不占导航，手动访问 #/debug */
 const HomePage = lazy(() => import('../features/home/HomePage'));
@@ -19,7 +22,10 @@ export function AppRoutes() {
       <Routes>
         <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />
         <Route path="/style" element={<StylePage />} />
+        <Route path="/common" element={<CommonPage />} />
+        <Route path="/font" element={<FontPanelPage />} />
         <Route path="/font-manage" element={<FontManagePage />} />
+        <Route path="/set" element={<SettingsPage />} />
         <Route path="/debug" element={<HomePage />} />
         <Route path="*" element={<Navigate to={DEFAULT_PATH} replace />} />
       </Routes>

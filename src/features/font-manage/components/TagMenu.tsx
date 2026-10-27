@@ -3,7 +3,7 @@
  * 输入已有标签 = 挂/摘，输入新标签 = 新建。
  */
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Portal } from '../../../components/Portal';
 import type { FontTag } from '../../../domain/font-meta';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { useFloatingPosition } from '../../../hooks/useFloatingPosition';
@@ -48,7 +48,7 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
     onCreate(value);
   }
 
-  return createPortal(
+  return <Portal>
     <div ref={floatingRef} className="mm-font__tag-menu" role="dialog" aria-label="字体标签">
       <div className="mm-font__tag-menu-title">标签</div>
 
@@ -80,7 +80,6 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
           />
         ))}
       </div>
-    </div>,
-    document.body
-  );
+    </div>
+  </Portal>;
 }

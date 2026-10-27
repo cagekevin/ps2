@@ -29,12 +29,17 @@ export function StateHint(props: Props) {
   }
 
   if (result.code === 'CORRUPT') {
-    return <p className="mm-state-hint mm-state-hint--error">数据异常：{result.reason}</p>;
+    /* detail 是机器现场（哪个字段、期望什么）：不进正文，挂 title 让它可查 */
+    return (
+      <p className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
+        数据异常：{result.reason}
+      </p>
+    );
   }
 
   if (result.code === 'IO_ERROR') {
     return (
-      <p className="mm-state-hint mm-state-hint--error">
+      <p className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
         读取失败：{result.reason}
         <button type="button" className="mm-state-hint__retry" onClick={onRetry}>
           重试

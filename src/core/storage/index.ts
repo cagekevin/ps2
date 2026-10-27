@@ -79,7 +79,8 @@ function readTextFile(absPath: string, label: string): Result<string> {
     return ok(stripBom(fs.readFileSync(absPath, 'utf8')));
   } catch (error) {
     log.warn('读取文件失败', { label, absPath, error });
-    return failWithDetail('IO_ERROR', `文件存在但读取失败：${absPath}`, String(error));
+    /* reason 只放用户话；路径是观测，进 detail（同一个名字不许装两种语义） */
+    return failWithDetail('IO_ERROR', '文件存在但读取失败', `path:${absPath};${String(error)}`);
   }
 }
 
@@ -119,7 +120,7 @@ function writeTextFile(absPath: string, text: string, backup: boolean): Result<v
     return ok(undefined);
   } catch (error) {
     log.error('写入文件失败', { absPath, backup, error });
-    return failWithDetail('IO_ERROR', `写入失败：${absPath}`, String(error));
+    return failWithDetail('IO_ERROR', '写入失败', `path:${absPath};${String(error)}`);
   }
 }
 
@@ -149,7 +150,7 @@ export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<
     return ok(undefined);
   } catch (error) {
     log.error('回滚失败', { name, root, error });
-    return failWithDetail('IO_ERROR', `回滚失败：${target}`, String(error));
+    return failWithDetail('IO_ERROR', '回滚失败', `path:${target};${String(error)}`);
   }
 }
 
