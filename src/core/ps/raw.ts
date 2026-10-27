@@ -21,12 +21,12 @@ const RAW_FAILURES: Record<string, { code: ErrorCode; reason: string }> = {
 };
 
 /**
- * raw → Result<null>：约定失败码折成失败（detail 带原始值），其余算成功。
+ * raw → Result<void>：约定失败码折成失败（detail 带原始值），其余算成功。
  * 成功时调用方继续用原始 raw（有的函数还要解析 JSON / 前缀）。
  */
-export function unwrapRaw(raw: string): Result<null> {
+export function unwrapRaw(raw: string): Result<void> {
   const trimmed = raw.trim();
   const hit = RAW_FAILURES[trimmed];
   if (hit) return failWithDetail(hit.code, hit.reason, `raw:${trimmed}`);
-  return ok(null);
+  return ok(undefined);
 }

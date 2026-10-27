@@ -1,13 +1,16 @@
 /**
  * 【范本】剪贴板
  * 唯一复制入口。file:// 下 navigator.clipboard 可能不可用，自动降级到 execCommand。
+ * 失败走全仓唯一形状 Result（失败原因：两条路都不行时才失败）。
  */
 
-export async function copyText(text: string): Promise<boolean> {
+import { fail, ok, type Result } from '../../types/result';
+
+export async function copyText(text: string): Promise<Result<void>> {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
-      return true;
+      return ok(undefined);
     }
   } catch {
     /* 继续走降级 */
@@ -20,10 +23,10 @@ export async function copyText(text: string): Promise<boolean> {
     area.style.opacity = '0';
     document.body.appendChild(area);
     area.select();
-    const ok = document.execCommand('copy');
+    const copied = document.execCommand('copy');
     document.body.removeChild(area);
-    return ok;
+    return copied ? ok(undefined) : fail('IO_ERROR', '浏览器拒绝了复制命令');
   } catch {
-    return false;
+    return fail('IO_ERROR', '复制失败');
   }
 }

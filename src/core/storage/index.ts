@@ -85,7 +85,7 @@ export function readTextResult(name: string, root: StorageRoot = 'data'): Result
   }
 }
 
-export function writeText(name: string, text: string, root: StorageRoot = 'data'): boolean {
+function writeText(name: string, text: string, root: StorageRoot = 'data'): boolean {
   const fs = getFs();
   if (!fs) return false;
   try {
@@ -115,7 +115,7 @@ export function readJson<T>(name: string, fallback: T, root: StorageRoot = 'data
 }
 
 /** 同一文件的写操作串行化：并发写会互相覆盖 */
-const writeQueues = new Map<string, Promise<Result<undefined>>>();
+const writeQueues = new Map<string, Promise<Result<void>>>();
 
 /**
  * 原子写：先备份原文件为 `<文件>.bak`，再写新内容；同一文件并发调用串行执行。
@@ -129,7 +129,7 @@ export function writeTextAtomic(
   name: string,
   text: string,
   root: StorageRoot = 'data'
-): Promise<Result<undefined>> {
+): Promise<Result<void>> {
   const key = `${root}:${name}`;
   const previous = writeQueues.get(key) ?? Promise.resolve(ok(undefined));
 
@@ -158,7 +158,7 @@ export function writeTextAtomic(
 }
 
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
-export function removeFile(name: string, root: StorageRoot = 'data'): Result<undefined> {
+export function removeFile(name: string, root: StorageRoot = 'data'): Result<void> {
   const fs = getFs();
   if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
@@ -173,11 +173,13 @@ export function removeFile(name: string, root: StorageRoot = 'data'): Result<und
   }
 }
 
-export function writeJson(name: string, value: unknown, root: StorageRoot = 'data'): boolean {
+export function writeJson(name: string, value: unknown, root: StorageRoot = 'data'): Result<void> {
   try {
-    return writeText(name, JSON.stringify(value), root);
+    return writeText(name, JSON.stringify(value), root)
+      ? ok(undefined)
+      : failWithDetail('IO_ERROR', '写入失败', `file:${name}`);
   } catch (error) {
     log.error('writeJson 序列化失败', { name, root, error });
-    return false;
+    return failWithDetail('IO_ERROR', '写入失败', String(error));
   }
 }

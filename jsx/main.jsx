@@ -43,23 +43,9 @@ function mm_layer_kindOf(layer) {
 	return "unknown:" + kindName;
 }
 
-function mm_layer_getKind() {
-	return mm_safe("mm_layer_getKind", function () {
-		if (!app.documents.length) return "no-doc";
-		return mm_layer_kindOf(app.activeDocument.activeLayer);
-	});
-}
-
-function mm_layer_getName() {
-	return mm_safe("mm_layer_getName", function () {
-		if (!app.documents.length) return "";
-		return app.activeDocument.activeLayer.name;
-	});
-}
-
 /**
  * 一次调用同时拿类型和名称：'kind|name'。
- * 轮询专用，比 getKind + getName 少一半 evalScript。
+ * 图层读取的唯一入口（前端 core/ps/layer.getLayerState 轮询用）。
  * 名称里可能含 '|'，解析时只切第一个。
  */
 function mm_layer_getState() {

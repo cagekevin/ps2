@@ -157,12 +157,12 @@ export async function callJsx(
 }
 
 /** 加载 jsx 文件到 PS */
-export async function loadJsx(relativePath: string): Promise<Result<null>> {
+export async function loadJsx(relativePath: string): Promise<Result<void>> {
   /* Windows 路径含反斜杠，放进 evalScript 字符串会被当转义，必须转成正斜杠 */
   const base = getExtensionPath().replace(/\\/g, '/');
   if (!base) return failWithDetail('PS_UNREADY', '扩展路径不可用', `file:${relativePath}`);
   const result = await evalScript(`$.evalFile("${base}/${relativePath}")`);
-  return result.status === 'error' ? result : ok(null);
+  return result.status === 'error' ? result : ok(undefined);
 }
 
 /**

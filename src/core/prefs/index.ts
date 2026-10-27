@@ -12,6 +12,7 @@
 
 import { log } from '../logger';
 import { readJson, writeJson } from '../storage';
+import { ok, type Result } from '../../types/result';
 
 export type PrefKey =
   | 'style.activeKind'
@@ -44,17 +45,17 @@ export function removePref(key: PrefKey): void {
   scheduleFlush();
 }
 
-/** 立即落盘；返回是否成功 */
-export function flushPrefs(): boolean {
+/** 立即落盘；失败原样上抛（writeText 内部已记日志） */
+export function flushPrefs(): Result<void> {
   if (flushTimer !== null) {
     window.clearTimeout(flushTimer);
     flushTimer = null;
   }
-  if (!cache) return true;
+  if (!cache) return ok(undefined);
 
-  const written = writeJson(FILE, cache, 'data');
-  if (!written) log.error('偏好写入失败', { file: FILE });
-  return written;
+  const result = writeJson(FILE, cache, 'data');
+  if (result.status === 'error') log.error('偏好写入失败', { reason: result.reason });
+  return result;
 }
 
 function scheduleFlush(): void {

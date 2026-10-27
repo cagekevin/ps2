@@ -93,9 +93,9 @@ export default function HomePage() {
       toast.error('没有可复制的内容');
       return;
     }
-    const ok = await copyText(text);
-    if (ok) toast.info(`已复制${label}`);
-    else toast.error('复制失败，请手动选中');
+    const result = await copyText(text);
+    if (result.status === 'ok') toast.info(`已复制${label}`);
+    else toast.error(result.reason);
   }
 
   return (

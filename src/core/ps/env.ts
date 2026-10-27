@@ -30,7 +30,7 @@ export const PS_ENV = {
 } as const;
 
 /** 注入环境变量；失败原样上抛（码 + 原因 + detail） */
-export async function injectEnv(): Promise<Result<null>> {
+export async function injectEnv(): Promise<Result<void>> {
   const call = await callJsx('Sys_setSystemEnvInfo', [PS_ENV]);
   if (call.status === 'error') {
     log.error('环境变量注入失败', { reason: call.reason, detail: call.detail });
@@ -38,5 +38,5 @@ export async function injectEnv(): Promise<Result<null>> {
   }
 
   log.info('环境变量已注入', { userDir: PS_ENV.VUE_APP_USER_DIR, raw: call.value });
-  return ok(null);
+  return ok(undefined);
 }
