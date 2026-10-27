@@ -37,11 +37,6 @@ declare global {
   }
 }
 
-/** 是否运行在 Photoshop 的 CEP 容器里 */
-export function isCep(): boolean {
-  return Boolean(window.__adobe_cep__);
-}
-
 /** 单条脚本超时：PS 卡住时不能让整个通道永久挂起 */
 const DEFAULT_TIMEOUT = 30_000;
 

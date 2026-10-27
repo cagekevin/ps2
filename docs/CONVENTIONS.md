@@ -117,7 +117,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 |---|---|---|
 | 品牌 | 一律 `maomao` / `Maomao`，不再出现 fengzi、psz、SheJiZhuLi | `com.maomao.design` |
 | CEP Bundle | `com.maomao.<域>` | `com.maomao.design` |
-| jsx 函数 | `mm_<域>_<动作>` | `mm_layer_getKind` |
+| jsx 函数 | `mm_<域>_<动作>` | `mm_layer_getState` |
 | CEP 事件 | `com.maomao.event.<域>` | `com.maomao.event.layer` |
 | CSS 类 | `mm-<块>__<元素>--<状态>` | `mm-swatch__item--active` |
 | CSS 变量 | `--mm-<类别>-<语义>` | `--mm-color-bg-panel` |
@@ -125,7 +125,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 | 数据目录 | `%APPDATA%\Maomao` | 不读旧目录 |
 | 组件文件 | PascalCase | `SwatchGrid.tsx` |
 | 非组件文件 | camelCase | `useSwatches.ts` |
-| 类型 | PascalCase，无 `I` 前缀 | `LayerKind`、`ShapeStyle` |
+| 类型 | PascalCase，无 `I` 前缀 | `LayerKind`、`StyleWarehouseIndex` |
 | 常量 | UPPER_SNAKE | `MAX_RECENT` |
 
 ---
@@ -202,7 +202,7 @@ components ──────────→ core
 |---|---|---|
 | `core` | `types`、`core` 内部其他模块 | `commands`、`store`、`components`、`features`、`app` |
 | `store` | `core`、`types` | `commands`、`features`、`components` |
-| `components` | `core/color`、`core/logger`、`types` | `commands`、`features`、`store` |
+| `components` | `core/logger`、`types` | `commands`、`features`、`store` |
 | `domain` | `types` | 其他所有层 |
 | `repo` | `core/storage`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
 | `hooks` | `core`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
@@ -254,33 +254,15 @@ export type Result<T> =
 - 失败原样透传：上层给什么码就上抛什么码，**不许换一种失败说法重包**
 
 ```ts
-// src/types/color.ts
-export interface Color {
-  hex: string;      // 大写，不带 #
-  c: number;        // 0-100
-  m: number;
-  y: number;
-  k: number;
-}
-```
-
-```ts
 // src/types/layer.ts
 export type LayerKind = 'normal' | 'shape' | 'text' | 'smartObject' | 'group' | 'unknown';
-
-export interface ShapeStyle {
-  hasFill: boolean;
-  hasStroke: boolean;
-  fill: Color | null;
-  stroke: Color | null;
-}
 ```
 
 规则：
 
 - 业务函数一律返回 `Result<T>`，不抛异常
 - 跨层传参禁止裸 JSON 字符串，必须用类型
-- CEP 桥接层负责把 `hex|c|m|y|k` 字符串与 `Color` 互转，业务层不接触分隔符
+- 颜色换算只在 jsx（CMYK/RGB 由 PS 给），前端不再有 `Color` 类型与 `core/color` 模块
 
 ### 4.1 编译期严格选项（已开启）
 
@@ -345,21 +327,16 @@ TypeScript 类型在运行时被擦除，`as` 断言不做任何校验。因此�
 
 ### 4.6 写操作只有一个入口：mutate
 
-库文件、索引的修改**只能**通过 repo 的两个 mutate 函数，不允许自己「读 → 改 → 写」：
+库文件的修改**只能**通过 repo 的 `mutateRawGroups`，不允许自己「读 → 改 → 写」：
 
 ```ts
 mutateRawGroups(warehouse, kind, (groups) => {
   groups.push(newGroup);
   return groups;        // 返回 null 表示不需要写
 });
-
-mutateIndex((index) => {
-  index.index = nextIndex;
-  return index;
-});
 ```
 
-它们内部保证：
+它内部保证：
 
 1. 读失败直接返回，**不执行修改函数**（避免把默认值写回用户文件）
 2. 写入走 `writeTextAtomic`（备份 `.bak` + 按文件串行）
@@ -429,17 +406,16 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 
 ---
 
-## 5. 技术横切（8 项）
+## 5. 技术横切（7 项）
 
 | 横切 | 模块 | 对外签名 | 禁止 |
 |---|---|---|---|
 | 日志 | `core/logger` | `log.info/warn/error(msg, ctx?)` | 组件里 `console.*` |
 | 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>` | feature 里写 `fetch` |
-| 鉴权 | `core/auth` | `getToken()`、`ensureFresh()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
-| 存储 | `core/storage` | `readJson/writeJson/readText/writeText` | 组件里直接用 `cep.fs` |
-| CEP | `core/cep` | `callJsx(fn, args)`、`onAppEvent(type, cb)` | 组件里 `evalScript` |
-| 环境 | `core/env` | `version`、`deviceId`、`isCep` | 各处重复取版本 |
-| 颜色 | `core/color` | `toHex/toCmyk/toCss/fromPs` | 自己写转换 |
+| 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
+| 存储 | `core/storage` | `readTextResult/readJson/writeTextAtomic/writeJson` | 组件里直接用 `cep.fs` |
+| CEP | `core/cep` | `callJsx(fn, args)`、`emitAppEvent(type, data)` | 组件里 `evalScript` |
+| 环境 | `core/env` | `APP_TITLE`、`APP_VERSION`、`extensionId` | 各处重复取版本 |
 | 主题 | `styles/tokens.css` | CSS 变量 | 组件里写死色值 |
 
 ---
