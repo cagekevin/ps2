@@ -210,6 +210,25 @@ export function addKuGroup(
   });
 }
 
+/** 新建分组并一次写入全部项（拖图提取的「保存到分组」用，避免 N 次「读改写」） */
+export function addKuGroupWithItems(
+  warehouse: StyleWarehouse,
+  kind: KuKind,
+  name: string,
+  items: Record<string, unknown>[]
+): Promise<Result<void>> {
+  return mutateRawGroups(warehouse, kind, (groups) => {
+    const group: Record<string, unknown> = {
+      id: kuGuid(),
+      name: name || '未命名分组',
+      show: true,
+      list: items
+    };
+    groups.push(group);
+    return groups;
+  });
+}
+
 export function renameKuGroup(
   warehouse: StyleWarehouse,
   kind: KuKind,

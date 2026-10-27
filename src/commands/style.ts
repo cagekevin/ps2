@@ -9,6 +9,8 @@
  * 这里不再做任何「换一种失败说法」的重包。
  */
 
+import { openFile, saveFile } from '../core/dialog';
+import { exportKuArchive, importKuArchive, kuArchiveDefaultName, type KuImportResult } from '../repo/ku-archive';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
 import {
   applyBorderColor,
@@ -18,10 +20,12 @@ import {
   applyStyleColor,
   getForegroundColor,
   getGradientInfo,
-  saveLayerStyle
+  saveLayerStyle,
+  setTool
 } from '../core/ps/style';
 import {
   addKuGroup,
+  addKuGroupWithItems,
   addKuItem,
   moveKuGroupTo,
   readKuGroupItems,
@@ -29,6 +33,12 @@ import {
   readKuItem,
   setKuGroupShow
 } from '../repo/style-repo';
+import { isForegroundSetd, subscribeHostEvent } from '../core/cep/ps-events';
+import {
+  buildColorPairGradients,
+  createGradientItem,
+  type GradientLibraryItem
+} from '../domain/image-color';
 import { readSwatchItems, writeSwatchItems } from '../repo/swatch-repo';
 import { emitAppEvent } from '../core/cep/bridge';
 import type { DropPosition } from '../domain/reorder';
@@ -247,4 +257,134 @@ export async function applyFontToLayer(item: Record<string, unknown>): Promise<R
   if (!check.value) return fail('VALIDATION', '字体不可用（系统里可能没装这个字体）');
 
   return applyFont(item);
+}
+
+/* ---------------- 快速吸色到组（原版 `:50293-50304`，app 的 pickColorToGroup） ---------------- */
+
+/** 吸管挂在 PS 上等用户的超时（app 的 EYEDROPPER_TIMEOUT） */
+const EYEDROPPER_TIMEOUT = 60_000;
+
+/**
+ * 快速吸色到组：切吸管 → 等 PS 事件 → 读前景色 → 追加到组。
+ *
+ * 事件判据（app T-87）：只有 `setd` 改了**前景色**才算完成；选区变化 = 用户取消。
+ * 先订阅再切工具——切完用户可能立刻吸色，晚订阅会漏事件。
+ */
+export async function pickColorToGroup(
+  warehouse: StyleWarehouse,
+  kind: KuKind,
+  groupIndex: number
+): Promise<Result<void>> {
+  let settle: (result: 'done' | 'cancelled' | 'timeout') => void = () => {};
+  const finished = new Promise<'done' | 'cancelled' | 'timeout'>((resolve) => {
+    settle = resolve;
+  });
+
+  const unsubscribers: Array<() => void> = [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    unsubscribers.push(
+      await subscribeHostEvent('setd', (payload) => {
+        if (isForegroundSetd(payload)) settle('done');
+      })
+    );
+    unsubscribers.push(await subscribeHostEvent('selection', () => settle('cancelled')));
+    timer = setTimeout(() => settle('timeout'), EYEDROPPER_TIMEOUT);
+
+    const switched = await setTool('eyedropperTool');
+    if (switched.status === 'error') return switched;
+
+    const outcome = await finished;
+    /* 用户切走选区 = 主动放弃，不是故障 */
+    if (outcome === 'cancelled') return fail('CANCELLED', '已取消吸色');
+    if (outcome === 'timeout') return fail('TIMEOUT', '吸色超时（60 秒内没有取色）');
+  } finally {
+    if (timer) clearTimeout(timer);
+    for (const off of unsubscribers) off();
+  }
+
+  /* 与「添加颜色」同一条路径：读前景色 → 追加到组 */
+  const color = await getForegroundColor();
+  if (color.status === 'error') return color;
+
+  return addKuItem(warehouse, kind, groupIndex, color.value);
+}
+
+/* ---------------- 导入 / 导出（.kux 容器，原版 :49844-49874 四个菜单入口） ---------------- */
+
+/** 导入预设仓库（覆盖）：旧文件先进回收目录，索引整份替换 */
+export function importKuReplace(): Promise<Result<KuImportResult>> {
+  const path = openFile('导入样式仓库', ['kux']);
+  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  return importKuArchive(false, path);
+}
+
+/** 追加预设仓库：只往索引 push 仓库，本地已有文件不动 */
+export function importKuAppend(): Promise<Result<KuImportResult>> {
+  const path = openFile('追加样式仓库', ['kux']);
+  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  return importKuArchive(true, path);
+}
+
+/** 导出所有仓库 */
+export function exportKuAll(): Promise<Result<void>> {
+  const path = saveFile('导出所有仓库', ['kux'], kuArchiveDefaultName(false));
+  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  return Promise.resolve(exportKuArchive(false, path));
+}
+
+/** 导出当前仓库 */
+export function exportKuCurrent(): Promise<Result<void>> {
+  const path = saveFile('导出当前仓库', ['kux'], kuArchiveDefaultName(true));
+  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  return Promise.resolve(exportKuArchive(true, path));
+}
+
+/**
+ * 应用提取色（原版 `setColor` `:52909-52914`）。
+ *
+ * 原版在前端把 hex 转 CMYK 再发 vendor；我们走移植版 `mm_style_applyColor`，
+ * CMYK 分流在 jsx 内部做——前端只发库项形状，CMYK 字段由库里已有项自带。
+ */
+export function applyColorByHex(hex: string): Promise<Result<void>> {
+  return applyStyleColor({ name: '未命名', color: { hex } });
+}
+
+/** 应用提取的渐变对（原版 `setGrad` `:52905-52908`：createGradientItem → ys_useGradient） */
+export function applyGradientPair(pair: [string, string]): Promise<Result<void>> {
+  const item: GradientLibraryItem = createGradientItem('未命名', pair);
+  return applyGradient(item.gradient);
+}
+
+/**
+ * 提取色整份写入色板（原版 `saveSeban` `:52915-52919`：write + app event）。
+ * 注意原版语义就是**整份替换**色板文件——不是追加。
+ */
+export async function saveExtractedToSwatch(hexes: string[]): Promise<Result<void>> {
+  const items = hexes.map((hex) => ({ name: '未命名', color: { hex: hex.replace('#', '') } }));
+  const written = await writeSwatchItems(items);
+  if (written.status === 'error') return written;
+
+  emitAppEvent('com.fengzi.event.seban', 'GengXin');
+  return ok(undefined);
+}
+
+/** 提取色新建「提取颜色组」分组（原版 `saveColor` 经 appBus 让样式页建组，这里直接写库） */
+export function saveExtractedColorsToGroup(
+  warehouse: StyleWarehouse,
+  hexes: string[]
+): Promise<Result<void>> {
+  const items = hexes.map((hex) => ({ name: '未命名', color: { hex: hex.replace('#', '') } }));
+  return addKuGroupWithItems(warehouse, 'color', '提取颜色组', items);
+}
+
+/** 提取色两两成渐变，新建「提取渐变组」分组（原版 `saveGrad` `:52882-52901`） */
+export function saveExtractedGradientsToGroup(
+  warehouse: StyleWarehouse,
+  hexes: string[]
+): Promise<Result<void>> {
+  const pairs = buildColorPairGradients(hexes).slice(0, 30);
+  const items = pairs.map(({ pair }) => createGradientItem('未命名', pair));
+  return addKuGroupWithItems(warehouse, 'gradient', '提取渐变组', items);
 }

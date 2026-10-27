@@ -104,6 +104,19 @@
   --mm-z-toast: 100;
   --mm-z-loading: 200;
   --mm-z-dropdown: 1000;
+  /* 悬停浮层：app 的 --c-sunken（比页面底更暗一档） */
+  --mm-color-sunken: #222;
+  --mm-describe-max-w: 240px;
+  /* 转圈指示器（原版 NewSpin 默认 18px / 0.8s） */
+  --mm-spin-size: 18px;
+  --mm-spin-duration: 0.8s;
+  /* 图片取色弹层（原版 imgColor 的色圈 28、渐变条 42×22、蓝 #0084ff、次按钮 #e9e9e9） */
+  --mm-imgcolor-grad-w: 42px;
+  --mm-imgcolor-grad-h: 22px;
+  --mm-color-imgcolor-border: #0084ff;
+  --mm-color-imgcolor-primary: #0084ff;
+  --mm-color-imgcolor-second: #e9e9e9;
+  --mm-imgcolor-w: 300px;
   --mm-z-tooltip: 1100;
 
   /* 样式页专用色：页面底 #363636、仓库条 #282828（原版 --c-surface / --c-warehouse） */

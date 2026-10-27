@@ -19,6 +19,8 @@ interface Props {
   onApply: (groupIndex: number, itemIndex: number, name: string, event: MouseEvent) => void;
   onContextMenu: (event: MouseEvent, groupIndex: number, itemIndex: number, name: string) => void;
   onMouseDown: (event: MouseEvent, groupIndex: number, itemIndex: number) => void;
+  /** 悬停浮层；show=true 必须带项元素（浮层的定位锚点），false 表示移出 */
+  onDescribe: (show: boolean, el?: HTMLElement) => void;
   onRename: (name: string) => void;
   onCancelRename: () => void;
 }
@@ -32,11 +34,15 @@ export function ItemView({
   onApply,
   onContextMenu,
   onMouseDown,
+  onDescribe,
   onRename,
   onCancelRename
 }: Props) {
   const menu = (event: MouseEvent) => onContextMenu(event, groupIndex, itemIndex, item.name);
   const down = (event: MouseEvent) => onMouseDown(event, groupIndex, itemIndex);
+  const describeOn = (event: MouseEvent) =>
+    onDescribe(true, event.currentTarget as HTMLElement);
+  const describeOff = () => onDescribe(false);
 
   /* 编辑态：占一个格子显示输入框，不渲染原本的色块 / 缩略图 */
   if (editing) {
@@ -58,6 +64,8 @@ export function ItemView({
         onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
         onContextMenu={menu}
         onMouseDown={down}
+        onMouseEnter={describeOn}
+        onMouseLeave={describeOff}
       >
         {item.thumb ? (
           <img className="mm-style__thumb" src={userAssetUrl('kuStyle', item.thumb)} alt={item.name} />
@@ -78,6 +86,8 @@ export function ItemView({
         onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
         onContextMenu={menu}
         onMouseDown={down}
+        onMouseEnter={describeOn}
+        onMouseLeave={describeOff}
       >
         {preview ? (
           <>
@@ -122,6 +132,8 @@ export function ItemView({
       onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
       onContextMenu={menu}
       onMouseDown={down}
+      onMouseEnter={describeOn}
+      onMouseLeave={describeOff}
     >
       <span className="mm-style__swatch" />
     </button>

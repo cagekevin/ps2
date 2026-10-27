@@ -84,6 +84,26 @@ export interface KuItem {
 }
 
 /**
+ * hover 浮层的详情行（照 app `pages/style/index.vue:112-124`）。
+ *
+ * 按库给不同信息：颜色显 HEX、字体显「族 · 字重 · N点 · 数量」、图片型渐变标注。
+ * 空串表示这个项没有额外信息，浮层少渲染一行。
+ */
+export function describeDetail(kind: KuKind, item: KuItem): string {
+  if (kind === 'color' && item.swatch) return `色值 ${item.swatch.toUpperCase()}`;
+
+  if (kind === 'font' && item.fontPreview) {
+    const preview = item.fontPreview;
+    const parts = [preview.family, preview.weight, preview.size].filter(Boolean);
+    if (preview.count > 1) parts.push(`${preview.count} 个字体`);
+    return parts.join(' · ');
+  }
+
+  if (kind === 'gradient' && item.image) return '图片型渐变';
+  return '';
+}
+
+/**
  * 中文字预览的 font-family（原版 `pages/style/index.vue:324-328`）。
  *
  * 同一族名写三遍：裸名、引号名、`族名 字重`——不同渲染路径对带空格/字重的

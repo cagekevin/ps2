@@ -25,7 +25,12 @@ import {
   applyGradientToLayer,
   applyLayerStyle,
   applyShapeFillToLayer,
+  exportKuAll,
+  exportKuCurrent,
+  importKuAppend,
+  importKuReplace,
   moveGroupInLibrary,
+  pickColorToGroup,
   sendGroupToSwatch,
   sendItemToSwatch,
   setGroupShowInLibrary
@@ -43,7 +48,7 @@ import {
   renameKuItem
 } from '../../repo/style-repo';
 import { useStyleLibraryStore } from '../../store/style-library';
-import type { Result } from '../../types/result';
+import { ok, type Result } from '../../types/result';
 
 /** 默认展开前几组，避免上百组一次性渲染 */
 const DEFAULT_EXPANDED = 1;
@@ -126,6 +131,27 @@ export function useStyleActions() {
     return warehouse;
   }
 
+  /** 只提示不刷新（应用类：改的是 PS 图层，不是库文件） */
+  async function runWithToast(task: () => Promise<Result<void>>, successText: string): Promise<void> {
+    const result = await loading.run(task);
+    if (result.status === 'ok') {
+      toast.info(successText);
+      return;
+    }
+    /* 用户主动取消（关对话框 / 切走选区）不是故障，静默 */
+    if (result.code === 'CANCELLED') return;
+    toastFailure(result);
+  }
+
+  /** 写库类动作的统一反馈：loading + 成功提示 + 重读列表（失败走 toastFailure） */
+  async function runWithFeedback(
+    task: () => Promise<Result<void>>,
+    successText: string
+  ): Promise<void> {
+    await runWithToast(task, successText);
+    void load();
+  }
+
   /**
    * 折叠 / 展开。
    * 原版普通点击折叠也写库（`show` 是库文件的真实字段），照此行为；
@@ -154,7 +180,7 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await loading.run(() => {
+    await runWithFeedback(() => {
       if (activeKind === 'color') {
         return addForegroundColorToLibrary(warehouse, activeKind, groupIndex);
       }
@@ -165,15 +191,7 @@ export function useStyleActions() {
         return addFontFromLayer(warehouse, activeKind, groupIndex);
       }
       return addStyleFromLayer(warehouse, activeKind, groupIndex);
-    });
-
-    if (result.status === 'ok') {
-      toast.info(activeKind === 'color' ? '已添加当前前景色' : '已添加');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
+    }, activeKind === 'color' ? '已添加当前前景色' : '已添加');
   }
 
   /** 底栏「添加×分组」：切到对应 tab 再弹输入（原版四个按钮各管一个库） */
@@ -189,17 +207,10 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await loading.run(() =>
-      addGroupToLibrary(warehouse, activeKind, name, afterIndex === -1 ? undefined : afterIndex)
+    await runWithFeedback(
+      () => addGroupToLibrary(warehouse, activeKind, name, afterIndex === -1 ? undefined : afterIndex),
+      '已新建分组'
     );
-
-    if (result.status === 'ok') {
-      toast.info('已新建分组');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
   }
 
   async function handleApply(
@@ -232,9 +243,7 @@ export function useStyleActions() {
           ? applyBorderColorToLayer
           : applyColor;
 
-      const result = await loading.run(() => task(raw.value));
-      if (result.status === 'ok') toast.info(`已应用「${name}」`);
-      else toastFailure(result);
+      await runWithToast(() => task(raw.value), `已应用「${name}」`);
       return;
     }
 
@@ -245,17 +254,13 @@ export function useStyleActions() {
         toast.error('这个渐变项缺少数据');
         return;
       }
-      const result = await loading.run(() => applyGradientToLayer(gradient));
-      if (result.status === 'ok') toast.info(`已应用「${name}」`);
-      else toastFailure(result);
+      await runWithToast(() => applyGradientToLayer(gradient), `已应用「${name}」`);
       return;
     }
 
     if (activeKind === 'font') {
       /* 字体走直接调用通道，不走 ps_onJsx */
-      const result = await loading.run(() => applyFontToLayer(raw.value));
-      if (result.status === 'ok') toast.info(`已应用「${name}」`);
-      else toastFailure(result);
+      await runWithToast(() => applyFontToLayer(raw.value), `已应用「${name}」`);
       return;
     }
 
@@ -266,9 +271,7 @@ export function useStyleActions() {
       return;
     }
 
-    const result = await loading.run(() => applyLayerStyle(raw.value, groupId.value));
-    if (result.status === 'ok') toast.info(`已应用「${name}」`);
-    else toastFailure(result);
+    await runWithToast(() => applyLayerStyle(raw.value, groupId.value), `已应用「${name}」`);
   }
 
   /**
@@ -335,7 +338,10 @@ export function useStyleActions() {
         onSelect: () => void handleAppendGroupToSwatch(target.groupIndex)
       },
       { label: '', separator: true },
-      { label: '快速吸色到组', disabled: true },
+      {
+        label: '快速吸色到组',
+        onSelect: () => void handlePickColorToGroup(target.groupIndex)
+      },
       { label: '', separator: true },
       ...warehouse
     ];
@@ -346,12 +352,10 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await sendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex);
-    if (result.status === 'ok') {
-      toast.info('已发送到色板');
-      return;
-    }
-    toastFailure(result);
+    await runWithFeedback(
+      () => sendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
+      '已发送到色板'
+    );
   }
 
   /** 追加到色板（单项） */
@@ -359,12 +363,10 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await appendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex);
-    if (result.status === 'ok') {
-      toast.info('已追加到色板');
-      return;
-    }
-    toastFailure(result);
+    await runWithFeedback(
+      () => appendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
+      '已追加到色板'
+    );
   }
 
   /** 发送到色板（整组替换） */
@@ -372,12 +374,7 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await sendGroupToSwatch(warehouse, activeKind, groupIndex);
-    if (result.status === 'ok') {
-      toast.info('已发送到色板');
-      return;
-    }
-    toastFailure(result);
+    await runWithFeedback(() => sendGroupToSwatch(warehouse, activeKind, groupIndex), '已发送到色板');
   }
 
   /** 追加到色板（整组逐项 push） */
@@ -385,12 +382,39 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result = await appendGroupToSwatch(warehouse, activeKind, groupIndex);
-    if (result.status === 'ok') {
-      toast.info('已追加到色板');
-      return;
-    }
-    toastFailure(result);
+    await runWithFeedback(() => appendGroupToSwatch(warehouse, activeKind, groupIndex), '已追加到色板');
+  }
+
+  /* ---------------- 导入 / 导出 ---------------- */
+
+  function handleImportKuReplace() {
+    void runWithFeedback(async () => {
+      const result = await importKuReplace();
+      return result.status === 'ok' ? ok(undefined) : result;
+    }, '导入完成');
+  }
+
+  function handleImportKuAppend() {
+    void runWithFeedback(async () => {
+      const result = await importKuAppend();
+      return result.status === 'ok' ? ok(undefined) : result;
+    }, '导入完成');
+  }
+
+  function handleExportKuAll() {
+    void runWithFeedback(() => exportKuAll(), '已导出所有仓库');
+  }
+
+  function handleExportKuCurrent() {
+    void runWithFeedback(() => exportKuCurrent(), '已导出当前仓库');
+  }
+
+  /** 快速吸色到组：切吸管等用户取色，取到的前景色写进这一组 */
+  async function handlePickColorToGroup(groupIndex: number) {
+    const warehouse = requireWarehouse();
+    if (!warehouse) return;
+
+    await runWithFeedback(() => pickColorToGroup(warehouse, activeKind, groupIndex), '已吸取颜色到组');
   }
 
   /** 删除分组或项：先确认，再写库 */
@@ -405,18 +429,13 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result =
-      target.type === 'group'
-        ? await deleteKuGroup(warehouse, activeKind, target.groupIndex)
-        : await deleteKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex);
-
-    if (result.status === 'ok') {
-      toast.info('已删除');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
+    await runWithFeedback(
+      () =>
+        target.type === 'group'
+          ? deleteKuGroup(warehouse, activeKind, target.groupIndex)
+          : deleteKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex),
+      '已删除'
+    );
   }
 
   /** 重命名分组或项；写库成功后重读列表 */
@@ -426,18 +445,13 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const result =
-      target.type === 'group'
-        ? await renameKuGroup(warehouse, activeKind, target.groupIndex, name)
-        : await renameKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex, name);
-
-    if (result.status === 'ok') {
-      toast.info('已重命名');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
+    await runWithFeedback(
+      () =>
+        target.type === 'group'
+          ? renameKuGroup(warehouse, activeKind, target.groupIndex, name)
+          : renameKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex, name),
+      '已重命名'
+    );
   }
 
   /**
@@ -479,19 +493,15 @@ export function useStyleActions() {
     const warehouse = currentWarehouse();
     if (!warehouse) return;
 
-    const result = await moveKuItemTo(warehouse, activeKind, {
-      from: { group: fromGroup, index: from },
-      to: { group: toGroup, index: to },
-      position
-    });
-
-    if (result.status === 'ok') {
-      toast.info('已调整顺序');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
+    await runWithFeedback(
+      () =>
+        moveKuItemTo(warehouse, activeKind, {
+          from: { group: fromGroup, index: from },
+          to: { group: toGroup, index: to },
+          position
+        }),
+      '已调整顺序'
+    );
   }
 
   /** 长按分组标题：纵向排序 */
@@ -523,17 +533,10 @@ export function useStyleActions() {
     const warehouse = currentWarehouse();
     if (!warehouse) return;
 
-    const result = await loading.run(() =>
-      moveGroupInLibrary(warehouse, activeKind, from, to, position)
+    await runWithFeedback(
+      () => moveGroupInLibrary(warehouse, activeKind, from, to, position),
+      '已调整分组顺序'
     );
-
-    if (result.status === 'ok') {
-      toast.info('已调整分组顺序');
-      void load();
-      return;
-    }
-
-    toastFailure(result);
   }
 
   return {
@@ -551,6 +554,12 @@ export function useStyleActions() {
     handleAppendItemToSwatch,
     handleSendGroupToSwatch,
     handleAppendGroupToSwatch,
+    handlePickColorToGroup,
+    handleImportKuReplace,
+    handleImportKuAppend,
+    handleExportKuAll,
+    handleExportKuCurrent,
+    runWithFeedback,
     startNewGroup,
     handleCreateGroup,
     handleApply,

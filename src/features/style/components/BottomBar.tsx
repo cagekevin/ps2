@@ -10,6 +10,8 @@
  * 用线框的 `iconchuangjian` 代替，肉眼一眼就不同（对照清单 #100）。
  * 渐变色照抄原版 SVG，id 改成 `mm-` 前缀避免两个渐变互相覆盖。
  */
+import { useRef, useState } from 'react';
+import { ContextMenu } from '../../../components/ContextMenu';
 import { Icon } from '../../../components/icons';
 import { KU_KINDS, KU_TAB_LABELS, type KuKind } from '../../../domain/style-library';
 
@@ -67,7 +69,15 @@ function GradientSwatch() {
   );
 }
 
-export function BottomBar({ onAddGroup }: { onAddGroup: (kind: KuKind) => void }) {
+interface BottomBarProps {
+  onAddGroup: (kind: KuKind) => void;
+  onImport: (append: boolean) => void;
+  onExport: (current: boolean) => void;
+}
+
+export function BottomBar({ onAddGroup, onImport, onExport }: BottomBarProps) {
+  const [menu, setMenu] = useState<'import' | 'export' | null>(null);
+  const ioAnchor = useRef<HTMLElement | null>(null);
   return (
     <div className="mm-style__bottom">
       {KU_KINDS.map((kind, index) => (
@@ -90,12 +100,46 @@ export function BottomBar({ onAddGroup }: { onAddGroup: (kind: KuKind) => void }
 
       <span className="mm-style__bottom-divider" />
 
-      <button type="button" className="mm-style__bottom-btn" disabled title="导入还没实现">
+      <button
+        type="button"
+        className="mm-style__bottom-btn"
+        title="导入预设仓库"
+        onClick={(event) => {
+          ioAnchor.current = event.currentTarget as HTMLElement;
+          setMenu('import');
+        }}
+      >
         <Icon name="icondaoru" size={18} />
       </button>
-      <button type="button" className="mm-style__bottom-btn" disabled title="导出还没实现">
+      <button
+        type="button"
+        className="mm-style__bottom-btn"
+        title="导出样式仓库"
+        onClick={(event) => {
+          ioAnchor.current = event.currentTarget as HTMLElement;
+          setMenu('export');
+        }}
+      >
         <Icon name="icondaochu" size={18} />
       </button>
+
+      {menu ? (
+        <ContextMenu
+          anchor={ioAnchor.current}
+          items={
+            menu === 'import'
+              ? [
+                  { label: '导入预设仓库（覆盖）', onSelect: () => onImport(false) },
+                  { label: '追加预设仓库', onSelect: () => onImport(true) }
+                ]
+              : [
+                  { label: '导出所有仓库…', onSelect: () => onExport(false) },
+                  { label: '导出当前仓库…', onSelect: () => onExport(true) }
+                ]
+          }
+          onClose={() => setMenu(null)}
+        />
+      ) : null}
     </div>
   );
 }

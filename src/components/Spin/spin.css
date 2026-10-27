@@ -1,0 +1,42 @@
+/* 【范本】转圈指示器：照原版 NewSpin（18px 圆环、顶边 accent 高亮、0.8s 线性旋转） */
+
+.mm-spin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-exact-7);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+}
+
+/* 局部遮罩：盖住最近的定位父级 */
+.mm-spin--mask {
+  position: absolute;
+  inset: 0;
+  background: var(--mm-color-bg-page);
+}
+
+.mm-spin__ring {
+  display: block;
+  width: var(--mm-spin-size);
+  height: var(--mm-spin-size);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-top-color: var(--mm-color-accent);
+  border-radius: 50%;
+  animation: mm-spin-rotate var(--mm-spin-duration, 0.8s) linear infinite;
+}
+
+@keyframes mm-spin-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mm-spin__tip {
+  overflow: hidden;
+  max-width: 240px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

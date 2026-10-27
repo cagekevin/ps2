@@ -1,0 +1,81 @@
+/* 【范本】图片取色弹层：原版 imgColor 的弹层样式（色圈 28px / 渐变条 42×22 / 双按钮） */
+
+.mm-imgcolor__mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--mm-z-tooltip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.mm-imgcolor {
+  width: var(--mm-imgcolor-w);
+  padding: var(--mm-space-exact-10) var(--mm-space-exact-15);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-elevated);
+  box-shadow: var(--mm-shadow-pop);
+}
+
+.mm-imgcolor__title {
+  margin: 0 0 var(--mm-space-1);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  font-weight: 700;
+}
+
+.mm-imgcolor__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-exact-6);
+  margin-bottom: var(--mm-space-2);
+}
+
+/* 原版 `.color-item`：28px 圆、蓝边 */
+.mm-imgcolor__swatch {
+  width: var(--mm-gradient-h);
+  height: var(--mm-gradient-h);
+  border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* 原版 `.grad-item`：42×22、蓝边 */
+.mm-imgcolor__grad {
+  width: var(--mm-imgcolor-grad-w);
+  height: var(--mm-imgcolor-grad-h);
+  border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
+  cursor: pointer;
+}
+
+.mm-imgcolor__btn {
+  flex: 1 1 0;
+  height: var(--mm-select-h);
+  border: none;
+  border-radius: var(--mm-radius-sm);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+/* 原版 `.theme-btn`：#0084ff 实底白字 */
+.mm-imgcolor__btn--primary {
+  background: var(--mm-color-imgcolor-primary);
+  color: var(--mm-color-text-inverse);
+}
+
+/* 原版 `.second-btn`：#e9e9e9 实底 */
+.mm-imgcolor__btn--second {
+  background: var(--mm-color-imgcolor-second);
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-imgcolor__btn--wide {
+  flex: 1 1 100%;
+}
+
+.mm-imgcolor__hr {
+  margin: var(--mm-space-2) 0;
+  border: 0;
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
+}

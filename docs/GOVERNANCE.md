@@ -112,8 +112,18 @@
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox | ✅ 真机 |
 | 折叠箭头 | `src/components/Chevron/index.tsx` | 展开/折叠箭头（会旋转） | ✅ 真机 |
 | 折叠箭头样式 | `src/components/Chevron/chevron.css` | rotate(-90deg) 表示收起 | ✅ 真机 |
+| 图片取色弹层 | `src/features/style/components/ImgColorDialog.tsx` | 色圈 / 渐变条，左键应用右键删 | ⚠️ 待真机 |
+| 图片取色样式 | `src/features/style/components/img-color-dialog.css` | 对齐原版 imgColor | ⚠️ 待真机 |
+| PS 事件订阅 | `src/core/cep/ps-events.ts` | 注册 + JSON 回调 + setd 判据 | ⚠️ 待真机 |
+| 图片解码 | `src/core/image/index.ts` | FileReader / canvas / Image 默认注入 | ⚠️ 待真机 |
+| 文件对话框 | `src/core/dialog/index.ts` | CEP fs API，取消返回 null | ⚠️ 待真机 |
+| 仓库容器 | `src/repo/ku-archive.ts` | .kux 导出导入 + id 重发 + 回收 | ⚠️ 待真机 |
+| 容器编解码 | `src/domain/ku-io.ts` | 纯函数（app 移植） | ✅ 单测（app 背书） |
+| 解码契约 | `src/types/decode.ts` | Decoded / DecodeFail | ✅ 单测（app 背书） |
 | Toast | `src/components/Toast/index.tsx` | 禁止 alert | ✅ 真机 |
-| Loading | `src/components/Loading/index.tsx` | 异步统一包裹 | ✅ 真机 |
+| Loading | `src/components/Loading/index.tsx` | 全屏加载唯一入口，文案栈 | ✅ 真机 |
+| Spin 转圈 | `src/components/Spin/index.tsx` | 裸圈 / 带文案 / 局部遮罩三模式（照原版 NewSpin） | ✅ 真机 |
+| Spin 样式 | `src/components/Spin/spin.css` | 18px / 0.8s，token 化 | ✅ 真机 |
 | 路由 | `src/app/router.tsx` | 页面懒加载 | ✅ 真机 |
 | 外壳 | `src/app/layout.tsx` | 全局布局 | ✅ 真机 |
 | Provider | `src/app/providers.tsx` | UI 横切挂载 | ✅ 真机 |
@@ -285,6 +295,10 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 | 2026-10-27 | 第四次体检：`StylePage` 717→245 行（抽 `useStyleActions` + 4 组件），hook 内 8 处重复取仓库收敛（见 `REVIEW-2026-10-27-4.md`） | features/style |
 | 2026-10-27 | 第五次体检：补 `useConfirm()` 命令式入口（文档规定但原本不存在），删除流程改 `await`（见 `REVIEW-2026-10-27-5.md`） | components/Confirm、app、features/style |
 | 2026-10-27 | 第六次体检：四个「+」接通 + 色板四条命令；色板根入 `storage.ROOTS`；`emitAppEvent` 转正（见 `REVIEW-2026-10-27-6.md`） | core/ps、repo、commands、features/style |
+| 2026-10-27 | 第七次体检：hover 浮层 / 拖图取色 / 快速吸色接通；图片解码出页面（`core/image` 新建）；`ErrorCode` 加 `CANCELLED`（见 `REVIEW-2026-10-27-7.md`） | core/cep、core/image、features/style |
+| 2026-10-27 | 第八次体检：用户反馈模式 9 处重复收敛为 `runWithToast` / `runWithFeedback`（见 `REVIEW-2026-10-27-8.md`） | features/style |
+| 2026-10-27 | 第九次体检：导入导出接通（ku-io 移植 + ku-archive + dialog）；修 `fs()!` 断言、坏 JSON 吞掉、菜单定位收进 `ContextMenu.anchor`（见 `REVIEW-2026-10-27-9.md`） | repo、core/dialog、domain |
+| 2026-10-27 | 第十次体检：数据流走查（jsx 契约 / 编码方向 / 回收顺序全对上）；修 `CANCELLED` 取消误报为静默（见 `REVIEW-2026-10-27-10.md`） | features/style |
 | 2026-10-27 | 新增 `docs/PS-CHANNEL-NOTES.md`：三条通道、参数序列化、串行队列、env 注入、LayerKind、库文件数据契约、CEP 坑、排障速查 | docs |
 | 2026-10-27 | 重写 `docs/STYLE-PANEL-GAP.md` 为「现状 + 剩余缺口」，列出已失效的旧结论 | docs |
 | 2026-10-27 | 新增工程 `README.md` 与 `CHANGELOG.md`；修正 `jsx/vendor.README.md`（来源、函数表、通道、返回值）与本节检查链、范本状态 | 全项目 |

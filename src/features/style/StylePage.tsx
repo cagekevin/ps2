@@ -7,19 +7,48 @@
  * `useStyleActions`，单项渲染在 `components/ItemView`。
  * 拆分依据 `GOVERNANCE.md` §0.5 触发条件第 6 条：组件超过 300 行必须拆。
  */
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ContextMenu } from '../../components/ContextMenu';
 import { Chevron } from '../../components/Chevron';
 import { Icon } from '../../components/icons';
 import { InlineEdit } from '../../components/InlineEdit';
 import { SelectBox } from '../../components/SelectBox';
-import { KU_KINDS, KU_TAB_LABELS, type KuGroup } from '../../domain/style-library';
+import { useFloatingPosition } from '../../hooks/useFloatingPosition';
+import {
+  describeDetail,
+  KU_KINDS,
+  KU_TAB_LABELS,
+  type KuGroup,
+  type KuKind
+} from '../../domain/style-library';
+import { extractImageColors } from '../../domain/image-color';
+import { createCanvas, decodeImage, readFileAsDataUrl } from '../../core/image';
+import {
+  applyColorByHex,
+  applyGradientPair,
+  saveExtractedColorsToGroup,
+  saveExtractedGradientsToGroup,
+  saveExtractedToSwatch
+} from '../../commands/style';
+import { useLoading } from '../../components/Loading';
+import { useToast } from '../../components/Toast';
 import { useStyleLibraryStore } from '../../store/style-library';
 import { BottomBar } from './components/BottomBar';
+import { ImgColorDialog } from './components/ImgColorDialog';
 import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
 import { StateHint } from './components/StateHint';
 import { ADD_TITLE, useStyleActions } from './useStyleActions';
 import './StylePage.css';
+
+/** 悬停浮层的目标：定位锚点就是那个项元素 */
+interface DescribeTarget {
+  kind: KuKind;
+  groupIndex: number;
+  itemIndex: number;
+  el: HTMLElement;
+}
 
 export default function StylePage() {
   const load = useStyleLibraryStore((state) => state.load);
@@ -30,8 +59,70 @@ export default function StylePage() {
   const activeKind = useStyleLibraryStore((state) => state.activeKind);
   const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
   const selectWarehouse = useStyleLibraryStore((state) => state.selectWarehouse);
+  const libraries = useStyleLibraryStore((state) => state.libraries);
   const groups = useStyleLibraryStore((state) => state.libraries[state.activeKind]);
   const result = useStyleLibraryStore((state) => state.results[state.activeKind]);
+
+  /* 悬停浮层：enter 时记下项与锚点元素，leave 清空 */
+  const [describe, setDescribe] = useState<DescribeTarget | null>(null);
+  const describeAnchor = useMemo(() => describe?.el ?? null, [describe]);
+  const { floatingRef: describeRef, update: updateDescribe } = useFloatingPosition({
+    placement: 'bottom-start',
+    offset: 6,
+    padding: 8
+  });
+
+  useEffect(() => {
+    if (describeAnchor) updateDescribe(describeAnchor);
+  }, [describeAnchor, updateDescribe]);
+
+  const describeContent = useMemo(() => {
+    if (!describe) return null;
+    const group = libraries[describe.kind]?.[describe.groupIndex];
+    const item = group?.items[describe.itemIndex];
+    if (!group || !item) return null;
+    return {
+      name: item.name,
+      subtitle: `${group.name} · ${KU_TAB_LABELS[KU_KINDS.indexOf(describe.kind)]}库`,
+      detail: describeDetail(describe.kind, item)
+    };
+  }, [describe, libraries]);
+
+  /* 图片取色：拖一张图进来，量化出 10 色，弹层里应用或入库 */
+  const [extracted, setExtracted] = useState<string[] | null>(null);
+  const loading = useLoading();
+  const toast = useToast();
+  const warehouse = warehouses[activeIndex];
+
+  /** 原版 `getImgHex`（`app.v4.js:54682-54694`）：dataUrl → 缩到 350 宽 → 量化 10 色 */
+  async function handleDropImage(event: React.DragEvent) {
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    if (files.length !== 1) {
+      toast.info('请拖入1张图片');
+      return;
+    }
+
+    /* 原版 `$load.show('正在解析图片')`（app.v4.js:54667）同款文案 */
+    await loading.run(
+      async () => {
+        const dataUrl = await readFileAsDataUrl(files[0] as File);
+
+        /* canvas / Image 在 CEP 的 Chromium 里可用；jsdom 测不了（见 image-color.ts 注释） */
+        const colors = await extractImageColors(
+          { kind: 'dataUrl', dataUrl },
+          { createCanvas, decode: decodeImage }
+        );
+
+        if (!colors.length) {
+          toast.error('解析图片失败');
+          return;
+        }
+        setExtracted(colors.map((color) => color.hex));
+      },
+      '正在解析图片'
+    );
+  }
 
   const {
     expanded,
@@ -50,7 +141,12 @@ export default function StylePage() {
     buildMenuItems,
     handleRename,
     handleItemMouseDown,
-    handleGroupMouseDown
+    handleGroupMouseDown,
+    handleImportKuReplace,
+    handleImportKuAppend,
+    handleExportKuAll,
+    handleExportKuCurrent,
+    runWithFeedback
   } = useStyleActions();
 
   const warehouseOptions = warehouses.map((warehouse, index) => ({
@@ -59,7 +155,11 @@ export default function StylePage() {
   }));
 
   return (
-    <section className="mm-style">
+    <section
+      className="mm-style"
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => void handleDropImage(event)}
+    >
       <div className="mm-style__toolbar">
         {warehouseOptions.length ? (
           <SelectBox
@@ -172,6 +272,13 @@ export default function StylePage() {
                           onApply={(group_, item_, name, event) =>
                             void handleApply(group_, item_, name, event)
                           }
+                          onDescribe={(show, el) =>
+                            setDescribe(
+                              show && el
+                                ? { kind: activeKind, groupIndex: index, itemIndex, el }
+                                : null
+                            )
+                          }
                           onContextMenu={(event, group_, item_, name) => {
                             event.preventDefault();
                             setMenu({
@@ -229,6 +336,48 @@ export default function StylePage() {
         </>
       )}
 
+      {/* 悬停浮层：portal 到 body，位置走 useFloatingPosition（照 app 的 style-describe） */}
+      {describeContent
+        ? createPortal(
+            <div ref={describeRef} className="mm-style__describe">
+              <p className="mm-style__describe-name">{describeContent.name}</p>
+              <p className="mm-style__describe-meta">{describeContent.subtitle}</p>
+              {describeContent.detail ? (
+                <p className="mm-style__describe-meta">{describeContent.detail}</p>
+              ) : null}
+            </div>,
+            document.body
+          )
+        : null}
+
+      {/* 图片取色弹层（原版 imgColor） */}
+      {extracted ? (
+        <ImgColorDialog
+          colors={extracted}
+          onApplyColor={(hex) =>
+            void runWithFeedback(() => applyColorByHex(hex), '已应用颜色')
+          }
+          onApplyGradient={(pair) =>
+            void runWithFeedback(() => applyGradientPair(pair), '已应用渐变')
+          }
+          onSaveSwatch={(hexes) =>
+            void runWithFeedback(() => saveExtractedToSwatch(hexes), '已保存到色板')
+          }
+          onSaveColorGroup={(hexes) => {
+            if (!warehouse) return;
+            void runWithFeedback(() => saveExtractedColorsToGroup(warehouse, hexes), '已保存到颜色库');
+          }}
+          onSaveGradientGroup={(hexes) => {
+            if (!warehouse) return;
+            void runWithFeedback(
+              () => saveExtractedGradientsToGroup(warehouse, hexes),
+              '已保存到渐变库'
+            );
+          }}
+          onClose={() => setExtracted(null)}
+        />
+      ) : null}
+
       {menu ? (
         <ContextMenu
           x={menu.x}
@@ -238,7 +387,17 @@ export default function StylePage() {
         />
       ) : null}
 
-      <BottomBar onAddGroup={startNewGroup} />
+      <BottomBar
+        onAddGroup={startNewGroup}
+        onImport={(append) => {
+          if (append) handleImportKuAppend();
+          else handleImportKuReplace();
+        }}
+        onExport={(current) => {
+          if (current) handleExportKuCurrent();
+          else handleExportKuAll();
+        }}
+      />
     </section>
   );
 }

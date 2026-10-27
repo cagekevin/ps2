@@ -48,3 +48,20 @@ export function parseErrEnvelope(raw: string): number | null {
   const err = (parsed.value as { err?: unknown }).err;
   return typeof err === 'number' ? err : null;
 }
+
+/**
+ * 官方直调**读**函数（ys_getGradientInfo / ys_getFontInfo）的 data 信封。
+ *
+ * UNVERIFIED：这两个函数的真实返回形状未逐字段验证——可能是 `{ err, data }`
+ * 双字段信封，也可能是裸载荷。这里兼容两种（有 `data` 字段就拆出来）；
+ * 真机确认形状后删掉不用的分支，别让「两种都收」变成永久契约。
+ */
+export function parseDataEnvelope(raw: string): Result<unknown> {
+  const parsed = parseJsxRaw(raw);
+  if (parsed.status === 'error') return parsed;
+  const value = parsed.value;
+  if (value && typeof value === 'object' && 'data' in value) {
+    return ok((value as { data: unknown }).data);
+  }
+  return ok(value);
+}

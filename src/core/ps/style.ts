@@ -18,9 +18,10 @@
  */
 
 import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
+import { ROOTS } from '../storage';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore, requireVendor } from './init';
-import { parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
+import { parseDataEnvelope, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 /** 官方 jsx 的统一调度入口 */
 const VENDOR_DISPATCH = 'ps_onJsx';
@@ -130,11 +131,10 @@ export async function getGradientInfo(): Promise<Result<unknown>> {
     return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
   }
 
-  /* 兼容两种返回：裸载荷，或 {err, data} 信封 */
-  const data =
-    value && typeof value === 'object' && 'data' in value
-      ? (value as { data: unknown }).data
-      : value;
+  /* 信封拆包走 raw.ts——这里只判「data 是否为空」，不认识返回形状 */
+  const envelope = parseDataEnvelope(call.value);
+  if (envelope.status === 'error') return envelope;
+  const data = envelope.value;
   if (data === null || data === undefined) {
     return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
   }
@@ -154,9 +154,10 @@ export async function getGradientInfo(): Promise<Result<unknown>> {
 export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
+  /* envDir 是原版 jsxbin 写 PSD 时的目录名，与数据根同值——别在这里再写一份字面量 */
   const call = await callJsx(
     'ys_AddStyle',
-    [{ delArr: [], groupId, envDir: '/SheJiZhuLi' }],
+    [{ delArr: [], groupId, envDir: ROOTS.legacy }],
     { timeout: WRITE_TIMEOUT }
   );
   if (call.status === 'error') return call;
@@ -171,6 +172,19 @@ export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
 /** 应用渐变：原版传的是项里的 gradient 字段 */
 export function applyGradient(gradient: unknown): Promise<Result<void>> {
   return runVendor('ys_useGradient', [gradient], '填充渐变色');
+}
+
+/** 切换 PS 工具（快速吸色用：`Tool_set('eyedropperTool')`，直调通道） */
+export async function setTool(tool: string): Promise<Result<void>> {
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+
+  const call = await callJsx('Tool_set', [tool]);
+  if (call.status === 'error') return call;
+
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
+
+  return ok(undefined);
 }
 
 /** 应用图层样式：{ ...项, groupId } */

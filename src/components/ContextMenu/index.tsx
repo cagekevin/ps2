@@ -22,22 +22,28 @@ export interface MenuItem {
 }
 
 interface ContextMenuProps {
-  /** 鼠标位置 */
-  x: number;
-  y: number;
+  /** 鼠标位置（右键菜单场景）；与 anchor 二选一 */
+  x?: number;
+  y?: number;
+  /** 锚点元素（工具栏按钮弹出菜单场景）：组件自己算位置，调用方不碰 getBoundingClientRect */
+  anchor?: HTMLElement | null;
   items: MenuItem[];
   onClose: () => void;
 }
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+export function ContextMenu({ x, y, anchor, items, onClose }: ContextMenuProps) {
   const { floatingRef, update } = useFloatingPosition({ placement: 'bottom-start' });
 
   useDismiss(true, floatingRef, onClose);
 
   /* 渲染后立刻定位，避免先出现在 (0,0) 再跳过去 */
   useLayoutEffect(() => {
-    update({ x, y });
-  }, [x, y, update]);
+    if (anchor) {
+      update(anchor);
+      return;
+    }
+    update({ x: x ?? 0, y: y ?? 0 });
+  }, [x, y, anchor, update]);
 
   return (
     <div className="mm-menu" ref={floatingRef} role="menu">

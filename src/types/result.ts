@@ -40,6 +40,7 @@ export type ErrorCode =
   | 'AUTH'
   | 'FORBIDDEN'
   | 'VALIDATION'
+| 'CANCELLED'
   | 'UNKNOWN';
 
 export type Result<T> =

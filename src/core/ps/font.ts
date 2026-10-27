@@ -18,7 +18,7 @@ import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
-import { parseErrEnvelope, parseJsxRaw } from './raw';
+import { parseDataEnvelope, parseErrEnvelope, parseJsxRaw } from './raw';
 
 /**
  * 检查字体是否可用。
@@ -56,10 +56,10 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
     return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
   }
 
-  const data =
-    value && typeof value === 'object' && 'data' in value
-      ? (value as { data: unknown }).data
-      : value;
+  /* 信封拆包走 raw.ts——这里只判「fonts 是否非空」，不认识返回形状 */
+  const envelope = parseDataEnvelope(call.value);
+  if (envelope.status === 'error') return envelope;
+  const data = envelope.value;
   if (
     !data ||
     typeof data !== 'object' ||

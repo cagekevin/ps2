@@ -84,6 +84,39 @@
   background: var(--mm-color-border);
 }
 
+/* ---------- 悬停浮层（照 app `.style-describe`：fixed 定位 + 三行内容） ---------- */
+.mm-style__describe {
+  position: fixed;
+  top: var(--floating-y, 0);
+  left: var(--floating-x, 0);
+  z-index: var(--mm-z-dropdown);
+  width: max-content;
+  max-width: var(--mm-describe-max-w);
+  padding: var(--mm-space-exact-5) var(--mm-space-exact-10);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-sunken);
+  box-shadow: var(--mm-shadow-pop);
+  pointer-events: none;
+}
+
+.mm-style__describe-name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-style__describe-meta {
+  margin: 0;
+  overflow: hidden;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- 滚动区 ---------- */
 .mm-style__list {
   flex: 1;
