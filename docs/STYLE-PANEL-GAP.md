@@ -21,7 +21,7 @@
 | 四类项归一化（颜色 / 渐变 / 字体 / 样式） | ✅ 真实数据 | `domain/style-library.ts` |
 | 分组折叠（默认只展开第一组） | ✅ | `features/style/StylePage.tsx` |
 | 展开状态持久化 | ✅ | `hooks/usePersisted` + `core/prefs` |
-| 三态显示（missing / corrupt / unreadable + 重试） | ✅ | `components/StateHint` |
+| 失败如实显示（`NOT_FOUND` / `CORRUPT` / `IO_ERROR` 分说，IO 可重试） | ✅ | `components/StateHint` |
 | 样式缩略图 / 渐变图 | 🔧 | `core/paths` `userAssetUrl` |
 | 仓库下拉 | 🔧 原生 `<Select>` | 未对齐原版自定义下拉（36px、蓝仓库名、带图标） |
 

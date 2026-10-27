@@ -5,15 +5,16 @@
  * 走 Node 的 fs（`core/cep/node`），不用 `window.cep.fs`：
  * 后者在 CEP 12 里读不到普通文件路径，只适合文件对话框。
  *
- * 双根设计：
+ * 数据根（见 ROOTS）：
  *   data   = %APPDATA%\Maomao      本工具自己的数据
  *   legacy = %APPDATA%\SheJiZhuLi  官方客户端已有的数据（样式库等），只读兼容
+ *   swatch = %APPDATA%\FengZiSeBan 原版色板面板的数据目录
  */
 
 import { nodeRequire } from '../cep/node';
 import { getUserDataPath } from '../cep/bridge';
 import { log } from '../logger';
-import type { ReadOutcome } from '../../types/read';
+import { fail, failWithDetail, ok, type Result } from '../../types/result';
 
 export type StorageRoot = 'data' | 'legacy' | 'swatch';
 
@@ -67,26 +68,21 @@ export function exists(name: string, root: StorageRoot = 'data'): boolean {
 }
 
 /**
- * 带三态的读取：区分「文件不存在」和「存在但读不到」。
- * repo 层用它，不要把 missing 和 unreadable 混成一个 null。
+ * 带失败码的读取：NOT_FOUND = 文件不存在，IO_ERROR = 存在但读不到。
+ * repo 层用它，语义由码承载（全仓唯一结果形状，见 types/result.ts）。
  */
-export function readTextOutcome(name: string, root: StorageRoot = 'data'): ReadOutcome<string> {
+export function readTextResult(name: string, root: StorageRoot = 'data'): Result<string> {
   const fs = getFs();
-  if (!fs) return { status: 'unreadable', reason: 'Node 文件模块不可用' };
+  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
-  if (!exists(name, root)) return { status: 'missing' };
+  if (!exists(name, root)) return fail('NOT_FOUND', '文件不存在');
 
   try {
-    return { status: 'ok', value: stripBom(fs.readFileSync(filePath(root, name), 'utf8')) };
+    return ok(stripBom(fs.readFileSync(filePath(root, name), 'utf8')));
   } catch (error) {
     log.warn('readText 失败', { name, root, error });
-    return { status: 'unreadable', reason: '文件存在但读取失败' };
+    return failWithDetail('IO_ERROR', '文件存在但读取失败', String(error));
   }
-}
-
-export function readText(name: string, root: StorageRoot = 'data'): string | null {
-  const outcome = readTextOutcome(name, root);
-  return outcome.status === 'ok' ? outcome.value : null;
 }
 
 export function writeText(name: string, text: string, root: StorageRoot = 'data'): boolean {
@@ -108,10 +104,10 @@ export function writeText(name: string, text: string, root: StorageRoot = 'data'
  * 不能只接受数组。结构是否合法由调用方判断。
  */
 export function readJson<T>(name: string, fallback: T, root: StorageRoot = 'data'): T {
-  const text = readText(name, root);
-  if (!text) return fallback;
+  const result = readTextResult(name, root);
+  if (result.status === 'error') return fallback;
   try {
-    return JSON.parse(text) as T;
+    return JSON.parse(result.value) as T;
   } catch (error) {
     log.warn('readJson 解析失败', { name, root, error });
     return fallback;
@@ -119,7 +115,7 @@ export function readJson<T>(name: string, fallback: T, root: StorageRoot = 'data
 }
 
 /** 同一文件的写操作串行化：并发写会互相覆盖 */
-const writeQueues = new Map<string, Promise<boolean>>();
+const writeQueues = new Map<string, Promise<Result<undefined>>>();
 
 /**
  * 原子写：先备份原文件为 `<文件>.bak`，再写新内容；同一文件并发调用串行执行。
@@ -133,13 +129,13 @@ export function writeTextAtomic(
   name: string,
   text: string,
   root: StorageRoot = 'data'
-): Promise<boolean> {
+): Promise<Result<undefined>> {
   const key = `${root}:${name}`;
-  const previous = writeQueues.get(key) ?? Promise.resolve(true);
+  const previous = writeQueues.get(key) ?? Promise.resolve(ok(undefined));
 
   const task = previous.then(() => {
     const fs = getFs();
-    if (!fs) return false;
+    if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
     const target = filePath(root, name);
     const backup = `${target}.bak`;
@@ -150,10 +146,10 @@ export function writeTextAtomic(
       }
       fs.mkdirSync(filePath(root, '').replace(/\/$/, ''), { recursive: true });
       fs.writeFileSync(target, text, 'utf8');
-      return true;
+      return ok(undefined);
     } catch (error) {
       log.error('writeTextAtomic 失败', { name, root, error });
-      return false;
+      return failWithDetail('IO_ERROR', '写入失败', String(error));
     }
   });
 
@@ -162,18 +158,18 @@ export function writeTextAtomic(
 }
 
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
-export function removeFile(name: string, root: StorageRoot = 'data'): boolean {
+export function removeFile(name: string, root: StorageRoot = 'data'): Result<undefined> {
   const fs = getFs();
-  if (!fs) return false;
+  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
 
   const target = filePath(root, name);
   try {
-    if (!fs.existsSync(target)) return true;
+    if (!fs.existsSync(target)) return ok(undefined);
     fs.unlinkSync(target);
-    return true;
+    return ok(undefined);
   } catch (error) {
     log.error('removeFile 失败', { name, root, error });
-    return false;
+    return failWithDetail('IO_ERROR', '删除失败', String(error));
   }
 }
 

@@ -5,7 +5,7 @@
  */
 
 import { callJsx } from '../cep/bridge';
-import { fail, ok, type Result } from '../../types/result';
+import { failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore } from './init';
 
 export interface VendorDiag {
@@ -25,14 +25,14 @@ export interface VendorDiag {
 }
 
 export async function diagVendor(): Promise<Result<VendorDiag>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return failWithDetail('PS_UNREADY', 'PS 脚本未加载', 'core:false');
 
   const call = await callJsx('mm_diag_vendor');
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
   try {
-    return ok(JSON.parse(call.raw) as VendorDiag);
+    return ok(JSON.parse(call.value) as VendorDiag);
   } catch {
-    return fail('PS_ERROR', `诊断结果无法解析：${call.raw}`);
+    return failWithDetail('CORRUPT', '诊断结果无法解析', `raw:${call.value}`);
   }
 }

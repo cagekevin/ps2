@@ -12,7 +12,7 @@
  *   4. 探函数是否存在
  */
 
-import { JSX_ERROR, evalScript, loadJsx } from '../cep/bridge';
+import { evalScript, loadJsx } from '../cep/bridge';
 import { log } from '../logger';
 import { injectEnv } from './env';
 
@@ -49,9 +49,9 @@ let pending: Promise<PsCapability> | null = null;
 async function probe(fns: readonly string[]): Promise<string[]> {
   const expr = fns.map((name) => `typeof ${name}`).join(',');
   const raw = await evalScript(`(function(){return [${expr}].join(',');})()`);
-  if (raw === JSX_ERROR) return [...fns];
+  if (raw.status === 'error') return [...fns];
 
-  const types = raw.split(',');
+  const types = raw.value.split(',');
   return fns.filter((_, index) => types[index] !== 'function');
 }
 
@@ -59,8 +59,8 @@ async function load(): Promise<PsCapability> {
   const capability: PsCapability = { core: false, vendor: false };
 
   const coreResult = await loadJsx(CORE_FILE);
-  if (coreResult === JSX_ERROR) {
-    log.error('自有 jsx 加载失败', { file: CORE_FILE, result: coreResult });
+  if (coreResult.status === 'error') {
+    log.error('自有 jsx 加载失败', { file: CORE_FILE, reason: coreResult.reason });
     return capability;
   }
 
@@ -72,8 +72,8 @@ async function load(): Promise<PsCapability> {
   capability.core = true;
 
   const vendorResult = await loadJsx(VENDOR_FILE);
-  if (vendorResult === JSX_ERROR) {
-    log.error('官方 jsx 加载失败，应用能力不可用', { file: VENDOR_FILE, result: vendorResult });
+  if (vendorResult.status === 'error') {
+    log.error('官方 jsx 加载失败，应用能力不可用', { file: VENDOR_FILE, reason: vendorResult.reason });
     return capability;
   }
 
@@ -84,7 +84,8 @@ async function load(): Promise<PsCapability> {
   }
 
   /* 关键一步：不注入环境变量，ys_* 内部拼路径会抛异常 */
-  if (!(await injectEnv())) {
+  const envResult = await injectEnv();
+  if (envResult.status === 'error') {
     log.error('环境变量注入失败，应用能力不可用');
     return capability;
   }

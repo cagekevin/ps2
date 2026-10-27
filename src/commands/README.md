@@ -31,36 +31,25 @@ features → commands → store → core
 ## 范本
 
 ```ts
-// src/commands/swatch.ts
-import { getLayerKind } from '../core/ps/layer';
-import { setShapeFill } from '../core/ps/shape';
-import { fail, type Result } from '../types/result';
-import type { Color } from '../types/color';
+// src/commands/style.ts（真实在跑的命令）
+import { applyStyleColor } from '../core/ps/style';
+import type { Result } from '../types/result';
 
 /**
- * 给当前图层上色。
- * 业务判断（按图层类型分流）在命令层，页面不需要知道这些分支。
+ * 把颜色应用到当前图层（按图层类型自动分流）。
+ * 失败原样透传——core/ps 给什么码就上抛什么码，不换说法。
  */
-export async function applyColor(color: Color): Promise<Result<void>> {
-  const kind = await getLayerKind();
-  if (!kind.ok) return kind;
-
-  switch (kind.data) {
-    case 'shape':
-      return setShapeFill(color);
-    // 文字、普通图层、智能对象：等 core/ps 补出对应能力后再加分支，
-    // 不允许在命令层自己 evalScript 绕过。
-    default:
-      return fail('VALIDATION', '当前图层类型暂不支持上色');
-  }
+export function applyColor(item: Record<string, unknown>): Promise<Result<void>> {
+  return applyStyleColor(item);
 }
 ```
 
 页面调用：
 
 ```tsx
-const result = await loading.run(() => applyColor(color));
-if (!result.ok) toast.error(result.message);
+const result = await loading.run(() => applyColor(item));
+if (result.status === 'ok') toast.info('已应用');
+else toast.error(result.reason);
 ```
 
 ## 命名

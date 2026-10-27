@@ -82,7 +82,7 @@
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 | ✅ 真机 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 | ✅ 真机 |
 | 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 | ✅ 真机 |
-| 存储 | `src/core/storage/index.ts` | 双根 + 三态读 + 原子写（备份/串行） | ✅ 真机 |
+| 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） | ✅ 真机 |
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 | ⚠️ 待真机 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） | ✅ 真机 |
 | 字体应用 | `src/core/ps/font.ts` | 直接调通道，先检查再应用 | ✅ 真机 |
@@ -100,14 +100,14 @@
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖 | ✅ 真机 |
 | PS 环境 | `src/core/ps/env.ts` | 注入官方 jsx 所需环境变量 | ✅ 真机 |
 | 样式命令 | `src/commands/style.ts` | 颜色 / 渐变 / 字体 / 图层样式 / 修饰键 | ✅ 真机 |
-| 类型 | `src/types/result.ts` | Result 契约 | ✅ 单测 |
-| 读取三态 | `src/types/read.ts` | missing/corrupt/unreadable | ✅ 单测 |
+| 类型 | `src/types/result.ts` | 全仓唯一结果形状（status/code/reason/detail） | ✅ 单测 |
+| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值唯一解析处（表驱动） | ⚠️ 待单测 |
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
 | 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
 | JSON 解析 | `src/domain/json.ts` | 唯一的文本 → unknown 入口 | ✅ 单测 |
-| 数据访问 | `src/repo/style-repo.ts` | 读文件 → 三态，不做业务判断 | ✅ 真实数据 |
-| 业务切片 | `src/store/style-library.ts` | 只读投影 + 三态保留 | ✅ 真实数据 |
+| 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result，不做业务判断 | ✅ 真实数据 |
+| 业务切片 | `src/store/style-library.ts` | 只读投影，失败原样保留 | ✅ 真实数据 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
 | UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口 | ✅ 真机 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头统一，面板宽度跟随触发器 | ✅ 真机 |
@@ -146,6 +146,7 @@
 - ✅ 真机：在 PS 里跑过
 - ✅ 单测：有覆盖的单元测试
 - ✅ 真实数据：用本机库文件验证过（未在 PS 里跑）
+- ⚠️ 待单测：纯函数，还没有单测（下一个动它的轮次要补）
 - ⚠️ 待真机 / 未使用：还没有真实调用方，首次使用时要重点验证
 - — 规范：纯文档，无可执行代码
 
@@ -289,3 +290,4 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 | 2026-10-27 | 新增 `docs/PS-CHANNEL-NOTES.md`：三条通道、参数序列化、串行队列、env 注入、LayerKind、库文件数据契约、CEP 坑、排障速查 | docs |
 | 2026-10-27 | 重写 `docs/STYLE-PANEL-GAP.md` 为「现状 + 剩余缺口」，列出已失效的旧结论 | docs |
 | 2026-10-27 | 新增工程 `README.md` 与 `CHANGELOG.md`；修正 `jsx/vendor.README.md`（来源、函数表、通道、返回值）与本节检查链、范本状态 | 全项目 |
+| 2026-10-27 | **形状收口**：全仓唯一结果形状 `Result{status, value\|code, reason, detail}`；删除 `ReadOutcome` / `SwatchRead` / `JsxCall` / `toResult`（`types/read.ts` 整个删掉）；三态改由码承载（`NOT_FOUND` / `CORRUPT` / `IO_ERROR`）；`PS_ERROR` 拆 5 个子码；新增 `core/ps/raw.ts`（raw 约定值唯一解析，表驱动）；删死函数 `getLayerKind` / `getLayerName`。纯形状改动，读写行为不变。jsx `parseColor` 合并有副作用（碰 PS 运行时），明确不收、另行登记 | types、core、repo、domain、commands、features |

@@ -62,27 +62,27 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 
 ## 三、返回值约定
 
-`callJsx` 只分两层，业务码由各能力函数自己判：
+`callJsx` 返回全仓唯一的 `Result<string>`（见 `types/result.ts`）：
 
 | 层 | 返回 | 含义 |
 |---|---|---|
-| 宿主层 | `{ ok: false, reason }` | 超时、脚本异常、函数不存在 |
-| 宿主层 | `{ ok: true, raw }` | 拿到了返回值，业务自己判 |
+| 宿主层 | `failWithDetail('TIMEOUT'/'PS_ERROR', ...)` | 超时、脚本异常 |
+| 宿主层 | `failWithDetail('PS_ERROR', <jsx 消息>)` | jsx 内部异常（`error:` 前缀，bridge 解析） |
+| 宿主层 | `ok(raw)` | 拿到了返回值，约定值语义由 `unwrapRaw` 判 |
 
-`raw` 的约定值：
+`raw` 的约定值，**唯一解析处在 `core/ps/raw.ts` 的 `RAW_FAILURES` 表**，能力函数不许手写字符串比较：
 
-| raw | 含义 | 处理 |
+| raw | 折成 | 处理 |
 |---|---|---|
-| `'ok'` | 执行完成 | 成功 |
-| `'no-doc'` | 没有打开的文档 | 提示用户 |
-| `'not-shape'` | 当前图层不是形状图层 | 提示用户 |
-| `'skipped'` | 配置显式关闭（`img_cya4 === false`） | 提示「自动填充已关闭」 |
-| `'unknown:<kind>'` | 认不出的图层类型 | 转 `unknown` |
-| `'error:<message>'` | jsx 内部异常（IIFE 捕获） | 原样进日志，不要吞 |
-| `'1'` | vendor 调度成功 | 成功（原版判定 `r != -1`） |
-| `'-1'` | vendor 拒绝执行（多为没选中图层） | 提示「PS 拒绝执行」 |
+| `'ok'` | 成功 | 继续用 raw |
+| `'no-doc'` | `PS_NO_DOC` | 提示用户 |
+| `'not-shape'` | `PS_NOT_SHAPE` | 提示用户 |
+| `'skipped'` | `PS_SKIPPED` | 提示「自动填充已关闭」 |
+| `'-1'` | `PS_REJECTED` | 提示「PS 拒绝执行」（原版判定 `r != -1` 为成功） |
+| `'unknown:<kind>'` | 成功（不是失败码） | 图层类型白名单兜成 `unknown` |
+| `'1'` | 成功 | 成功（原版判定 `r != -1`） |
 
-代码：`bridge.ts:150-159`、`core/ps/style.ts:36-42`。
+代码：`bridge.ts`（callJsx）、`core/ps/raw.ts`（unwrapRaw）。
 
 ---
 
@@ -249,7 +249,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 - 顶层是**对象**不是数组（早期 `readJson` 只接受数组，直接读失败）。
 - `index` 可能越界 → 夹到 `[0, list.length-1]`。
-- 索引登记了但文件不存在 → `missing`，**不是**「新用户」。
+- 索引登记了但文件不存在 → `NOT_FOUND`，**不是**「新用户」。
 
 ### 12.2 库文件三种形态（`domain/ku-format.ts`）
 

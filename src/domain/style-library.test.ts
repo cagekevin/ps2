@@ -19,15 +19,18 @@ describe('decodeStyleIndex', () => {
     }
   });
 
-  it('不是对象 → corrupt', () => {
-    expect(decodeStyleIndex(null).status).toBe('corrupt');
-    expect(decodeStyleIndex([]).status).toBe('corrupt');
+  it('不是对象 → error(CORRUPT)', () => {
+    expect(decodeStyleIndex(null).status).toBe('error');
+    expect(decodeStyleIndex([]).status).toBe('error');
   });
 
-  it('缺少 list → corrupt', () => {
+  it('缺少 list → error(CORRUPT)', () => {
     const result = decodeStyleIndex({ index: 0 });
-    expect(result.status).toBe('corrupt');
-    if (result.status === 'corrupt') expect(result.reason).toContain('list');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('CORRUPT');
+      expect(result.reason).toContain('list');
+    }
   });
 
   it('index 越界被夹到合法范围', () => {
@@ -81,20 +84,20 @@ describe('readKuGroups - 颜色', () => {
     expect(result.value[0]?.items[1]?.name).toBe('坏颜色');
   });
 
-  it('非 JSON → corrupt', () => {
+  it('非 JSON → error(CORRUPT)', () => {
     const result = readKuGroups('color', 'not json');
-    expect(result.status).toBe('corrupt');
+    expect(result.status).toBe('error');
   });
 
-  it('顶层不是数组 → corrupt', () => {
+  it('顶层不是数组 → error(CORRUPT)', () => {
     const result = readKuGroups('color', '{"a":1}');
-    expect(result.status).toBe('corrupt');
+    expect(result.status).toBe('error');
   });
 
   it('flat 形态未注入解码器时如实报错', () => {
     const result = readKuGroups('color', JSON.stringify([{ name: 'a', data: 'xxx' }]));
-    expect(result.status).toBe('corrupt');
-    if (result.status === 'corrupt') expect(result.reason).toContain('内层');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.reason).toContain('内层');
   });
 
   it('flat 形态注入解码器后能解析', () => {

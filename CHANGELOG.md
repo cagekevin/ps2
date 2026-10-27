@@ -7,6 +7,17 @@
 
 首版：从零搭到「样式面板可用」。同一天内按依赖顺序推进，每个阶段都以真机验证收尾。
 
+### 形状收口（唯一结果形状）
+
+- `Result` 统一为 `{ status: 'ok'; value } | { status: 'error'; code; reason; detail }`，全仓只此一种
+- 删除 `ReadOutcome`（`types/read.ts` 整个删掉）、`SwatchRead`、`JsxCall`、`toResult` 转换层
+- 文件三态改由码承载：`NOT_FOUND`（不重试）/ `CORRUPT`（不重试）/ `IO_ERROR`（可重试），语义与判定原则不变
+- `PS_ERROR` 拆 5 个子码：`PS_NO_DOC` / `PS_NOT_SHAPE` / `PS_SKIPPED` / `PS_UNREADY` / `PS_REJECTED`——失败原因回到类型里，不再只活在中文文案里
+- 新增 `core/ps/raw.ts`：raw 约定值（`no-doc` / `not-shape` / `skipped` / `-1`）的唯一解析处，表驱动；能力函数不再手写字符串比较
+- `reason`（给人看）/ `detail`（底层原文，必填）两字段各装一种语义；失败原样透传，禁止换说法重包
+- 删死函数 `getLayerKind` / `getLayerName`（唯一活口 `getLayerState`），同步 `commands/README.md` 范本
+- **纯形状改动，读写行为逐字节不变**；有副作用的 jsx `parseColor` 合并明确不收（另行登记）
+
 ### 地基
 
 - 工程骨架：React 18 + TS 5.6 + Vite 5（`target: chrome103`）+ HashRouter + Zustand

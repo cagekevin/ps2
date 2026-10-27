@@ -4,8 +4,9 @@
  */
 
 import { callJsx } from '../cep/bridge';
-import { fail, ok, type Result } from '../../types/result';
+import { failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore } from './init';
+import { unwrapRaw } from './raw';
 
 export interface DocumentInfo {
   name: string;
@@ -16,16 +17,16 @@ export interface DocumentInfo {
 }
 
 export async function getDocumentInfo(): Promise<Result<DocumentInfo>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return failWithDetail('PS_UNREADY', 'PS 脚本未加载', 'core:false');
 
   const call = await callJsx('mm_doc_getInfo');
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const raw = call.raw;
-  if (raw === 'no-doc') return fail('PS_ERROR', '没有打开的文档');
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
-  const [name, width, height, mode, layerCount] = raw.split('|');
-  if (!name) return fail('PS_ERROR', '文档信息格式错误');
+  const [name, width, height, mode, layerCount] = call.value.split('|');
+  if (!name) return failWithDetail('PS_ERROR', '文档信息格式错误', `raw:${call.value}`);
 
   return ok({
     name,

@@ -13,19 +13,19 @@ import {
   type StyleWarehouseIndex
 } from '../domain/style-library';
 import { readIndex, readLibrary } from '../repo/style-repo';
-import type { ReadOutcome } from '../types/read';
+import type { Result } from '../types/result';
 
 function emptyRecord<T>(value: T): Record<KuKind, T> {
   return { color: value, gradient: value, font: value, style: value };
 }
 
 interface StyleLibraryState {
-  indexOutcome: ReadOutcome<StyleWarehouseIndex> | null;
+  indexResult: Result<StyleWarehouseIndex> | null;
   warehouses: StyleWarehouse[];
   activeIndex: number;
   activeKind: KuKind;
   libraries: Record<KuKind, KuGroup[] | null>;
-  outcomes: Record<KuKind, ReadOutcome<KuGroup[]> | null>;
+  results: Record<KuKind, Result<KuGroup[]> | null>;
   loading: boolean;
   load: () => Promise<void>;
   setActiveKind: (kind: KuKind) => void;
@@ -35,46 +35,46 @@ interface StyleLibraryState {
 export const useStyleLibraryStore = create<StyleLibraryState>()((set, get) => {
   async function loadWarehouse(warehouse: StyleWarehouse | undefined): Promise<void> {
     const libraries = emptyRecord<KuGroup[] | null>(null);
-    const outcomes = emptyRecord<ReadOutcome<KuGroup[]> | null>(null);
+    const results = emptyRecord<Result<KuGroup[]> | null>(null);
 
     for (const kind of KU_KINDS) {
       const outcome = readLibrary(warehouse, kind);
-      outcomes[kind] = outcome;
+      results[kind] = outcome;
       libraries[kind] = outcome.status === 'ok' ? outcome.value : null;
     }
 
-    set({ libraries, outcomes });
+    set({ libraries, results });
   }
 
   return {
-    indexOutcome: null,
+    indexResult: null,
     warehouses: [],
     activeIndex: 0,
     activeKind: 'color',
     libraries: emptyRecord<KuGroup[] | null>(null),
-    outcomes: emptyRecord<ReadOutcome<KuGroup[]> | null>(null),
+    results: emptyRecord<Result<KuGroup[]> | null>(null),
     loading: false,
 
     async load() {
       set({ loading: true });
 
-      const indexOutcome = readIndex();
-      if (indexOutcome.status !== 'ok') {
+      const indexResult = readIndex();
+      if (indexResult.status !== 'ok') {
         set({
-          indexOutcome,
+          indexResult,
           warehouses: [],
           libraries: emptyRecord<KuGroup[] | null>(null),
-          outcomes: emptyRecord<ReadOutcome<KuGroup[]> | null>(null),
+          results: emptyRecord<Result<KuGroup[]> | null>(null),
           loading: false
         });
-        log.warn('样式库索引读取失败', indexOutcome);
+        log.warn('样式库索引读取失败', indexResult);
         return;
       }
 
-      const { list, index } = indexOutcome.value;
+      const { list, index } = indexResult.value;
       await loadWarehouse(list[index]);
 
-      set({ indexOutcome, warehouses: list, activeIndex: index, loading: false });
+      set({ indexResult, warehouses: list, activeIndex: index, loading: false });
       log.info('样式库已加载', { warehouses: list.length, index });
     },
 

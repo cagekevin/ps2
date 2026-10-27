@@ -9,6 +9,7 @@
 
 import { callJsx } from '../cep/bridge';
 import { log } from '../logger';
+import { ok, type Result } from '../../types/result';
 
 export const PS_ENV = {
   VUE_APP_BASE_SERVER: 'https://zhuli.gaoding.com',
@@ -28,14 +29,14 @@ export const PS_ENV = {
   BASE_URL: ''
 } as const;
 
-/** 注入环境变量；返回是否成功 */
-export async function injectEnv(): Promise<boolean> {
+/** 注入环境变量；失败原样上抛（码 + 原因 + detail） */
+export async function injectEnv(): Promise<Result<null>> {
   const call = await callJsx('Sys_setSystemEnvInfo', [PS_ENV]);
-  if (!call.ok) {
-    log.error('环境变量注入失败', { reason: call.reason });
-    return false;
+  if (call.status === 'error') {
+    log.error('环境变量注入失败', { reason: call.reason, detail: call.detail });
+    return call;
   }
 
-  log.info('环境变量已注入', { userDir: PS_ENV.VUE_APP_USER_DIR, raw: call.raw });
-  return true;
+  log.info('环境变量已注入', { userDir: PS_ENV.VUE_APP_USER_DIR, raw: call.value });
+  return ok(null);
 }

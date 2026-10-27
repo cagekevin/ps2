@@ -179,7 +179,7 @@ src/
 │  ├─ env/        版本、设备、环境
 │  └─ logger/     日志
 ├─ domain/        纯业务模型与归一化（零 IO、零 UI、可单测）
-├─ repo/          数据访问：读文件 → 三态，不做业务判断
+├─ repo/          数据访问：读文件 → Result，不做业务判断
 ├─ commands/      业务命令：组合原子能力 + 写库，无 UI
 ├─ store/         状态切片
 ├─ hooks/         可复用交互原语（点外关闭、浮层定位、拖拽、持久化）
@@ -236,15 +236,23 @@ module.exports = {
 ## 4. 类型契约
 
 ```ts
-// src/types/result.ts
+// src/types/result.ts —— 全仓唯一结果形状
 export type ErrorCode =
+  | 'NOT_FOUND' | 'CORRUPT' | 'IO_ERROR'
+  | 'PS_NO_DOC' | 'PS_NOT_SHAPE' | 'PS_SKIPPED'
+  | 'PS_UNREADY' | 'PS_REJECTED' | 'PS_ERROR'
   | 'NETWORK' | 'TIMEOUT' | 'AUTH' | 'FORBIDDEN'
-  | 'PS_ERROR' | 'VALIDATION' | 'UNKNOWN';
+  | 'VALIDATION' | 'UNKNOWN';
 
 export type Result<T> =
-  | { ok: true; data: T }
-  | { ok: false; code: ErrorCode; message: string };
+  | { status: 'ok'; value: T }
+  | { status: 'error'; code: ErrorCode; reason: string; detail: string };
 ```
+
+- 成功 / 失败只有这一个形状；**不存在第二种结果类型**（没有 ReadOutcome、没有 boolean 失败、没有 null 通道）
+- 构造只经 `ok()` / `fail()` / `failWithDetail()`，业务代码不许写 `{ status: ... }` 字面量
+- `reason` 是给人看的一句话；`detail` 是给机器查的底层原文（原始返回值等），必填，无观测时为空串
+- 失败原样透传：上层给什么码就上抛什么码，**不许换一种失败说法重包**
 
 ```ts
 // src/types/color.ts
@@ -289,22 +297,22 @@ export interface ShapeStyle {
 
 **不开** `exactOptionalPropertyTypes`：与 React props 默认值冲突过多，属于负优化。
 
-### 4.2 读取三态（区分环境问题与数据问题）
+### 4.2 读取失败由码承载（区分环境问题与数据问题）
 
-文件读取一律返回 `ReadOutcome<T>`，不用 `Result<T>`：
+文件读取返回同一个 `Result<T>`，三种失败各占一个码：
 
-| 状态 | 含义 | 页面表现 |
+| 码 | 含义 | 页面表现 |
 |---|---|---|
-| `missing` | 索引登记了，但文件不存在 | 如实显示「文件缺失」，不假装空库 |
-| `corrupt` | 文件在，但内容不是预期结构 | 显示具体原因，**不提供重试** |
-| `unreadable` | IO 失败：占用、权限 | 显示原因 + **重试按钮** |
+| `NOT_FOUND` | 索引登记了，但文件不存在 | 如实显示「文件缺失」，不假装空库 |
+| `CORRUPT` | 文件在，但内容不是预期结构 | 显示具体原因，**不提供重试** |
+| `IO_ERROR` | IO 失败：占用、权限 | 显示原因 + **重试按钮** |
 | 抛出异常 | 代码 bug | **不捕获**，冒泡到错误边界 |
 
 判定原则：
 
 - **诚实优先**：登记了但没文件、有条目认不出，都要如实说出来，不许静默丢弃
 - **代码问题直接报错**：`TypeError` 之类的编程错误不能被包装成「读取失败，请重试」，那是把 bug 伪装成环境问题
-- **只有环境问题才给重试**：`corrupt` 重试一百次还是 corrupt
+- **只有环境问题才给重试**：`CORRUPT` 重试一百次还是 `CORRUPT`
 
 ### 4.3 严格模式的边界
 
@@ -315,25 +323,13 @@ TypeScript 类型在运行时被擦除，`as` 断言不做任何校验。因此�
 - 禁止 `as SomeType` 后直接当已知结构用
 - 分隔符解析（`split('|')`）后必须判空，解构元素类型是 `T | undefined`
 
-### 4.4 失败类型分层
+### 4.4 失败只有一种形状
 
-两套失败类型**各管一层**，不许混用，转换只有 `toResult`：
+「缺文件」「读坏了」「IO 失败」由 `code` 区分（`NOT_FOUND` / `CORRUPT` / `IO_ERROR`），
+**不是**三种类型。语义信息在码里，形状全仓只有一个——不存在转换层，失败原样透传。
 
-| 层 | 类型 | 为什么 |
-|---|---|---|
-| `domain` / `repo` | `ReadOutcome<T>` | 保留三态，页面能区分「缺文件」和「读坏了」 |
-| `core` / `commands` | `Result<T>` | 带错误码，供上层统一处理 |
-
-转换：`toResult(outcome)` 在 `types/read.ts`，映射关系固定：
-
-```
-ok        → ok(value)
-missing   → NOT_FOUND
-corrupt   → CORRUPT
-unreadable→ IO_ERROR
-```
-
-禁止在 repo 里提前把三态压成 `Result`，那会让「文件缺失」和「读失败」变成同一句话。
+历史教训：曾有两套失败类型（`ReadOutcome` + `Result`）加一个 `toResult` 转换层，
+结果是每个消费点都要学两种形状、转换点还要决定「丢哪些字段」。已全部收掉。
 
 ### 4.5 写操作约定（三条硬规则）
 
@@ -346,7 +342,7 @@ unreadable→ IO_ERROR
 **不允许**：
 - 直接 `writeText` 覆盖用户数据文件（只允许写自己新建的配置文件）
 - 写失败后静默返回，不记日志
-- 读到 `missing` 就当「首次使用」直接初始化写回
+- 读到 `NOT_FOUND` 就当「首次使用」直接初始化写回
 
 ### 4.6 写操作只有一个入口：mutate
 
@@ -368,7 +364,7 @@ mutateIndex((index) => {
 
 1. 读失败直接返回，**不执行修改函数**（避免把默认值写回用户文件）
 2. 写入走 `writeTextAtomic`（备份 `.bak` + 按文件串行）
-3. 写失败返回 `unreadable`，不静默成功
+3. 写失败返回 `IO_ERROR`，不静默成功
 
 写完之后由调用方重新 `load()` 刷新列表——不做自动通知，避免多一套事件机制。
 

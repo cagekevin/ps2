@@ -1,11 +1,11 @@
 /**
  * 【范本】样式库数据访问
  * 只负责「从磁盘读到结构化数据」，不做业务判断、不碰 UI。
- * 所有失败都返回三态，让页面如实显示。
+ * 所有失败都返回 Result（全仓唯一形状，见 types/result.ts），码区分缺文件 / 读坏 / IO。
  */
 
 import { nodeRequire } from '../core/cep/node';
-import { readTextOutcome, writeTextAtomic } from '../core/storage';
+import { readTextResult, writeTextAtomic } from '../core/storage';
 import { parseJson } from '../domain/json';
 import { resolveKuGroups } from '../domain/ku-format';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
@@ -20,7 +20,7 @@ import {
   type StyleWarehouseIndex
 } from '../domain/style-library';
 import { isRecord } from '../types/guards';
-import type { ReadOutcome } from '../types/read';
+import { fail, ok, type Result } from '../types/result';
 
 /** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
 const INDEX_FILE = 'sj_kuStoreInfo.ini';
@@ -43,24 +43,24 @@ export function decodeBase64(text: string): string {
 }
 
 /** 读仓库索引 */
-export function readIndex(): ReadOutcome<StyleWarehouseIndex> {
-  const text = readTextOutcome(INDEX_FILE, 'legacy');
-  if (text.status !== 'ok') return text;
+export function readIndex(): Result<StyleWarehouseIndex> {
+  const text = readTextResult(INDEX_FILE, 'legacy');
+  if (text.status === 'error') return text;
 
   const parsed = parseJson(text.value);
-  if (parsed.status !== 'ok') return parsed;
+  if (parsed.status === 'error') return parsed;
 
   return decodeStyleIndex(parsed.value);
 }
 
-/** 读库文件文本：索引没登记 → missing，IO 失败 → unreadable */
+/** 读库文件文本：索引没登记 → NOT_FOUND，IO 失败 → IO_ERROR */
 function readLibraryText(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind
-): ReadOutcome<string> {
+): Result<string> {
   const fileName = fileNameOf(warehouse, kind);
-  if (!fileName) return { status: 'missing' };
-  return readTextOutcome(fileName, 'legacy');
+  if (!fileName) return fail('NOT_FOUND', '索引里没有登记这个库的文件名');
+  return readTextResult(fileName, 'legacy');
 }
 
 /**
@@ -70,12 +70,12 @@ function readLibraryText(
 export function readRawGroups(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind
-): ReadOutcome<Record<string, unknown>[]> {
+): Result<Record<string, unknown>[]> {
   const text = readLibraryText(warehouse, kind);
-  if (text.status !== 'ok') return text;
+  if (text.status === 'error') return text;
 
   const parsed = parseJson(text.value);
-  if (parsed.status !== 'ok') return parsed;
+  if (parsed.status === 'error') return parsed;
 
   return resolveKuGroups(parsed.value, decodeBase64);
 }
@@ -84,16 +84,16 @@ export function readRawGroups(
 export function readLibrary(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind
-): ReadOutcome<KuGroup[]> {
+): Result<KuGroup[]> {
   const text = readLibraryText(warehouse, kind);
-  if (text.status !== 'ok') return text;
+  if (text.status === 'error') return text;
 
   return readKuGroups(kind, text.value, decodeBase64);
 }
 
 /** 读库文件原文（导出、诊断用） */
-export function readKuFileText(fileName: string): ReadOutcome<string> {
-  return readTextOutcome(fileName, 'legacy');
+export function readKuFileText(fileName: string): Result<string> {
+  return readTextResult(fileName, 'legacy');
 }
 
 /**
@@ -107,23 +107,20 @@ export function readKuGroupItems(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind,
   groupIndex: number
-): ReadOutcome<Record<string, unknown>[]> {
+): Result<Record<string, unknown>[]> {
   const text = readLibraryText(warehouse, kind);
-  if (text.status !== 'ok') return text;
+  if (text.status === 'error') return text;
 
   const parsed = parseJson(text.value);
-  if (parsed.status !== 'ok') return parsed;
+  if (parsed.status === 'error') return parsed;
 
   const groups = parsed.value;
   if (!Array.isArray(groups)) {
-    return { status: 'corrupt', reason: '库文件顶层不是数组' };
+    return fail('CORRUPT', '库文件顶层不是数组');
   }
 
   const group = groups[groupIndex] as { list?: unknown } | undefined;
-  return {
-    status: 'ok',
-    value: Array.isArray(group?.list) ? (group.list as Record<string, unknown>[]) : []
-  };
+  return ok(Array.isArray(group?.list) ? (group.list as Record<string, unknown>[]) : []);
 }
 
 /**
@@ -135,18 +132,18 @@ export function readKuItem(
   kind: KuKind,
   groupIndex: number,
   itemIndex: number
-): ReadOutcome<Record<string, unknown>> {
+): Result<Record<string, unknown>> {
   const groups = readRawGroups(warehouse, kind);
-  if (groups.status !== 'ok') return groups;
+  if (groups.status === 'error') return groups;
 
   const group = groups.value[groupIndex];
-  if (!group) return { status: 'corrupt', reason: `分组 ${groupIndex} 不存在` };
+  if (!group) return fail('CORRUPT', `分组 ${groupIndex} 不存在`);
 
   const list = Array.isArray(group.list) ? group.list : [];
   const item = list[itemIndex];
-  if (!isRecord(item)) return { status: 'corrupt', reason: `项 ${itemIndex} 不存在` };
+  if (!isRecord(item)) return fail('CORRUPT', `项 ${itemIndex} 不存在`);
 
-  return { status: 'ok', value: item };
+  return ok(item);
 }
 
 /** 读分组的 id（应用图层样式时作为 groupId 传给 jsx） */
@@ -154,12 +151,12 @@ export function readKuGroupId(
   warehouse: StyleWarehouse | undefined,
   kind: KuKind,
   groupIndex: number
-): string {
+): Result<string> {
   const groups = readRawGroups(warehouse, kind);
-  if (groups.status !== 'ok') return '';
+  if (groups.status === 'error') return groups;
 
   const id = groups.value[groupIndex]?.id;
-  return typeof id === 'string' ? id : '';
+  return typeof id === 'string' && id ? ok(id) : fail('CORRUPT', `分组 ${groupIndex} 缺少 id`);
 }
 
 /* ---------------- 写 ---------------- */
@@ -173,26 +170,26 @@ type Mutator<T> = (current: T) => T | null;
  * 三条约束都在这里，调用方不需要重复判断：
  *   1. 读失败直接返回，**不执行 mutator**——读不到就写，等于把用户数据换成默认值
  *   2. 写入走 writeTextAtomic（备份 .bak + 串行）
- *   3. 写失败返回 unreadable，不静默成功
+ *   3. 写失败返回 IO_ERROR，不静默成功
  */
 export async function mutateRawGroups(
   warehouse: StyleWarehouse,
   kind: KuKind,
   mutator: Mutator<Record<string, unknown>[]>
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   const current = readRawGroups(warehouse, kind);
-  if (current.status !== 'ok') return current;
+  if (current.status === 'error') return current;
 
   const next = mutator(current.value);
-  if (next === null) return { status: 'ok', value: undefined };
+  if (next === null) return ok(undefined);
 
   const fileName = fileNameOf(warehouse, kind);
-  if (!fileName) return { status: 'missing' };
+  if (!fileName) return fail('NOT_FOUND', '索引里没有登记这个库的文件名');
 
   const written = await writeTextAtomic(fileName, JSON.stringify(next), 'legacy');
-  if (!written) return { status: 'unreadable', reason: '写入失败' };
+  if (written.status === 'error') return written;
 
-  return { status: 'ok', value: undefined };
+  return ok(undefined);
 }
 
 /**
@@ -201,17 +198,17 @@ export async function mutateRawGroups(
  */
 export async function mutateIndex(
   mutator: Mutator<StyleWarehouseIndex>
-): Promise<ReadOutcome<StyleWarehouseIndex>> {
+): Promise<Result<StyleWarehouseIndex>> {
   const current = readIndex();
-  if (current.status !== 'ok') return current;
+  if (current.status === 'error') return current;
 
   const next = mutator(current.value);
   if (next === null) return current;
 
   const written = await writeTextAtomic(INDEX_FILE, JSON.stringify(next), 'legacy');
-  if (!written) return { status: 'unreadable', reason: '写入失败' };
+  if (written.status === 'error') return written;
 
-  return { status: 'ok', value: next };
+  return ok(next);
 }
 
 /* ---------------- 写：分组 ---------------- */
@@ -222,7 +219,7 @@ export function addKuGroup(
   kind: KuKind,
   name: string,
   afterIndex?: number
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group: Record<string, unknown> = {
       id: kuGuid(),
@@ -241,7 +238,7 @@ export function renameKuGroup(
   kind: KuKind,
   groupIndex: number,
   name: string
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
     if (!group) return null;
@@ -254,7 +251,7 @@ export function deleteKuGroup(
   warehouse: StyleWarehouse,
   kind: KuKind,
   groupIndex: number
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     if (!groups[groupIndex]) return null;
     groups.splice(groupIndex, 1);
@@ -268,7 +265,7 @@ export function setKuGroupShow(
   kind: KuKind,
   groupIndex: number,
   show: boolean
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
     if (!group) return null;
@@ -284,7 +281,7 @@ export function moveKuGroupTo(
   from: number,
   to: number,
   position: DropPosition
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     applyListDrop(groups, from, to, position);
     return groups;
@@ -299,7 +296,7 @@ export function renameKuItem(
   groupIndex: number,
   itemIndex: number,
   name: string
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = groups[groupIndex]?.list;
     if (!Array.isArray(list)) return null;
@@ -315,7 +312,7 @@ export function deleteKuItem(
   kind: KuKind,
   groupIndex: number,
   itemIndex: number
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = groups[groupIndex]?.list;
     if (!Array.isArray(list) || itemIndex < 0 || itemIndex >= list.length) return null;
@@ -330,7 +327,7 @@ export function addKuItem(
   kind: KuKind,
   groupIndex: number,
   item: Record<string, unknown>
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
     if (!group) return null;
@@ -345,7 +342,7 @@ export function moveKuItemTo(
   warehouse: StyleWarehouse,
   kind: KuKind,
   move: DropMove
-): Promise<ReadOutcome<void>> {
+): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     /* applyItemDrop 改的是数组本身，所以要让每个组都持有真实数组 */
     const lists = groups.map((group) => {

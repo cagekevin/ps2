@@ -49,17 +49,17 @@ describe('kuShapeOf', () => {
 
   it('数组里混非对象 → corrupt', () => {
     const result = kuShapeOf([42]);
-    expect(result.status).toBe('corrupt');
+    expect(result.status).toBe('error');
   });
 
   it('对象缺 arrFileData → corrupt', () => {
     const result = kuShapeOf({ foo: 1 });
-    expect(result.status).toBe('corrupt');
+    expect(result.status).toBe('error');
   });
 
   it('既不是数组也不是对象 → corrupt', () => {
-    expect(kuShapeOf('text').status).toBe('corrupt');
-    expect(kuShapeOf(null).status).toBe('corrupt');
+    expect(kuShapeOf('text').status).toBe('error');
+    expect(kuShapeOf(null).status).toBe('error');
   });
 });
 
@@ -70,18 +70,18 @@ describe('decodeKuData', () => {
   });
 
   it('非字符串（原版的 false）→ corrupt', () => {
-    expect(decodeKuData(false, fakeDecode).status).toBe('corrupt');
-    expect(decodeKuData(0, fakeDecode).status).toBe('corrupt');
+    expect(decodeKuData(false, fakeDecode).status).toBe('error');
+    expect(decodeKuData(0, fakeDecode).status).toBe('error');
   });
 
   it('空串 → corrupt', () => {
-    expect(decodeKuData('   ', fakeDecode).status).toBe('corrupt');
+    expect(decodeKuData('   ', fakeDecode).status).toBe('error');
   });
 
   it('解码抛错 → corrupt', () => {
     const result = decodeKuData('BAD', fakeDecode);
-    expect(result.status).toBe('corrupt');
-    if (result.status === 'corrupt') expect(result.reason).toContain('base64');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.reason).toContain('base64');
   });
 
   it('解码前去掉空白', () => {
@@ -122,12 +122,12 @@ describe('resolveKuGroups', () => {
   it('container 里没有库文件 → corrupt', () => {
     const parsed = { arrFileData: [{ name: 'kuStyle/abc.png', data: 'QUJD' }] };
     const result = resolveKuGroups(parsed, fakeDecode);
-    expect(result.status).toBe('corrupt');
+    expect(result.status).toBe('error');
   });
 
   it('内层不是 JSON → corrupt', () => {
     const result = resolveKuGroups([{ name: 'x', data: 'QUJD' }], () => 'not json');
-    expect(result.status).toBe('corrupt');
-    if (result.status === 'corrupt') expect(result.reason).toContain('内层');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.reason).toContain('内层');
   });
 });

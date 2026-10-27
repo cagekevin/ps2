@@ -67,20 +67,20 @@ export default function HomePage() {
 
   async function handlePing() {
     const result = await loading.run(() => request('productList'));
-    if (result.ok) {
+    if (result.status === 'ok') {
       toast.info('接口可达');
       return;
     }
-    toast.error(`${result.code}: ${result.message}`);
+    toast.error(`${result.code}: ${result.reason}`);
   }
 
   async function handleDiag() {
     const result = await loading.run(() => diagVendor());
-    if (result.ok) {
-      setDiag(result.data);
+    if (result.status === 'ok') {
+      setDiag(result.value);
       return;
     }
-    toast.error(result.message);
+    toast.error(result.reason);
   }
 
   function handleLog() {

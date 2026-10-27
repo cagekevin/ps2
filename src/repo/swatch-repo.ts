@@ -5,40 +5,41 @@
  * 顶层是数组，条目形状开放——由发送方（样式页）保证是库项形状。
  *
  * 语义照原版 `readToArray`（`app.v4.js:72714-72727`）与 app 的 `cep/data/swatch-repo.ts`：
- * - 文件不存在 / 空文件 = 空数组（首次发送不报错）——**色板特有**，别的库文件 missing 是错误
- * - **坏 JSON 报 corrupt，不吞成空数组**——原版吞掉后写回会抹平用户色板（有意偏离，照 app）
+ * - 文件不存在 / 空文件 = 空数组（首次发送不报错）——**已裁定的例外**：读不到 ≠ 有数据，
+ *   首次使用是正常态，返回 ok([]) 不是降级
+ * - **坏 JSON 报错，不吞成空数组**——原版吞掉后写回会抹平用户色板（有意偏离，照 app）
  * - 写走 `writeTextAtomic`（.bak 备份 + 串行），写失败调用方必须提示
- *
- * 返回统一用 `ReadOutcome`：missing 分支在这里就折成空数组，调用方无需知道这个特例。
  */
-import { readTextOutcome, stripBom, writeTextAtomic } from '../core/storage';
-import type { ReadOutcome } from '../types/read';
+import { readTextResult, writeTextAtomic } from '../core/storage';
+import { fail, ok, type Result } from '../types/result';
 
 /** 色板文件名（原版 `g_FN.color`） */
 const SWATCH_FILE = 'userColor.ini';
 
-/** 读色板数组；文件不存在 = 空数组，坏 JSON = corrupt（绝不返回空数组冒充） */
-export function readSwatchItems(): ReadOutcome<unknown[]> {
-  const outcome = readTextOutcome(SWATCH_FILE, 'swatch');
-  /* 色板特有：missing 折成空数组（原版 readToArray 同语义） */
-  if (outcome.status === 'missing') return { status: 'ok', value: [] };
-  if (outcome.status !== 'ok') return outcome;
+/** 读色板数组；文件不存在 = 空数组，坏 JSON = CORRUPT（绝不返回空数组冒充） */
+export function readSwatchItems(): Result<unknown[]> {
+  const outcome = readTextResult(SWATCH_FILE, 'swatch');
+  if (outcome.status === 'error') {
+    /* 文件不存在 = 首次使用（上面的裁定例外）；其余失败原样上抛 */
+    if (outcome.code === 'NOT_FOUND') return ok([]);
+    return outcome;
+  }
 
-  const text = stripBom(outcome.value).trim();
-  if (text === '') return { status: 'ok', value: [] };
+  const text = outcome.value.trim();
+  if (text === '') return ok([]);
 
   try {
     const parsed: unknown = JSON.parse(text);
     if (!Array.isArray(parsed)) {
-      return { status: 'corrupt', reason: '色板文件不是数组' };
+      return fail('CORRUPT', '色板文件不是数组');
     }
-    return { status: 'ok', value: parsed };
+    return ok(parsed);
   } catch {
-    return { status: 'corrupt', reason: '色板文件不是合法 JSON' };
+    return fail('CORRUPT', '色板文件不是合法 JSON');
   }
 }
 
 /** 写色板全文（整份替换）；旧内容自动进 .bak */
-export function writeSwatchItems(items: unknown[]): Promise<boolean> {
+export function writeSwatchItems(items: unknown[]): Promise<Result<void>> {
   return writeTextAtomic(SWATCH_FILE, JSON.stringify(items), 'swatch');
 }

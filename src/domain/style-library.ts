@@ -10,7 +10,7 @@
  */
 
 import { isRecord } from '../types/guards';
-import type { ReadOutcome } from '../types/read';
+import { fail, ok, type Result } from '../types/result';
 import { parseJson } from './json';
 import { resolveKuGroups } from './ku-format';
 
@@ -114,10 +114,10 @@ export function normalizeStyleIndex(raw: unknown): StyleWarehouseIndex {
 }
 
 /** 结构判断在归一化之前，结构不认识就是 corrupt，不折成「新用户」 */
-export function decodeStyleIndex(raw: unknown): ReadOutcome<StyleWarehouseIndex> {
-  if (!isRecord(raw)) return { status: 'corrupt', reason: '索引不是对象' };
-  if (!Array.isArray(raw.list)) return { status: 'corrupt', reason: '索引缺少 list 数组' };
-  return { status: 'ok', value: normalizeStyleIndex(raw) };
+export function decodeStyleIndex(raw: unknown): Result<StyleWarehouseIndex> {
+  if (!isRecord(raw)) return fail('CORRUPT', '索引不是对象');
+  if (!Array.isArray(raw.list)) return fail('CORRUPT', '索引缺少 list 数组');
+  return ok(normalizeStyleIndex(raw));
 }
 
 function itemName(raw: Record<string, unknown>): string {
@@ -227,12 +227,12 @@ export function readKuGroups(
   kind: KuKind,
   text: string,
   decode: (base64: string) => string = (base64) => base64
-): ReadOutcome<KuGroup[]> {
+): Result<KuGroup[]> {
   const parsed = parseJson(text);
-  if (parsed.status !== 'ok') return parsed;
+  if (parsed.status === 'error') return parsed;
 
   const source = resolveKuGroups(parsed.value, decode);
-  if (source.status !== 'ok') return source;
+  if (source.status === 'error') return source;
 
   const reader = ITEM_READERS[kind];
   const groups: KuGroup[] = [];
@@ -246,5 +246,5 @@ export function readKuGroups(
     });
   }
 
-  return { status: 'ok', value: groups };
+  return ok(groups);
 }

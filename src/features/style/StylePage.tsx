@@ -24,14 +24,14 @@ import './StylePage.css';
 export default function StylePage() {
   const load = useStyleLibraryStore((state) => state.load);
   const loadingLibrary = useStyleLibraryStore((state) => state.loading);
-  const indexOutcome = useStyleLibraryStore((state) => state.indexOutcome);
+  const indexResult = useStyleLibraryStore((state) => state.indexResult);
   const warehouses = useStyleLibraryStore((state) => state.warehouses);
   const activeIndex = useStyleLibraryStore((state) => state.activeIndex);
   const activeKind = useStyleLibraryStore((state) => state.activeKind);
   const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
   const selectWarehouse = useStyleLibraryStore((state) => state.selectWarehouse);
   const groups = useStyleLibraryStore((state) => state.libraries[state.activeKind]);
-  const outcome = useStyleLibraryStore((state) => state.outcomes[state.activeKind]);
+  const result = useStyleLibraryStore((state) => state.results[state.activeKind]);
 
   const {
     expanded,
@@ -79,8 +79,8 @@ export default function StylePage() {
         {loadingLibrary ? <span className="mm-style__loading">读取中…</span> : null}
       </div>
 
-      {indexOutcome && indexOutcome.status !== 'ok' ? (
-        <StateHint outcome={indexOutcome} onRetry={() => void load()} />
+      {indexResult && indexResult.status !== 'ok' ? (
+        <StateHint result={indexResult} onRetry={() => void load()} />
       ) : (
         <>
           {/* 四等分 + 段间 1px 竖线（原版 .switch 结构） */}
@@ -99,8 +99,8 @@ export default function StylePage() {
             ))}
           </div>
 
-          {outcome && outcome.status !== 'ok' ? (
-            <StateHint outcome={outcome} onRetry={() => void load()} />
+          {result && result.status !== 'ok' ? (
+            <StateHint result={result} onRetry={() => void load()} />
           ) : null}
 
           <div className="mm-style__list">
@@ -214,7 +214,7 @@ export default function StylePage() {
               );
             })}
 
-            {!groups?.length && !newGroup && outcome?.status === 'ok' ? (
+            {!groups?.length && !newGroup && result?.status === 'ok' ? (
               <p className="mm-style__hint">这个库是空的</p>
             ) : null}
 

@@ -13,11 +13,14 @@
  *   否则报「缺少必需值」。`n` 是日志标签，不传给 jsx 函数本身。
  *
  * 项必须是磁盘原始项（含 isFill 等未知键），isFill 加在**顶层**。
+ *
+ * raw 约定值的解析统一走 `unwrapRaw`（./raw.ts），本文件不写字符串比较。
  */
 
 import { callJsx } from '../cep/bridge';
-import { fail, ok, type Result } from '../../types/result';
+import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireCore, requireVendor } from './init';
+import { unwrapRaw } from './raw';
 
 /** 写操作超时比读长（保存图层样式要写 PSD + 缩略图） */
 const WRITE_TIMEOUT = 60_000;
@@ -37,20 +40,17 @@ const VENDOR_DISPATCH = 'ps_onJsx';
 
 async function runVendor(fn: string, args: unknown[], label?: string): Promise<Result<void>> {
   if (!(await requireVendor())) {
-    return fail('PS_ERROR', '官方 PS 能力未就绪，应用功能不可用');
+    return fail('PS_UNREADY', '官方 PS 能力未就绪，应用功能不可用');
   }
 
   const payload: Record<string, unknown> = { f: fn, arr: args };
   if (label) payload.n = label;
 
   const call = await callJsx(VENDOR_DISPATCH, [payload]);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const raw = call.raw.trim();
-  if (raw === 'no-doc') return fail('PS_ERROR', '没有打开的文档');
-
-  /* 原版判定：-1 表示宿主拒绝执行（多为没选中图层），其余视为成功 */
-  if (raw === '-1') return fail('PS_ERROR', 'PS 拒绝执行，请确认已选中图层');
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
   return ok(undefined);
 }
@@ -62,17 +62,14 @@ async function runVendor(fn: string, args: unknown[], label?: string): Promise<R
  * 普通图层填充、形状改填充/描边、智能对象加颜色叠加、文字改文字色。
  */
 export async function applyStyleColor(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return fail('PS_UNREADY', 'PS 脚本未加载');
 
   /* 移植版只读 item.color，不认 isFill——别照 vendor 的写法加这个键 */
   const call = await callJsx('mm_style_applyColor', [item]);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const raw = call.raw.trim();
-  if (raw === 'no-doc') return fail('PS_ERROR', '没有打开的文档');
-  if (raw === 'skipped') {
-    return fail('PS_ERROR', '自动填充已关闭（sj_interfaceSet.ini 里的 img_cya4 为 false）');
-  }
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
   return ok(undefined);
 }
@@ -82,28 +79,26 @@ export async function applyStyleColor(item: Record<string, unknown>): Promise<Re
  * 走移植的 `mm_style_applyShapeFill`，只对形状图层有效。
  */
 export async function applyShapeFill(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return fail('PS_UNREADY', 'PS 脚本未加载');
 
   const call = await callJsx('mm_style_applyShapeFill', [item]);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const raw = call.raw.trim();
-  if (raw === 'no-doc') return fail('PS_ERROR', '没有打开的文档');
-  if (raw === 'not-shape') return fail('PS_ERROR', '当前图层不是形状图层');
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
   return ok(undefined);
 }
 
 /** 设线框色（shift + 点色块）：只改描边色，只对形状图层有效 */
 export async function applyBorderColor(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return fail('PS_UNREADY', 'PS 脚本未加载');
 
   const call = await callJsx('mm_style_applyBorderColor', [item]);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const raw = call.raw.trim();
-  if (raw === 'no-doc') return fail('PS_ERROR', '没有打开的文档');
-  if (raw === 'not-shape') return fail('PS_ERROR', '当前图层不是形状图层');
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
   return ok(undefined);
 }
@@ -113,15 +108,18 @@ export async function applyBorderColor(item: Record<string, unknown>): Promise<R
  * 供「添加颜色」直接写进库文件，不需要前端再转换。
  */
 export async function getForegroundColor(): Promise<Result<Record<string, unknown>>> {
-  if (!(await requireCore())) return fail('PS_ERROR', 'PS 脚本未加载');
+  if (!(await requireCore())) return fail('PS_UNREADY', 'PS 脚本未加载');
 
   const call = await callJsx('mm_style_getForegroundColor');
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
+
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
 
   try {
-    return ok(JSON.parse(call.raw) as Record<string, unknown>);
+    return ok(JSON.parse(call.value) as Record<string, unknown>);
   } catch {
-    return fail('CORRUPT', '前景色返回格式异常');
+    return failWithDetail('CORRUPT', '前景色返回格式异常', `raw:${call.value}`);
   }
 }
 
@@ -132,22 +130,22 @@ export async function getForegroundColor(): Promise<Result<Record<string, unknow
  * 载荷形状就是渐变项里的 `gradient` 字段（渐变应用已验证过这个结构）。
  */
 export async function getGradientInfo(): Promise<Result<unknown>> {
-  if (!(await requireVendor())) return fail('PS_ERROR', '官方 PS 能力未就绪');
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
   const call = await callJsx('ys_getGradientInfo', []);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(call.raw);
+    parsed = JSON.parse(call.value);
   } catch {
-    return fail('CORRUPT', '渐变数据格式异常');
+    return failWithDetail('CORRUPT', '渐变数据格式异常', `raw:${call.value}`);
   }
 
-  if (parsed === false) return fail('PS_ERROR', '当前图层没有可读取的渐变');
+  if (parsed === false) return fail('VALIDATION', '当前图层没有可读取的渐变');
 
   if (parsed && typeof parsed === 'object' && (parsed as { err?: unknown }).err === 1) {
-    return fail('PS_ERROR', '读取渐变失败');
+    return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
   }
 
   /* 兼容两种返回：裸载荷，或 {err, data} 信封 */
@@ -155,7 +153,9 @@ export async function getGradientInfo(): Promise<Result<unknown>> {
     parsed && typeof parsed === 'object' && 'data' in parsed
       ? (parsed as { data: unknown }).data
       : parsed;
-  if (data === null || data === undefined) return fail('PS_ERROR', '读取渐变失败');
+  if (data === null || data === undefined) {
+    return failWithDetail('PS_ERROR', '读取渐变失败', `raw:${call.value}`);
+  }
 
   return ok(data);
 }
@@ -170,16 +170,18 @@ export async function getGradientInfo(): Promise<Result<unknown>> {
  * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后前端重读一次。
  */
 export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
-  if (!(await requireVendor())) return fail('PS_ERROR', '官方 PS 能力未就绪');
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
   const call = await callJsx(
     'ys_AddStyle',
     [{ delArr: [], groupId, envDir: '/SheJiZhuLi' }],
     { timeout: WRITE_TIMEOUT }
   );
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  if (hostErr(call.raw) === 1) return fail('PS_ERROR', '保存图层样式失败');
+  if (hostErr(call.value) === 1) {
+    return failWithDetail('PS_ERROR', '保存图层样式失败', `raw:${call.value}`);
+  }
 
   return ok(undefined);
 }

@@ -1,14 +1,14 @@
 /**
  * 【范本】JSON 解析（纯函数）
- * 全项目唯一的「文本 → unknown」入口，统一把解析失败归成 corrupt。
+ * 全项目唯一的「文本 → unknown」入口，统一把解析失败归成 CORRUPT。
  */
 
-import type { ReadOutcome } from '../types/read';
+import { fail, ok, type Result } from '../types/result';
 
-export function parseJson(text: string): ReadOutcome<unknown> {
+export function parseJson(text: string): Result<unknown> {
   try {
-    return { status: 'ok', value: JSON.parse(text) as unknown };
+    return ok(JSON.parse(text) as unknown);
   } catch {
-    return { status: 'corrupt', reason: '不是合法 JSON' };
+    return fail('CORRUPT', '不是合法 JSON');
   }
 }

@@ -4,6 +4,9 @@
  * 参数一律是磁盘原始项，不是视图模型。
  *
  * 命名不用 `use` 开头——会被 React 当成 Hook（react-hooks/rules-of-hooks）。
+ *
+ * repo / core/ps 现在都返回同一个 Result：失败直接透传（码 + 原因 + detail 原样上抛），
+ * 这里不再做任何「换一种失败说法」的重包。
  */
 
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
@@ -31,7 +34,6 @@ import { emitAppEvent } from '../core/cep/bridge';
 import type { DropPosition } from '../domain/reorder';
 import type { KuKind, StyleWarehouse } from '../domain/style-library';
 import { fail, ok, type Result } from '../types/result';
-import { toResult } from '../types/read';
 
 /** 把颜色应用到当前图层（按图层类型自动分流） */
 export function applyColor(item: Record<string, unknown>): Promise<Result<void>> {
@@ -61,37 +63,37 @@ export function applyLayerStyle(item: Record<string, unknown>, groupId: string):
 /**
  * 新建分组。`afterIndex` 缺省时追加到末尾（底栏「添加×分组」按钮走这条）。
  */
-export async function addGroupToLibrary(
+export function addGroupToLibrary(
   warehouse: StyleWarehouse,
   kind: KuKind,
   name: string,
   afterIndex?: number
 ): Promise<Result<void>> {
-  return toResult(await addKuGroup(warehouse, kind, name, afterIndex));
+  return addKuGroup(warehouse, kind, name, afterIndex);
 }
 
 /**
  * 折叠状态写回库文件。
  * 原版普通点击折叠/展开也写库（不是纯前端状态），照此行为。
  */
-export async function setGroupShowInLibrary(
+export function setGroupShowInLibrary(
   warehouse: StyleWarehouse,
   kind: KuKind,
   groupIndex: number,
   show: boolean
 ): Promise<Result<void>> {
-  return toResult(await setKuGroupShow(warehouse, kind, groupIndex, show));
+  return setKuGroupShow(warehouse, kind, groupIndex, show);
 }
 
 /** 分组拖拽排序 */
-export async function moveGroupInLibrary(
+export function moveGroupInLibrary(
   warehouse: StyleWarehouse,
   kind: KuKind,
   from: number,
   to: number,
   position: DropPosition
 ): Promise<Result<void>> {
-  return toResult(await moveKuGroupTo(warehouse, kind, from, to, position));
+  return moveKuGroupTo(warehouse, kind, from, to, position);
 }
 
 /**
@@ -106,9 +108,9 @@ export async function addForegroundColorToLibrary(
   groupIndex: number
 ): Promise<Result<void>> {
   const color = await getForegroundColor();
-  if (!color.ok) return color;
+  if (color.status === 'error') return color;
 
-  return toResult(await addKuItem(warehouse, kind, groupIndex, color.data));
+  return addKuItem(warehouse, kind, groupIndex, color.value);
 }
 
 /**
@@ -121,14 +123,12 @@ export async function addGradientFromLayer(
   groupIndex: number
 ): Promise<Result<void>> {
   const gradient = await getGradientInfo();
-  if (!gradient.ok) return gradient;
+  if (gradient.status === 'error') return gradient;
 
-  return toResult(
-    await addKuItem(warehouse, kind, groupIndex, {
-      name: '未命名',
-      gradient: gradient.data
-    })
-  );
+  return addKuItem(warehouse, kind, groupIndex, {
+    name: '未命名',
+    gradient: gradient.value
+  });
 }
 
 /**
@@ -141,9 +141,9 @@ export async function addFontFromLayer(
   groupIndex: number
 ): Promise<Result<void>> {
   const info = await getFontInfo();
-  if (!info.ok) return info;
+  if (info.status === 'error') return info;
 
-  return toResult(await addKuItem(warehouse, kind, groupIndex, info.data));
+  return addKuItem(warehouse, kind, groupIndex, info.value);
 }
 
 /**
@@ -158,9 +158,9 @@ export async function addStyleFromLayer(
   groupIndex: number
 ): Promise<Result<void>> {
   const groupId = readKuGroupId(warehouse, kind, groupIndex);
-  if (!groupId) return fail('NOT_FOUND', '分组缺少 id，无法定位样式资源');
+  if (groupId.status === 'error') return groupId;
 
-  return saveLayerStyle(groupId);
+  return saveLayerStyle(groupId.value);
 }
 
 /* ---------------- 色板（原版 :50348-50364 / :50260-50290） ---------------- */
@@ -175,7 +175,7 @@ const SWATCH_EVENT = 'com.fengzi.event.seban';
 /** 写色板并广播；写失败返回错误（不让用户以为发送成功） */
 async function persistSwatch(items: unknown[]): Promise<Result<void>> {
   const written = await writeSwatchItems(items);
-  if (!written) return fail('IO_ERROR', '写入色板文件失败');
+  if (written.status === 'error') return written;
 
   emitAppEvent(SWATCH_EVENT, 'GengXin');
   return ok(undefined);
@@ -189,9 +189,7 @@ export async function sendItemToSwatch(
   itemIndex: number
 ): Promise<Result<void>> {
   const raw = readKuItem(warehouse, kind, groupIndex, itemIndex);
-  if (raw.status !== 'ok') {
-    return fail(raw.status === 'missing' ? 'NOT_FOUND' : 'CORRUPT', '库文件不存在');
-  }
+  if (raw.status === 'error') return raw;
 
   return persistSwatch([raw.value]);
 }
@@ -204,12 +202,10 @@ export async function appendItemToSwatch(
   itemIndex: number
 ): Promise<Result<void>> {
   const raw = readKuItem(warehouse, kind, groupIndex, itemIndex);
-  if (raw.status !== 'ok') {
-    return fail(raw.status === 'missing' ? 'NOT_FOUND' : 'CORRUPT', '库文件不存在');
-  }
+  if (raw.status === 'error') return raw;
 
   const swatch = readSwatchItems();
-  if (swatch.status !== 'ok') return toResult(swatch);
+  if (swatch.status === 'error') return swatch;
 
   return persistSwatch([...swatch.value, raw.value]);
 }
@@ -221,9 +217,7 @@ export async function sendGroupToSwatch(
   groupIndex: number
 ): Promise<Result<void>> {
   const group = readKuGroupItems(warehouse, kind, groupIndex);
-  if (group.status !== 'ok') {
-    return fail(group.status === 'missing' ? 'NOT_FOUND' : 'CORRUPT', '库文件不存在');
-  }
+  if (group.status === 'error') return group;
 
   return persistSwatch(group.value);
 }
@@ -235,12 +229,10 @@ export async function appendGroupToSwatch(
   groupIndex: number
 ): Promise<Result<void>> {
   const group = readKuGroupItems(warehouse, kind, groupIndex);
-  if (group.status !== 'ok') {
-    return fail(group.status === 'missing' ? 'NOT_FOUND' : 'CORRUPT', '库文件不存在');
-  }
+  if (group.status === 'error') return group;
 
   const swatch = readSwatchItems();
-  if (swatch.status !== 'ok') return toResult(swatch);
+  if (swatch.status === 'error') return swatch;
 
   return persistSwatch([...swatch.value, ...group.value]);
 }
@@ -251,8 +243,8 @@ export async function appendGroupToSwatch(
  */
 export async function applyFontToLayer(item: Record<string, unknown>): Promise<Result<void>> {
   const check = await checkFontUsable(item);
-  if (!check.ok) return check;
-  if (!check.data) return fail('PS_ERROR', '字体不可用（系统里可能没装这个字体）');
+  if (check.status === 'error') return check;
+  if (!check.value) return fail('VALIDATION', '字体不可用（系统里可能没装这个字体）');
 
   return applyFont(item);
 }

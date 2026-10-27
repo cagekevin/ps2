@@ -31,8 +31,8 @@ export function LayerWatcher() {
       if (cancelled) return;
 
       /* 无文档、读失败都归成 null，页面据此禁用「应用」 */
-      const kind = result.ok ? result.data.kind : null;
-      const name = result.ok ? result.data.name : '';
+      const kind = result.status === 'ok' ? result.value.kind : null;
+      const name = result.status === 'ok' ? result.value.name : '';
       const key = `${kind ?? ''}|${name}`;
 
       /* 状态没变就不触发 React 更新 */

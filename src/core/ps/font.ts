@@ -15,7 +15,7 @@
 
 import { callJsx } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
-import { fail, ok, type Result } from '../../types/result';
+import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
 
 /** 写操作超时比读长：应用字体会遍历文本图层 */
@@ -36,14 +36,14 @@ function hostErr(raw: string): number | null {
  * 返回 `ok(false)` 表示字体缺失，调用方应中止并提示。
  */
 export async function checkFontUsable(item: Record<string, unknown>): Promise<Result<boolean>> {
-  if (!(await requireVendor())) return fail('PS_ERROR', '官方 PS 能力未就绪');
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
   const payload = encodeText(JSON.stringify(item));
   const call = await callJsx('ys_checkUseFont', [payload]);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
   /* 返回结构未公开时按可用处理，不阻断正常流程 */
-  return ok(hostErr(call.raw) !== 1);
+  return ok(hostErr(call.value) !== 1);
 }
 
 /**
@@ -53,21 +53,21 @@ export async function checkFontUsable(item: Record<string, unknown>): Promise<Re
  * 整份原样入库，不补键、不改写——库项形状由 jsx 决定。
  */
 export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
-  if (!(await requireVendor())) return fail('PS_ERROR', '官方 PS 能力未就绪');
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
   const call = await callJsx('ys_getFontInfo', []);
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(call.raw);
+    parsed = JSON.parse(call.value);
   } catch {
-    return fail('CORRUPT', '字体属性格式异常');
+    return failWithDetail('CORRUPT', '字体属性格式异常', `raw:${call.value}`);
   }
 
-  if (parsed === false) return fail('PS_ERROR', '当前图层不是文字图层');
+  if (parsed === false) return fail('VALIDATION', '当前图层不是文字图层');
   if (parsed && typeof parsed === 'object' && (parsed as { err?: unknown }).err === 1) {
-    return fail('PS_ERROR', '读取字体属性失败');
+    return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
   }
 
   const data =
@@ -80,7 +80,7 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
     !Array.isArray((data as { fonts?: unknown }).fonts) ||
     ((data as { fonts: unknown[] }).fonts as unknown[]).length === 0
   ) {
-    return fail('PS_ERROR', '读取字体属性失败');
+    return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
   }
 
   return ok(data as Record<string, unknown>);
@@ -88,14 +88,16 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
 
 /** 应用字体到当前文字图层 */
 export async function applyFont(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireVendor())) return fail('PS_ERROR', '官方 PS 能力未就绪');
+  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
 
   const payload = encodeText(JSON.stringify(item));
   const call = await callJsx('ys_useFont', [payload], { timeout: WRITE_TIMEOUT });
-  if (!call.ok) return fail('PS_ERROR', call.reason);
+  if (call.status === 'error') return call;
 
-  const err = hostErr(call.raw);
-  if (err === 1) return fail('PS_ERROR', '字体不可用（系统里可能没装这个字体）');
+  const err = hostErr(call.value);
+  if (err === 1) {
+    return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
+  }
 
   return ok(undefined);
 }

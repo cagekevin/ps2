@@ -11,7 +11,7 @@
  */
 
 import { isArrayOf, isRecord } from '../types/guards';
-import type { ReadOutcome } from '../types/read';
+import { fail, ok, type Result } from '../types/result';
 
 export type KuKindName = 'color' | 'gradient' | 'font' | 'style';
 
@@ -43,34 +43,34 @@ export type ProvenKu =
   | { shape: 'flat'; head: Record<string, unknown> }
   | { shape: 'container'; entries: Array<{ name: string; data?: unknown }> };
 
-export function kuShapeOf(parsed: unknown): ReadOutcome<ProvenKu> {
+export function kuShapeOf(parsed: unknown): Result<ProvenKu> {
   if (Array.isArray(parsed)) {
     const head: unknown = parsed[0];
 
     /* flat 的元素带 data；groups 的元素是组对象 {name, show, list} */
     if (isRecord(head) && 'data' in head) {
-      return { status: 'ok', value: { shape: 'flat', head } };
+      return ok({ shape: 'flat', head });
     }
 
     if (!isArrayOf(parsed, isRecord)) {
-      return { status: 'corrupt', reason: '库数组里混有非对象项' };
+      return fail('CORRUPT', '库数组里混有非对象项');
     }
-    return { status: 'ok', value: { shape: 'groups', groups: parsed } };
+    return ok({ shape: 'groups', groups: parsed });
   }
 
   if (isRecord(parsed)) {
     const arrFileData = parsed.arrFileData;
     if (!Array.isArray(arrFileData)) {
-      return { status: 'corrupt', reason: '压缩包缺少 arrFileData 数组' };
+      return fail('CORRUPT', '压缩包缺少 arrFileData 数组');
     }
     const entries = arrFileData.filter(
       (entry): entry is { name: string; data?: unknown } =>
         isRecord(entry) && typeof entry.name === 'string'
     );
-    return { status: 'ok', value: { shape: 'container', entries } };
+    return ok({ shape: 'container', entries });
   }
 
-  return { status: 'corrupt', reason: '既不是数组也不是对象' };
+  return fail('CORRUPT', '既不是数组也不是对象');
 }
 
 /**
@@ -80,33 +80,33 @@ export function kuShapeOf(parsed: unknown): ReadOutcome<ProvenKu> {
 export function decodeKuData(
   value: unknown,
   decode: (base64: string) => string
-): ReadOutcome<string> {
-  if (typeof value !== 'string') return { status: 'corrupt', reason: '条目没有内容' };
+): Result<string> {
+  if (typeof value !== 'string') return fail('CORRUPT', '条目没有内容');
 
   const compact = value.replace(/\s/g, '');
-  if (!compact) return { status: 'corrupt', reason: '条目内容为空' };
+  if (!compact) return fail('CORRUPT', '条目内容为空');
 
   try {
-    return { status: 'ok', value: decode(compact) };
+    return ok(decode(compact));
   } catch {
-    return { status: 'corrupt', reason: 'base64 解码失败' };
+    return fail('CORRUPT', 'base64 解码失败');
   }
 }
 
-function decodeArrayText(content: ReadOutcome<string>): ReadOutcome<Record<string, unknown>[]> {
-  if (content.status !== 'ok') return content;
+function decodeArrayText(content: Result<string>): Result<Record<string, unknown>[]> {
+  if (content.status === 'error') return content;
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(content.value);
   } catch {
-    return { status: 'corrupt', reason: '内层不是合法 JSON' };
+    return fail('CORRUPT', '内层不是合法 JSON');
   }
 
-  if (!Array.isArray(parsed)) return { status: 'corrupt', reason: '内层不是数组' };
-  if (!isArrayOf(parsed, isRecord)) return { status: 'corrupt', reason: '内层混有非对象项' };
+  if (!Array.isArray(parsed)) return fail('CORRUPT', '内层不是数组');
+  if (!isArrayOf(parsed, isRecord)) return fail('CORRUPT', '内层混有非对象项');
 
-  return { status: 'ok', value: parsed };
+  return ok(parsed);
 }
 
 /**
@@ -116,19 +116,19 @@ function decodeArrayText(content: ReadOutcome<string>): ReadOutcome<Record<strin
 export function resolveKuGroups(
   parsed: unknown,
   decode: (base64: string) => string
-): ReadOutcome<Record<string, unknown>[]> {
+): Result<Record<string, unknown>[]> {
   const proven = kuShapeOf(parsed);
-  if (proven.status !== 'ok') return proven;
+  if (proven.status === 'error') return proven;
 
   const shape = proven.value;
   switch (shape.shape) {
     case 'groups':
-      return { status: 'ok', value: shape.groups };
+      return ok(shape.groups);
     case 'flat':
       return decodeArrayText(decodeKuData(shape.head.data, decode));
     case 'container': {
       const hit = shape.entries.find((entry) => isKuLibraryFileName(entry.name));
-      if (!hit) return { status: 'corrupt', reason: '压缩包里没有库文件' };
+      if (!hit) return fail('CORRUPT', '压缩包里没有库文件');
       return decodeArrayText(decodeKuData(hit.data, decode));
     }
   }
