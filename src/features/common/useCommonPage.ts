@@ -30,6 +30,7 @@ const TILE_SELECTOR = '.mm-common__tile';
 
 export function useCommonPage() {
   const tiles = useCommonUseStore((state) => state.tiles);
+  const dropped = useCommonUseStore((state) => state.dropped);
   const collapsed = useCommonUseStore((state) => state.collapsed);
   const reasons = useCommonUseStore((state) => state.reasons);
   const load = useCommonUseStore((state) => state.load);
@@ -122,6 +123,7 @@ export function useCommonPage() {
 
   return {
     tiles,
+    dropped,
     reasons,
     collapsed,
     showZoom,

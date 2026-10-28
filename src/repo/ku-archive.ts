@@ -37,7 +37,7 @@ import {
 } from '../domain/ku-io';
 
 import { normalizeStyleIndex, type StyleWarehouse, type StyleWarehouseIndex } from '../domain/style-library';
-import { fail, ok, type Result } from '../types/result';
+import { fail, failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 
@@ -216,7 +216,9 @@ export async function importKuArchive(
 
   const decoded = parseKuContainer(read.value);
   if (decoded.status === 'error') {
-    return fail(decoded.code, `导入文件结构不认识：${decoded.reason}`);
+    /* 只加「这是导入文件」的语境，`code` 与 `detail` 原样带过去——
+       以前用 `fail(code, ...)` 重包，`detail` 被静默丢掉（刀 14：重包必须逐字段声明） */
+    return failWithDetail(decoded.code, `导入文件结构不认识：${decoded.reason}`, decoded.detail);
   }
   const imported = decoded.value;
 

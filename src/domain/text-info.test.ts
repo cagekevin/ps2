@@ -3,7 +3,7 @@ import {
   applyTextPatch,
   DEFAULT_TEXT_INFO,
   normalizeTextColor,
-  normalizeTextInfo
+  decodeTextInfo
 } from './text-info';
 
 describe('text-info', () => {
@@ -17,7 +17,7 @@ describe('text-info', () => {
   });
 
   it('归一化：缺的字段补默认，认出一个字段就够', () => {
-    const result = normalizeTextInfo({ size: 24, color: { rgb: { r: 1, g: 2, b: 3 } } });
+    const result = decodeTextInfo({ size: 24, color: { rgb: { r: 1, g: 2, b: 3 } } });
     expect(result.status).toBe('ok');
     if (result.status === 'ok') {
       expect(result.value.size).toBe('24');
@@ -27,7 +27,7 @@ describe('text-info', () => {
   });
 
   it('归一化：一个可识别字段都没有 → CORRUPT，不渲染成默认值', () => {
-    const result = normalizeTextInfo({ foo: 1, bar: 2 });
+    const result = decodeTextInfo({ foo: 1, bar: 2 });
     expect(result.status).toBe('error');
     if (result.status === 'error') expect(result.code).toBe('CORRUPT');
   });

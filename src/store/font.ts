@@ -13,6 +13,7 @@ import { emptyClassification } from '../domain/classification';
 import { familyLang } from '../domain/font-lang';
 import type { FontTag } from '../domain/font-meta';
 import { readClassification, readFontStars, readFontTags } from '../repo/font-repo';
+import type { Dropped } from '../types/decode-list';
 import type { Result } from '../types/result';
 
 export type PreviewMode = 'none' | 'small' | 'medium' | 'large' | 'extra-large';
@@ -32,17 +33,24 @@ export function defaultPreviewText(family: string): string {
   return familyLang(family) === 'en' ? 'Crazy Design' : '设计助理';
 }
 
-type TagsRead = Result<{ tags: FontTag[]; dropped: number }>;
-type StarsRead = Result<{ stars: Record<string, number>; dropped: number }>;
+type TagsRead = Result<{ tags: FontTag[]; dropped: Dropped[] }>;
+type StarsRead = Result<{ stars: Record<string, number>; dropped: Dropped[] }>;
 
 interface FontState {
   tags: FontTag[];
   tagsRead: TagsRead | null;
   stars: Record<string, number>;
   starsRead: StarsRead | null;
+  /** 分类投影：读失败时给空分类，**不要**拿它判「读没读到」——那看 `classificationRead` */
   classification: Classification;
-  /** 非空表示分类数据不可用（只放原因，文案后缀由页面统一加） */
-  classificationDegraded: string;
+  /**
+   * 分类的读取结果（与 `tagsRead` / `starsRead` 同形）。
+   *
+   * 以前是 `classificationDegraded: string`：空串正常、非空坏，但 `.value` 永远可取，
+   * 而且把「读失败的原因」和「分类为空」两种不同的事塞进同一个字符串——
+   * 失败码位写人话，页面只能原样拼进 UI。
+   */
+  classificationRead: Result<Classification> | null;
   previewMode: PreviewMode;
   previewText: string;
   loadTags: () => void;
@@ -68,7 +76,7 @@ export const useFontStore = create<FontState>()((set, get) => ({
   stars: {},
   starsRead: null,
   classification: emptyClassification(),
-  classificationDegraded: '',
+  classificationRead: null,
   previewMode: initialPreviewMode(),
   previewText: getPref<string>('font.previewText', ''),
 
@@ -90,16 +98,11 @@ export const useFontStore = create<FontState>()((set, get) => ({
 
   loadClassification() {
     const read = readClassification();
-    const degraded =
-      read.status === 'error'
-        ? read.reason
-        : read.value.categories.length === 0
-          ? '分类数据为空'
-          : '';
 
     set({
+      /* 投影给渲染用；「读没读到」看 `classificationRead`，不看这个空分类 */
       classification: read.status === 'ok' ? read.value : emptyClassification(),
-      classificationDegraded: degraded
+      classificationRead: read
     });
   },
 

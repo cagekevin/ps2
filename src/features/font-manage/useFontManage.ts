@@ -15,7 +15,7 @@ import {
   useRef,
   useState
 } from 'react';
-import { useToast } from '../../components/Toast';
+import { useRunCommand } from '../../hooks/useRunCommand';
 import {
   applyFontFaceToLayer,
   loadFontList,
@@ -38,14 +38,14 @@ import { fontFamilyValue } from './css';
 import { useTagActions } from './useTagActions';
 
 export function useFontManage() {
-  const toast = useToast();
+  const runCommand = useRunCommand();
 
   const tags = useFontStore((state) => state.tags);
   const tagsRead = useFontStore((state) => state.tagsRead);
   const stars = useFontStore((state) => state.stars);
   const starsRead = useFontStore((state) => state.starsRead);
   const classification = useFontStore((state) => state.classification);
-  const classificationDegraded = useFontStore((state) => state.classificationDegraded);
+  const classificationRead = useFontStore((state) => state.classificationRead);
   const previewMode = useFontStore((state) => state.previewMode);
   const previewText = useFontStore((state) => state.previewText);
   const loadTags = useFontStore((state) => state.loadTags);
@@ -79,7 +79,7 @@ export function useFontManage() {
     () => (loadResult?.status === 'ok' ? loadResult.value.fonts : []),
     [loadResult]
   );
-  const dropped = loadResult?.status === 'ok' ? loadResult.value.dropped : 0;
+  const dropped = loadResult?.status === 'ok' ? loadResult.value.dropped : [];
   /* 失败态单独给出去：`StateHint` 的类型要求「有 result 就是 Error」，不再收 `Result | null` */
   const loadError = loadResult?.status === 'error' ? loadResult : null;
 
@@ -136,17 +136,16 @@ export function useFontManage() {
     ? `${countLabel}(${filtered.length})`
     : `${countLabel}(${fonts.length})`;
 
+  /**
+   * 统一的失败出口：**实现委托给 `runCommand`**，这里只把 `Result` 折成 `boolean`
+   * （十几个调用点靠它决定要不要继续，签名不动；提示与留痕全在 hook 里）。
+   */
   const notify = useCallback(
     async (task: Promise<Result<unknown>>, success: string): Promise<boolean> => {
-      const result = await task;
-      if (result.status === 'error') {
-        toast.error(result.reason);
-        return false;
-      }
-      toast.info(success);
-      return true;
+      const result = await runCommand(() => task, { spin: false, success });
+      return result.status === 'ok';
     },
-    [toast]
+    [runCommand]
   );
 
   const currentWeight = useCallback(
@@ -246,8 +245,8 @@ export function useFontManage() {
     return read?.status === 'error' ? read.reason : '';
   }
 
-  const tagsDropped = tagsRead?.status === 'ok' ? tagsRead.value.dropped : 0;
-  const starsDropped = starsRead?.status === 'ok' ? starsRead.value.dropped : 0;
+  const tagsDropped = tagsRead?.status === 'ok' ? tagsRead.value.dropped : [];
+  const starsDropped = starsRead?.status === 'ok' ? starsRead.value.dropped : [];
 
   return {
     loadResult,
@@ -288,7 +287,9 @@ export function useFontManage() {
     starsError: reasonOf(starsRead),
     starsDropped,
     stars,
-    classificationDegraded,
+    /* 读失败与「读到 0 个分类」是两件事：前者给原因，后者给一句独立的说明 */
+    classificationError: reasonOf(classificationRead),
+    classificationEmpty: classification.categories.length === 0,
     ...tagActions,
     onMenuSelect
   };

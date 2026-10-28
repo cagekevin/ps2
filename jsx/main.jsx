@@ -57,6 +57,20 @@ function mm_layer_getState() {
 	});
 }
 
+/**
+ * 当前选中的图层数量：'3'。
+ *
+ * 为什么不并进 `mm_layer_getState`：那个被 `layer-watcher` 每 800ms 调用一次，
+ * 改它的返回协议，新旧 jsx 混用时会静默解析错；单独一个函数缺失时探测能直接发现。
+ * 「按间距分布」这类需要多选的能力用它当前置。
+ */
+function mm_layer_getSelection() {
+	return mm_safe("mm_layer_getSelection", function () {
+		if (!app.documents.length) return "no-doc";
+		return String(app.activeDocument.activeLayers.length);
+	});
+}
+
 /* ---------------- 样式：应用颜色 ---------------- */
 
 /**

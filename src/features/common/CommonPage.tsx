@@ -89,6 +89,9 @@ export default function CommonPage() {
         {page.reasons.options ? (
           <StateHint result={page.reasons.options} onRetry={page.reload} />
         ) : null}
+        {page.dropped.length ? (
+          <p className="mm-common__warning">{page.dropped.length} 项无法识别，已跳过</p>
+        ) : null}
 
         {page.showZoom ? (
           <Collapse

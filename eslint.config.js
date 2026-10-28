@@ -135,6 +135,32 @@ export default tseslint.config(
     }
   },
 
+  /* hooks 不能依赖 commands / store / components / features / app
+     （2026-10-28 补：此前 hooks 层一条规则都没有，`useRunCommand` 因此长期反向
+       import `components/Toast`——这条越界又逼出「13 处手写 toast」） */
+  {
+    files: ['src/hooks/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/commands/**',
+                '**/store/**',
+                '**/components/**',
+                '**/features/**',
+                '**/app/**'
+              ],
+              message: 'hooks 只能依赖 core / domain / types'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   /* 唯一允许直接 fetch 的地方 */
   {
     files: ['src/core/http/**/*.ts'],

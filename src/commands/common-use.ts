@@ -30,7 +30,7 @@ import {
   type FlipDirection
 } from '../core/ps/common-use';
 import { flushPrefs, getPref, setPref } from '../core/prefs';
-import { COMMON_USE_SEED, normalizeCollapsed, type CommonUseFile } from '../domain/common-use';
+import { COMMON_USE_SEED, normalizeCollapsed } from '../domain/common-use';
 import { isCommonUseSettingKey } from '../domain/common-use-options';
 import { applyListDrop, type DropPosition } from '../domain/reorder';
 import {
@@ -38,6 +38,7 @@ import {
   updateCommonUseFile,
   updateCommonUseOptions
 } from '../repo/common-use-repo';
+import type { RawRecords } from '../repo/json-file';
 import { useCommonUseStore, type CommonSection } from '../store/common-use';
 import { fail, ok, type Result } from '../types/result';
 
@@ -117,8 +118,12 @@ export function sliceByGuide(): Promise<Result<void>> {
 
 /* ---------------- 数据（5） ---------------- */
 
-/** 写成功后重读投影：网格顺序 / 显隐是用户一眼能看出来的东西，不做乐观更新 */
-async function commitFile(mutator: (file: CommonUseFile) => CommonUseFile | null) {
+/**
+ * 写成功后重读投影：网格顺序 / 显隐是用户一眼能看出来的东西，不做乐观更新。
+ *
+ * mutator 拿到的是**原始记录**（`RawRecords`），不是读视图：文件里被跳过的坏项要原样留着。
+ */
+async function commitFile(mutator: (file: RawRecords) => RawRecords | null) {
   const result = await updateCommonUseFile(mutator);
   if (result.status === 'ok') useCommonUseStore.getState().load();
   return result;
@@ -131,7 +136,7 @@ async function patchItem(
 ): Promise<Result<void>> {
   const file = readCommonUseFile();
   if (file.status === 'error') return file;
-  if (!file.value.some((item) => item.id === id)) {
+  if (!file.value.items.some((item) => item.id === id)) {
     return fail('VALIDATION', '找不到该常用项');
   }
 
@@ -159,7 +164,8 @@ export async function reorder(
   const file = readCommonUseFile();
   if (file.status === 'error') return file;
 
-  const length = file.value.length;
+  /* 长度取原始记录：mutator 拿到的也是原始记录，两边必须是同一个下标空间 */
+  const length = file.value.records.length;
   const valid = (value: number) => Number.isInteger(value) && value >= 0 && value < length;
   if (!valid(from) || !valid(to)) {
     return fail('VALIDATION', `排序下标超出范围（0 - ${Math.max(0, length - 1)}）`);

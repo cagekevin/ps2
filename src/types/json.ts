@@ -7,14 +7,23 @@
  * 全仓 `JSON.parse` 字面量只允许出现在本文件。
  *
  * `label` 必填：失败原因要说清「哪份文本」不是合法 JSON，不许给一句笼统的通用文案。
+ *
+ * `code` 可选：**读文件**用默认 `CORRUPT`（数据不认识，就是坏了）；
+ * **宿主返回值**传 `PS_ERROR`（宿主没给出可解析的结果，不是文件坏了）。
+ *
+ * `detail` 一定带原文：光看 `SyntaxError` 猜不出是 `undefined`、空串还是乱码。
  */
 
-import { failWithDetail, ok, type Result } from './result';
+import { failWithDetail, ok, type ErrorCode, type Result } from './result';
 
-export function parseJson(text: string, label: string): Result<unknown> {
+export function parseJson(
+  text: string,
+  label: string,
+  code: ErrorCode = 'CORRUPT'
+): Result<unknown> {
   try {
     return ok(JSON.parse(text) as unknown);
   } catch (error) {
-    return failWithDetail('CORRUPT', `${label}不是合法 JSON`, String(error));
+    return failWithDetail(code, `${label}不是合法 JSON`, `${String(error)};raw:${text.slice(0, 60)}`);
   }
 }

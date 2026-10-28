@@ -9,7 +9,8 @@
 import { callJsx } from '../cep/bridge';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { LAYER_KIND_LABEL, type LayerKind } from '../../types/layer';
-import { requireCore } from './init';
+import { gateFailed } from './capability';
+import { funcMissing, requireCore } from './init';
 import { unwrapRaw } from './raw';
 
 const VALID_KINDS: LayerKind[] = ['normal', 'shape', 'text', 'smartObject', 'group', 'unknown'];
@@ -26,7 +27,7 @@ export interface LayerState {
  * （非文字图层上 PS 会直接抛错，见 `text.ts` 文件头第 3 条）。
  */
 export async function getLayerState(): Promise<Result<LayerState>> {
-  if (!(await requireCore())) return failWithDetail('PS_UNREADY', 'PS 脚本未加载', 'core:false');
+  if (!(await requireCore())) return gateFailed('core');
 
   /* 轮询专用：不记 info，避免日志被刷屏 */
   const call = await callJsx('mm_layer_getState', [], { silent: true });
@@ -86,4 +87,52 @@ export function requireTextLayer(): Promise<Result<void>> {
 /** 形状相关操作的前提 */
 export function requireShapeLayer(): Promise<Result<void>> {
   return requireLayerKind(['shape'], '形状图层');
+}
+
+/**
+ * 当前选中的图层数量（`mm_layer_getSelection`）。
+ *
+ * 与 `getLayerState` 分成两个 jsx：那个被 `layer-watcher` 每 800ms 调一次，返回协议不能动
+ * （新旧 jsx 混用会静默解析错）；这个只在「需要多选」的能力点击时调，低频。
+ */
+export async function getSelectionCount(): Promise<Result<number>> {
+  if (!(await requireCore())) return gateFailed('core');
+
+  /* 函数没加载（旧 jsx）就如实报，不要让它去调一个不存在的函数变成 EvalScript error */
+  if (await funcMissing('mm_layer_getSelection')) {
+    return failWithDetail('PS_UNREADY', '「mm_layer_getSelection」未加载', 'fn:mm_layer_getSelection');
+  }
+
+  const call = await callJsx('mm_layer_getSelection', []);
+  if (call.status === 'error') return call;
+
+  const guard = unwrapRaw(call.value);
+  if (guard.status === 'error') return guard;
+
+  const count = Number(call.value.trim());
+  if (!Number.isInteger(count) || count < 0) {
+    return failWithDetail('CORRUPT', '图层数量不是整数', `raw:${call.value}`);
+  }
+  return ok(count);
+}
+
+/**
+ * 多选前提：至少 `min` 个图层被选中。
+ *
+ * 用在「成对才有意义」的操作上：位置对换、图层颜色互换、按间距分布——单选时 PS 会返回
+ * `-1`（一句笼统的「请确认已选中图层」），这里提前说清「当前选中几个、需要几个」。
+ * 数量不足不是故障（多选几个就好），用 `PS_WRONG_LAYER` 让 `StateHint` 走灰字。
+ */
+export async function requireSelection(min: number): Promise<Result<void>> {
+  const count = await getSelectionCount();
+  if (count.status === 'error') return count;
+
+  if (count.value < min) {
+    return failWithDetail(
+      'PS_WRONG_LAYER',
+      `当前选中 ${count.value} 个图层，需要至少 ${min} 个`,
+      `selection:${count.value}`
+    );
+  }
+  return ok(undefined);
 }

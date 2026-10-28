@@ -86,6 +86,14 @@
 }
 
 /* 网格：每行 3 个（每格占宽 33%），行距 15；每行是一个 IconPanelGroup */
+/* 文件里认不出而跳过的项：告诉用户「少了几个」，不是「文件坏了」 */
+.mm-common__warning {
+  margin: 0;
+  padding: 0 var(--mm-page-pad-x);
+  color: var(--mm-color-warn);
+  font-size: var(--mm-font-sm);
+}
+
 .mm-common__grid {
   display: flex;
   flex-direction: column;

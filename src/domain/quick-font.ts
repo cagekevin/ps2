@@ -73,7 +73,7 @@ function isQuickFont(value: unknown): value is QuickFont {
  *
  * 读坏不回落空数组：回落等于把用户攒的快捷字体当没存过，下次写就把文件洗掉。
  */
-export function normalizeQuickFontFile(raw: unknown): Result<QuickFontFile> {
+export function decodeQuickFontFile(raw: unknown): Result<QuickFontFile> {
   if (!isRecord(raw)) return failWithDetail('CORRUPT', '快捷字体文件顶层不是对象', 'root');
 
   const list = raw.list;

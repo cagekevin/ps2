@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMMON_USE_SEED, parseCommonUseFile, toTiles } from './common-use';
+import { COMMON_USE_SEED, decodeCommonUseItem, toTiles } from './common-use';
 
 describe('COMMON_USE_SEED', () => {
   it('是官方 14 项，且 id 顺序不是数字顺序', () => {
@@ -35,34 +35,39 @@ describe('COMMON_USE_SEED', () => {
   });
 });
 
-describe('parseCommonUseFile', () => {
-  it('顶层不是数组 → CORRUPT，detail 指到 root', () => {
-    const result = parseCommonUseFile({ list: [] });
+describe('toTiles 的下标空间', () => {
+  it('坏项被跳过时 index 仍是文件里的真实下标', () => {
+    /* 视图与写回共用原始记录：过滤后重新编号会让拖拽移动相邻的那一项 */
+    const tiles = toTiles([{ id: 'a' }, { name: '没有 id' }, { id: 'c' }]);
+
+    expect(tiles.map((tile) => tile.id)).toEqual(['a', 'c']);
+    expect(tiles.map((tile) => tile.index)).toEqual([0, 2]);
+  });
+});
+
+describe('decodeCommonUseItem', () => {
+  it('不是对象 → CORRUPT，detail 是传进来的 path', () => {
+    const result = decodeCommonUseItem('b', 'root[1]');
     expect(result.status).toBe('error');
     if (result.status === 'error') {
       expect(result.code).toBe('CORRUPT');
-      expect(result.detail).toBe('root');
+      expect(result.detail).toBe('root[1]');
     }
   });
 
-  it('数组里有非对象条目 → CORRUPT，detail 指到第几个', () => {
-    const result = parseCommonUseFile([{ id: 'a' }, 'b']);
-    expect(result.status).toBe('error');
-    if (result.status === 'error') expect(result.detail).toBe('root[1]');
-  });
-
-  it('缺 id → CORRUPT，不静默跳过', () => {
-    const result = parseCommonUseFile([{ name: '没有 id' }]);
+  it('缺 id → CORRUPT，detail 指到那一项的 id', () => {
+    const result = decodeCommonUseItem({ name: '没有 id' }, 'root[0]');
     expect(result.status).toBe('error');
     if (result.status === 'error') expect(result.detail).toBe('root[0].id');
   });
 
-  it('正常文件保留未知键', () => {
-    const result = parseCommonUseFile([{ id: 'div_img_cya1', sort: 3, openistrue: true }]);
+  it('正常项原样返回，未知键保留', () => {
+    const item = { id: 'div_img_cya1', sort: 3, openistrue: true };
+    const result = decodeCommonUseItem(item, 'root[0]');
+
     expect(result.status).toBe('ok');
-    if (result.status === 'ok') {
-      expect(result.value[0]).toEqual({ id: 'div_img_cya1', sort: 3, openistrue: true });
-    }
+    /* 同一个对象引用：写回时未知键不能丢 */
+    if (result.status === 'ok') expect(result.value).toBe(item);
   });
 });
 

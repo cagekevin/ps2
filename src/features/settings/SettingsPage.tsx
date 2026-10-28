@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
 import { CheckBox } from '../../components/CheckBox';
 import { PageHeader } from '../../components/PageHeader';
 import { SelectBox } from '../../components/SelectBox';
-import { useToast } from '../../components/Toast';
+import { useRunCommand } from '../../hooks/useRunCommand';
 import { setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
 import { UNITS, unitIndexOf } from '../../domain/units';
@@ -28,7 +28,8 @@ import { useFontSetStore } from '../../store/font-set';
 import './SettingsPage.css';
 
 export default function SettingsPage() {
-  const toast = useToast();
+  /* 设置项都是瞬时写：不转圈，失败留痕由 hook 负责 */
+  const run = useRunCommand();
   const settings = useFontSetStore((state) => state.settings);
   const load = useFontSetStore((state) => state.load);
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
@@ -56,11 +57,10 @@ export default function SettingsPage() {
     setSaving(true);
     setLocalSettings({ appUnit: value });
 
-    void saveSettings({ appUnit: value }).then((result) => {
+    /* 失败提示由 hook 出（带 `log.warn(code, detail)`），这里只管把乐观值回滚 */
+    void run(() => saveSettings({ appUnit: value }), { spin: false }).then((result) => {
       setSaving(false);
-      if (result.status === 'ok') return;
-      setLocalSettings({ appUnit: previous });
-      toast.error(result.reason);
+      if (result.status === 'error') setLocalSettings({ appUnit: previous });
     });
   }
 
@@ -69,9 +69,7 @@ export default function SettingsPage() {
    * 只改这两个键，文件里别的页面的设置原样保留（`repo/common-use-repo` 负责）。
    */
   function toggleSection(key: 'cyShowZoom' | 'cyShowTransformation', visible: boolean): void {
-    void setOption(key, visible).then((result) => {
-      if (result.status === 'error') toast.error(result.reason);
-    });
+    void run(() => setOption(key, visible), { spin: false });
   }
 
   /**
@@ -81,9 +79,7 @@ export default function SettingsPage() {
    * 再加「右键出菜单隐藏」就是第四种，违反 `03` 计划 §9 第 7 条。
    */
   function toggleTile(id: string, visible: boolean): void {
-    void setShow(id, visible).then((result) => {
-      if (result.status === 'error') toast.error(result.reason);
-    });
+    void run(() => setShow(id, visible), { spin: false });
   }
 
   return (

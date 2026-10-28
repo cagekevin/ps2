@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FontItem } from './font-item';
 import {
   canAddQuickFont,
-  normalizeQuickFontFile,
+  decodeQuickFontFile,
   QUICK_FONT_LIMIT,
   toQuickFont,
   type QuickFont
@@ -50,15 +50,15 @@ describe('quick-font', () => {
 
   it('索引越界：读文件时夹到合法范围，不返回越界索引', () => {
     const file = { index: 9, list: [quick('A'), quick('B')] };
-    expect(normalizeQuickFontFile(file)).toEqual({ status: 'ok', value: { index: 1, list: file.list } });
+    expect(decodeQuickFontFile(file)).toEqual({ status: 'ok', value: { index: 1, list: file.list } });
 
-    const empty = normalizeQuickFontFile({ index: 3, list: [] });
+    const empty = decodeQuickFontFile({ index: 3, list: [] });
     expect(empty).toEqual({ status: 'ok', value: { index: 0, list: [] } });
   });
 
   it('坏形状：三个数组不等长（缺键）整份拒绝，指出第几条', () => {
     const broken = { index: 0, list: [quick('A'), { family: 'B', name: 'B', zz: ['Regular'] }] };
-    const result = normalizeQuickFontFile(broken);
+    const result = decodeQuickFontFile(broken);
     expect(result.status).toBe('error');
     if (result.status === 'error') {
       expect(result.code).toBe('CORRUPT');

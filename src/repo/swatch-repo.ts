@@ -9,15 +9,17 @@
  * - **坏 JSON 报错，不吞成空数组**——原版吞掉后写回会抹平用户色板（有意偏离，照 app）
  * - 写走 `repo/json-file.ts` 的唯一读改写（`.bak` + 串行）
  */
-import { fail, ok, type Result } from '../types/result';
+import { type Result } from '../types/result';
+import { decodeArray } from '../types/decode-list';
 import { updateJsonFile } from './json-file';
 
 /** 色板文件名（原版 `g_FN.color`） */
 const SWATCH_FILE = 'userColor.ini';
 const ROOT = 'swatch';
 
+/** 色板文件顶层必须是数组；项不校验（写路径原样保留未知键）。判据复用 `decodeArray` */
 function decodeSwatch(raw: unknown): Result<unknown[]> {
-  return Array.isArray(raw) ? ok(raw) : fail('CORRUPT', '色板文件不是数组');
+  return decodeArray(raw);
 }
 
 /**

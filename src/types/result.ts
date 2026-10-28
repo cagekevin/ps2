@@ -13,8 +13,9 @@
  *   CORRUPT       数据损坏、结构不符
  *   IO_ERROR      读写失败：占用、权限
  *   PS_NO_DOC     没有打开的文档
- *   PS_WRONG_LAYER 当前图层类型不对（换图层就好，不是故障）；
- *                  `reason` 里必须写明「当前是 X，需要 Y」，`detail` 带 `kind:`
+ *   PS_WRONG_LAYER 选中的对象不满足前提（图层类型不对 / 选中数量不够）；换图层或多选就好，
+ *                  不是故障。`reason` 必须写明「当前是什么，需要什么」，
+ *                  `detail` 带 `kind:<类型>` 或 `selection:<数量>`
  *   PS_SKIPPED    官方配置显式关闭（sj_interfaceSet.ini 的 img_cya4 === false）
  *   PS_UNREADY    PS 能力未就绪（jsx 未加载 / 环境变量注入失败）
  *   PS_REJECTED   宿主拒绝执行（vendor 返回 -1，多为没选中图层）

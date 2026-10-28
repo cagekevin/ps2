@@ -17,10 +17,18 @@ import { log } from '../logger';
 import { injectEnv } from './env';
 
 export interface PsCapability {
-  /** 自有能力是否可用 */
+  /** 自有能力是否可用（= 必需函数都在） */
   core: boolean;
-  /** 官方应用能力是否可用 */
+  /** 官方应用能力是否可用（= 必需函数都在且环境变量注入成功） */
   vendor: boolean;
+  /**
+   * 门可用、但**单个函数**缺失的名字。
+   *
+   * 以前是「缺一个 → 整门不可用」：`mm_diag_vendor` 缺失会让字体面板、样式页、常用页
+   * 全部报 `PS_UNREADY`——只因为诊断页少个函数。现在缺哪个只禁用用它那个能力，
+   * 由 `capability.ts` 在门之后按 `spec.fn` 查这张表。
+   */
+  missing: string[];
 }
 
 const CORE_FILE = 'jsx/main.jsx';
@@ -29,17 +37,52 @@ const VENDOR_FILE = 'jsx/vendor.jsx';
 /**
  * 官方 jsx 里我们会用到的入口，缺一个就算 vendor 不可用。
  *
- * **两条通道，别混**（实现只有一份，在 `./vendor.ts`）：
+ * **两条通道，别混**（实现只有一份，在 `./capability.ts` + `./capabilities.ts` 的 `channel` 字段）：
  *   调度 `ps_onJsx({ f, arr, n })` —— 渐变、图层样式，以及常用页里走调度的按钮（原版 jsxHistory*）
  *   直调 `fn(a, b)`               —— 字体（`ys_*`，参数 encodeText）、系统字体 / 文本属性 / 常用页另一半
  *
  * 判断依据不是「是不是 ys_ / zt_ / cy_ 开头」，而是原版前端用 jsxHistory 还是 jsx：
  * 同为 `cy_*`，`cy_zoom` 直调而 `cy_transformPosition` 走调度。
  *
- * 文本属性 26 个见 `docs/PS-CHANNEL-NOTES.md` §11.3、常用页 26 个见 §11.4，返回结构全部 UNVERIFIED。
- * `zt_changeTextBranchMerge` 可能是派发表 key 而不是函数（参考实现记录），
- * 真机探测若报缺失会整页不可用——处理方式写在 §11.3 第 7 条，不在这里兜。
+ * 文本属性 25 个见 `docs/PS-CHANNEL-NOTES.md` §11.3、常用页 26 个见 §11.4，返回结构全部 UNVERIFIED。
+ * `zt_changeTextBranchMerge` 已确认为派发表 key、不是函数（真机一调就抛「没有这种元素」），
+ * 已从本清单与能力表移除——**别再登记**，否则一调就整页报错。
  */
+/**
+ * 自有 jsx（`jsx/main.jsx`）里**能力层实际在用**的函数清单。
+ *
+ * 与 `VENDOR_FUNCS` 对称，`core/ps/init.test.ts` 会校验「表里每个 `gate: 'core'` 的能力都在
+ * 这里」。以前这段是 `load()` 里的内联数组，只有 3 项，漏了 `mm_style_applyShapeFill` /
+ * `mm_style_applyBorderColor` / `mm_style_getForegroundColor`——函数缺失时 `core` 仍判为
+ * 可用，用户点下去才拿到 `EvalScript error`。
+ *
+ * **这张表是「全部要探的」，不是「全部必需」**：只有 `CORE_REQUIRED` 里的缺了才整门不可用，
+ * 其余缺了只禁用对应能力（见 `PsCapability.missing`）。
+ */
+export const CORE_FUNCS = [
+  /* 图层：类型 / 名称 / 选中数量 */
+  'mm_layer_getState',
+  'mm_layer_getSelection',
+  /* 样式：应用颜色 / 形状填充 / 线框色 / 取前景色 */
+  'mm_style_applyColor',
+  'mm_style_applyShapeFill',
+  'mm_style_applyBorderColor',
+  'mm_style_getForegroundColor',
+  /* 诊断：官方能力探测 */
+  'mm_diag_vendor'
+] as const;
+
+/**
+ * `CORE_FUNCS` 里**缺了整门就没意义**的那些。
+ *
+ * 只有 `mm_layer_getState`：它同时是图层轮询和所有图层前置的判据，缺了的话「当前是什么图层」
+ * 都答不出来，别的能力留着也用不了。
+ *
+ * 其余都**不是必需**：`mm_style_*` 缺了只影响样式页，`mm_diag_vendor` 缺了只影响诊断页，
+ * `mm_layer_getSelection` 缺了只影响 4 个多选能力——都不该让字体面板一起变红。
+ */
+export const CORE_REQUIRED: readonly string[] = ['mm_layer_getState'];
+
 export const VENDOR_FUNCS = [
   'ps_onJsx',
   'ys_useGradient',
@@ -47,14 +90,19 @@ export const VENDOR_FUNCS = [
   'ys_checkUseFont',
   'ys_useFont',
   'ys_getFontInfo',
+  /* 读当前图层渐变；一直漏登记，2026-10-28 由「表 → 清单」守卫抓出（与 `Tool_set` 同一类） */
+  'ys_getGradientInfo',
   'ztgl_initSystemList',
   'ztgl_setFont',
   'Sys_setSystemEnvInfo',
+  /* 工具切换（样式页快速吸色 `Tool_set('eyedropperTool')`）；一直漏登记，2026-10-28 由
+     `init.test.ts` 的「表 → 清单」守卫抓出 */
+  'Tool_set',
   /* 文本属性：读 3（`zt_getTypeUnits` 已取消：面板不再显示单位后缀） */
   'zt_getFontSimpleInfo',
   'zt_getCurrentFontInfo',
   'zt_getCurrentText',
-  /* 文本属性：写 23 */
+  /* 文本属性：写 22 */
   'zt_setFontName',
   'layer_font_setFontSize',
   'zt_setFontSize',
@@ -73,7 +121,6 @@ export const VENDOR_FUNCS = [
   'zt_setBackrgoudAlign',
   'zt_alignHorizontal',
   'cy_distributedByPitch',
-  'zt_changeTextBranchMerge',
   'zt_textBranchMerge',
   'zt_createButton',
   'zt_switchFontDirection',
@@ -108,6 +155,17 @@ export const VENDOR_FUNCS = [
   'cy_BacthExportPsdToImage'
 ] as const;
 
+/**
+ * `VENDOR_FUNCS` 里**缺了整门就没意义**的那些。
+ *
+ * - `ps_onJsx`：调度通道的宿主，缺了所有调度能力（翻转/对换/渐变/样式）全废；
+ * - `Sys_setSystemEnvInfo`：不注入环境变量，`ys_*` 内部拼路径会抛异常。
+ *
+ * 其余 60 项都不是必需：缺哪个只禁用用它那个能力。这也是 `08` §1.5 想解决的问题——
+ * 那两个「没人调用」的函数留在清单里就行，不用为了少两个失败点去删表行和包装函数。
+ */
+export const VENDOR_REQUIRED: readonly string[] = ['ps_onJsx', 'Sys_setSystemEnvInfo'];
+
 let pending: Promise<PsCapability> | null = null;
 
 async function probe(fns: readonly string[]): Promise<string[]> {
@@ -120,7 +178,7 @@ async function probe(fns: readonly string[]): Promise<string[]> {
 }
 
 async function load(): Promise<PsCapability> {
-  const capability: PsCapability = { core: false, vendor: false };
+  const capability: PsCapability = { core: false, vendor: false, missing: [] };
 
   const coreResult = await loadJsx(CORE_FILE);
   if (coreResult.status === 'error') {
@@ -128,12 +186,15 @@ async function load(): Promise<PsCapability> {
     return capability;
   }
 
-  const coreMissing = await probe(['mm_layer_getState', 'mm_style_applyColor']);
-  if (coreMissing.length) {
-    log.error('自有 jsx 函数缺失', { missing: coreMissing });
+  /* 分两级：必需缺了整门不可用；可选缺了只记名字，由 capability 逐个禁用 */
+  const coreMissing = await probe(CORE_FUNCS);
+  const coreRequiredMissing = coreMissing.filter((fn) => CORE_REQUIRED.includes(fn));
+  if (coreRequiredMissing.length) {
+    log.error('自有 jsx 必需函数缺失', { missing: coreRequiredMissing });
     return capability;
   }
   capability.core = true;
+  capability.missing.push(...coreMissing);
 
   const vendorResult = await loadJsx(VENDOR_FILE);
   if (vendorResult.status === 'error') {
@@ -142,8 +203,9 @@ async function load(): Promise<PsCapability> {
   }
 
   const vendorMissing = await probe(VENDOR_FUNCS);
-  if (vendorMissing.length) {
-    log.error('官方 jsx 函数缺失，应用能力不可用', { missing: vendorMissing });
+  const vendorRequiredMissing = vendorMissing.filter((fn) => VENDOR_REQUIRED.includes(fn));
+  if (vendorRequiredMissing.length) {
+    log.error('官方 jsx 必需函数缺失，应用能力不可用', { missing: vendorRequiredMissing });
     return capability;
   }
 
@@ -155,7 +217,17 @@ async function load(): Promise<PsCapability> {
   }
 
   capability.vendor = true;
-  log.info('PS 能力就绪', capability);
+  capability.missing.push(...vendorMissing);
+
+  if (capability.missing.length) {
+    /* 不是错误：这些能力单独不可用，其余照常。诊断页能看到清单 */
+    log.warn('部分 jsx 函数缺失，对应能力单独不可用', { missing: capability.missing });
+  }
+  log.info('PS 能力就绪', {
+    core: capability.core,
+    vendor: capability.vendor,
+    missing: capability.missing.length
+  });
   return capability;
 }
 
@@ -174,4 +246,15 @@ export async function requireCore(): Promise<boolean> {
 export async function requireVendor(): Promise<boolean> {
   const capability = await ensurePsReady();
   return capability.vendor;
+}
+
+/**
+ * 某个 jsx 函数是否缺失（门可用、但这一个没有）。
+ *
+ * 门只管「整门能不能用」，不管「这一个能力能不能用」。旧 jsx 缺一个新函数时，
+ * 以前是整门变红；现在只有用到它的那个能力报 `PS_UNREADY` + `detail: fn:<名字>`。
+ */
+export async function funcMissing(fn: string): Promise<boolean> {
+  const capability = await ensurePsReady();
+  return capability.missing.includes(fn);
 }

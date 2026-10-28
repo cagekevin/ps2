@@ -4,8 +4,8 @@ import {
   decodeText,
   encodeText,
   MAX_TEXT_LENGTH,
-  normalizeTranslateItems,
-  parseTranslateResponse
+  decodeTranslateItems,
+  decodeTranslateResponse
 } from './translate';
 
 describe('translate', () => {
@@ -23,16 +23,16 @@ describe('translate', () => {
   });
 
   it('响应解析：两代成功码都认，错误码折 CORRUPT 且 detail 带 error_msg', () => {
-    expect(parseTranslateResponse({ error_code: '52000', trans_result: [{ dst: 'Hello' }] })).toEqual({
+    expect(decodeTranslateResponse({ error_code: '52000', trans_result: [{ dst: 'Hello' }] })).toEqual({
       status: 'ok',
       value: 'Hello'
     });
-    expect(parseTranslateResponse({ error_code: '0', trans_result: [{ dst: 'Hello' }] })).toEqual({
+    expect(decodeTranslateResponse({ error_code: '0', trans_result: [{ dst: 'Hello' }] })).toEqual({
       status: 'ok',
       value: 'Hello'
     });
 
-    const bad = parseTranslateResponse({ error_code: '54003', error_msg: 'Invalid Access Limit' });
+    const bad = decodeTranslateResponse({ error_code: '54003', error_msg: 'Invalid Access Limit' });
     expect(bad.status).toBe('error');
     if (bad.status === 'error') {
       expect(bad.code).toBe('CORRUPT');
@@ -48,7 +48,7 @@ describe('translate', () => {
   });
 
   it('条目归一：缺 text 的段落要报出第几段，不按空串继续', () => {
-    expect(normalizeTranslateItems([{ text: 'a' }, { other: 1 }])).toEqual({
+    expect(decodeTranslateItems([{ text: 'a' }, { other: 1 }])).toEqual({
       status: 'error',
       code: 'CORRUPT',
       reason: '文本段落缺少 text 字段',

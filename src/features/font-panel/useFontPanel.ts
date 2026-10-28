@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
+import { useRunCommand } from '../../hooks/useRunCommand';
 import { align as alignCommand } from '../../commands/font-set';
 import {
   applyFontName,
@@ -55,6 +56,8 @@ interface Distribution {
 export function useFontPanel() {
   const toast = useToast();
   const loading = useLoading();
+  /* 本地那个 `run` 把它折成 `boolean`；提示与留痕都在这一个出口 */
+  const runCommand = useRunCommand();
 
   const settings = useFontSetStore((state) => state.settings);
   const quickFonts = useFontSetStore((state) => state.quickFonts);
@@ -99,15 +102,10 @@ export function useFontPanel() {
     loadFontSet();
 
     setFontsLoading(true);
-    void loadFontList().then((result) => {
+    void runCommand(() => loadFontList(), { spin: false }).then((result) => {
       if (!aliveRef.current) return;
       setFontsLoading(false);
-      if (result.status === 'ok') {
-        setFonts(result.value.fonts);
-        return;
-      }
-      setFonts([]);
-      toast.error(result.reason);
+      setFonts(result.status === 'ok' ? result.value.fonts : []);
     });
 
     return () => {
@@ -115,30 +113,32 @@ export function useFontPanel() {
       /* 离开页面清掉失败与过期标记：下次进来不该看到上一次的「读取失败」 */
       clearTextFailure();
     };
-  }, [loadFontSet, clearTextFailure, toast]);
+  }, [loadFontSet, clearTextFailure, runCommand, toast]);
 
-  /** 统一的失败出口：命令层只给原因，这里不加结论 */
+  /**
+   * 统一的失败出口：**实现委托给 `runCommand`**，这里只把 `Result` 折成 `boolean`。
+   *
+   * 20 多处调用点靠这个 `boolean` 决定「要不要继续往下走」，签名不动；
+   * 提示与留痕（`log.warn(code, detail)`）全在 `runCommand` 里，本函数不再自己弹 toast。
+   */
   const run = useCallback(
     async (task: () => Promise<Result<unknown>>, successText?: string): Promise<boolean> => {
-      const result = await task();
-      if (result.status === 'error') {
-        toast.error(result.reason);
-        return false;
-      }
-      if (successText) toast.info(successText);
-      return true;
+      const result = await runCommand(task, { spin: false, success: successText });
+      return result.status === 'ok';
     },
-    [toast]
+    [runCommand]
   );
 
   const persist = useCallback(
     (patch: Partial<FontSetSettings>) => {
       setLocalSettings(patch);
-      void saveSettings(patch).then((result) => {
-        if (result.status === 'error') toast.error(`设置未保存：${result.reason}`);
+      void runCommand(() => saveSettings(patch), {
+        spin: false,
+        /* 比通用文案多一句「设置未保存」：用户刚点的档位没落盘，要说清是哪件事 */
+        reasonOf: (result) => `设置未保存：${result.reason}`
       });
     },
-    [setLocalSettings, toast]
+    [setLocalSettings, runCommand]
   );
 
   /* ---------- 顶部：拆分 / 生成按钮 / 复制 / 粘贴 / 方向 ---------- */
@@ -383,14 +383,10 @@ export function useFontPanel() {
   );
 
   const onColor = useCallback(() => {
-    void pickColor().then((result) => {
-      if (result.status === 'error') {
-        toast.error(result.reason);
-        return;
-      }
-      patchText({ color: result.value });
+    void runCommand(() => pickColor(), { spin: false }).then((result) => {
+      if (result.status === 'ok') patchText({ color: result.value });
     });
-  }, [toast, patchText]);
+  }, [runCommand, patchText]);
 
   const onStyle = useCallback(
     (kind: 'caps' | 'kerning' | 'italic' | 'bold', value: boolean) => {

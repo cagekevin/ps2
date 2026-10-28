@@ -18,31 +18,42 @@
  * 两条通道服务不同数据（样式库字体项 vs 系统字体列表），不要合并。
  */
 
-import { callJsx, LONG_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
+import { callJsx } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
-import { fail, failWithDetail, ok, type Result } from '../../types/result';
+import { isRecord } from '../../types/guards';
+import { failWithDetail, ok, type Result } from '../../types/result';
+import { callCapability, gateFailed } from './capability';
+import { CAP, FONT_UNAVAILABLE } from './capabilities';
 import { requireVendor } from './init';
-import { requireTextLayer } from './layer';
-import { dataOf, envelopeMessage, errOf, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
-
-/** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
-const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
+import { envelopeMessage, parseJsxRaw } from './raw';
 
 /**
  * 检查字体是否可用。
- * 返回 `ok(false)` 表示字体缺失，调用方应中止并提示。
+ *
+ * 不可用时**直接返回失败，并带上宿主的原话**：同一个 `err === 1` 既可能是字体缺失，
+ * 也可能是「请选择文字图层!」（2026-10-28 真机日志）。以前只返回 `ok(false)`，
+ * 调用方只能给一句「字体不可用」——把「换个图层」的事说成「去装字体」。
+ *
+ * 信封不成立（返回结构未公开）时按可用处理，不阻断正常流程；UNVERIFIED。
  */
-export async function checkFontUsable(item: Record<string, unknown>): Promise<Result<boolean>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+export async function checkFontUsable(item: Record<string, unknown>): Promise<Result<void>> {
+  if (!(await requireVendor())) return gateFailed('vendor');
 
   const payload = encodeText(JSON.stringify(item));
   const call = await callJsx('ys_checkUseFont', [payload]);
   if (call.status === 'error') return call;
 
-  const err = parseErrEnvelope(call.value);
-  /* 信封不成立（返回结构未公开）时按可用处理，不阻断正常流程；UNVERIFIED */
-  if (err.status === 'ok' && err.value === 1) return ok(false);
-  return ok(true);
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return ok(undefined);
+
+  if (isRecord(parsed.value) && parsed.value.err === 1) {
+    return failWithDetail(
+      'VALIDATION',
+      envelopeMessage(parsed.value) || FONT_UNAVAILABLE,
+      `raw:${call.value}`
+    );
+  }
+  return ok(undefined);
 }
 
 /**
@@ -51,35 +62,9 @@ export async function checkFontUsable(item: Record<string, unknown>): Promise<Re
  * 返回 `{ fonts: [...] }`；`fonts` 为空 = 读取失败（原版报「读取字体属性失败」）。
  * 整份原样入库，不补键、不改写——库项形状由 jsx 决定。
  */
-export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-
-  const call = await callJsx('ys_getFontInfo', []);
-  if (call.status === 'error') return call;
-
-  const parsed = parseJsxRaw(call.value);
-  if (parsed.status === 'error') return parsed;
-  const value = parsed.value;
-
-  if (value === false) return fail('VALIDATION', '当前图层不是文字图层');
-
-  const err = errOf(value, call.value);
-  if (err.status === 'ok' && err.value === 1) {
-    return failWithDetail('PS_ERROR', envelopeMessage(value) || '读取字体属性失败', `raw:${call.value}`);
-  }
-
-  /* 信封拆包走 raw.ts——这里只判「fonts 是否非空」，不认识返回形状 */
-  const data = dataOf(value);
-  if (
-    !data ||
-    typeof data !== 'object' ||
-    !Array.isArray((data as { fonts?: unknown }).fonts) ||
-    ((data as { fonts: unknown[] }).fonts as unknown[]).length === 0
-  ) {
-    return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
-  }
-
-  return ok(data as Record<string, unknown>);
+export function getFontInfo(): Promise<Result<Record<string, unknown>>> {
+  /* 三态（false / err:1 / 载荷）与载荷校验都在 `CAP.fontInfo` 的 `strictPayload` 里 */
+  return callCapability(CAP.fontInfo);
 }
 
 /**
@@ -89,29 +74,9 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
  * 「命令"设置"当前不可用」，那句话被当成失败原因显示出来，
  * 用户看到的是「Photoshop 版本不支持」——而事实是没选中文字。
  */
-export async function applyFont(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-
-  const layer = await requireTextLayer();
-  if (layer.status === 'error') return layer;
-
-  const payload = encodeText(JSON.stringify(item));
-  const call = await callJsx('ys_useFont', [payload], { timeout: WRITE_TIMEOUT });
-  if (call.status === 'error') return call;
-
-  const parsed = parseJsxRaw(call.value);
-  if (parsed.status === 'error') return parsed;
-  const err = errOf(parsed.value, call.value);
-  if (err.status === 'error') return err;
-  if (err.value === 1) {
-    return failWithDetail(
-      'VALIDATION',
-      envelopeMessage(parsed.value) || FONT_UNAVAILABLE,
-      `raw:${call.value}`
-    );
-  }
-
-  return ok(undefined);
+export function applyFont(item: Record<string, unknown>): Promise<Result<void>> {
+  /* 只有参数编码留在调用点：门 / 前置 / 解析都在 `CAP.applyFont` 里 */
+  return callCapability(CAP.applyFont, [encodeText(JSON.stringify(item))]);
 }
 
 /* ---------------- 系统字体列表（字体管理页） ---------------- */
@@ -123,51 +88,21 @@ export async function applyFont(item: Record<string, unknown>): Promise<Result<v
  * （哨兵表示数据已写到 `SysFont2.json`，调用方重读文件）。
  * 归一化不在这里做——`core` 不能 import `domain`。
  */
-export async function getSystemFontList(): Promise<Result<string>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-
-  return callJsx('ztgl_initSystemList', [], { timeout: LONG_TIMEOUT });
+export function getSystemFontList(): Promise<Result<string>> {
+  return callCapability(CAP.systemFontList);
 }
 
 /**
  * 应用系统字体（原版字体管理页 `ztgl_setFont(hjm, mz, zz)`）。
  *
  * 直调通道；三个参数是**明文**，不要 `encodeText`（与 `ys_useFont` 的区别）。
- * `{err:1}` 的含义**不止一种**：没选中文字图层时宿主给 `{err:1, msg:"请选择文字图层"}`，
- * 字体真缺失时是另一句——所以原因取 `msg`，只有宿主没给才用兜底文案。
- * `-1` 等约定值统一交给 `unwrapRaw`。
+ * 门 / 前置 / 解析都在表里（`CAP.setFont`）：先判「当前是文字图层」，否则 PS 会抛
+ * 「命令"设置"当前不可用」，用户以为 PS 版本不支持；`{err:1}` 的原因取宿主 `msg`。
  */
-export async function setFontByNames(
+export function setFontByNames(
   postScriptName: string,
   name: string,
   weight: string
 ): Promise<Result<void>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-
-  /* 字体管理页点字体的入口：不先判前提，没选中文字图层时 PS 会抛
-     「命令"设置"当前不可用」，用户以为 PS 版本不支持 */
-  const layer = await requireTextLayer();
-  if (layer.status === 'error') return layer;
-
-  const call = await callJsx('ztgl_setFont', [postScriptName, name, weight], {
-    timeout: WRITE_TIMEOUT
-  });
-  if (call.status === 'error') return call;
-
-  const unwrapped = unwrapRaw(call.value);
-  if (unwrapped.status === 'error') return unwrapped;
-
-  const parsed = parseJsxRaw(call.value);
-  if (parsed.status === 'error') return parsed;
-  const err = errOf(parsed.value, call.value);
-  if (err.status === 'error') return err;
-  if (err.value === 1) {
-    return failWithDetail(
-      'VALIDATION',
-      envelopeMessage(parsed.value) || FONT_UNAVAILABLE,
-      `raw:${call.value}`
-    );
-  }
-
-  return ok(undefined);
+  return callCapability(CAP.setFont, [postScriptName, name, weight]);
 }

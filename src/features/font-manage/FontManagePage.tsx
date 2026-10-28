@@ -64,17 +64,19 @@ export default function FontManagePage() {
       />
 
       <div className="mm-font__warnings">
-        {page.dropped > 0 ? (
-          <p className="mm-font__warning">{page.dropped} 个字体项无法识别</p>
+        {page.dropped.length > 0 ? (
+          <p className="mm-font__warning">{page.dropped.length} 个字体项无法识别</p>
         ) : null}
-        {page.tagsDropped > 0 ? (
-          <p className="mm-font__warning">{page.tagsDropped} 个标签无法识别</p>
+        {page.tagsDropped.length > 0 ? (
+          <p className="mm-font__warning">{page.tagsDropped.length} 个标签无法识别</p>
         ) : null}
-        {page.starsDropped > 0 ? (
-          <p className="mm-font__warning">{page.starsDropped} 个评分无法识别</p>
+        {page.starsDropped.length > 0 ? (
+          <p className="mm-font__warning">{page.starsDropped.length} 个评分无法识别</p>
         ) : null}
-        {page.classificationDegraded ? (
-          <p className="mm-font__warning">{page.classificationDegraded}（分类筛选已禁用）</p>
+        {page.classificationError ? (
+          <p className="mm-font__warning">{page.classificationError}（分类筛选已禁用）</p>
+        ) : page.classificationEmpty ? (
+          <p className="mm-font__warning">没有分类数据（分类筛选已禁用）</p>
         ) : null}
         {page.starsError ? (
           <p className="mm-font__warning">

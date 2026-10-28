@@ -5,7 +5,8 @@
  */
 
 import { callJsx } from '../cep/bridge';
-import { failWithDetail, ok, type Result } from '../../types/result';
+import { ok, type Result } from '../../types/result';
+import { gateFailed } from './capability';
 import { requireCore } from './init';
 import { parseJsxRaw } from './raw';
 
@@ -26,7 +27,7 @@ export interface VendorDiag {
 }
 
 export async function diagVendor(): Promise<Result<VendorDiag>> {
-  if (!(await requireCore())) return failWithDetail('PS_UNREADY', 'PS 脚本未加载', 'core:false');
+  if (!(await requireCore())) return gateFailed('core');
 
   const call = await callJsx('mm_diag_vendor');
   if (call.status === 'error') return call;

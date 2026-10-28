@@ -33,7 +33,7 @@ export interface CommonUseItem {
 }
 
 /** 文件根（裸数组） */
-export type CommonUseFile = CommonUseItem[];
+
 
 /** 页面视图：只留渲染要用的字段，排序用 `index`，缺 `id` 的项进不了视图 */
 export interface CommonUseTile {
@@ -255,20 +255,25 @@ function textOf(value: unknown): string {
 /**
  * 文件 → 视图。
  *
+ * 入参是**原始记录**（不是过滤后的可用项）：`index` 必须是文件里的真实下标，
+ * 否则文件里有一项坏的时候，拖拽会把相邻的那一项移走。
+ *
  * `file` 为 `null` 表示「文件不存在」（首次运行），此时按种子渲染、**不写盘**。
  * `isShow` 缺失按「显示」处理：官方默认 `true`，缺键不是用户关掉了它。
  */
-export function toTiles(file: CommonUseFile | null): CommonUseTile[] {
-  const source = file ?? COMMON_USE_SEED;
+export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
+  const source: readonly unknown[] = file ?? COMMON_USE_SEED;
   const tiles: CommonUseTile[] = [];
 
   for (let index = 0; index < source.length; index += 1) {
-    const item = source[index];
-    if (!item) continue;
+    /* 「能不能上屏」的判据只有一处（`decodeCommonUseItem`）：坏项的记账也用同一个函数，
+       这里再写一遍 `id` 非空就成了两套判据，改一处漏一处 */
+    const decoded = decodeCommonUseItem(source[index], `root[${index}]`);
+    if (decoded.status === 'error') continue;
 
-    const id = textOf(item.id);
+    const item = decoded.value;
     /* 没有 id 的项无法排序 / 无法定位显隐，宁可不上屏也不要用下标冒充 id */
-    if (!id) continue;
+    const id = textOf(item.id);
 
     const svg = textOf(item.svg);
     const filled = typeof item.fillSvg === 'string' && item.fillSvg ? stripHash(item.fillSvg) : null;
@@ -292,25 +297,16 @@ export function toTiles(file: CommonUseFile | null): CommonUseTile[] {
 }
 
 /**
- * 文件结构校验：根必须是数组，每项必须是对象且带字符串 `id`。
+ * 一项常用功能：必须是对象、且带非空 `id`。
  *
- * 不做「跳过坏项继续」：坏一项就整份拒绝，`detail` 指出第几个——
- * 静默丢项等于把用户自定义的按钮悄悄删掉。
+ * 只判「这一项能不能用」，不改写、不补键——项里还有 `sort` / `openistrue` 等我们不认识的键，
+ * 写回时必须原样保留。**一项坏不再让整份不可用**：调用方用 `decodeList(..., 'filter')`
+ * 跳过它并记账（`sj_commonFunction.json` 第 10 项缺 id 曾导致整页 `CORRUPT`）。
  */
-export function parseCommonUseFile(raw: unknown): Result<CommonUseFile> {
-  if (!Array.isArray(raw)) return failWithDetail('CORRUPT', '常用功能文件顶层不是数组', 'root');
-
-  const file: CommonUseFile = [];
-  for (let index = 0; index < raw.length; index += 1) {
-    const item: unknown = raw[index];
-    if (!isRecord(item)) {
-      return failWithDetail('CORRUPT', '常用功能文件里存在非对象条目', `root[${index}]`);
-    }
-    if (typeof item.id !== 'string' || !item.id) {
-      return failWithDetail('CORRUPT', '常用功能项缺少 id', `root[${index}].id`);
-    }
-    file.push(item);
+export function decodeCommonUseItem(value: unknown, path: string): Result<CommonUseItem> {
+  if (!isRecord(value)) return failWithDetail('CORRUPT', '常用功能项不是对象', path);
+  if (typeof value.id !== 'string' || !value.id) {
+    return failWithDetail('CORRUPT', '常用功能项缺少 id', `${path}.id`);
   }
-
-  return ok(file);
+  return ok(value);
 }

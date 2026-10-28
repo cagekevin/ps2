@@ -31,8 +31,30 @@ import {
   readKuGroupItems,
   readKuGroupId,
   readKuItem,
-  setKuGroupShow
+  renameKuGroup,
+  renameKuItem,
+  setKuGroupShow,
+  deleteKuGroup,
+  deleteKuItem,
+  moveKuItemTo
 } from '../repo/style-repo';
+
+/**
+ * 原样读单项 / 改名 / 删除 / 移动的出口（页面要用**原始记录**，视图模型不带原始数据）。
+ *
+ * **为什么在这里再导出一次**：`repo/style-repo` 是数据访问层，页面直接调它就绕过了
+ * 编排层（`CONVENTIONS` §9：命令层是唯一执行入口）。这里只转发，不加判断——
+ * 真要加判断（如「组不存在」给更具体的原因）就在这一层加。
+ */
+export {
+  deleteKuGroup,
+  deleteKuItem,
+  moveKuItemTo,
+  readKuGroupId,
+  readKuItem,
+  renameKuGroup,
+  renameKuItem
+};
 import { isForegroundSetd, subscribeHostEvent } from '../core/cep/ps-events';
 import {
   buildColorPairGradients,
@@ -253,9 +275,9 @@ export async function appendGroupToSwatch(
  * 字体缺失时直接返回失败，不发注定无效的调用。
  */
 export async function applyFontToLayer(item: Record<string, unknown>): Promise<Result<void>> {
+  /* 不可用的原因由 `checkFontUsable` 给出（宿主原话：字体缺失 / 请选择文字图层） */
   const check = await checkFontUsable(item);
   if (check.status === 'error') return check;
-  if (!check.value) return fail('VALIDATION', '字体不可用（系统里可能没装这个字体）');
 
   return applyFont(item);
 }

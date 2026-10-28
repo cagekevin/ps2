@@ -61,7 +61,7 @@
 2. 删除另一套，不留注释、不留兼容层、不留 deprecated
 3. 旧调用方一次性迁移
 4. 更新范本
-5. 在 GOVERNANCE.md 变更记录登记
+5. 在 `docs/CHANGELOG.md` 登记
 ```
 
 **不允许**：
@@ -128,6 +128,33 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 | 类型 | PascalCase，无 `I` 前缀 | `LayerKind`、`StyleWarehouseIndex` |
 | 常量 | UPPER_SNAKE | `MAX_RECENT` |
 
+### 1.1 三个前缀只按「入参类型 + 出参形状」分，不看感觉
+
+写「把一个不可信的值变成可信的值」时只有这三种，别自创第四种：
+
+| 前缀 | 入参 | 出参 | 含义 | 例子 |
+|---|---|---|---|---|
+| `parse*` | **`string`**（原文） | `Result<T>` | 文本 → 值（JSON / jsx raw / 库文件文本） | `parseJson`、`parseJsxRaw`、`parseKuContainer` |
+| `decode*` | **`unknown`**（不可信） | `Result<T>` | 判据 + 收窄，**失败可见** | `decodeList`、`decodeFontList`、`decodeStyleIndex` |
+| `decode*` | **`string`**（编码过的文本） | 解码后的值 | 纯 codec，不做判据 | `decodeBase64`、`decodeImage`、`decodeText` |
+| `normalize*` | **已可信的值** | `T`（**不返回 `Result`**） | 纯投影 / 补默认，失败给默认值 | `normalizeTextColor`、`normalizeCollapsed`、`normalizeFontSetSettings` |
+
+判据一句话：**返回 `Result` 的，入参是 `string` 就叫 `parse`，入参是 `unknown` 就叫 `decode`；不返回 `Result` 的才叫 `normalize`。**
+
+2026-10-28 修过一次：`normalizeTranslateItems` / `normalizeTextInfo` / `normalizeQuickFontFile` / `normalizeFontItem` / `normalizeFontList` 五个都返回 `Result` 却叫 `normalize`，`parseTranslateResponse` 入参是 `unknown` 却叫 `parse` —— 六处全部改名，否则下一个写解码的人从仓里能抄到三种写法。
+
+### 1.2 `decodeList` 的两种策略怎么选（别按「哪个库更重要」判）
+
+| 情况 | 策略 | 例 |
+|---|---|---|
+| **结构**坏：顶层不是数组 / 某一项不是对象 | `reject`（`decodeList` 内建，`filter` 也糊不过去） | 所有列表 |
+| **项**坏 + 位置**不敏感**（少一项不影响其余） | `filter` + `dropped` 记账，页面显示「N 项无法识别，已跳过」 | `common-use` 的 14 个按钮、动作库的组与动作、字体标签/星级 |
+| **项**坏 + 位置**敏感**（按下标逐项对应，跳一项就错位） | `reject` | `decodeTranslateItems`（译文按段回写，少一段就写错图层） |
+
+判据一句话：**跳过这一项，剩下的还能不能各就各位？** 能 → `filter`；不能 → `reject`。
+
+**「怕用户以为数据没了」不是选 `reject` 的理由**——`filter` 本来就会显示「N 项无法识别」，而 `reject` 的后果是「一项坏 → 整页不可用」。数据安全由**写路径读原始记录**保证（坏项原样留在文件里），不由 `reject` 保证。
+
 ---
 
 ## 2. 技术栈（版本锁定）
@@ -177,8 +204,9 @@ src/
 │  ├─ prefs/      界面偏好（本地 JSON，非业务数据）
 │  ├─ clipboard/  剪贴板（自动降级）
 │  ├─ dialog/     文件对话框（CEP fs API）
+│  ├─ feedback/   提示条 / 全屏加载的**状态**（零 React；components 只渲染）
 │  ├─ image/      图片解码（FileReader / canvas）
-│  ├─ ps/         PS 原子能力（init/vendor/layer/style/font/text/common-use/env/diag）
+│  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
 │  └─ logger/     日志
@@ -225,36 +253,178 @@ components → hooks ──────→ core
 
 跨 feature 复用的逻辑必须上移到 `core` 或 `components`，不允许 feature 互相 import。
 
-### ESLint 锁死边界
+### ESLint 锁死边界（`eslint.config.js` 扁平配置）
 
-```js
-// .eslintrc.cjs
-module.exports = {
-  rules: {
-    'no-restricted-imports': ['error', {
-      patterns: [
-        { group: ['**/features/*'], message: 'core/store/components 不能依赖 features' }
-      ]
-    }]
-  },
-  overrides: [
-    { files: ['src/features/**'], rules: { 'no-restricted-imports': 'off' } }
-  ]
-};
-```
+`no-restricted-imports` 逐层分组，**每层一条**，命中即 `error`：
+
+| 层（`files`） | 禁止 import |
+|---|---|
+| `src/core/**` | `features` / `store` / `components` / `app` |
+| `src/store/**` | `features` / `components` / `app` |
+| `src/domain/**` | `core` / `commands` / `store` / `components` / `features` / `app` |
+| `src/repo/**` | `commands` / `store` / `components` / `features` / `app` |
+| `src/commands/**` | `features` / `components` / `app` |
+| `src/components/**` | `features` / `store` / `app` |
+| `src/hooks/**` | `commands` / `store` / `components` / `features` / `app` |
+
+**未加机器规则的两层（已知缺口，别以为锁了）**：
+
+- `src/features/**` 的「不许互相 import」：`**/features/**` 会连自己目录里的相对 import 一起命中，
+  静态 pattern 表达不了「除了我自己」，故未加，靠评审时 grep。
+- `src/app/**`：装配层允许全部，无需规则。
+
+> **2026-10-28 修**：本节原先贴的是一段**不存在的** `.eslintrc.cjs`（本仓用扁平配置），且只写了
+> 1 条 `**/features/*`；实际是 6 条分层规则，**`hooks` 层漏了**。漏的直接后果：
+> `useRunCommand` 长期反向 import `components/Toast` 与 `components/Loading`，
+> 而这条越界又逼出了「13 处手写 `toast.error`」（不想转圈的调用方只能绕过 hook）。
+> 现已补到 7 条，并把提示条 / 遮罩的状态从 `components/*` 下沉到 `core/feedback/*`。
 
 ---
 
+### 3.1 数据流全景（2026-10-28 快照）
+
+> 本节只写**现状**（链路图 + 关键边），不放灯、不放进度。
+>
+> **哪部分是硬的、哪部分会漂**：
+>
+> - **硬的**（改代码也不该变）：§3.1.5 的 3 条跨层边、§3.1.8 的 5 条**不变量**——哪条边不能多、哪个出口唯一。
+> - **会漂的**：一切**计数**（import 方几个、边几条、切片几个）。它们只给「量级」，**不是判据**；
+>   照着它们做判断会踩空，所以本节**不再写具体条数**，只写「在哪几个文件里」。
+> - 要当前的条数，跑 §3.1.8 的命令自己数。
+
+#### 3.1.1 唯一出口（真身只有两处）
+
+| 出口 | 文件 | import 方 | 说明 |
+|---|---|---|---|
+| **PS 出口** | `core/cep/bridge.ts` 的 `evalScript` | 调用方全在 `core/ps/*` 与 `core/cep/*` 内 | `callJsx` 是它的封装（串行 + 超时 + `EvalScript error.` 折算）。**唯一真正发起 PS 调用的地方**；`core/ps/init.ts` 的探针也用它（问「这个 jsx 函数在不在」） |
+| **落盘出口** | `core/storage/index.ts` 的 `writeTextAtomic` | `repo/json-file.ts`（库文件）、`repo/style-repo.ts` / `repo/ku-archive.ts`（`.ini` 索引与解包内层文件，非 JSON，`json-file` 不适用）、`core/prefs/index.ts`（`prefs.json`，独立文件）、`commands/font.ts`（**§3 授权例外**：用户选路径的整份归档） | 所有写入最终都经过它 |
+
+#### 3.1.2 五条链
+
+```
+① 读   features ─→ store ─→ repo ─→ json-file ─→ core/storage ─→ fs
+② 写   features ─→ commands ─→ repo ─→ json-file ─→ core/storage ─→ fs
+③ PS   features ─→ commands ─→ core/ps ─→ capability ─→ core/cep/bridge ─→ evalScript ─→ jsx
+④ 反馈 commands(结果) ─→ hooks/useRunCommand ─→ core/feedback(状态) ─→ components(渲染)
+⑤ 轮询 app/layer-watcher ─→ core/ps/layer ─→ store/app
+```
+
+- ②的写入按**文件名**串行：`json-file` 的队列 key = `mutate:<root>:<name>`，同文件 = 同一条队列。
+- ④的失败留痕在 `useRunCommand`（`log.warn(code, detail)` + toast）；读路径另有 `useReportFailure`。
+- ⑤每 800ms 一次，`document.hidden` 跳过、上一轮没回来就跳过这一轮（`inFlight`）。
+
+#### 3.1.3 真身清单（谁能读「真的那份」）
+
+| 真身 | 唯一读入口 | 谁在用 |
+|---|---|---|
+| 用户文件（`sj_*`） | `repo/*` | `commands/*`（读改写）+ `store/*`（只读投影） |
+| PS 状态 | `core/ps/*` | `commands/*` + **`store/text.ts`（唯一一处 store 直读 PS）** |
+| 界面偏好 | `core/prefs`（`prefs.json`，**与库文件不同目录不同文件**） | `commands/common-use` + `hooks/usePersisted` + `store/{common-use,font}` |
+| 字节 | `core/storage` | 见 3.1.1 |
+
+#### 3.1.4 投影层（只读，不改真身）
+
+| 层 | 允许 | 实测 |
+|---|---|---|
+| `store/*` | 读 `repo` / `core/prefs` / `core/ps`，写自己的 state | 只用 `core/logger`（日志）、`core/prefs`（偏好）、`core/ps/text`（读 PS 载荷）；**不碰 `core/storage`**；**不解码文件**（`types/decode-list` 只 `import type`）。**唯一的解码例外**：`store/text.ts` 解 PS 载荷（`domain/text-info.decodeTextInfo`）——它读的不是文件是 PS 状态，解码跟着载荷走 |
+| `domain/*` | 纯函数，零 IO | 只 import `types` |
+
+`store/text.ts` 是「读 PS」的范本：`getTextInfoRaw()` 拿原始载荷 → `domain/text-info.decodeTextInfo()` 解码 → 投影；
+失败保留旧值 + `failure` + `stale` + `log.warn`（**读可降级但必须标记**）。
+
+#### 3.1.5 跨层边（**只有这 3 条**，其余全部向下）
+
+| # | 边 | 为什么合法 |
+|---|---|---|
+| 1 | `commands/font.ts → core/storage`（`readTextAt` / `writeTextAtAtomic`） | 用户主动选路径的**整份归档**导入导出，§3 明文授权。库文件不适用 |
+| 2 | `core/ps/style.ts → core/storage` | 只借 `ROOTS`（路径常量），**不读写** |
+| 3 | `store/text.ts → core/ps/text` | 见 3.1.4，读 PS 的唯一一处，形状合规 |
+
+> **已收**：2026-10-28 之前 `features/style/useStyleActions.ts` 直连 `repo/style-repo` 的 7 个函数
+> （含 `renameKu*` / `deleteKu*` / `moveKuItemTo` 三个写）——绕过编排层。
+> 现已由 `commands/style.ts` 转发，页面只走 commands。
+
+#### 3.1.6 同文件多写入者 / 多读取入口
+
+**多写入者**：`sj_set.json` 由两个 repo 分别读改写：`repo/common-use-repo`（常用页那组键）、`repo/font-set-repo`（`zt*` 那组键）。
+不丢更新靠两件事：①`json-file` 的队列 key 是文件名 → 同一条队列；②§5 的「按 key 分工」（各写各的键）。
+
+**多读取入口**：同一份文件有两个读法——`store/*` 读**投影**（自己 `load`），`commands/*` 读**原始记录**（写回要原样）。
+以 `sj_set.json` 为例：`store/font-set.ts` 与 `commands/font-set.ts` 各读一次。
+改文件结构要改两处——这是结构性温床，不是错误：`decodeSettingsObject` 保证「原样返回、保留未知键」，
+所以**改键名不会丢用户数据**，但代码要同步两处。新增文件时优先「只在一处读、另一处从那处拿」。
+
+#### 3.1.7 平台原语的接线在页面层（现状记录）
+
+`features/style/StylePage.tsx` 自己 import `core/image` 的三个原语（`createCanvas` / `decodeImage` / `readFileAsDataUrl`）
+注入给 `domain/image-color`。**domain 提供算法、core 提供平台原语、页面负责接线** —— 依赖注入，形状可接受。
+代价：第二个页面要取色就得再抄一遍接线。将来收口的方向是让 `domain/image-color` 提供「默认注入」入口，
+而不是让每个页面自己 import `core`。目前只有样式页一处接线，**不急**。
+
+#### 3.1.8 不变量（**人工复核口径，不是机器闸**）
+
+> 这里只列「怎么查」，**不挂进 `npm run check`** —— 数据流是全局结构，一两条边变动就红会逼人绕开闸。
+> 复核的人（人或 AI）按下面的命令自己跑；跑了就把结果贴出来。
+
+| 不变量 | 复核命令 | 2026-10-28 实测 |
+|---|---|---|
+| 页面不直连 repo | `grep -rn "from '\.\./\.\./repo/" src/features` | **0** |
+| PS 只经 bridge | `grep -rn "evalScript" src/ \| grep -v "^\s*[*//]"` | 只在 `core/cep/bridge.ts`（+ `core/ps/init.ts` 探针，同一出口） |
+| 落盘只经 storage | `grep -rn "writeText" src/` | `core/storage` + `core/prefs` + `repo/*` + `commands/font.ts`（例外 1） |
+| store 不解码**文件** | `grep -rn "decode" src/store` | ① 只有 `import type { Dropped }`（`types/decode-list`）；② `store/text.ts` 调 `domain/text-info.decodeTextInfo` 解**PS 载荷**（不是文件），见 §3.1.4 |
+| 层边界 | 见 §3 的 ESLint 分层规则 | 越界 0 |
+
+#### 3.1.9 三处「看起来该改、但按本仓分层不能改」（2026-10-28 推演结论）
+
+留在这里是为了**不让下一个人重复推演**——这三处都有明确的阻塞点，不是「懒得改」。
+
+| # | 看起来该改 | 为什么不能改 |
+|---|---|---|
+| 1 | `core/ps/text` 返回解码后的 `TextInfo`，让 `store/text` 变纯投影（照 `core/ps/layer` 的先例） | `core/ps/layer` 能这么做，是因为 `LayerState` 是**图层身份**（`types/layer.ts` 里就是纯类型）。`TextInfo` 是**面板显示什么**（业务形状），归一化也是业务规则（缺字段用面板默认值补）。要让 `core` 返回它，就得把业务搬进 `core`（违反「core 零业务」）或把解码搬进 `types`（违反「types 只放类型」）。**两条都违规 → 这条路在本仓分层下走不通**。现状（`store/text` 调 `domain/text-info.decodeTextInfo`）是合规的：`store → domain` 允许 |
+| 2 | `core/image` 的平台原语由 `domain/image-color` 提供默认注入，页面不再自己接线 | `domain` 不能 import `core`（依赖方向）。要默认注入，就得把量化算法搬出 `domain`（那它就不是纯逻辑、没法单测）或把平台原语搬进 `domain`（那 domain 就不纯了）。**两条都违规**。现状（页面注入、domain 只出算法）是唯一能让算法保持可单测的形状 |
+| 3 | `sj_set.json` 的两个读入口（store 读投影 + commands 读原始）收成一个 | 收成「commands 不自己读」→ store 得额外存原始记录（投影变重）；收成「拆两个文件」→ **改用户文件布局**（原版可能就是这样的，风险最大）。现状靠 `decodeSettingsObject`「原样返回 + 保留未知键」保证**改键名不丢用户数据**，代价只是代码改两处 |
+
+#### 3.1.10 图层监听：官方怎么做的，我们现在是什么样
+
+**逐个位置的现状**（文件 / 行号 / 判据 / 常量值）写在 **`docs/plan/12-事件驱动的图层监听-2026-10-28.md`**；
+官方代码片段原样录在 `docs/原版/官方行为摘录.md`（官方原版源码已入仓 `docs/原版/app.v4.js`）。
+
+**官方的做法**（`app.v4.js:42472` 起，4 个事件 ID 全挂同一个 `selectLayer`）：
+
+- **事件驱动**：事件一到就 `zt_getFontSimpleInfo` 读一次，**不比任何 key**；
+- **`err === 0` 才覆盖面板**（读失败保留旧值）—— 我们 `store/text` 的行为与之一致；
+- **事件载荷里带 `layerID`（数组）与 `null._name`**（`app.v4.js:69408` 的 `switch (s)`），
+  **PS 图层 id 全局唯一、跨文档不撞**；
+- **官方不用 id 判身份**：`selectLayer` 无参，id 只进了 `E.layer.id`（`app.v4.js:17910` 另一组件）；
+- **官方改名时也重读**：`slct` 的 `layerID` 分支里 `cyUpdataLayerName` 与 `ztSelectLayer` 并列。
+
+**我们现在**：
+
+| 环节 | 现状 |
+|---|---|
+| 图层身份 | **类型 + 名字**（`useFontPanel.ts:90`、`layer-watcher.tsx:83`）—— 不含 id |
+| 触发 | 800ms 轮询（`layer-watcher.tsx:27`）+ 事件快路径（订阅 `layerChanged` / `documentChanged` 两个语义） |
+| 事件注册与分发 | 全在 CEP 层（`core/cep/ps-events.ts`），**不需要 jsx**；4 个语义 / 7 个事件 ID / 按 ID 去重注册 / 16 条测试 |
+| 读失败 | watcher 保持上次状态 + 一次性 `log.warn(code, detail)`；`store/text` 保留旧值 + `failure` + `stale` |
+| jsx 协议 | `mm_layer_getState` 返回**类型 + 名字**（无 id）；`mm_layer_getSelection` 返回选中数 |
+| 探针 | `mm_layer_getState` 是 `CORE_REQUIRED` 唯一项（缺了整门不可用）；`mm_layer_getSelection` 缺失只影响 4 个多选能力 |
+
+**未决问题**（含各自的取舍与「回答它需要什么」）在 plan 12 的 §7 —— **Q1/Q2/Q3 只需一次真机点测**，
+在拿到数据前，「轮询留不留」「身份要不要换 id」都只是推测。
+
+> **别再写「事件需要 jsx 侧 registerNotification」**——那是旧判断。官方走的是 CEP 的
+> `PhotoshopRegisterEvent` + `PhotoshopJSONCallback`，**全在 CEP 层**，`core/cep/ps-events.ts`
+> 已经实现（`ps-events.ts` 文件头 + plan 12）。
 ## 4. 类型契约
 
 ```ts
 // src/types/result.ts —— 全仓唯一结果形状
 export type ErrorCode =
   | 'NOT_FOUND' | 'CORRUPT' | 'IO_ERROR'
-  | 'PS_NO_DOC' | 'PS_NOT_SHAPE' | 'PS_SKIPPED'
+  | 'PS_NO_DOC' | 'PS_WRONG_LAYER' | 'PS_SKIPPED'
   | 'PS_UNREADY' | 'PS_REJECTED' | 'PS_ERROR'
   | 'NETWORK' | 'TIMEOUT' | 'AUTH' | 'FORBIDDEN'
-  | 'VALIDATION' | 'UNKNOWN';
+  | 'VALIDATION' | 'CANCELLED' | 'UNKNOWN';
 
 export type Result<T> =
   | { status: 'ok'; value: T }
@@ -635,7 +805,8 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 ```
 core/ps/
 ├─ init.ts      jsx 加载 + 能力探测
-├─ vendor.ts    官方 jsx 两条通道的唯一实现（调度 ps_onJsx / 直调）
+├─ capability.ts 能力执行器：门 → 前置 → 调用 → 解析（唯一入口）
+├─ capabilities.ts 能力表：一行一个能力，是「唯一事实」
 ├─ layer.ts     选择、类型、名称
 ├─ style.ts     颜色 / 渐变 / 图层样式应用
 ├─ font.ts      字体应用（ys_* 先检查再应用；ztgl_* 系统字体列表/应用）
@@ -651,7 +822,7 @@ core/ps/
 - jsx 侧同名镜像：`mm_layer_getState`、`mm_style_applyColor`
 - **字体有两条通道，不要合并**：样式库字体项走 `ys_checkUseFont` / `ys_useFont`（参数 `encodeText`）；系统字体列表走 `ztgl_initSystemList` / `ztgl_setFont`（直调、明文参数）
 - **文本属性是第三条通道**：`zt_*` / `layer_font_*` / `cy_distributedByPitch` 全部直调 `jsx()`、明文参数、写操作 60s 超时，参数与返回见 `PS-CHANNEL-NOTES.md` §11.3。这些函数在 `vendor.jsx` 里已存在，**不写 `jsx/main.jsx` 镜像**（同 `ztgl_*` 的例外理由）
-- **常用页按钮是第四条，但不能一刀切**：`cy_*` 里一半走 `ps_onJsx`（原版 `jsxHistory*`）、一半直调（原版 `jsx` / `jsxNoCheck`），**逐个看原版调用点**，同一族也可能不同（`cy_zoom` 直调、`cy_transformPosition` 走调度）。两条通道的实现只有一份：`core/ps/vendor.ts` 的 `runVendor` / `runDirect`。清单与逐条通道见 `PS-CHANNEL-NOTES.md` §11.4
+- **常用页按钮是第四条，但不能一刀切**：`cy_*` 里一半走 `ps_onJsx`（原版 `jsxHistory*`）、一半直调（原版 `jsx` / `jsxNoCheck`），**逐个看原版调用点**，同一族也可能不同（`cy_zoom` 直调、`cy_transformPosition` 走调度）。两条通道的实现只有一份：`core/ps/capability.ts` 的 `DISPATCH` + `toWire`，逐条通道写在 `core/ps/capabilities.ts` 的 `channel` 字段里。清单与逐条通道见 `PS-CHANNEL-NOTES.md` §11.4
 - **`core/ps` 不 import `domain`**：读函数只返回原始 raw，归一化在 `domain`，编排在 `commands`
 - **形状改色不要另起一套**：`mm_style_setShapeColor` 已覆盖填充/描边/开关，旧的 `mm_shape_*` 已删除
 - **批量操作必须在 jsx 内循环**，一次 `evalScript` 完成，禁止前端循环调用

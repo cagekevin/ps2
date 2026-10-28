@@ -4,7 +4,7 @@
  * 磁盘缓存 `SysFont2.json` 与 jsx 返还是同一份数据的两种键名：
  *   family / weights / names / postScriptNames  ← jsx / 页面
  *   name / zz / mz / hjm                        ← 磁盘缓存
- * 统一由 `font-normalize.ts` 转换，页面只认这里的形状。
+ * 统一由 `font-decode.ts` 转换，页面只认这里的形状。
  */
 import { failWithDetail, ok, type Result } from '../types/result';
 

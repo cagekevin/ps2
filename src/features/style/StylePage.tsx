@@ -15,6 +15,8 @@ import { Icon } from '../../components/icons';
 import { InlineEdit } from '../../components/InlineEdit';
 import { SelectBox } from '../../components/SelectBox';
 import { useFloatingPosition } from '../../hooks/useFloatingPosition';
+import { useRunCommand } from '../../hooks/useRunCommand';
+import { failWithDetail, ok } from '../../types/result';
 import {
   describeDetail,
   KU_KINDS,
@@ -31,7 +33,6 @@ import {
   saveExtractedGradientsToGroup,
   saveExtractedToSwatch
 } from '../../commands/style';
-import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
 import { useStyleLibraryStore } from '../../store/style-library';
 import { StyleBottomBar } from './components/StyleBottomBar';
@@ -90,7 +91,7 @@ export default function StylePage() {
 
   /* 图片取色：拖一张图进来，量化出 10 色，弹层里应用或入库 */
   const [extracted, setExtracted] = useState<string[] | null>(null);
-  const loading = useLoading();
+  const runCommand = useRunCommand();
   const toast = useToast();
   const warehouse = warehouses[activeIndex];
 
@@ -104,23 +105,29 @@ export default function StylePage() {
     }
 
     /* 原版 `$load.show('正在解析图片')`（app.v4.js:54667）同款文案 */
-    await loading.run(
+    await runCommand(
       async () => {
-        const dataUrl = await readFileAsDataUrl(files[0] as File);
+        try {
+          const dataUrl = await readFileAsDataUrl(files[0] as File);
 
-        /* canvas / Image 在 CEP 的 Chromium 里可用；jsdom 测不了（见 image-color.ts 注释） */
-        const colors = await extractImageColors(
-          { kind: 'dataUrl', dataUrl },
-          { createCanvas, decode: decodeImage }
-        );
+          /* canvas / Image 在 CEP 的 Chromium 里可用；jsdom 测不了（见 image-color.ts 注释） */
+          const colors = await extractImageColors(
+            { kind: 'dataUrl', dataUrl },
+            { createCanvas, decode: decodeImage }
+          );
 
-        if (!colors.length) {
-          toast.error('解析图片失败');
-          return;
+          /* 一张图提不出颜色 = 解析失败（不是「成功但空」），也要走统一出口 */
+          if (!colors.length) return failWithDetail('CORRUPT', '解析图片失败', 'colors:0');
+
+          setExtracted(colors.map((color) => color.hex));
+          return ok(undefined);
+        } catch (error) {
+          /* `extractImageColors` 是纯函数、失败**抛错**（decode 拒绝 / 缺注入）；
+             在这里折成 Result，否则整个 handler 会变成一个无人捕获的 rejection ——
+             遮罩消失、界面没反应、日志里什么都没有。 */
+          return failWithDetail('CORRUPT', '解析图片失败', String(error));
         }
-        setExtracted(colors.map((color) => color.hex));
-      },
-      '正在解析图片'
+      }
     );
   }
 

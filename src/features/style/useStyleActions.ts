@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { useToast } from '../../components/Toast';
-import { useRunCommand, type RunOptions } from '../../hooks/useRunCommand';
+import { useReportFailure, useRunCommand, type RunOptions } from '../../hooks/useRunCommand';
 import type { MenuItem } from '../../components/ContextMenu';
 import {
   addFontFromLayer,
@@ -30,7 +30,14 @@ import {
   importKuAppend,
   importKuReplace,
   moveGroupInLibrary,
+  deleteKuGroup,
+  deleteKuItem,
+  moveKuItemTo,
   pickColorToGroup,
+  readKuGroupId,
+  readKuItem,
+  renameKuGroup,
+  renameKuItem,
   sendGroupToSwatch,
   sendItemToSwatch,
   setGroupShowInLibrary
@@ -38,15 +45,6 @@ import {
 import type { KuKind } from '../../domain/style-library';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { usePersisted } from '../../hooks/usePersisted';
-import {
-  deleteKuGroup,
-  deleteKuItem,
-  moveKuItemTo,
-  readKuGroupId,
-  readKuItem,
-  renameKuGroup,
-  renameKuItem
-} from '../../repo/style-repo';
 import { useStyleLibraryStore } from '../../store/style-library';
 import { ok, type Result } from '../../types/result';
 
@@ -83,6 +81,7 @@ export function useStyleActions() {
   const toast = useToast();
   /* 执行 + 反馈的唯一实现（loading / 成功提示 / 取消静默 / 缺文件文案都在里面） */
   const run = useRunCommand();
+  const reportFailure = useReportFailure();
   const confirm = useConfirm();
 
   const load = useStyleLibraryStore((state) => state.load);
@@ -128,11 +127,11 @@ export function useStyleActions() {
     return result.code === 'NOT_FOUND' ? '库文件不存在' : result.reason;
   }
 
-  /** 读库失败 → toast（写库失败由 `useRunCommand` 的 `reasonOf` 走同一个 `styleReason`） */
-  function toastFailure(result: Result<unknown>) {
-    if (result.status !== 'error') return;
-    toast.error(styleReason(result));
-  }
+  /*
+   * 读库失败的提示走 `reportFailure`（`hooks/useRunCommand` 的读路径出口）：
+   * 与写库失败同一个 `styleReason`，并且**一样写日志**。
+   * 原先这里自己 `toast.error`，只弹提示不写码，真机上对不上账。
+   */
 
   /** 当前仓库；没有就提示一句（用户主动触发的动作用它） */
   function requireWarehouse() {
@@ -245,7 +244,7 @@ export function useStyleActions() {
 
     const raw = readKuItem(warehouse, activeKind, groupIndex, itemIndex);
     if (raw.status === 'error') {
-      toastFailure(raw);
+      reportFailure(raw, { reasonOf: styleReason });
       return;
     }
 
@@ -281,7 +280,7 @@ export function useStyleActions() {
     /* style：需要分组 id，jsx 用它定位样式资源 */
     const groupId = readKuGroupId(warehouse, activeKind, groupIndex);
     if (groupId.status === 'error') {
-      toastFailure(groupId);
+      reportFailure(groupId, { reasonOf: styleReason });
       return;
     }
 

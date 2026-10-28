@@ -6,6 +6,9 @@
  *   本文件              —— 解析返回值（约定值 / JSON / err 信封）
  * 新增约定值必须先登记 `RAW_FAILURES` 这张表，不许在能力函数里手写字符串比较。
  *
+ * 能力表（`./capabilities.ts`）的 `parse` 字段只许引用本文件的解析器：**严格度是能力的契约**
+ * （认不出结构算失败还是算成功），写在表里一眼能看见，不许散回各能力函数里。
+ *
  * 约定值来自原版面板与我们的 jsx/main.jsx（详见 docs/PS-CHANNEL-NOTES.md §三）。
  */
 
@@ -34,9 +37,17 @@ export function unwrapRaw(raw: string): Result<void> {
   return ok(undefined);
 }
 
-/** raw 是 JSON → 解析；不是 → CORRUPT（detail 带原始值，排障不用翻日志） */
+/**
+ * raw 是 JSON → 解析。
+ *
+ * **不是合法 JSON 时用 `PS_ERROR` 而不是 `CORRUPT`**：
+ * `CORRUPT` 是「数据不认识」（JSON 合法但结构不对，读文件时就是这个）；
+ * 而「jsx 返回值不是 JSON」是**宿主这次没给出可解析的结果**——真机见过
+ * `zt_getFontSimpleInfo` 返回 `undefined`（`callJsx` 把它转成字符串 `"undefined"`）。
+ * 报 `CORRUPT` 会让人以为「文件/结构坏了」，实际是「这次没读到」。
+ */
 export function parseJsxRaw(raw: string): Result<unknown> {
-  return parseJson(raw, 'jsx 返回值');
+  return parseJson(raw, 'jsx 返回值', 'PS_ERROR');
 }
 
 /**
@@ -100,4 +111,133 @@ export function parseDataEnvelope(raw: string): Result<unknown> {
 export function dataOf(value: unknown): unknown {
   if (isRecord(value) && 'data' in value) return value.data;
   return value;
+}
+
+/* ---------------- 能力表用的具名解析器 ---------------- */
+
+/** raw 解析器签名：能力表 `parse` 字段的类型，输入原始串、输出已翻译的结果 */
+export type Parser<T> = (raw: string) => Result<T>;
+
+/** 原样交出 raw（`ztgl_initSystemList`：调用方自己判 `ok` 哨兵，再决定要不要解析 JSON） */
+export const passthrough: Parser<string> = (raw) => ok(raw);
+
+/**
+ * 宽松写：认不出结构按成功。
+ *
+ * 这批直调函数可能返回裸 `1` / 空串（结构 UNVERIFIED），按严格判据会把正常操作全判成失败，
+ * 所以沿用 `runDirect` 的历史妥协。**收紧必须单独一轮 + 真机证据**，不许在这里顺手改。
+ */
+export function lenientVoid(fallback: string): Parser<void> {
+  return (raw) => {
+    const guard = unwrapRaw(raw);
+    if (guard.status === 'error') return guard;
+
+    const parsed = parseJsxRaw(raw);
+    if (parsed.status === 'error') return ok(undefined);
+
+    if (isRecord(parsed.value) && parsed.value.err === 1) {
+      return failWithDetail(
+        'VALIDATION',
+        envelopeMessage(parsed.value) || fallback,
+        `raw:${raw.slice(0, 120)}`
+      );
+    }
+    return ok(undefined);
+  };
+}
+
+/**
+ * 严格写：信封不成立就是 `CORRUPT`（`ys_useFont` / `ztgl_setFont` 这一档）。
+ *
+ * 与 `lenientVoid` 的唯一区别在第 2 步：「解析不出来 = 当成功」是假成功——字体没换却提示成功。
+ * 两个解析器并存是刻意的，用哪个由能力表决定，不设默认值。
+ */
+export function strictVoid(fallback: string): Parser<void> {
+  return (raw) => {
+    const guard = unwrapRaw(raw);
+    if (guard.status === 'error') return guard;
+
+    const parsed = parseJsxRaw(raw);
+    if (parsed.status === 'error') return parsed;
+
+    const err = errOf(parsed.value, raw);
+    if (err.status === 'error') return err;
+    if (err.value === 1) {
+      return failWithDetail('VALIDATION', envelopeMessage(parsed.value) || fallback, `raw:${raw}`);
+    }
+    return ok(undefined);
+  };
+}
+
+/**
+ * 约定值先折失败，再当 JSON 解析（严格）：`mm_style_getForegroundColor` 这一档。
+ * 与 `strictVoid` 的区别是没有 err 信封可判，解析出来就是载荷本身。
+ */
+export function sentinelJson(raw: string): Result<unknown> {
+  const guard = unwrapRaw(raw);
+  if (guard.status === 'error') return guard;
+  return parseJsxRaw(raw);
+}
+
+/**
+ * 三态载荷读（`ys_getFontInfo` / `ys_getGradientInfo` 这一档）：
+ * `false` = 当前图层不适用（`VALIDATION`）、`{err:1}` = 读失败（`PS_ERROR`）、其余当载荷。
+ *
+ * 两个函数原本各写一遍这段骨架（`false` 分支、`err===1` 分支、载荷校验、`ok`），
+ * 只差文案与载荷判定——同一件事两处实现。
+ *
+ * **不折约定值**：`no-doc` / `-1` 在这里落成 `CORRUPT`（与 `strictData` 一致，既有行为）。
+ */
+export function strictPayload<T>(opts: {
+  /** `false` 时给用户看的话（图层不适用，不是故障） */
+  whenFalse: string;
+  /** 读失败时的兜底文案；宿主给了 `msg` 就用宿主的 */
+  whenFailed: string;
+  /** 载荷校验：不合格返回 `null`（按 `whenFailed` 失败），合格返回收窄后的值 */
+  accept: (data: unknown) => T | null;
+}): Parser<T> {
+  return (raw) => {
+    const parsed = parseJsxRaw(raw);
+    if (parsed.status === 'error') return parsed;
+
+    const value = parsed.value;
+    if (value === false) return failWithDetail('VALIDATION', opts.whenFalse, `raw:${raw}`);
+
+    const err = errOf(value, raw);
+    if (err.status === 'ok' && err.value === 1) {
+      return failWithDetail('PS_ERROR', envelopeMessage(value) || opts.whenFailed, `raw:${raw}`);
+    }
+
+    const accepted = opts.accept(dataOf(value));
+    if (accepted === null) {
+      return failWithDetail('PS_ERROR', opts.whenFailed, `raw:${raw}`);
+    }
+    return ok(accepted);
+  };
+}
+
+/**
+ * 严格读：`err !== 0` 当失败，其余交 `data` 载荷。
+ *
+ * 原版只在该值为 0 时才覆盖面板（`app.v4.js:42523` 一带）；把 `{ err: 1, data }` 的 data
+ * 直接交出去，非文字图层上会拿上一次的残留字段当新值——面板数字看着变了其实图层没变。
+ *
+ * **折约定值**（与 `lenientVoid` / `strictVoid` / `sentinelJson` 同一套判据）：
+ * 以前这里不折，`no-doc`（宿主说没打开文档）会落成 `CORRUPT`「不是合法 JSON」——
+ * 那不是「数据坏了」。真机 2026-10-28 给的正是 `PS_NO_DOC`。
+ */
+export function strictData(fallback: string): Parser<unknown> {
+  return (raw) => {
+    const guard = unwrapRaw(raw);
+    if (guard.status === 'error') return guard;
+
+    const parsed = parseJsxRaw(raw);
+    if (parsed.status === 'error') return parsed;
+
+    const value = parsed.value;
+    if (isRecord(value) && typeof value.err === 'number' && value.err !== 0) {
+      return failWithDetail('VALIDATION', envelopeMessage(value) || fallback, `err:${value.err}`);
+    }
+    return ok(dataOf(value));
+  };
 }

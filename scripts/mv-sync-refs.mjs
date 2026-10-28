@@ -172,7 +172,7 @@ import {
   resolveSourceFile,
   hasJsx,
   hasJsxHintRaw,
-} from './check-targets.mjs';
+} from './1mao-scripts/check-targets.mjs';
 
 // 【修复 1: 扩大猎杀范围】测试脚本也需要参与引用同步
 if (!SCAN_EXTS.includes('.mjs')) SCAN_EXTS.push('.mjs', '.cjs');

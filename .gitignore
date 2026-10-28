@@ -1,6 +1,6 @@
 node_modules/
 dist/
-.codebuddy/
+
 *.tsbuildinfo
 .vite/
 .DS_Store

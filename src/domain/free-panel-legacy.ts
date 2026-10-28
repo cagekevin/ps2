@@ -93,6 +93,8 @@ export const LEGACY_FONT_ACTIONS: readonly LegacyFontAction[] = [
     command: 'align',
     payload: { fields: ['index'], fixed: { axis: 'v' } }
   },
+  /* 这里的 key 是原版写进用户配置的字面量，必须照抄（哪怕它其实不是可调函数）：
+     `zt_changeTextBranchMerge` 在真机上一调就抛「没有这种元素」，见 §11.3 第 7 条 */
   { key: 'zt_changeTextBranchMerge', command: 'split', payload: { fields: ['mode'] } }
 ];
 

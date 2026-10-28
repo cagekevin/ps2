@@ -1,10 +1,14 @@
 /**
  * 字体项归一化：**纯函数、零 IO**。
  *
- * 兼容两套键名（见 `font-item.ts`）。坏项丢弃但**计数**——调用方把
- * `dropped` 显示到界面上，不许只写日志（`CONVENTIONS` §4.2 诚实优先）。
+ * 「一项长什么样」在这里；「文件里一堆项、坏的怎么办」在 `types/decode-list` 的 `decodeList`。
+ * 坏项丢弃但**记账**（`dropped` 带 path 与原因）——调用方把它显示到界面上，
+ * 不许只写日志（`CONVENTIONS` §4.2 诚实优先）。
+ *
+ * 兼容两套键名（见 `font-item.ts`）。
  */
 
+import { decodeList, type Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { fail, ok, type Result } from '../types/result';
 import type { FontItem } from './font-item';
@@ -20,7 +24,7 @@ function asStringArray(value: unknown): string[] {
 }
 
 /** 单项归一化；缺家族名视为坏项 */
-export function normalizeFontItem(raw: unknown): Result<FontItem> {
+export function decodeFontItem(raw: unknown): Result<FontItem> {
   if (!isRecord(raw)) return fail('CORRUPT', '字体项不是对象');
 
   const family =
@@ -36,23 +40,16 @@ export function normalizeFontItem(raw: unknown): Result<FontItem> {
 }
 
 /**
- * 列表归一化：坏项丢掉、其余照常。
+ * 列表归一化：坏项丢掉、其余照常，丢掉的进 `dropped`。
  *
- * 入参必须是数组——顶层形状由调用方判定（`Array.isArray`），
- * 这里不把「不是数组」伪装成「空列表」。
+ * 入参是 `unknown`：顶层形状由 `decodeList` 判，非数组直接 `CORRUPT`——
+ * 不把「不是数组」伪装成「空列表」。
  */
-export function normalizeFontList(raw: readonly unknown[]): {
-  list: FontItem[];
-  dropped: number;
-} {
-  const list: FontItem[] = [];
-  let dropped = 0;
+export function decodeFontList(
+  raw: unknown
+): Result<{ list: FontItem[]; dropped: Dropped[] }> {
+  const decoded = decodeList(raw, decodeFontItem, 'filter');
+  if (decoded.status === 'error') return decoded;
 
-  for (const item of raw) {
-    const normalized = normalizeFontItem(item);
-    if (normalized.status === 'ok') list.push(normalized.value);
-    else dropped += 1;
-  }
-
-  return { list, dropped };
+  return ok({ list: decoded.value.items, dropped: decoded.value.dropped });
 }

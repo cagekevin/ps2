@@ -15,7 +15,6 @@ import { log } from '../core/logger';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
 import {
   alignHorizontal as alignHorizontalJsx,
-  changeTextBranchMerge,
   createButton as createButtonJsx,
   distributeByPitch,
   getCurrentFontInfoRaw,
@@ -65,8 +64,8 @@ import {
   decodeText,
   encodeText,
   MAX_TEXT_LENGTH,
-  normalizeTranslateItems,
-  parseTranslateResponse,
+  decodeTranslateItems,
+  decodeTranslateResponse,
   TRANSLATE_URL
 } from '../domain/translate';
 import { readSystemFontCache } from '../repo/font-repo';
@@ -146,10 +145,15 @@ export function distribute(axis: 1 | 2, value: string, filter: boolean): Promise
   return distributeByPitch(axis, text, filter);
 }
 
-/** 拆分 / 合并：原版先探一次再真执行，两步都不能省（探的那次决定能不能执行） */
-export async function split(mode: 1 | 2 | 3 | 4): Promise<Result<void>> {
-  const checked = await changeTextBranchMerge(mode);
-  if (checked.status === 'error') return checked;
+/**
+ * 拆分 / 合并。
+ *
+ * 原版「先探一次再执行」的那一步（`zt_changeTextBranchMerge`）在真机上直接抛
+ * 「没有这种元素」（2026-10-28 日志）——它只是原版派发表的 key，不是可调函数，
+ * 已从能力表和探测清单移除。现在只调真正执行的 `zt_textBranchMerge`：
+ * 不能执行时 PS 自己会返回错误，解析会把它变成失败，不会假成功。
+ */
+export function split(mode: 1 | 2 | 3 | 4): Promise<Result<void>> {
   return textBranchMerge(mode);
 }
 
@@ -196,7 +200,6 @@ export async function pasteFont(keeps: PasteFontConfig): Promise<Result<void>> {
 
   const usable = await checkFontUsable(clone);
   if (usable.status === 'error') return usable;
-  if (!usable.value) return fail('VALIDATION', '字体不可用');
 
   return applyFont(clone);
 }
@@ -233,7 +236,7 @@ export async function translate(input: {
   const raw = await getCurrentTextRaw();
   if (raw.status === 'error') return raw;
 
-  const items = normalizeTranslateItems(raw.value);
+  const items = decodeTranslateItems(raw.value);
   if (items.status === 'error') return items;
   if (items.value.length === 0) return fail('VALIDATION', '没有可翻译的文本');
 
@@ -255,7 +258,7 @@ export async function translate(input: {
     );
     if (response.status === 'error') return response;
 
-    const parsed = parseTranslateResponse(response.value);
+    const parsed = decodeTranslateResponse(response.value);
     if (parsed.status === 'error') return parsed;
 
     const item = items.value[index];

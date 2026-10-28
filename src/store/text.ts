@@ -18,7 +18,7 @@
 import { create } from 'zustand';
 import { getTextInfoRaw } from '../core/ps/text';
 import { log } from '../core/logger';
-import { applyTextPatch, normalizeTextInfo, type TextInfo } from '../domain/text-info';
+import { applyTextPatch, decodeTextInfo, type TextInfo } from '../domain/text-info';
 import { failWithDetail, type Result } from '../types/result';
 
 interface TextState {
@@ -53,7 +53,7 @@ export const useTextStore = create<TextState>()((set, get) => ({
       return;
     }
 
-    const info = normalizeTextInfo(raw.value);
+    const info = decodeTextInfo(raw.value);
     if (info.status === 'error') {
       log.warn('文字属性结构不认识', { reason: info.reason, detail: info.detail });
       set({ failure: failWithDetail(info.code, info.reason, info.detail), stale: true });

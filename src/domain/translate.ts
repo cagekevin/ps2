@@ -11,6 +11,7 @@
  */
 
 import { failWithDetail, ok, type Result } from '../types/result';
+import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { md5 } from './md5';
 
@@ -90,7 +91,7 @@ export function buildTranslateParams(input: {
  * 成功码有两代：新接口 `52000`、老接口 `0`，两种都认（原版只判 `trans_result[0].dst`）。
  * 失败码 `CORRUPT`，`detail` 带 `error_msg`（外部原话，排障只认它）。
  */
-export function parseTranslateResponse(raw: unknown): Result<string> {
+export function decodeTranslateResponse(raw: unknown): Result<string> {
   if (!isRecord(raw)) {
     return failWithDetail('CORRUPT', '翻译接口返回不是对象', `raw:${String(raw).slice(0, 120)}`);
   }
@@ -127,20 +128,17 @@ export interface TranslateItem {
  * 每条必须有 `text`：缺了就无法翻译，也没法判断 1000 字上限——
  * 宁可报「第 N 段没有文本」，也不要按空串继续把用户的图层改坏。
  */
-export function normalizeTranslateItems(raw: unknown): Result<TranslateItem[]> {
-  if (!Array.isArray(raw)) {
-    return failWithDetail('CORRUPT', '当前文本不是数组', `root:${typeof raw}`);
+/** 一段文本：必须有 `text` 字符串，其余键原样保留 */
+function translateItem(value: unknown, path: string): Result<TranslateItem> {
+  if (!isRecord(value) || typeof value.text !== 'string') {
+    return failWithDetail('CORRUPT', '文本段落缺少 text 字段', path);
   }
-  if (raw.length === 0) return ok([]);
+  return ok({ ...value, text: value.text });
+}
 
-  const items: TranslateItem[] = [];
-  for (let index = 0; index < raw.length; index += 1) {
-    const item: unknown = raw[index];
-    if (!isRecord(item) || typeof item.text !== 'string') {
-      return failWithDetail('CORRUPT', '文本段落缺少 text 字段', `root[${index}]`);
-    }
-    items.push({ ...item, text: item.text });
-  }
-
-  return ok(items);
+export function decodeTranslateItems(raw: unknown): Result<TranslateItem[]> {
+  /* 数组判定与逐项循环都在 `decodeList` 里（唯一判据），这里只写「一段长什么样」 */
+  const decoded = decodeList(raw, translateItem, 'reject');
+  if (decoded.status === 'error') return decoded;
+  return ok(decoded.value.items);
 }

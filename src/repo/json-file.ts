@@ -17,6 +17,7 @@
 import { log } from '../core/logger';
 import { exists, readTextResult, writeTextAtomic, type StorageRoot } from '../core/storage';
 import { runSerial } from '../core/serial';
+import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
@@ -197,18 +198,43 @@ async function createJsonFile<T>(
 /** 原始记录数组：写路径专用，保留未知键（丢掉就会改坏用户数据） */
 export type RawRecords = Record<string, unknown>[];
 
-/** 顶层必须是「对象数组」；有一个不是对象就整份拒绝，不做静默过滤（`detail` 指出第几个） */
+/**
+ * 官方设置文件（`sj_set.json` 那一类）的顶层解码：必须是一个对象，**原样返回**。
+ *
+ * 写路径要拿到原始对象才能保留别的页面/模块写的键，所以这里不重建、不挑字段。
+ * 唯一入口：`font-set-repo` 与 `common-use-repo` 共用这一份，别在各自文件里再写一遍
+ * （曾经两份逐字节相同）。
+ */
+export function decodeSettingsObject(raw: unknown): Result<Record<string, unknown>> {
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', '设置文件顶层不是对象', 'root');
+  return ok(raw);
+}
+
+/** 一项必须是对象：写路径的严格判据（读路径用 `decodeCommonUseItem` 那类，坏项可跳过） */
+function requireRecord(value: unknown, path: string): Result<Record<string, unknown>> {
+  if (!isRecord(value)) return failWithDetail('CORRUPT', '文件里存在非对象条目', path);
+  return ok(value);
+}
+
+/**
+ * 顶层必须是「对象数组」；有一个不是对象就整份拒绝，不做静默过滤（`detail` 指出第几个）。
+ *
+ * 由 `decodeList(..., 'reject')` 推导，**不再自己写一遍「数组 + 每项是对象」的循环**：
+ * 那条判据的唯一实现在 `types/decode-list`（`decodeArray` + 逐项）。
+ */
 export function decodeRawRecords(raw: unknown): Result<RawRecords> {
-  if (!Array.isArray(raw)) return failWithDetail('CORRUPT', '文件顶层不是数组', 'root');
+  const decoded = decodeList(raw, requireRecord, 'reject');
+  if (decoded.status === 'error') return decoded;
+  return ok(decoded.value.items);
+}
 
-  const records: RawRecords = [];
-  for (let index = 0; index < raw.length; index += 1) {
-    const item = raw[index];
-    if (!isRecord(item)) {
-      return failWithDetail('CORRUPT', '文件里存在非对象条目', `root[${index}]`);
-    }
-    records.push(item);
-  }
-
-  return ok(records);
+/**
+ * 「文件不存在 = 空」的唯一判据：只在 `NOT_FOUND` 时给默认值，其余失败原样上抛。
+ *
+ * 三处曾各写一遍这个 `if`：字体标签/星级（`font-repo.readMetaFile`）、
+ * 字体面板设置（`font-set-repo`）、常用页设置（`common-use-repo`）。
+ */
+export function readOrEmpty<T>(read: Result<T>, empty: () => Result<T>): Result<T> {
+  if (read.status === 'error' && read.code === 'NOT_FOUND') return empty();
+  return read;
 }

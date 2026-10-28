@@ -1,54 +1,30 @@
 /**
- * 【范本】UI 横切 · 提示
- * 页面里禁止 alert，统一用 useToast()。
+ * 【范本】UI 横切 · 提示（**只渲染，不持有状态**）
+ *
+ * 状态在 `core/feedback/toast.ts`。这里只做两件事：订阅条目、渲染容器。
+ *
+ * 为什么状态搬走了：原来 `useState` 在这个文件里，于是 `hooks/useRunCommand` 想弹一句
+ * 就必须 import `components/Toast` → `hooks ⇄ components` 越界（`CONVENTIONS` §3）。
+ * 状态下沉 core 之后，`hooks` 依赖 core，方向恢复；本文件只保留渲染。
+ *
+ * `useToast` 仍从这里**再导出**：页面与 feature 的 import 一行不用改。
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { mountToast } from '../../core/feedback/toast';
+import { useToastItems } from '../../hooks/useToast';
 import './Toast.css';
 
-type ToastKind = 'info' | 'error';
-
-interface ToastItem {
-  id: number;
-  kind: ToastKind;
-  message: string;
-}
-
-interface ToastApi {
-  show: (message: string, kind?: ToastKind) => void;
-  info: (message: string) => void;
-  error: (message: string) => void;
-}
-
-const ToastContext = createContext<ToastApi | null>(null);
-
-const DURATION = 2600;
-
-/** 自增 key：同毫秒连发两条也不会撞（原先是 `Date.now() + Math.random()`，全仓第二套 id 生成方式） */
-let nextToastId = 0;
+export { useToast } from '../../hooks/useToast';
+export type { ToastApi, ToastItem, ToastKind } from '../../core/feedback/toast';
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<ToastItem[]>([]);
+  const items = useToastItems();
 
-  const show = useCallback((message: string, kind: ToastKind = 'info') => {
-    nextToastId += 1;
-    const id = nextToastId;
-    setItems((prev) => [...prev, { id, kind, message }]);
-    window.setTimeout(() => {
-      setItems((prev) => prev.filter((item) => item.id !== id));
-    }, DURATION);
-  }, []);
-
-  const api = useMemo<ToastApi>(
-    () => ({
-      show,
-      info: (message: string) => show(message, 'info'),
-      error: (message: string) => show(message, 'error')
-    }),
-    [show]
-  );
+  /* 挂载登记：为 0 时 `showToast` 会留痕「消息未显示」，不静默吞掉 */
+  useEffect(() => mountToast(), []);
 
   return (
-    <ToastContext.Provider value={api}>
+    <>
       {children}
       <div className="mm-toast">
         {items.map((item) => (
@@ -57,12 +33,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           </div>
         ))}
       </div>
-    </ToastContext.Provider>
+    </>
   );
-}
-
-export function useToast(): ToastApi {
-  const api = useContext(ToastContext);
-  if (!api) throw new Error('useToast 必须在 ToastProvider 内使用');
-  return api;
 }

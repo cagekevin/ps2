@@ -10,7 +10,7 @@ describe('decodeFontTags', () => {
         { text: '标题', arr: [], xz: false },
         { text: '正文', arr: ['MiSans'], xz: true }
       ]);
-      expect(result.value.dropped).toBe(0);
+      expect(result.value.dropped).toHaveLength(0);
     }
   });
 
@@ -23,7 +23,9 @@ describe('decodeFontTags', () => {
     ]);
     if (result.status === 'ok') {
       expect(result.value.tags).toEqual([]);
-      expect(result.value.dropped).toBe(4);
+      expect(result.value.dropped).toHaveLength(4);
+      expect(result.value.dropped[0]?.path).toBe('root[0]');
+      expect(result.value.dropped[0]?.code).toBe('CORRUPT');
     } else {
       throw new Error('应当成功');
     }
@@ -45,7 +47,7 @@ describe('decodeFontStars', () => {
     ]);
     if (result.status === 'ok') {
       expect(result.value.stars).toEqual({ MiSans: 1, OPPOSans: 3 });
-      expect(result.value.dropped).toBe(0);
+      expect(result.value.dropped).toHaveLength(0);
     } else {
       throw new Error('应当成功');
     }
@@ -55,7 +57,7 @@ describe('decodeFontStars', () => {
     const result = decodeFontStars([{ name: 'A', star: 0 }, { name: 'B', star: 'x' }, {}]);
     if (result.status === 'ok') {
       expect(result.value.stars).toEqual({});
-      expect(result.value.dropped).toBe(3);
+      expect(result.value.dropped).toHaveLength(3);
     } else {
       throw new Error('应当成功');
     }

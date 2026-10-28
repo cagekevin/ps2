@@ -5,9 +5,12 @@
  * storage 用假实现（不碰真磁盘），只验证「读-改-写」的判据。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fail, failWithDetail, ok } from '../types/result';
 import {
   decodeRawRecords,
+  decodeSettingsObject,
   mutateJsonFile,
+  readOrEmpty,
   updateJsonFile,
   updateOrCreateJsonFile
 } from './json-file';
@@ -183,5 +186,38 @@ describe('updateOrCreateJsonFile（缺失 = 首次创建）', () => {
 
     expect(result.status).toBe('ok');
     expect(JSON.parse(h.writes[0]?.text ?? '[]')).toHaveLength(2);
+  });
+});
+
+describe('decodeSettingsObject', () => {
+  it('顶层不是对象 → CORRUPT', () => {
+    const result = decodeSettingsObject([1, 2]);
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
+  });
+
+  it('对象原样返回（同一个引用，写回时保住别的页面的键）', () => {
+    const raw = { a: 1, other: 'x' };
+
+    const result = decodeSettingsObject(raw);
+    if (result.status === 'error') throw new Error('应当成功');
+    expect(result.value).toBe(raw);
+  });
+});
+
+describe('readOrEmpty', () => {
+  it('NOT_FOUND → 默认值（首次运行不是故障）', () => {
+    expect(readOrEmpty(fail('NOT_FOUND', '文件不存在'), () => ok([]))).toEqual(ok([]));
+  });
+
+  it('其它失败原样上抛，不换成默认值', () => {
+    const corrupt = failWithDetail('CORRUPT', '坏 JSON', 'raw:x');
+
+    expect(readOrEmpty(corrupt, () => ok([]))).toEqual(corrupt);
+  });
+
+  it('成功原样返回', () => {
+    expect(readOrEmpty(ok([1]), () => ok([]))).toEqual(ok([1]));
   });
 });

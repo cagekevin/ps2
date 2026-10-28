@@ -7,6 +7,7 @@
 import { useCallback, useMemo, useState, type MouseEvent } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { useToast } from '../../components/Toast';
+import { useRunCommand } from '../../hooks/useRunCommand';
 import {
   createTag,
   deleteTag,
@@ -55,6 +56,8 @@ export function useTagActions({
 }: Inputs) {
   const toast = useToast();
   const confirm = useConfirm();
+  /* 导入导出走统一入口：失败留痕（log.warn + toast）由 hook 负责，`CANCELLED` 静默 */
+  const run = useRunCommand();
 
   const [tagMenu, setTagMenu] = useState<TagMenuState | null>(null);
   const [tagContext, setTagContext] = useState<TagContextState | null>(null);
@@ -146,16 +149,13 @@ export function useTagActions({
     });
     if (!ok) return;
 
-    const result = await importFontTags();
-    if (result.status === 'error') {
-      if (result.code !== 'CANCELLED') toast.error(result.reason);
-      return;
-    }
+    const result = await run(() => importFontTags(), { spin: false, quiet: ['CANCELLED'] });
+    if (result.status === 'error') return;
 
     toast.info(`已导入标签（${result.value.tags} 个）`);
     loadTags();
     loadStars();
-  }, [confirm, toast, loadTags, loadStars]);
+  }, [confirm, run, toast, loadTags, loadStars]);
 
   const handleExportTags = useCallback(async () => {
     const ok = await confirm({
@@ -165,14 +165,11 @@ export function useTagActions({
     });
     if (!ok) return;
 
-    const result = await exportFontTags();
-    if (result.status === 'error') {
-      if (result.code !== 'CANCELLED') toast.error(result.reason);
-      return;
-    }
+    const result = await run(() => exportFontTags(), { spin: false, quiet: ['CANCELLED'] });
+    if (result.status === 'error') return;
 
     toast.info('已导出标签');
-  }, [confirm, toast]);
+  }, [confirm, run, toast]);
 
   const createTagFromMenu = useCallback(
     (text: string) => {

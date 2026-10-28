@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeFontItem, normalizeFontList } from './font-normalize';
+import { ok } from '../types/result';
+import { decodeFontItem, decodeFontList } from './font-decode';
 
-describe('normalizeFontItem', () => {
+describe('decodeFontItem', () => {
   it('收 jsx 那套键名', () => {
-    const result = normalizeFontItem({
+    const result = decodeFontItem({
       family: 'MiSans',
       weights: ['Regular', 'Bold'],
       names: ['MiSans'],
@@ -19,7 +20,7 @@ describe('normalizeFontItem', () => {
   });
 
   it('收磁盘缓存那套键名', () => {
-    const result = normalizeFontItem({
+    const result = decodeFontItem({
       name: '思源黑体',
       zz: ['Regular'],
       mz: ['思源黑体'],
@@ -36,32 +37,39 @@ describe('normalizeFontItem', () => {
   });
 
   it('缺家族名 → CORRUPT', () => {
-    const result = normalizeFontItem({ weights: ['Regular'] });
+    const result = decodeFontItem({ weights: ['Regular'] });
     expect(result.status).toBe('error');
     if (result.status === 'error') expect(result.code).toBe('CORRUPT');
   });
 
   it('单字符串按一项数组收', () => {
-    const result = normalizeFontItem({ family: 'X', weights: 'Bold' });
+    const result = decodeFontItem({ family: 'X', weights: 'Bold' });
     if (result.status === 'ok') expect(result.value.weights).toEqual(['Bold']);
     else throw new Error('应当成功');
   });
 });
 
-describe('normalizeFontList', () => {
-  it('坏项丢弃并计数', () => {
-    const { list, dropped } = normalizeFontList([
+describe('decodeFontList', () => {
+  it('坏项丢弃并记账（path 指出第几项）', () => {
+    const result = decodeFontList([
       { family: 'A' },
       { weights: ['Regular'] },
       null,
       { name: 'B' }
     ]);
 
-    expect(list.map((item) => item.family)).toEqual(['A', 'B']);
-    expect(dropped).toBe(2);
+    if (result.status === 'error') throw new Error('应当成功');
+    expect(result.value.list.map((item) => item.family)).toEqual(['A', 'B']);
+    expect(result.value.dropped.map((item) => item.path)).toEqual(['root[1]', 'root[2]']);
   });
 
   it('空数组不算丢项', () => {
-    expect(normalizeFontList([])).toEqual({ list: [], dropped: 0 });
+    expect(decodeFontList([])).toEqual(ok({ list: [], dropped: [] }));
+  });
+
+  it('顶层不是数组 → CORRUPT（不把「不是数组」当空列表）', () => {
+    const result = decodeFontList({ arr: [] });
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
   });
 });

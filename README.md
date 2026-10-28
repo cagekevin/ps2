@@ -131,7 +131,8 @@ npm run new:feature
 | 文件 | 内容 | 什么时候读 |
 |---|---|---|
 | `docs/CONVENTIONS.md` | 写法规矩（命名、分层、类型、横切、Token、禁止清单） | **写代码前必读** |
-| `docs/GOVERNANCE.md` | 何时升级底层、范本制度、体检规则、变更记录 | 加能力 / 交付前 |
+| `docs/GOVERNANCE.md` | 何时升级底层、范本制度、体检规则 | 加能力 / 交付前 |
+| `docs/CHANGELOG.md` | 全项目变更记录（按日期追加） | 交付前登记 |
 | `docs/PS-CHANNEL-NOTES.md` | PS 通道事实：三条通道、参数序列化、串行队列、env、数据契约、排障 | 调 jsx / 改数据层 |
 | `docs/plan/STYLE-PANEL-GAP.md` | 样式面板现状与剩余缺口 | 排期 |
 | `docs/plan/01-字体管理-2026-10-27.md` | 字体管理页实施计划 | 做第一页 |

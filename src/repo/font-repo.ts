@@ -14,12 +14,14 @@ import type { Classification } from '../domain/classification';
 import { decodeClassification } from '../domain/classification';
 import type { FontItem } from '../domain/font-item';
 import { decodeFontStars, decodeFontTags } from '../domain/font-meta';
-import { normalizeFontList } from '../domain/font-normalize';
+import { decodeFontList } from '../domain/font-decode';
+import type { Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 import {
   decodeRawRecords,
   readJsonFile,
+  readOrEmpty,
   replaceJsonFile,
   updateOrCreateJsonFile,
   type JsonMutator,
@@ -36,15 +38,17 @@ const CLASSIFICATION_FILE = 'classification.json';
 /* ---------------- 读 ---------------- */
 
 /** 系统字体缓存 `SysFont2.json`：`{ arr: [...] }`；缺文件是首次运行，由命令层去调 jsx */
-export function readSystemFontCache(): Result<{ fonts: FontItem[]; dropped: number }> {
+export function readSystemFontCache(): Result<{ fonts: FontItem[]; dropped: Dropped[] }> {
   return readJsonFile(SYS_FONT_FILE, ROOT, '系统字体缓存', (raw) => {
     if (!isRecord(raw)) return fail('CORRUPT', '系统字体缓存顶层不是对象');
 
     const arr = raw.arr;
     if (!Array.isArray(arr)) return fail('CORRUPT', '系统字体缓存缺少 arr 数组');
 
-    const { list, dropped } = normalizeFontList(arr);
-    return ok({ fonts: list, dropped });
+    const decoded = decodeFontList(arr);
+    if (decoded.status === 'error') return decoded;
+
+    return ok({ fonts: decoded.value.list, dropped: decoded.value.dropped });
   });
 }
 
@@ -59,9 +63,8 @@ function readMetaFile<T>(
   label: string,
   decode: (raw: unknown) => Result<T>
 ): Result<T> {
-  const read = readJsonFile(file, ROOT, label, decode);
-  if (read.status === 'error' && read.code === 'NOT_FOUND') return decode([]);
-  return read;
+  /* 「不存在 = 空」的判据只有一处（`json-file.readOrEmpty`）；这里只声明「空」长什么样 */
+  return readOrEmpty(readJsonFile(file, ROOT, label, decode), () => decode([]));
 }
 
 /** 星级（视图）：`{ 家族名: 1~3 }`；坏条目计数 */

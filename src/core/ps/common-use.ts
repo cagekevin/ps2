@@ -8,19 +8,19 @@
  *     `cy_swapWireframeFill` / `cy_distributedByPitch` / `cy_createSafeAreaGuide`
  *   直调（原版 `jsx` / `jsxNoCheck`）：`cy_zoom` / `cy_guideFunction` / `cy_openDirectory`
  * 判断依据是原版调用点，不是函数名前缀——`cy_zoom` 直调、同族的 `cy_transformPosition` 走调度。
+ * 通道与超时写在能力表（`./capabilities.ts`）里，本文件只负责拼参数。
  *
- * 参数一律明文（不走 `encodeText`，那是 `ys_*` 字体通道的事）；写操作 60s。
+ * 参数一律明文（不走 `encodeText`，那是 `ys_*` 字体通道的事）。
  * 三处原版拼写照抄不改：`cy_BacthExportPsdToImage`（Bacth）、`cy_LayerReplace`（大写 L）、
  * `cy_ExportImage`（大写 E）——改成「正确拼写」等于函数不存在。
  *
- * 返回结构未真机验证：写函数只把 raw 约定值（`-1` / `no-doc` 等）当失败，
- * 其余算成功；读函数把 raw 原样交出去，解析在 domain。
+ * 返回结构未真机验证：写函数用 `lenientVoid` / `unwrapRaw`，只把 raw 约定值（`-1` / `no-doc` 等）
+ * 当失败，其余算成功；读函数用 `passthrough` 把 raw 原样交出去，解析在 domain。
  */
 
-import { callJsx } from '../cep/bridge';
-import { fail, ok, type Result } from '../../types/result';
-import { requireVendor } from './init';
-import { runDirect, runVendor } from './vendor';
+import type { Result } from '../../types/result';
+import { callCapability } from './capability';
+import { CAP } from './capabilities';
 
 /** 翻转 6 向的方向文本：原版 `eventTransformPosition` 表逐字（`app.v4.js:37805-37812`） */
 export type FlipDirection = '左右' | '上下' | '左' | '右' | '下' | '上';
@@ -34,32 +34,32 @@ export type FlipDirection = '左右' | '上下' | '左' | '右' | '下' | '上';
  * 没选中图层时由 jsx 自己返回约定值（`-1` → PS_REJECTED），页面 toast 即可。
  */
 export function zoom(scale: number): Promise<Result<void>> {
-  return runDirect('cy_zoom', [scale], '当前图层不支持缩放');
+  return callCapability(CAP.zoom, [scale]);
 }
 
 /** 翻转：`cy_transformPosition([方向文本])`，走调度通道 */
 export function flip(direction: FlipDirection): Promise<Result<void>> {
-  return runVendor('cy_transformPosition', [direction], '自由变换');
+  return callCapability(CAP.flip, [direction]);
 }
 
 /** 位置对换：`cy_locationTrade([])` */
 export function locationTrade(): Promise<Result<void>> {
-  return runVendor('cy_locationTrade', [], '位置对换');
+  return callCapability(CAP.locationTrade);
 }
 
 /** 元素替换：`cy_LayerReplace([])`，大写字面照抄 */
 export function layerReplace(): Promise<Result<void>> {
-  return runVendor('cy_LayerReplace', [], '元素替换');
+  return callCapability(CAP.layerReplace);
 }
 
 /** 图层颜色互换：`cy_exchangeLayerColor([])` */
 export function exchangeLayerColor(): Promise<Result<void>> {
-  return runVendor('cy_exchangeLayerColor', [], '图层颜色互换');
+  return callCapability(CAP.exchangeLayerColor);
 }
 
 /** 修正边缘模糊：派发 key 是拼错的 `cy_coorectBlur`，函数名是这个 */
 export function correctBlur(): Promise<Result<void>> {
-  return runVendor('cy_correctRectangleBlur', [], '修正边缘模糊');
+  return callCapability(CAP.correctBlur);
 }
 
 /**
@@ -67,7 +67,7 @@ export function correctBlur(): Promise<Result<void>> {
  * 无参，走调度通道。
  */
 export function swapWireframeFill(): Promise<Result<void>> {
-  return runVendor('cy_swapWireframeFill', [], '填充线框互换');
+  return callCapability(CAP.swapWireframeFill);
 }
 
 /**
@@ -82,12 +82,12 @@ export function swapWireframeFill(): Promise<Result<void>> {
  * `[axis, value, 2, filter]` 四参形态，两者不是同一条调用，别合并。
  */
 export function distribute(axis: 1 | 2, gap: string, sortMode: 1 | 2): Promise<Result<void>> {
-  return runVendor('cy_distributedByPitch', [axis, gap, sortMode], '按间距分布');
+  return callCapability(CAP.distribute, [axis, gap, sortMode]);
 }
 
 /** 生成安全区参考线：`cy_createSafeAreaGuide([宽度])`，宽度原文照传（空串由命令层拦） */
 export function referenceWidth(width: string): Promise<Result<void>> {
-  return runVendor('cy_createSafeAreaGuide', [width], '生成安全区域参考线');
+  return callCapability(CAP.referenceWidth, [width]);
 }
 
 /**
@@ -96,17 +96,17 @@ export function referenceWidth(width: string): Promise<Result<void>> {
  * 切片用的是同一个函数，参数 `2`——拆成两个函数名是为了不让调用方记数字。
  */
 export function clearGuide(): Promise<Result<void>> {
-  return runDirect('cy_guideFunction', [1], '清除参考线失败');
+  return callCapability(CAP.clearGuide, [1]);
 }
 
 /** 按参考线切片：`cy_guideFunction([2])` */
 export function sliceByGuide(): Promise<Result<void>> {
-  return runDirect('cy_guideFunction', [2], '按参考线切片失败');
+  return callCapability(CAP.sliceByGuide, [2]);
 }
 
 /** 打开当前文件所在目录：`cy_openDirectory` **无参**，直调 */
 export function openDirectory(): Promise<Result<void>> {
-  return runDirect('cy_openDirectory', [], '打开所在目录失败');
+  return callCapability(CAP.openDirectory);
 }
 
 /* ---------------- v1 只登记、不接线（2） ---------------- */
@@ -118,17 +118,11 @@ export function openDirectory(): Promise<Result<void>> {
  * 按 JSON 解析的话，裸路径串会被判成 `CORRUPT`，把「用户取消了」演成「数据坏了」。
  * 接入方（v2 嵌入图片）必须先处理 `-1` = 取消（原版判据是 `!== -1`）。
  */
-export async function getImagePath(): Promise<Result<unknown>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-  const call = await callJsx('cy_getImagePath', []);
-  if (call.status === 'error') return call;
-  return ok(call.value);
+export function getImagePath(): Promise<Result<unknown>> {
+  return callCapability(CAP.imagePath);
 }
 
 /** 扫文件夹取 PSD 列表（`cy_getPsdForFolder`）：jsx 自己弹选目录，**无参**，返回同样不解码 */
-export async function getPsdList(): Promise<Result<unknown>> {
-  if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
-  const call = await callJsx('cy_getPsdForFolder', []);
-  if (call.status === 'error') return call;
-  return ok(call.value);
+export function getPsdList(): Promise<Result<unknown>> {
+  return callCapability(CAP.psdList);
 }

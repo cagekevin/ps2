@@ -37,8 +37,8 @@ declare global {
   }
 }
 
-/** 单条脚本超时：PS 卡住时不能让整个通道永久挂起 */
-const DEFAULT_TIMEOUT = 30_000;
+/** 读操作超时：PS 卡住时不能让整个通道永久挂起 */
+export const READ_TIMEOUT = 30_000;
 
 /** 写操作超时比读长：应用字体 / 保存图层样式要遍历图层或写 PSD */
 export const WRITE_TIMEOUT = 60_000;
@@ -88,7 +88,7 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
 }
 
 /** 执行 ExtendScript（串行 + 超时）；返回原始字符串，语义解析交给调用方 */
-export function evalScript(script: string, timeout = DEFAULT_TIMEOUT): Promise<Result<string>> {
+export function evalScript(script: string, timeout = READ_TIMEOUT): Promise<Result<string>> {
   const task = evalQueue.then(() => runScript(script, timeout));
 
   evalQueue = task.then(

@@ -3,14 +3,14 @@
  * 新增页面必须照此结构：
  * - UI 只用 components/ui，不自己写按钮/输入框样式
  * - 状态：页面内 useState，跨页面共享用 store 选择器
- * - 异步：useLoading().run() 包裹，错误用 useToast()
+ * - 异步：useRunCommand() 包裹（转不转圈用 `spin`），错误提示与留痕由它负责
  * - 请求：request('endpointKey')，类型自动推导，不写泛型
  * - effect 内异步必须带取消标志
  * - 样式只用 Token
  */
 import { useState } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
-import { useLoading } from '../../components/Loading';
+import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../components/Toast';
 import { Button } from '../../components/ui';
 import { copyText } from '../../core/clipboard';
@@ -50,7 +50,8 @@ function DiagRow({ label, value }: { label: string; value: string }) {
 
 export default function HomePage() {
   const toast = useToast();
-  const loading = useLoading();
+  /* 命令统一走 `run`：转不转圈由调用点决定，失败留痕由 hook 负责 */
+  const run = useRunCommand();
   const confirm = useConfirm();
   /* 当前图层由 app/layer-watcher 统一写入，页面只读 */
   const layerKind = useAppStore((state) => state.layerKind);
@@ -59,21 +60,13 @@ export default function HomePage() {
   const [logText, setLogText] = useState('');
 
   async function handlePing() {
-    const result = await loading.run(() => request('productList'));
-    if (result.status === 'ok') {
-      toast.info('接口可达');
-      return;
-    }
-    toast.error(`${result.code}: ${result.reason}`);
+    /* 诊断页要转圈（等接口），失败留痕由 hook 出 */
+    await run(() => request('productList'), { success: '接口可达' });
   }
 
   async function handleDiag() {
-    const result = await loading.run(() => diagVendor());
-    if (result.status === 'ok') {
-      setDiag(result.value);
-      return;
-    }
-    toast.error(result.reason);
+    const result = await run(() => diagVendor());
+    if (result.status === 'ok') setDiag(result.value);
   }
 
   function handleLog() {
@@ -89,14 +82,11 @@ export default function HomePage() {
     });
     if (!agreed) return;
 
-    const result = clearLogText();
-    if (result.status === 'error') {
-      toast.error(result.reason);
-      return;
-    }
+    /* 同步命令也走统一入口：失败留痕与成功文案都由 hook 出 */
+    const result = await run(async () => clearLogText(), { spin: false, success: '日志已清空' });
+    if (result.status === 'error') return;
     /* 清完留在原地显示空态：整块消失会让人以为按钮点错了 */
     setLogText('（日志为空）');
-    toast.info('日志已清空');
   }
 
   async function handleCopy(label: string, text: string) {
@@ -104,9 +94,7 @@ export default function HomePage() {
       toast.error('没有可复制的内容');
       return;
     }
-    const result = await copyText(text);
-    if (result.status === 'ok') toast.info(`已复制${label}`);
-    else toast.error(result.reason);
+    await run(() => copyText(text), { spin: false, success: `已复制${label}` });
   }
 
   return (

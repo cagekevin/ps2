@@ -22,7 +22,7 @@
  *   Q3 怎么改：确需调判定规则时，必须同时说明"为什么这不是把问题藏起来"；
  *               **禁止新增白名单/目录豁免**（那会把它从健康样本变成成本倒挂源）。
  *
- * 用法：`node scripts/check-any-honesty.mjs`（挂 `npm run check:any`，进 prebuild/pretest）
+ * 用法：`node scripts/check-any-honesty.mjs`（手动运行；本项目未挂 npm scripts）
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -31,10 +31,10 @@ import { dirname, join, relative } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * 扫描根：前端 src + 后端 localTool/src（2026-10-20 · P8-T2 扩围）。
- * 此前只扫 src ⇒ localTool 的 `as any` / 双重断言完全在射程外（见 docs/plan/150 §11.2）。
+ * 扫描根：本项目仅 `src`。maomao 没有 localTool 子项目，旧项目的 `localTool/src` 扫描根已移除。
+ * 与 CONVENTIONS §17「禁止新增 any（桥接层除外）」对齐：补 tsc 看不见的两类 any 洞。
  */
-const SCAN_ROOTS = [join(ROOT, 'src'), join(ROOT, 'localTool', 'src')];
+const SCAN_ROOTS = [join(ROOT, 'src')];
 
 /** 递归收集各扫描根下所有 .ts/.tsx */
 const files = [];

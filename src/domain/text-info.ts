@@ -95,7 +95,7 @@ const KNOWN_KEYS = [
   'justification'
 ];
 
-export function normalizeTextInfo(raw: unknown): Result<TextInfo> {
+export function decodeTextInfo(raw: unknown): Result<TextInfo> {
   if (!isRecord(raw)) {
     return failWithDetail('CORRUPT', '文字属性返回不是对象', `root:${typeof raw}`);
   }

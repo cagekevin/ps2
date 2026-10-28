@@ -29,7 +29,7 @@
 | `jsxHistory(fn, args, label)` | `ps_onJsx('{"f":fn,"arr":args,"n":label}')` | 渐变、图层样式 |
 | `jsx` / `jsxWrite` | `fn(args)` 直接调 | 字体 |
 
-代码：`src/core/ps/style.ts:25`（`runVendor`）、`src/core/ps/font.ts:42`。
+代码：`core/ps/capability.ts` 的 `toWire`（调度 / 直调的唯一实现），逐条通道写在各能力的 `channel` 字段（`core/ps/capabilities.ts`）。
 
 ---
 
@@ -76,7 +76,7 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 |---|---|---|
 | `'ok'` | 成功 | 继续用 raw |
 | `'no-doc'` | `PS_NO_DOC` | 提示用户 |
-| `'not-shape'` | `PS_NOT_SHAPE` | 提示用户 |
+| `'not-shape'` | `PS_WRONG_LAYER` | 提示用户 |
 | `'skipped'` | `PS_SKIPPED` | 提示「自动填充已关闭」 |
 | `'-1'` | `PS_REJECTED` | 提示「PS 拒绝执行」（原版判定 `r != -1` 为成功） |
 | `'unknown:<kind>'` | 成功（不是失败码） | 图层类型白名单兜成 `unknown` |
@@ -110,12 +110,14 @@ mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面�
 ```
 
 - 能力分两档：`core`（自有）失败 = 全部不可用；`vendor` 失败 = 只有应用类不可用，读图层照常。
-- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-27 常用页 M1 起 **60 项**，机器核对过）：
+- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-28 起 **62 项**，`core/ps/init.test.ts` 会校验「能力表里每个 vendor 能力都在清单里」；`CORE_FUNCS` 同理，7 项）：
   通道 1（`ps_onJsx`）+ 渐变 1（`ys_useGradient`）+ 图层样式 1（`ps_ysBtnUseStyle`）+ 环境 1（`Sys_setSystemEnvInfo`）
   + 系统字体 2（`ztgl_initSystemList` / `ztgl_setFont`）+ 字体检查/应用/复制 3（`ys_checkUseFont` / `ys_useFont` / `ys_getFontInfo`）
-  + 文本属性 26（`src/core/ps/text.ts`，逐个列在 §11.3 表里；`zt_getTypeUnits` 已取消）
+  + 工具切换 1（`Tool_set`，样式页快速吸色）
+  + 文本属性 25（`src/core/ps/text.ts`，逐个列在 §11.3 表里；`zt_getTypeUnits` 已取消、`zt_changeTextBranchMerge` 已移除）
   + 常用页 25（`src/core/ps/common-use.ts` 的 26 条里 `cy_distributedByPitch` 与文本属性共用，已在上一行计过）。
 - 删掉任何 jsx 函数，必须同步改 `VENDOR_FUNCS` / core 探测列表，否则会出现「函数没了 → 能力永远不可用」的假故障（已发生过一次）。
+- **探测分两级，别再往「必需」里加**：`CORE_REQUIRED` 只有 `mm_layer_getState`、`VENDOR_REQUIRED` 只有 `ps_onJsx` + `Sys_setSystemEnvInfo`——缺了它们整门确实没意义。其余 60 多项缺了只记进 `PsCapability.missing`，由执行器按 `spec.fn` 报 `PS_UNREADY` + `detail: fn:<名字>`，**不会牵连其它页面**。以前「缺一个整门变红」的坑（`Tool_set` / `mm_diag_vendor` 那种）不会再出现。
 
 ---
 
@@ -193,6 +195,8 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 前端 `VALID_KINDS` 白名单再兜一层（`core/ps/layer.ts:12`），认不出的一律 `unknown`，不抛错。
 
+**选中数量是另一个 jsx**：`mm_layer_getSelection` 返回 `app.activeDocument.activeLayers.length`（`'3'`），没有文档返回 `no-doc`。不并进 `mm_layer_getState` 的理由：后者被 `layer-watcher` 每 800ms 调用，改它的返回协议一旦新旧 jsx 混用就会静默解析错；独立函数缺失时探测能直接发现（`init.ts` 的 core 探针已含它）。
+
 ---
 
 ## 十、颜色应用：移植版，不是 vendor
@@ -218,7 +222,81 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 `isFill` 字段：移植版**只读 `item.color`**，不认 `isFill`。vendor 那条链路要求 `isFill` 在顶层，两条通道的项形状不同，别互相抄。
 
+**适用图层（2026-10-28 真机确认）**：
+
+| 能力 | 适用图层 | 前置 |
+|---|---|---|
+| `mm_style_applyColor`（点色块） | 任意（jsx 按 kind 分四路） | 不判 |
+| `mm_style_applyShapeFill`（ctrl+点）/ `mm_style_applyBorderColor`（shift+点） | **只对形状**，jsx 对其它返回 `not-shape` | `requireShapeLayer` |
+| `ys_useGradient`（应用渐变） | 任意，**含文字图层** | 不判 |
+| `ps_ysBtnUseStyle`（应用图层样式） | 任意，**含文字图层** | 不判 |
+
+后两条如果加图层前置，会把正常操作挡住——所以表里明确不加，`capability.test.ts` 有用例钉住。
+
 `cyAutoFillColor`：是**主面板前端**的开关（`if (cyAutoFillColor) ys_useStyleColor(...) else ys_setForegroundColor(...)`），不是 jsx 内部读的。所以它不影响我们这条移植版。
+
+### 10.1 「多图层上色」到底是谁做的（2026-10-28 查清）
+
+官方色板工具**能**同时给多个图层上色，但**不是色板面板自己的 jsx 做的**：
+
+| 路 | 链路 | 作用 |
+|---|---|---|
+| ① | 色板面板点色块 → CEP 事件 `com.fengzi.event.seban`（`type:'setColor'`）→ 主面板 `app.v4.js` 的 `handleSeBanEvent` → 开关 `cyAutoFillColor` 开 → `ys_useStyleColor(item, isFill=true)` | **多图层上色在这里**（vendor.jsx，加密，读不到实现） |
+| ② | 色板面板自己的 jsx `sb_cy_SheZhiQianJingSe`（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx:32-33`） | **只处理单选**：`iTuCengGeShu == 1` 才上色，多选只设前景色 |
+
+所以上面第 2 条「多选不处理」说的是**色板面板 jsx**的行为；整条官方链路的「多选上色」能力来自主面板智能填充。
+本仓走的是移植版（②路），要支持多选是**自己新增**，不是抄官方色板面板能抄到的。
+
+官方色板面板 jsx 里唯一的多图层实现在形状动作上（`sb_SheZhiXingZhuang` → `sb_DL_HuoQuDangQianTuCengID` /
+`sb_DL_GenJuXuHaoQuXiaoTuCeng` / `sb_DL_GenJuXuHaoDuoXuanTuCeng`，`main.jsx:526-609`）：
+**用 itemIndex + `slct` 动作控制「当前只有一个图层被选中」，不把图层对象取出来**。要自己实现多图层，这是能抄的部分。
+
+### 10.2 取选中图层：哪些 API 在本机 PS 上不可用
+
+本机（PS 21.x，CMYK 文档）逐个试过：
+
+| API | 结果 |
+|---|---|
+| `app.activeDocument.activeLayers.length` | **属性不存在**，读 `.length` 抛错（本仓 `mm_layer_getSelection` 在别的机器上可用 → 版本差异，不是通用写法） |
+| `targetLayers`（`getd` + `Prpr/targetLayers`）→ `list.count` | ✅ 与实际选中数一致 |
+| 引用上 `getObjectValue(stringIDToTypeID('layer'))` | ❌ 取不到图层对象 |
+| 引用上 `getIdentifier(charIDToTypeID('Lyr '))` | ❌ 取不到 id |
+| 引用上 `getIndex(charIDToTypeID('Lyr '))` | ✅ 返回数字 |
+| `slct` 动作直接带 targetLayers 引用（`putReference('null', ref)`） | ❌ 不生效，活动层不变 |
+
+`getIndex('Lyr ')` 的语义：根层级选中时 = `itemIndex - 1`（官方 `+1` 公式成立）；
+**组内选中时是全文档摊平序号**（实测 21 / 26 / 27，组内容不下 21 层）。官方那套
+`putIndex('Lyr ', itemIndex + bgOffset)` 是「当前活动图层组内」的位置，组内选中是否成立**未验证**。
+
+另：**图层名不能当标识**——实测 4 个选中层同名。
+
+### 10.3 上色动作都作用于活动层；颜色对象按文档模式构造；颜色叠加盖住内容颜色
+
+| 事实 | 说明 |
+|---|---|
+| 填充 `Fl  `、形状样式 `contentLayer`/`Trgt`、图层样式 `Lefx` | 全部作用于**活动层** ⇒ 批量上色的循环体必须保证「目标层 = 活动层」 |
+| `SolidColor` 要按文档模式构造 | CMYK 文档只填 `cmyk.*`，否则只填 `rgb.hexValue`。rgb+cmyk 一起塞，在 CMYK 文档里会让赋值抛错（官方 `main.jsx:11-22`、本仓 `mm_style_applyColor` 都这么写） |
+| 图层样式里的**颜色叠加**会盖住内容颜色 | 有它时改字色/填充色看不见变化；**投影不盖内容颜色**（只有投影的文字层改字色是看得见的）。渐变/图案叠加不能替换成纯色 |
+| 批量写操作要包撤销组 | 不包就是每层一条历史记录，只能一层一层撤 |
+
+完整理解文档（含逐条验证方法与判据）：`色板工具本地版/docs/上色逻辑.md`（工作区外，与该面板代码同目录）。
+
+### 10.4 vendor 可以整份复制到别的面板里直接用（2026-10-28 真机通过）
+
+`jsx/vendor.jsx`（= `com.local.psz.panel.v5/lib/all.decrypted.js`，MD5 `c6ca05a0…`）**读不了但能执行**：
+头部是 `@JSXBIN@ES@2.0@…`，明文 grep `ys_` 前缀函数名命中 0；把它 `$.evalFile` 进任意面板后，
+`typeof ps_onJsx` = `function`，`Sys_setSystemEnvInfo` 返回 `{"err":0,"data":true}`，
+`ps_onJsx('{"f":"ys_useStyleColor","arr":[…],"n":"智能填充颜色"}')` 返回 `1` 且**所有选中图层都上色**。
+
+⇒ **不需要主面板也能用官方能力**：自己转发同一个调度调用即可，不必等主面板收事件。
+官方链路是「色板面板 → 事件 → 主面板 → `ps_onJsx` → `ys_useStyleColor`」，
+没有主面板时把中间那一跳去掉（**不要补发事件**：主面板开着会再上一次同样的色）。
+
+加载顺序不能改（与 `core/ps/init.ts` 一致）：`evalFile main.jsx` → `evalFile vendor.jsx`
+→ `Sys_setSystemEnvInfo(PS_ENV)` → 探 `typeof ps_onJsx`。环境变量少一个就报「undefined 不是对象」。
+
+参数形状：`ys_useStyleColor` 收**扁平颜色对象** `{hex,c,m,y,k}` + **顶层** `isFill:true`
+（官方主面板 `app.v4.js:17894-17900` 就是这么传的）；线框色对应 `ys_setBorderColor`。
 
 ---
 
@@ -271,7 +349,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 | # | jsx | 参数 | 语义 |
 |---|---|---|---|
-| 1 | `zt_getFontSimpleInfo` | 无 | 当前文字图层属性快照；`err === 0` 才覆盖面板，否则保留旧值并提示。**前提：当前图层是文字图层**——非文字图层上 PS 不返回 `{err:1}`，而是直接抛「命令"获取"当前不可用」（`core/ps/text` 先判 `mm_layer_getState` 再调，返回码 `PS_NOT_TEXT`，避免把这句报错当失败原因显示） |
+| 1 | `zt_getFontSimpleInfo` | 无 | 当前文字图层属性快照；`err === 0` 才覆盖面板，否则保留旧值并提示。**前提：当前图层是文字图层**——非文字图层上 PS 不返回 `{err:1}`，而是直接抛「命令"获取"当前不可用」（`core/ps/text` 先判 `mm_layer_getState` 再调，返回码 `PS_WRONG_LAYER`，避免把这句报错当失败原因显示） |
 | 2 | `zt_getCurrentFontInfo` | 无 | `{ family? }`；字体快选「加当前图层」用 |
 | 3 | `zt_getCurrentText` | 无 | `TranslateItem[]`；总字数超 1000 拦截 |
 | 4 | ~~`zt_getTypeUnits`~~ | 无 | **已取消（2026-10-27）**：读出来只用于显示单位后缀，而面板不需要显示单位；`VENDOR_FUNCS` 已移除 |
@@ -293,7 +371,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 | 20 | `zt_setBackrgoudAlign` | `[3]` / `[4]` | 与背景水平 / 垂直对齐。**拼写照抄（Backrgoud）** |
 | 21 | `zt_alignHorizontal` | 无 | 水平垂直居中对齐；只服务第二入口，本页不放按钮 |
 | 22 | `cy_distributedByPitch` | `[axis, value, 2, filter]` | 按间距分布；axis `1` 水平 / `2` 垂直，第 3 个参数固定 `2` |
-| 23 | `zt_changeTextBranchMerge` | `[mode]` | 拆分/合并的**前置确认**（原版先探一次） |
+| 23 | ~~`zt_changeTextBranchMerge`~~ | — | **已移除**：真机一调就抛「没有这种元素」，是派发表 key 不是函数（见本节第 7 条） |
 | 24 | `zt_textBranchMerge` | `[mode]` | 拆分/合并真正执行；`1` 分行 / `2` 分为单个 / `3` 合并 / `4` 合并为段落 |
 | 25 | `zt_createButton` | `[{ type, isLine, padding }]` | 生成按钮；`type` 1 圆角 / 2 直角 |
 | 26 | `zt_switchFontDirection` | 无 | 切换文本方向 |
@@ -310,10 +388,12 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
    待真机确认 `ps_onJsx` 能调 `cy_*` 后统一成调度）。参数形态两处不同，见 §11.4 第 1 条。
 2. **参数**：全部**明文**。只有表里 29 / 30 两个 `ys_*` 要 `encodeText`；给 `zt_*` 编码会写出乱码字体名或直接失败。
 3. **err 信封（本组比 §11.2 宽松，是刻意的）**：`-1` 等约定值由 `core/ps/raw.ts` 的 `unwrapRaw` 表判定，能力函数不许自己比较字符串；能解析成 `{ err: number }` 时 `1` = 不满足前提，折 `VALIDATION`，**原因取信封里的 `msg`**（`raw.envelopeMessage`），宿主没给才用兜底文案——同一个 `1` 既可能是「请选择文字图层」也可能是字体缺失，写成一句笼统的「字体不可用」会让用户去重装本来装着的字体（2026-10-28 真机日志：`{"err":1,"msg":"请选择文字图层","code":0}`）；**解析不出 `err` 时按成功处理**（这些函数可能返回裸 `1` / 空串，结构没验过）。§11.2 对 `ys_useFont` / `ztgl_setFont` 那条「信封不成立直接失败」仍然有效，两者不要互相套用。UNVERIFIED：真机确认返回形状后，这里必须收紧成只认信封。
+
+   **2026-10-28 真机补充（推翻上面「按成功处理」的适用范围）**：非文字图层上这批写函数既不给 `{err:1}`、也不抛「命令不可用」，而是**返回 `undefined`、什么都不做**（日志 `raw:"undefined"`，`zt_setTextAlignment` / `zt_setBackrgoudAlign` / `zt_createButton` 三条实证）。`lenientVoid` 会把 `undefined` 当成功——界面提示成功、图层没变。返回值本身**区分不了成功与空转**（文字图层上大概率也返回 `undefined`），所以这批能力一律在表里声明 `require: requireTextLayer`，由执行器第一步拦掉。
 4. **`hostCode === 1` 只有一条处理**：折成 `VALIDATION`「字体不可用」→ 页面只 toast。**任何版本都不做「前往下载」**，不给外链、不弹确认框。
 5. **两处原版拼写错误照抄**：`zt_setFauxItali`、`zt_setBackrgoudAlign`。改成「正确拼写」等于函数不存在。
 6. **`zt_setFontColor` 无参**：返回值是取色结果，不是成功标志；用户在取色器里停留久，60s 超时后队列放行、PS 侧可能仍在执行，页面要给重试。
-7. **`zt_changeTextBranchMerge` 存在性未确认**：参考实现（`ps/src/cep/jsx/font.ts:186-191`）记录它可能是原版派发表的 key（`case 94` 转发到 `zt_textBranchMerge`），不是函数。本仓按计划把它与 `zt_textBranchMerge` 一起登记进 `VENDOR_FUNCS`，**M4 真机首验**；若探测报缺失，整页会按现有规则判「官方能力未就绪」，处理方式只能是照参考实现改调两次 `zt_textBranchMerge` 并从 `VENDOR_FUNCS` 移除——**不允许只在页面层兜**。UNVERIFIED
+7. **`zt_changeTextBranchMerge` 已确认不是函数（2026-10-28 真机）**：`typeof` 是 function（探测能过），但一调就抛「没有这种元素」——它只是原版派发表的 key（`case 94` 转发到 `zt_textBranchMerge`）。已从能力表、`text.ts`、`VENDOR_FUNCS` 移除；`commands/font-set.split` 改为只调一次 `zt_textBranchMerge`。原版「先探一次再执行」的那步没有了——不能执行时 PS 自己会返回错误，`lenientVoid` 会把它变成失败，不会假成功。
 8. **撤销组**：这几条是官方实现，撤销组在 vendor 内部（未验）。不要在前端再包一层 `suspendHistory`。
 9. **批量**：本页全是单图层语义，不循环调用；`cy_distributedByPitch` 的批量在 jsx 内部完成。
 
@@ -322,7 +402,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 清单共 **26 个**（`04-常用` 页面）：v1 覆盖 11 个（对应 12 条命令，`cy_guideFunction` 一函数两用）
 + 只登记 2 个，其余 13 条排 v2。
 **通道不能一刀切**——原版调用点写的是 `jsxHistory*` 就走 `ps_onJsx`，写的是 `jsx` / `jsxNoCheck` 就直调
-（判断方法同 `CONVENTIONS` §4.7）。实现在 `src/core/ps/vendor.ts`（`runVendor` / `runDirect`）。
+（判断方法同 `CONVENTIONS` §4.7）。实现在 `core/ps/capability.ts` 的 `toWire`，逐条写在各能力的 `channel` 字段。
 
 | # | jsx | 通道 | 参数 | 语义 | v1 |
 |---|---|---|---|---|---|
@@ -371,7 +451,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 1. **`cy_distributedByPitch` 有两个形态，别合并**：
    常用页间距面板是 `[axis, gap, sortMode]`（`app.v4.js:1262654`，三参、无 filter）；
    文本属性面板是 `[axis, value, 2, filter]`（`:1441105`）。第 3 个参数一个是排序模式（1 按图层 / 2 按坐标），
-   一个是固定的 `2`——看着像同一个东西，含义不同。`core/ps/text.distributeByPitch` 只服务文本面板。
+   一个是固定的 `2`——看着像同一个东西，含义不同。`core/ps/text.distributeByPitch` 只服务文本面板。**两个形态的前置相同**：至少 2 个选中图层（`requireSelection(2)`），不要求文字图层——分布的对象是多个图层。同一条前置也挂在「位置对换」「图层颜色互换」上（这三个都是成对才有意义，单选时 PS 只回一句笼统的 `-1`）。
    **通道也相同（两处都是 `jsxHistory`）**：常用页这边走调度，文本面板那边目前是直调，
    属已登记的 P1（`text.ts` 与 §11.3 第 1 条的例外说明），真机后统一成调度。
 2. **`gap` 是字符串**：原版把输入框原文（经 `ft.b` 补单位，如 `10px`）直接传下去。

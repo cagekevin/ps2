@@ -15,7 +15,7 @@ import { isOkSentinel, parseJsxRaw } from '../core/ps/raw';
 import { readTextAt, writeTextAtAtomic } from '../core/storage';
 import { resolveFontFace, type FontItem } from '../domain/font-item';
 import { parseTagArchive } from '../domain/font-meta';
-import { normalizeFontList } from '../domain/font-normalize';
+import { decodeFontList } from '../domain/font-decode';
 import {
   readRawFontStars,
   readRawFontTags,
@@ -25,12 +25,13 @@ import {
   updateFontTags
 } from '../repo/font-repo';
 import type { RawRecords } from '../repo/json-file';
+import type { Dropped } from '../types/decode-list';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 export interface FontListRead {
   fonts: FontItem[];
-  /** 归一化时认不出的条数，页面必须显示出来 */
-  dropped: number;
+  /** 归一化时认不出的条目（带 path 与原因），页面必须显示出来 */
+  dropped: Dropped[];
 }
 
 /**
@@ -65,8 +66,11 @@ export async function loadFontList(force = false): Promise<Result<FontListRead>>
     return failWithDetail('CORRUPT', '系统字体列表不是数组', `raw:${raw.value.slice(0, 120)}`);
   }
 
-  const { list, dropped } = normalizeFontList(parsed.value);
-  return ok({ fonts: list, dropped });
+  /* 上面已确认是数组，这里不会失败；失败也原样透传，不造第二条成功路径 */
+  const decoded = decodeFontList(parsed.value);
+  if (decoded.status === 'error') return decoded;
+
+  return ok({ fonts: decoded.value.list, dropped: decoded.value.dropped });
 }
 
 /** 应用一个具体字面（家族 + 字重），不改字号 / 颜色 */
