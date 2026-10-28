@@ -7,13 +7,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fail, failWithDetail, ok } from '../types/result';
 import {
-  decodeRawRecords,
-  decodeSettingsObject,
   mutateJsonFile,
   readOrEmpty,
   updateJsonFile,
   updateOrCreateJsonFile
 } from './json-file';
+import { decodeRawRecords } from './settings-object';
 
 const h = vi.hoisted(() => ({
   files: new Map<string, string>(),
@@ -54,7 +53,7 @@ describe('mutateJsonFile（文件必须存在）', () => {
     const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, (records) => {
       called = true;
       records.push({ text: 'x' });
-      return records;
+      return ok(records);
     });
 
     expect(result.status).toBe('error');
@@ -69,7 +68,7 @@ describe('mutateJsonFile（文件必须存在）', () => {
 
     const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, (records) => {
       called = true;
-      return records;
+      return ok(records);
     });
 
     expect(result.status).toBe('error');
@@ -81,7 +80,7 @@ describe('mutateJsonFile（文件必须存在）', () => {
   it('数组里混入非对象 → CORRUPT，detail 指出下标', async () => {
     h.files.set(`data:${FILE}`, '[{"a":1}, 2]');
 
-    const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, (records) => records);
+    const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, (records) => ok(records));
 
     expect(result.status).toBe('error');
     if (result.status === 'error') {
@@ -94,7 +93,7 @@ describe('mutateJsonFile（文件必须存在）', () => {
   it('mutator 返回 null → 不写盘', async () => {
     h.files.set(`data:${FILE}`, '[{"text":"a"}]');
 
-    const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, () => null);
+    const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, () => ok(null));
 
     expect(result.status).toBe('ok');
     expect(h.writes).toHaveLength(0);
@@ -105,7 +104,7 @@ describe('mutateJsonFile（文件必须存在）', () => {
 
     const result = await mutateJsonFile(FILE, 'data', '测试', decodeRawRecords, (records) => {
       records.push({ text: 'b' });
-      return records;
+      return ok(records);
     });
 
     expect(result.status).toBe('ok');
@@ -123,7 +122,7 @@ describe('updateJsonFile（缺失 = 空值）', () => {
       decodeRawRecords,
       (records) => {
         records.push({ text: 'a' });
-        return records;
+        return ok(records);
       },
       { missing: () => [] }
     );
@@ -141,7 +140,7 @@ describe('updateJsonFile（缺失 = 空值）', () => {
       'data',
       '测试',
       decodeRawRecords,
-      (records) => records,
+      (records) => ok(records),
       { missing: () => [] }
     );
 
@@ -159,7 +158,7 @@ describe('updateOrCreateJsonFile（缺失 = 首次创建）', () => {
       decodeRawRecords,
       (records) => {
         records.push({ text: 'a' });
-        return records;
+        return ok(records);
       },
       { missing: () => [] }
     );
@@ -179,30 +178,13 @@ describe('updateOrCreateJsonFile（缺失 = 首次创建）', () => {
       decodeRawRecords,
       (records) => {
         records.push({ text: 'b' });
-        return records;
+        return ok(records);
       },
       { missing: () => [] }
     );
 
     expect(result.status).toBe('ok');
     expect(JSON.parse(h.writes[0]?.text ?? '[]')).toHaveLength(2);
-  });
-});
-
-describe('decodeSettingsObject', () => {
-  it('顶层不是对象 → CORRUPT', () => {
-    const result = decodeSettingsObject([1, 2]);
-
-    expect(result.status).toBe('error');
-    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
-  });
-
-  it('对象原样返回（同一个引用，写回时保住别的页面的键）', () => {
-    const raw = { a: 1, other: 'x' };
-
-    const result = decodeSettingsObject(raw);
-    if (result.status === 'error') throw new Error('应当成功');
-    expect(result.value).toBe(raw);
   });
 });
 
@@ -219,5 +201,54 @@ describe('readOrEmpty', () => {
 
   it('成功原样返回', () => {
     expect(readOrEmpty(ok([1]), () => ok([]))).toEqual(ok([1]));
+  });
+});
+
+describe('updateOrCreateJsonFileOr（mutator 可以直接失败）', () => {
+  it('mutator 返回 fail → 原样上抛，一个字节都不写', async () => {
+    h.files.set(`legacy:${FILE}`, JSON.stringify([{ text: 'a' }]));
+
+    const result = await updateOrCreateJsonFile(
+      FILE,
+      'legacy',
+      '测试',
+      decodeRawRecords,
+      () => failWithDetail('VALIDATION', '下标越界', 'index:9'),
+      { missing: () => [] }
+    );
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('VALIDATION');
+    expect(h.writes).toHaveLength(0);
+  });
+
+  it('mutator 返回 ok(null) → 不写，但结果仍是 ok（「不需要写」不是失败）', async () => {
+    h.files.set(`legacy:${FILE}`, JSON.stringify([{ text: 'a' }]));
+
+    const result = await updateOrCreateJsonFile(
+      FILE,
+      'legacy',
+      '测试',
+      decodeRawRecords,
+      () => ok(null),
+      { missing: () => [] }
+    );
+
+    expect(result.status).toBe('ok');
+    expect(h.writes).toHaveLength(0);
+  });
+
+  it('文件不存在 → 用 missing 兜底后执行 mutator，首次创建', async () => {
+    const result = await updateOrCreateJsonFile(
+      FILE,
+      'legacy',
+      '测试',
+      decodeRawRecords,
+      (records) => ok([...records, { text: 'new' }]),
+      { missing: () => [] }
+    );
+
+    expect(result.status).toBe('ok');
+    expect(h.writes).toHaveLength(1);
   });
 });

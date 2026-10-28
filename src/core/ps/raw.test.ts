@@ -6,7 +6,9 @@ import {
   lenientVoid,
   parseDataEnvelope,
   parseErrEnvelope,
+  parseFontFamily,
   parseJsxRaw,
+  parseSystemFontList,
   passthrough,
   strictData,
   strictPayload,
@@ -255,5 +257,47 @@ describe('strictPayload', () => {
     const garbage = parse(RAWS.garbage);
     expect(garbage.status).toBe('error');
     if (garbage.status === 'error') expect(garbage.code).toBe('PS_ERROR');
+  });
+});
+
+describe('parseSystemFontList', () => {
+  it('`ok` / `OK` 哨兵 → sentinel（数据已写 SysFont2.json）', () => {
+    expect(parseSystemFontList('ok')).toEqual({ status: 'ok', value: { kind: 'sentinel' } });
+    expect(parseSystemFontList(' OK ')).toEqual({ status: 'ok', value: { kind: 'sentinel' } });
+  });
+
+  it('数组 → list', () => {
+    const result = parseSystemFontList('[{"family":"A"}]');
+
+    if (result.status === 'error') throw new Error('应当成功');
+    expect(result.value.kind).toBe('list');
+  });
+
+  it('不是数组 → CORRUPT（不当成「没有字体」）', () => {
+    const result = parseSystemFontList('{"arr":[]}');
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
+  });
+});
+
+describe('parseFontFamily', () => {
+  it('信封里的 family → 原样返回', () => {
+    expect(parseFontFamily('{"err":0,"data":{"family":"思源黑体"}}')).toEqual({
+      status: 'ok',
+      value: '思源黑体'
+    });
+  });
+
+  it('裸载荷（没有 data 字段）也认', () => {
+    expect(parseFontFamily('{"family":"Arial"}')).toEqual({ status: 'ok', value: 'Arial' });
+  });
+
+  it('没有 family / 类型不对 → CORRUPT（不折成空串让调用方猜）', () => {
+    for (const raw of ['{"err":0,"data":{}}', '"裸字符串"', '{"family":""}']) {
+      const result = parseFontFamily(raw);
+      expect(result.status).toBe('error');
+      if (result.status === 'error') expect(result.code).toBe('CORRUPT');
+    }
   });
 });

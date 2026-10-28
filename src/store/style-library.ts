@@ -60,6 +60,13 @@ export const useStyleLibraryStore = create<StyleLibraryState>()((set, get) => {
 
       const indexResult = readIndex();
       if (indexResult.status !== 'ok') {
+        /*
+         * 这里**必须清空**，不能套「保留旧值」：
+         * 索引读失败后 `warehouses` 与 `libraries` 的对应关系已经不可信，
+         * 留着上一轮的库列表等于让用户看到另一个仓库的数据。
+         * 判据：**同一数据源刷新失败 → 保留 + 标记**（`store/text`、`store/font`）；
+         * **换数据源（切仓库 / 切文档）失败 → 清空 + 标记**，不许显示别处的数据。
+         */
         set({
           indexResult,
           warehouses: [],

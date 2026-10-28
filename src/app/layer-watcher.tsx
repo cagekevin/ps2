@@ -113,13 +113,28 @@ export function LayerWatcher() {
     for (const name of ['layerChanged', 'documentChanged'] as const) {
       void subscribeHostEvent(name, () => {
         void tick(true);
-      })
-        .then((off) => {
-          unsubscribes.push(off);
-        })
-        .catch(() => {
-          /* 注册失败已由 `ps-events` 记日志；轮询兜底继续跑（不静默、不降级放行） */
-        });
+      }).then((result) => {
+        if (result.status === 'error') {
+          /* 事件快路径没接上：轮询兜底继续跑，但必须留痕（否则「为什么面板要等 800ms」查不到） */
+          log.warn('PS 事件订阅失败，仅轮询兜底', {
+            name,
+            code: result.code,
+            reason: result.reason,
+            detail: result.detail
+          });
+          return;
+        }
+        /*
+         * 注册是 async 的：组件可能在返回前就卸载了。
+         * 此时 cleanup 已经跑过（`unsubscribes` 是空的），不在这里立刻退订的话，
+         * listener 会永久留在 `ps-events` 的监听表里，每次重挂再叠一份。
+         */
+        if (cancelled) {
+          result.value();
+          return;
+        }
+        unsubscribes.push(result.value);
+      });
     }
 
     return () => {

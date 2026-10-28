@@ -17,7 +17,7 @@ import {
   alignHorizontal as alignHorizontalJsx,
   createButton as createButtonJsx,
   distributeByPitch,
-  getCurrentFontInfoRaw,
+  getCurrentFontFamily,
   getCurrentTextRaw,
   pickTextColor,
   setAllCaps,
@@ -54,6 +54,8 @@ import {
 } from '../domain/font-set-clipboard';
 import {
   canAddQuickFont,
+  deleteQuickFont,
+  selectQuickFont,
   toQuickFont,
   type QuickFont
 } from '../domain/quick-font';
@@ -73,7 +75,6 @@ import {
   bumpTranslateCounter,
   pushFontHistory,
   readHierarchy,
-  readQuickFonts,
   readTranslateCounter,
   updateFontSetSettings,
   updateHierarchy,
@@ -381,35 +382,19 @@ export async function quickFont(action: QuickFontAction): Promise<Result<void>> 
     return ok(undefined);
   }
 
-  const current = readQuickFonts();
-  if (current.status === 'error') return current;
-
   if (action.action === 'select') {
-    if (action.index < 0 || action.index >= current.value.list.length) {
-      return failWithDetail('VALIDATION', '切换快捷字体失败：下标越界', `index:${action.index}`);
-    }
-    return updateQuickFonts((file) => ({ ...file, index: action.index }));
+    return updateQuickFonts((file) => selectQuickFont(file, action.index));
   }
 
   if (action.action === 'delete') {
-    if (action.index < 0 || action.index >= current.value.list.length) {
-      return failWithDetail('VALIDATION', '删除快捷字体失败：下标越界', `index:${action.index}`);
-    }
-    if (current.value.list.length <= 1) {
-      return fail('VALIDATION', '至少要保留一个快捷字体');
-    }
-    return updateQuickFonts((file) => ({
-      index: 0,
-      list: file.list.filter((_, position) => position !== action.index)
-    }));
+    return updateQuickFonts((file) => deleteQuickFont(file, action.index));
   }
 
   /* add：当前图层字体 → 系统字体缓存里补全字重 → 去重 / 上限 */
-  const info = await getCurrentFontInfoRaw();
+  const info = await getCurrentFontFamily();
   if (info.status === 'error') return info;
 
-  const family = isRecord(info.value) && typeof info.value.family === 'string' ? info.value.family : '';
-  if (!family) return fail('VALIDATION', '当前图层没有可读取的字体信息');
+  const family = info.value;
 
   const cache = readSystemFontCache();
   if (cache.status === 'error') {
@@ -423,11 +408,12 @@ export async function quickFont(action: QuickFontAction): Promise<Result<void>> 
   const hit = cache.value.fonts.find((item) => item.family === family);
   if (!hit) return fail('VALIDATION', `系统字体里找不到「${family}」，无法加入快捷字体`);
 
-  const gate = canAddQuickFont(current.value.list, family);
-  if (gate.status === 'error') return gate;
-
   const next = toQuickFont(hit);
-  return updateQuickFonts((file) => ({ index: file.list.length, list: [...file.list, next] }));
+  return updateQuickFonts((file) => {
+    const gate = canAddQuickFont(file.list, family);
+    if (gate.status === 'error') return gate;
+    return ok({ index: file.list.length, list: [...file.list, next] });
+  });
 }
 
 export type HierarchyPresetAction =
@@ -449,7 +435,7 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
     if (!inRange(action.index)) {
       return failWithDetail('VALIDATION', '切换层级预设失败：下标越界', `index:${action.index}`);
     }
-    return updateHierarchy((file) => ({ ...file, index: action.index }));
+    return updateHierarchy((file) => ok({ ...file, index: action.index }));
   }
 
   if (action.action === 'rename') {
@@ -458,12 +444,14 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
     if (!inRange(action.index)) {
       return failWithDetail('VALIDATION', '重命名失败：下标越界', `index:${action.index}`);
     }
-    return updateHierarchy((file) => ({
-      ...file,
-      list: file.list.map((preset, position) =>
-        position === action.index ? { ...preset, name } : preset
-      )
-    }));
+    return updateHierarchy((file) =>
+      ok({
+        ...file,
+        list: file.list.map((preset, position) =>
+          position === action.index ? { ...preset, name } : preset
+        )
+      })
+    );
   }
 
   if (action.action === 'delete') {
@@ -471,10 +459,9 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
       return failWithDetail('VALIDATION', '删除失败：下标越界', `index:${action.index}`);
     }
     if (presets.length <= 1) return fail('VALIDATION', '至少要保留一个层级预设');
-    return updateHierarchy((file) => ({
-      index: 0,
-      list: file.list.filter((_, position) => position !== action.index)
-    }));
+    return updateHierarchy((file) =>
+      ok({ index: 0, list: file.list.filter((_, position) => position !== action.index) })
+    );
   }
 
   const levels = validateLevels(action.levels);
@@ -485,19 +472,21 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
     if (!name) return fail('VALIDATION', '请输入预设名字');
 
     const next: HierarchyPreset = { name, data: levels.value };
-    return updateHierarchy((file) => ({ index: file.index, list: [...file.list, next] }));
+    return updateHierarchy((file) => ok({ index: file.index, list: [...file.list, next] }));
   }
 
   /* save：用当前 6 级覆盖当前选中的预设 */
   if (!inRange(current.value.index)) {
     return fail('VALIDATION', '当前没有可覆盖的层级预设');
   }
-  return updateHierarchy((file) => ({
-    ...file,
-    list: file.list.map((preset, position) =>
-      position === file.index ? { ...preset, data: levels.value } : preset
-    )
-  }));
+  return updateHierarchy((file) =>
+    ok({
+      ...file,
+      list: file.list.map((preset, position) =>
+        position === file.index ? { ...preset, data: levels.value } : preset
+      )
+    })
+  );
 }
 
 /* ---------------- 设置 ---------------- */

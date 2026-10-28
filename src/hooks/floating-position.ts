@@ -11,6 +11,14 @@
 
 export type FloatingPlacement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end';
 
+/** 每个 placement 的两个轴：查表而不是拆字符串断言，新增 placement 时这里会编译报错 */
+const PLACEMENT_PARTS: Record<FloatingPlacement, ['top' | 'bottom', 'start' | 'end']> = {
+  'top-start': ['top', 'start'],
+  'top-end': ['top', 'end'],
+  'bottom-start': ['bottom', 'start'],
+  'bottom-end': ['bottom', 'end']
+};
+
 export interface FloatingRect {
   left: number;
   top: number;
@@ -53,10 +61,7 @@ export function computeFloatingPosition(
   options: FloatingPositionOptions
 ): FloatingPosition {
   const { offset, padding } = options;
-  const [preferredVertical, preferredHorizontal] = options.placement.split('-') as [
-    'top' | 'bottom',
-    'start' | 'end'
-  ];
+  const [preferredVertical, preferredHorizontal] = PLACEMENT_PARTS[options.placement];
 
   let vertical = preferredVertical;
   if (preferredVertical === 'bottom') {
@@ -86,6 +91,6 @@ export function computeFloatingPosition(
   return {
     left: Math.round(left),
     top: Math.round(top),
-    placement: `${vertical}-${horizontal}` as FloatingPlacement
+    placement: `${vertical}-${horizontal}`
   };
 }

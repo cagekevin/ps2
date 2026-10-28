@@ -25,7 +25,7 @@ import { failWithDetail, ok, type Result } from '../../types/result';
 import { callCapability, gateFailed } from './capability';
 import { CAP, FONT_UNAVAILABLE } from './capabilities';
 import { requireVendor } from './init';
-import { envelopeMessage, parseJsxRaw } from './raw';
+import { envelopeMessage, parseJsxRaw, type SystemFontListRaw } from './raw';
 
 /**
  * 检查字体是否可用。
@@ -84,11 +84,11 @@ export function applyFont(item: Record<string, unknown>): Promise<Result<void>> 
 /**
  * 读系统字体列表（原版字体管理页 `ztgl_initSystemList`）。
  *
- * 直调通道，长超时。返回**原始字符串**：字体数组 JSON，或 `ok` 哨兵
- * （哨兵表示数据已写到 `SysFont2.json`，调用方重读文件）。
- * 归一化不在这里做——`core` 不能 import `domain`。
+ * 直调通道，长超时。返回**已判定**的两态：`sentinel`（数据已写 `SysFont2.json`，去重读文件）
+ * 或 `list`（原样数组，归一化交给 `domain` —— `core` 不能 import `domain`）。
+ * 哨兵与「不是数组」的判断在 `raw.parseSystemFontList`，不在这里也不在命令层。
  */
-export function getSystemFontList(): Promise<Result<string>> {
+export function getSystemFontList(): Promise<Result<SystemFontListRaw>> {
   return callCapability(CAP.systemFontList);
 }
 

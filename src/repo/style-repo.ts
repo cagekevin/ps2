@@ -7,7 +7,7 @@
 import { decodeBase64 } from '../core/cep/base64';
 import { readTextResult, type StorageRoot } from '../core/storage';
 import { resolveKuGroups } from '../domain/ku-format';
-import { mutateJsonFile, readJsonFile, replaceJsonFile } from './json-file';
+import { mutateJsonFile, readJsonFile, replaceJsonFile, type JsonMutator } from './json-file';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
 import {
   decodeStyleIndex,
@@ -23,7 +23,7 @@ import {
 } from '../domain/style-library';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
-import { fail, ok, type Result } from '../types/result';
+import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 /** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
 const INDEX_FILE = 'sj_kuStoreInfo.ini';
@@ -151,7 +151,6 @@ export function readKuGroupId(
 /* ---------------- 写 ---------------- */
 
 /** 修改函数返回 null 表示「不需要写」 */
-type Mutator<T> = (current: T) => T | null;
 
 /**
  * 【范本】读-改-写库文件。
@@ -164,7 +163,7 @@ type Mutator<T> = (current: T) => T | null;
 export async function mutateRawGroups(
   warehouse: StyleWarehouse,
   kind: KuKind,
-  mutator: Mutator<Record<string, unknown>[]>
+  mutator: JsonMutator<Record<string, unknown>[]>
 ): Promise<Result<void>> {
   const name = libraryFileName(warehouse, kind);
   if (name.status === 'error') return name;
@@ -219,7 +218,7 @@ export function addKuGroup(
     };
     const at = afterIndex === undefined ? groups.length : afterIndex + 1;
     groups.splice(at, 0, group);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -238,7 +237,7 @@ export function addKuGroupWithItems(
       list: items
     };
     groups.push(group);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -250,9 +249,9 @@ export function renameKuGroup(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return null;
+    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
     group.name = name;
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -262,9 +261,9 @@ export function deleteKuGroup(
   groupIndex: number
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
-    if (!groups[groupIndex]) return null;
+    if (!groups[groupIndex]) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
     groups.splice(groupIndex, 1);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -277,9 +276,9 @@ export function setKuGroupShow(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return null;
+    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
     group.show = show;
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -293,7 +292,7 @@ export function moveKuGroupTo(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     applyListDrop(groups, from, to, position);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -308,11 +307,11 @@ export function renameKuItem(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = kuListOf(groups[groupIndex]);
-    if (!list) return null;
+    if (!list) return fail('VALIDATION', '目标分组的项列表已不存在');
     const item = list[itemIndex];
-    if (!isRecord(item)) return null;
+    if (!isRecord(item)) return failWithDetail('CORRUPT', '目标项不是对象', `index:${itemIndex}`);
     item.name = name;
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -324,9 +323,11 @@ export function deleteKuItem(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = kuListOf(groups[groupIndex]);
-    if (!list || itemIndex < 0 || itemIndex >= list.length) return null;
+    if (!list || itemIndex < 0 || itemIndex >= list.length) {
+      return fail('VALIDATION', '目标项已不存在（可能已被删除）');
+    }
     list.splice(itemIndex, 1);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -339,9 +340,9 @@ export function addKuItem(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return null;
+    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
     kuEnsureListOf(group).push(item);
-    return groups;
+    return ok(groups);
   });
 }
 
@@ -354,6 +355,6 @@ export function moveKuItemTo(
   return mutateRawGroups(warehouse, kind, (groups) => {
     /* applyItemDrop 改的是数组本身，所以要让每个组都持有真实数组 */
     applyItemDrop(groups.map(kuEnsureListOf), move);
-    return groups;
+    return ok(groups);
   });
 }

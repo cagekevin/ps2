@@ -10,8 +10,8 @@
  */
 
 import { openFile, saveFile } from '../core/dialog';
+import { log } from '../core/logger';
 import { getSystemFontList, setFontByNames } from '../core/ps/font';
-import { isOkSentinel, parseJsxRaw } from '../core/ps/raw';
 import { readTextAt, writeTextAtAtomic } from '../core/storage';
 import { resolveFontFace, type FontItem } from '../domain/font-item';
 import { parseTagArchive } from '../domain/font-meta';
@@ -24,9 +24,9 @@ import {
   updateFontStars,
   updateFontTags
 } from '../repo/font-repo';
-import type { RawRecords } from '../repo/json-file';
+import type { RawRecords } from '../repo/settings-object';
 import type { Dropped } from '../types/decode-list';
-import { fail, failWithDetail, ok, type Result } from '../types/result';
+import { fail, ok, type Result } from '../types/result';
 
 export interface FontListRead {
   fonts: FontItem[];
@@ -41,33 +41,36 @@ export interface FontListRead {
  * 返回值两条路都归一化。**星级不在这条路上合并**——星级只有 `store.stars` 一条读路。
  */
 export async function loadFontList(force = false): Promise<Result<FontListRead>> {
+  /* 命中判据在 repo（`allowEmpty: false` = 空缓存报 CORRUPT），这里只看成功与否 */
   const cached = readSystemFontCache();
-  if (!force && cached.status === 'ok' && cached.value.fonts.length > 0) {
+  if (!force && cached.status === 'ok') {
     return cached;
+  }
+
+  /*
+   * 缓存读失败要分开看：
+   * - `NOT_FOUND` = 首次运行，没有缓存是正常的（下面去问 jsx）；
+   * - 其余（`CORRUPT` / `IO_ERROR`）= 真故障，必须留痕，否则缓存坏了会永远静默重扫，
+   *   用户与排障者都不知道「为什么每次打开字体页都要等一次全机扫描」。
+   */
+  if (cached.status === 'error' && cached.code !== 'NOT_FOUND') {
+    log.warn('系统字体缓存读取失败，本次改走 jsx 重读', {
+      code: cached.code,
+      reason: cached.reason,
+      detail: cached.detail
+    });
   }
 
   const raw = await getSystemFontList();
   if (raw.status === 'error') return raw;
 
-  if (isOkSentinel(raw.value)) {
-    const fromFile = readSystemFontCache();
-    if (fromFile.status === 'error') return fromFile;
-    if (fromFile.value.fonts.length === 0) {
-      /* 哨兵说「已写文件」，文件里却是空列表：不能当「系统没有字体」静默显示 */
-      return failWithDetail('CORRUPT', '系统字体缓存为空', 'SysFont2.json:arr.length=0');
-    }
-    return fromFile;
+  /* 哨兵 / 数组的判定在 `raw.parseSystemFontList`；这里只转发两态 */
+  if (raw.value.kind === 'sentinel') {
+    /* 哨兵说「已写文件」：空列表由 repo 判成 CORRUPT，不当「系统没有字体」 */
+    return readSystemFontCache();
   }
 
-  const parsed = parseJsxRaw(raw.value);
-  if (parsed.status === 'error') return parsed;
-
-  if (!Array.isArray(parsed.value)) {
-    return failWithDetail('CORRUPT', '系统字体列表不是数组', `raw:${raw.value.slice(0, 120)}`);
-  }
-
-  /* 上面已确认是数组，这里不会失败；失败也原样透传，不造第二条成功路径 */
-  const decoded = decodeFontList(parsed.value);
+  const decoded = decodeFontList(raw.value.value);
   if (decoded.status === 'error') return decoded;
 
   return ok({ fonts: decoded.value.list, dropped: decoded.value.dropped });
@@ -102,14 +105,14 @@ export function rateFont(family: string, value: number): Promise<Result<void>> {
     const current = hit ? Number(hit.star) || 0 : 0;
     const next = current === value ? 0 : value;
 
-    if (next <= 0) return records.filter((item) => item.name !== family);
+    if (next <= 0) return ok(records.filter((item) => item.name !== family));
     if (hit) {
       hit.star = next;
-      return records;
+      return ok(records);
     }
 
     records.push({ name: family, star: next });
-    return records;
+    return ok(records);
   });
 }
 
@@ -143,7 +146,7 @@ export async function createTag(text: string): Promise<Result<void>> {
 
   return updateFontTags((records) => {
     records.push({ text: name.value, arr: [], xz: false });
-    return records;
+    return ok(records);
   });
 }
 
@@ -162,9 +165,9 @@ export async function renameTag(from: string, to: string): Promise<Result<void>>
 
   return updateFontTags((records) => {
     const tag = findTag(records, from);
-    if (!tag) return null;
+    if (!tag) return fail('VALIDATION', `标签「${from}」不存在（可能已被删除）`);
     tag.text = next.value;
-    return records;
+    return ok(records);
   });
 }
 
@@ -175,7 +178,7 @@ export async function deleteTag(text: string): Promise<Result<void>> {
     return fail('VALIDATION', `标签「${text}」不存在`);
   }
 
-  return updateFontTags((records) => records.filter((item) => item.text !== text));
+  return updateFontTags((records) => ok(records.filter((item) => item.text !== text)));
 }
 
 /* ---------------- 标签导入 / 导出（T-51） ---------------- */
@@ -231,7 +234,7 @@ export async function toggleTag(tagText: string, family: string): Promise<Result
 
   return updateFontTags((records) => {
     const tag = findTag(records, tagText);
-    if (!tag) return null;
+    if (!tag) return fail('VALIDATION', `标签「${tagText}」不存在（可能已被删除）`);
 
     const families = Array.isArray(tag.arr)
       ? tag.arr.filter((item): item is string => typeof item === 'string')
@@ -241,6 +244,6 @@ export async function toggleTag(tagText: string, family: string): Promise<Result
     else families.push(family);
 
     tag.arr = families;
-    return records;
+    return ok(records);
   });
 }

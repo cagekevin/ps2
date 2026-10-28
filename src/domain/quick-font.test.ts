@@ -3,9 +3,12 @@ import type { FontItem } from './font-item';
 import {
   canAddQuickFont,
   decodeQuickFontFile,
+  deleteQuickFont,
   QUICK_FONT_LIMIT,
+  selectQuickFont,
   toQuickFont,
-  type QuickFont
+  type QuickFont,
+  type QuickFontFile
 } from './quick-font';
 
 function font(overrides: Partial<FontItem> = {}): FontItem {
@@ -64,5 +67,49 @@ describe('quick-font', () => {
       expect(result.code).toBe('CORRUPT');
       expect(result.detail).toBe('root.list[1]');
     }
+  });
+});
+
+describe('selectQuickFont / deleteQuickFont', () => {
+  function file(families: string[], index = 0): QuickFontFile {
+    return { index, list: families.map(quick) };
+  }
+
+  it('select：下标合法 → 只改 index，列表不动', () => {
+    const result = selectQuickFont(file(['A', 'B']), 1);
+
+    if (result.status === 'error') throw new Error('应当成功');
+    expect(result.value.index).toBe(1);
+    expect(result.value.list.map((item) => item.family)).toEqual(['A', 'B']);
+  });
+
+  it('select：越界 → VALIDATION（负数、等于长度都算）', () => {
+    for (const index of [-1, 2, 99]) {
+      const result = selectQuickFont(file(['A', 'B']), index);
+      expect(result.status).toBe('error');
+      if (result.status === 'error') expect(result.code).toBe('VALIDATION');
+    }
+  });
+
+  it('delete：下标合法 → 删掉该项并把 index 归 0', () => {
+    const result = deleteQuickFont(file(['A', 'B', 'C'], 2), 1);
+
+    if (result.status === 'error') throw new Error('应当成功');
+    expect(result.value.list.map((item) => item.family)).toEqual(['A', 'C']);
+    expect(result.value.index).toBe(0);
+  });
+
+  it('delete：只剩一个 → VALIDATION（至少保留一个）', () => {
+    const result = deleteQuickFont(file(['A']), 0);
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('VALIDATION');
+  });
+
+  it('delete：越界 → VALIDATION', () => {
+    const result = deleteQuickFont(file(['A', 'B']), 2);
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('VALIDATION');
   });
 });

@@ -7,6 +7,7 @@
  */
 
 import { create } from 'zustand';
+import { log } from '../core/logger';
 import { getPref, setPref } from '../core/prefs';
 import type { Classification } from '../domain/classification';
 import { emptyClassification } from '../domain/classification';
@@ -82,28 +83,33 @@ export const useFontStore = create<FontState>()((set, get) => ({
 
   loadTags() {
     const read = readFontTags();
-    set({
-      tagsRead: read,
-      tags: read.status === 'ok' ? read.value.tags : []
-    });
+    if (read.status === 'error') {
+      /* 保留旧值 + 留痕：同一份标签文件不会随上下文变，失败时清空只会让用户以为标签没了 */
+      log.warn('读取字体标签失败', { code: read.code, reason: read.reason, detail: read.detail });
+      set({ tagsRead: read });
+      return;
+    }
+    set({ tagsRead: read, tags: read.value.tags });
   },
 
   loadStars() {
     const read = readFontStars();
-    set({
-      starsRead: read,
-      stars: read.status === 'ok' ? read.value.stars : {}
-    });
+    if (read.status === 'error') {
+      log.warn('读取字体星级失败', { code: read.code, reason: read.reason, detail: read.detail });
+      set({ starsRead: read });
+      return;
+    }
+    set({ starsRead: read, stars: read.value.stars });
   },
 
   loadClassification() {
     const read = readClassification();
-
-    set({
-      /* 投影给渲染用；「读没读到」看 `classificationRead`，不看这个空分类 */
-      classification: read.status === 'ok' ? read.value : emptyClassification(),
-      classificationRead: read
-    });
+    if (read.status === 'error') {
+      log.warn('读取字体分类失败', { code: read.code, reason: read.reason, detail: read.detail });
+      set({ classificationRead: read });
+      return;
+    }
+    set({ classification: read.value, classificationRead: read });
   },
 
   setPreviewMode(mode) {

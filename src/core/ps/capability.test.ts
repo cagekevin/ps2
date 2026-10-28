@@ -4,7 +4,7 @@ import { callJsx, LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridg
 import { CAP } from './capabilities';
 import { callCapability, type CapabilitySpec } from './capability';
 import { requireShapeLayer, requireTextLayer } from './layer';
-import { passthrough, strictVoid } from './raw';
+import { parseSystemFontList, strictVoid } from './raw';
 import { funcMissing, requireVendor } from './init';
 import type * as BridgeModule from '../cep/bridge';
 
@@ -160,9 +160,10 @@ describe('CAP', () => {
     expect(CAP.applyFont.require).toBe(requireTextLayer);
   });
 
-  it('systemFontList：300s（扫全机字体，不能按「读」的 30s），raw 原样交出', () => {
+  it('systemFontList：300s（扫全机字体，不能按「读」的 30s），哨兵与数组在解析器里判', () => {
     expect(CAP.systemFontList.timeout).toBe(LONG_TIMEOUT);
-    expect(CAP.systemFontList.parse).toBe(passthrough);
+    /* 消费者不再自己判 `ok` 哨兵 / `Array.isArray`：两态判定收在 `raw.parseSystemFontList` */
+    expect(CAP.systemFontList.parse).toBe(parseSystemFontList);
   });
 
   it('文字属性类能力全部带文字图层前置（执行器第一步，不通过就终止）', () => {

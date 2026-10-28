@@ -11,22 +11,15 @@
 
 import { restoreBackup, type StorageRoot } from '../core/storage';
 import type { Classification } from '../domain/classification';
-import { decodeClassification } from '../domain/classification';
+import { decodeClassification, emptyClassification } from '../domain/classification';
 import type { FontItem } from '../domain/font-item';
 import { decodeFontStars, decodeFontTags } from '../domain/font-meta';
 import { decodeFontList } from '../domain/font-decode';
 import type { Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
-import {
-  decodeRawRecords,
-  readJsonFile,
-  readOrEmpty,
-  replaceJsonFile,
-  updateOrCreateJsonFile,
-  type JsonMutator,
-  type RawRecords
-} from './json-file';
+import { readJsonFile, readOrEmpty, replaceJsonFile, updateOrCreateJsonFile, type JsonMutator } from './json-file';
+import { decodeRawRecords, type RawRecords } from './settings-object';
 
 const ROOT: StorageRoot = 'legacy';
 
@@ -37,8 +30,17 @@ const CLASSIFICATION_FILE = 'classification.json';
 
 /* ---------------- 读 ---------------- */
 
-/** 系统字体缓存 `SysFont2.json`：`{ arr: [...] }`；缺文件是首次运行，由命令层去调 jsx */
-export function readSystemFontCache(): Result<{ fonts: FontItem[]; dropped: Dropped[] }> {
+/**
+ * 系统字体缓存 `SysFont2.json`：`{ arr: [...] }`；缺文件是首次运行，由命令层去调 jsx。
+ *
+ * `allowEmpty` 默认 `false`：**「有文件但一个字体都没有」是故障，不是「没缓存」**。
+ * 命令层只判 `status === 'ok'` 就算命中；「为空 / 缺失 / 损坏」的区分留在这里。
+ */
+export function readSystemFontCache(
+  options: { allowEmpty?: boolean } = {}
+): Result<{ fonts: FontItem[]; dropped: Dropped[] }> {
+  const allowEmpty = options.allowEmpty ?? false;
+
   return readJsonFile(SYS_FONT_FILE, ROOT, '系统字体缓存', (raw) => {
     if (!isRecord(raw)) return fail('CORRUPT', '系统字体缓存顶层不是对象');
 
@@ -47,6 +49,10 @@ export function readSystemFontCache(): Result<{ fonts: FontItem[]; dropped: Drop
 
     const decoded = decodeFontList(arr);
     if (decoded.status === 'error') return decoded;
+
+    if (!allowEmpty && decoded.value.list.length === 0) {
+      return failWithDetail('CORRUPT', '系统字体缓存为空', 'SysFont2.json:arr.length=0');
+    }
 
     return ok({ fonts: decoded.value.list, dropped: decoded.value.dropped });
   });
@@ -87,9 +93,17 @@ export function readRawFontStars(): Result<RawRecords> {
   return readMetaFile(FONT_STAR_FILE, '字体星级', decodeRawRecords);
 }
 
-/** 分类数据；缺文件由调用方降级（不是「坏数据」） */
+/**
+ * 分类数据：缺文件 = 空分类。
+ *
+ * 与标签/星级走同一条判据（`readOrEmpty`）：同一个 repo 里不留第二种「缺文件」策略，
+ * 否则新加文件时不知道该照哪一处抄。
+ */
 export function readClassification(): Result<Classification> {
-  return readJsonFile(CLASSIFICATION_FILE, ROOT, '字体分类', decodeClassification);
+  return readOrEmpty(
+    readJsonFile(CLASSIFICATION_FILE, ROOT, '字体分类', decodeClassification),
+    () => ok(emptyClassification())
+  );
 }
 
 /* ---------------- 写（只给 commands 用） ---------------- */

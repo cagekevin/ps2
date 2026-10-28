@@ -4,21 +4,26 @@
  * 关键判据：**不留半份数据**——标签写失败时评分的 `.bak` 必须被用回。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { replaceFontArchive } from './font-repo';
+import { readClassification, readSystemFontCache, replaceFontArchive } from './font-repo';
 
 const h = vi.hoisted(() => ({
   writes: [] as string[],
   restores: [] as string[],
-  failWrite: null as string | null
+  failWrite: null as string | null,
+  /** 非 null = 读盘返回这段文本；null = 文件不存在 */
+  text: null as string | null
 }));
 
 vi.mock('../core/storage', () => ({
-  readTextResult: () => ({
-    status: 'error' as const,
-    code: 'NOT_FOUND' as const,
-    reason: '文件不存在',
-    detail: ''
-  }),
+  readTextResult: () =>
+    h.text === null
+      ? {
+          status: 'error' as const,
+          code: 'NOT_FOUND' as const,
+          reason: '文件不存在',
+          detail: ''
+        }
+      : { status: 'ok' as const, value: h.text },
   writeTextAtomic: (name: string) => {
     if (h.failWrite === name) {
       return Promise.resolve({
@@ -45,6 +50,42 @@ beforeEach(() => {
   h.writes.length = 0;
   h.restores.length = 0;
   h.failWrite = null;
+  h.text = null;
+});
+
+describe('readSystemFontCache', () => {
+  it('arr 为空 → CORRUPT（「有文件但没有字体」不是「没缓存」）', () => {
+    h.text = JSON.stringify({ arr: [] });
+
+    const result = readSystemFontCache();
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
+  });
+
+  it('allowEmpty: true → 空列表也算读成功', () => {
+    h.text = JSON.stringify({ arr: [] });
+
+    const result = readSystemFontCache({ allowEmpty: true });
+
+    expect(result.status).toBe('ok');
+  });
+
+  it('缺文件 → NOT_FOUND（首次运行，交给命令层去问 jsx）', () => {
+    const result = readSystemFontCache();
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('readClassification', () => {
+  it('缺文件 = 空分类（与标签/星级同一条判据）', () => {
+    const result = readClassification();
+
+    expect(result.status).toBe('ok');
+    if (result.status === 'ok') expect(result.value.categories).toEqual([]);
+  });
 });
 
 describe('replaceFontArchive', () => {

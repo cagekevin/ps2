@@ -6,6 +6,7 @@
  * 更容易漏掉这一份，所以把「漏了」变成编译后立刻红。
  */
 import { describe, expect, it, vi } from 'vitest';
+import { failWithDetail, ok } from '../../types/result';
 import { CAP } from './capabilities';
 import { CORE_FUNCS, CORE_REQUIRED, VENDOR_FUNCS, VENDOR_REQUIRED } from './init';
 
@@ -66,5 +67,57 @@ describe('CORE_FUNCS', () => {
     expect(CORE_FUNCS).toContain('mm_layer_getState');
     expect(CORE_FUNCS).toContain('mm_layer_getSelection');
     expect(CORE_FUNCS).toContain('mm_diag_vendor');
+  });
+});
+
+describe('探测脚本失败', () => {
+  it('evalScript 失败 → 门关闭，且 probeFailure 带原始失败码（不折成「全部函数缺失」）', async () => {
+    vi.resetModules();
+    vi.doMock('../cep/bridge', () => ({
+      evalScript: vi.fn(async () => failWithDetail('TIMEOUT', 'evalScript 超时', 'probe')),
+      loadJsx: vi.fn(async () => ok(undefined))
+    }));
+    vi.doMock('./env', () => ({ injectEnv: vi.fn(async () => ok(undefined)) }));
+
+    const { ensurePsReady } = await import('./init');
+    const capability = await ensurePsReady();
+
+    expect(capability.core).toBe(false);
+    /* 关键：探测失败不许被折成「清单里全部函数都不存在」 */
+    expect(capability.missing).toEqual([]);
+    expect(capability.probeFailure?.status).toBe('error');
+    if (capability.probeFailure?.status === 'error') {
+      expect(capability.probeFailure.code).toBe('TIMEOUT');
+    }
+
+    vi.doUnmock('../cep/bridge');
+    vi.doUnmock('./env');
+  });
+
+  it('core 门关闭且探测失败 → diagVendor 透传原始码，不统一说成「脚本未加载」', async () => {
+    vi.resetModules();
+    vi.doMock('./init', () => ({
+      CORE_FUNCS: [],
+      CORE_REQUIRED: [],
+      VENDOR_FUNCS: [],
+      VENDOR_REQUIRED: [],
+      ensurePsReady: vi.fn(async () => ({
+        core: false,
+        vendor: false,
+        missing: [],
+        probeFailure: failWithDetail('TIMEOUT', 'evalScript 超时', 'probe')
+      })),
+      requireCore: vi.fn(async () => false),
+      requireVendor: vi.fn(async () => false),
+      funcMissing: vi.fn(async () => false)
+    }));
+
+    const { diagVendor } = await import('./diag');
+    const result = await diagVendor();
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('TIMEOUT');
+
+    vi.doUnmock('./init');
   });
 });

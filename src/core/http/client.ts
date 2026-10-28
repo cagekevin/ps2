@@ -57,7 +57,8 @@ export async function request<K extends EndpointKey>(
       return fail('NETWORK', `请求失败（HTTP ${response.status}）`);
     }
 
-    const data = (await response.json()) as EndpointResponses[K];
+    /* json() 返回 any；端点响应的真实形状声明在 `EndpointResponses`（值就是 unknown），此处不猜 */
+    const data: EndpointResponses[K] = await response.json();
     return ok(data);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {

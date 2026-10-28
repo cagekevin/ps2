@@ -36,16 +36,14 @@ import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
 import {
-  decodeSettingsObject,
   readJsonFile,
   readOrEmpty,
   updateOrCreateJsonFile,
   type JsonMutator
 } from './json-file';
+import { decodeSettingsObject, SETTINGS_FILE } from './settings-object';
 
 const ROOT: StorageRoot = 'legacy';
-
-const SET_FILE = 'sj_set.json';
 const QUICK_FILE = 'sj_ztQuickFont.json';
 const HIERARCHY_FILE = 'sj_ztHierarych.json';
 const TRANSLATE_FILE = 'sj_ztTranslate.json';
@@ -55,7 +53,7 @@ const HISTORY_FILE = 'sj_ztglHistory.json';
 const HISTORY_LIMIT = 10;
 
 /* ---------------- sj_set.json ---------------- */
-/* 顶层解码走 `json-file.decodeSettingsObject`（唯一入口，别在本文件再写一份） */
+/* 顶层解码走 `settings-object.decodeSettingsObject`（唯一入口，别在本文件再写一份） */
 
 /** 解码 + 投影合成一步：调用方只拿最终形状，不必再 `if ok → 投影` */
 function decodeFontSetSettings(raw: unknown): Result<FontSetSettings> {
@@ -67,7 +65,7 @@ function decodeFontSetSettings(raw: unknown): Result<FontSetSettings> {
 /** 设置投影：缺失 = 全部默认值（首次使用不是故障），坏文件仍报错 */
 export function readFontSetSettings(): Result<FontSetSettings> {
   return readOrEmpty(
-    readJsonFile(SET_FILE, ROOT, '字体面板设置', decodeFontSetSettings),
+    readJsonFile(SETTINGS_FILE, ROOT, '字体面板设置', decodeFontSetSettings),
     () => ok(normalizeFontSetSettings({}))
   );
 }
@@ -75,11 +73,11 @@ export function readFontSetSettings(): Result<FontSetSettings> {
 /** 改设置：只替换 `patch` 里出现的键，其它键（含别的页面的）原样带回 */
 export function updateFontSetSettings(patch: Partial<FontSetSettings>): Promise<Result<void>> {
   return updateOrCreateJsonFile(
-    SET_FILE,
+    SETTINGS_FILE,
     ROOT,
     '字体面板设置',
     decodeSettingsObject,
-    (raw) => mergeFontSetSettings(raw, patch),
+    (raw) => ok(mergeFontSetSettings(raw, patch)),
     { missing: () => ({}) }
   );
 }
@@ -93,6 +91,7 @@ export function readQuickFonts(): Result<QuickFontFile> {
   );
 }
 
+/** 读-改-写。mutator 可以返回失败（下标越界 / 至少留一个） */
 export function updateQuickFonts(
   mutator: JsonMutator<QuickFontFile>
 ): Promise<Result<void>> {
@@ -190,7 +189,7 @@ export function updateTranslateCounter(
 
 /** 成功后加一次计数：跨天自动重置，别在命令里自己拼时间判断 */
 export function bumpTranslateCounter(today: string): Promise<Result<void>> {
-  return updateTranslateCounter((counter) => bumpCounter(counter, today));
+  return updateTranslateCounter((counter) => ok(bumpCounter(counter, today)));
 }
 
 /* ---------------- sj_ztglHistory.json ---------------- */
@@ -244,8 +243,7 @@ export function updateFontHistory(mutator: JsonMutator<string[]>): Promise<Resul
 
 /** 把家族名挪到最前面并截到 10 个（重复的旧位置删掉，不是压进去两次） */
 export function pushFontHistory(family: string): Promise<Result<void>> {
-  return updateFontHistory((list) => {
-    const next = [family, ...list.filter((item) => item !== family)].slice(0, HISTORY_LIMIT);
-    return next;
-  });
+  return updateFontHistory((list) =>
+    ok([family, ...list.filter((item) => item !== family)].slice(0, HISTORY_LIMIT))
+  );
 }

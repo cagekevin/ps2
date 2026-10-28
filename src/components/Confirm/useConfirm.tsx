@@ -11,6 +11,7 @@
  * 同时弹两个确认框没有意义，用户也点不过来。
  */
 import { useCallback, useEffect, useReducer } from 'react';
+import { createChannel } from '../../core/feedback/channel';
 import { Confirm } from './index';
 
 export interface ConfirmOptions {
@@ -25,11 +26,8 @@ interface PendingRequest extends ConfirmOptions {
 }
 
 let pending: PendingRequest | null = null;
-const listeners = new Set<() => void>();
-
-function notify() {
-  listeners.forEach((fn) => fn());
-}
+/** 与 toast / loading 共用同一份通道原语 */
+const channel = createChannel();
 
 /** 返回一个 `await` 形式的确认函数：true = 用户点了确认 */
 export function useConfirm() {
@@ -38,7 +36,7 @@ export function useConfirm() {
       /* 上一个还没答完就被覆盖：按取消处理，避免 Promise 永远挂着 */
       pending?.resolve(false);
       pending = { ...options, resolve };
-      notify();
+      channel.emit();
     });
   }, []);
 }
@@ -48,10 +46,7 @@ export function ConfirmHost() {
   const [, force] = useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
-    listeners.add(force);
-    return () => {
-      listeners.delete(force);
-    };
+    return channel.subscribe(force);
   }, []);
 
   if (!pending) return null;
@@ -62,7 +57,7 @@ export function ConfirmHost() {
     const request = current;
     pending = null;
     request.resolve(ok);
-    notify();
+    channel.emit();
   }
 
   return (

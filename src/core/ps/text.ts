@@ -36,8 +36,14 @@ export function getTextInfoRaw(): Promise<Result<unknown>> {
   return callCapability(CAP.textInfo);
 }
 
-/** 当前图层字体信息（`zt_getCurrentFontInfo`）：字体快选「加当前图层」用，只有 `family` 有用 */
-export function getCurrentFontInfoRaw(): Promise<Result<unknown>> {
+/**
+ * 当前图层的字体家族名（`zt_getCurrentFontInfo`）：字体快选「加当前图层」用。
+ *
+ * 返回 `string` 而不是 `unknown`：形状收窄在 `raw.parseFontFamily`，
+ * 消费者不再自己判 `isRecord` / 字段类型（`ADR-0003` 防御归属）。
+ * 「没有 family」在 `raw.parseFontFamily` 里就报失败，调用方拿到的 `string` 一定非空。
+ */
+export function getCurrentFontFamily(): Promise<Result<string>> {
   return callCapability(CAP.currentFontInfo);
 }
 

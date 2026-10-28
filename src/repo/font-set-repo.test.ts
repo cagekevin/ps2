@@ -3,6 +3,7 @@
  * storage 用假实现（不碰真磁盘）。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ok } from '../types/result';
 import {
   readFontSetSettings,
   readQuickFonts,
@@ -79,7 +80,7 @@ describe('font-set-repo', () => {
     expect(read.status).toBe('error');
     if (read.status === 'error') expect(read.code).toBe('CORRUPT');
 
-    const written = await updateQuickFonts((file) => file);
+    const written = await updateQuickFonts((file) => ok(file));
     expect(written.status).toBe('error');
     expect(h.writes).toHaveLength(0);
   });

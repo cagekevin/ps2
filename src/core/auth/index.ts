@@ -5,11 +5,14 @@
  * 新增凭据（如 refresh_token）按同样模式：内存缓存 + 版本化 key。
  */
 
+import { createChannel } from '../feedback/channel';
+
 /* key 带 schema 版本，后续结构变更可平滑迁移 */
 const STORAGE_KEY = 'maomao.v1.user.token';
 
 let token: string | null = null;
-const unauthorizedListeners = new Set<() => void>();
+/** 401 的订阅表；与 toast / loading 共用同一份通道原语 */
+const unauthorized = createChannel();
 
 export function getToken(): string | null {
   if (token) return token;
@@ -36,13 +39,10 @@ export function clearToken(): void {
 }
 
 export function onUnauthorized(listener: () => void): () => void {
-  unauthorizedListeners.add(listener);
-  return () => {
-    unauthorizedListeners.delete(listener);
-  };
+  return unauthorized.subscribe(listener);
 }
 
 export function emitUnauthorized(): void {
   clearToken();
-  unauthorizedListeners.forEach((listener) => listener());
+  unauthorized.emit();
 }

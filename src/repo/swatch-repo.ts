@@ -11,7 +11,7 @@
  */
 import { type Result } from '../types/result';
 import { decodeArray } from '../types/decode-list';
-import { updateJsonFile } from './json-file';
+import { updateJsonFile, type JsonMutator } from './json-file';
 
 /** 色板文件名（原版 `g_FN.color`） */
 const SWATCH_FILE = 'userColor.ini';
@@ -27,7 +27,7 @@ function decodeSwatch(raw: unknown): Result<unknown[]> {
  * 其余读失败（坏 JSON / IO）不写盘。
  */
 export function updateSwatchItems(
-  mutator: (items: unknown[]) => unknown[] | null
+  mutator: JsonMutator<unknown[]>
 ): Promise<Result<void>> {
   return updateJsonFile(SWATCH_FILE, ROOT, '色板文件', decodeSwatch, mutator, {
     emptyAs: () => [],

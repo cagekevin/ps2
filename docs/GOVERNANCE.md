@@ -91,11 +91,11 @@
 | PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄 | ⚠️ 待真机 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL | ⚠️ 待真机（缩略图待复验） |
 | 命令层 | `src/commands/README.md` | 命令判定标准与写法 | — 规范 |
-| 鉴权 | `src/core/auth/index.ts` | token + 版本化 key | ⚠️ 未使用 |
+| 鉴权 | `src/core/auth/index.ts` | token + 版本化 key；401 订阅表走 `core/feedback/channel` | ⚠️ 待真机（`core/http/client.ts` 在用） |
 | 环境 | `src/core/env/index.ts` | 版本号、扩展 ID | ✅ 真机 |
 | 网络 | `src/core/http/client.ts` | 唯一请求入口 | ⚠️ 未实测 |
 | 接口登记 | `src/core/http/endpoints.ts` | 标注来源与验证状态 | ⚠️ 未实测 |
-| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（62 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` | ✅ 真机 |
+| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（62 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` | ✅ 真机 |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） | ✅ 真机 |
 | PS 样式 | `src/core/ps/style.ts` | 颜色走自有移植版，渐变/样式走 `ps_onJsx` | ✅ 真机 |
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖 | ✅ 真机 |
@@ -111,7 +111,8 @@
 | 常用页模型 | `src/domain/common-use.ts` | 14 项官方种子（逐字照抄 `configReset`）+ 文件校验 + 视图投影 | ✅ 单测 |
 | 常用页设置 | `src/domain/common-use-options.ts` | 17 个 `cy*` 键白名单 + 投影 + 深合并（数组替换 / 对象逐键） | ✅ 单测 |
 | 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result；`mutateRawGroups` 走 `json-file` | ✅ 真实数据 |
-| 数据写入口 | `src/repo/json-file.ts` | 库文件 / 字体标签星级 / 色板的唯一「读 → 改 → 写」；首次创建显式分支 | ⚠️ 待真机 |
+| 数据写入口 | `src/repo/json-file.ts` | 库文件 / 字体标签星级 / 色板的唯一「读 → 改 → 写」；首次创建显式分支；**不认识任何业务文件的形状**（`sj_set` 的顶层解码在 `repo/settings-object.ts`） | ⚠️ 待真机 |
+| 设置文件形状 | `src/repo/settings-object.ts` | `sj_set.json` 的文件名常量 + 顶层解码 + 原始记录数组；两个按键分工的 repo 共用这一份 | ✅ 单测 |
 | 字面板仓库 | `src/repo/font-set-repo.ts` | 5 个 `sj_*` 设置文件；缺失按空/默认读、首次写才创建、`sj_set.json` 只改 `zt*` | ⚠️ 待真机 |
 | 常用页仓库 | `src/repo/common-use-repo.ts` | `sj_commonFunction.json`（根是裸数组，缺失按种子读不写盘）+ `sj_set.json` 的 17 个 `cy*` 键（未知键原样保留） | ⚠️ 待真机 |
 | 串行队列 | `src/core/serial/index.ts` | 按 key 串行，只保证顺序、不传递失败 | ✅ 单测 |
@@ -128,11 +129,12 @@
 | 折叠箭头样式 | `src/components/Chevron/chevron.css` | rotate(-90deg) 表示收起 | ✅ 真机 |
 | 图片取色弹层 | `src/features/style/components/ImgColorDialog.tsx` | 色圈 / 渐变条，左键应用右键删 | ⚠️ 待真机 |
 | 图片取色样式 | `src/features/style/components/img-color-dialog.css` | 对齐原版 imgColor | ⚠️ 待真机 |
-| PS 事件订阅 | `src/core/cep/ps-events.ts` | 注册 + JSON 回调 + setd 判据 | ⚠️ 待真机 |
+| PS 事件订阅 | `src/core/cep/ps-events.ts` | 注册 + JSON 回调 + setd 判据；`subscribeHostEvent` 返回 `Result<取消函数>`，非 CEP / 注册被拒都折成 `PS_UNREADY`，**不抛异常**；一次性等待用 `startHostEventWait`（订阅 / 超时 / 退订都在这里），调用方只递判据 | ⚠️ 待真机 |
 | 图片解码 | `src/core/image/index.ts` | FileReader / canvas / Image 默认注入 | ⚠️ 待真机 |
 | 文件对话框 | `src/core/dialog/index.ts` | CEP fs API，取消返回 null | ⚠️ 待真机 |
 | 仓库容器 | `src/repo/ku-archive.ts` | .kux 导出导入 + id 重发 + 回收 | ⚠️ 待真机 |
 | 容器编解码 | `src/domain/ku-io.ts` | 纯函数（app 移植） | ✅ 单测（app 背书） |
+| 状态通道 | `src/core/feedback/channel.ts` | 单通道订阅 + 通知 + 挂载门；`toast` / `loading` 共用，禁止再各写一份 `Set + emit` | ✅ 单测 |
 | Toast | `src/components/Toast/index.tsx` | 禁止 alert | ✅ 真机 |
 | Loading | `src/components/Loading/index.tsx` | 全屏加载唯一入口，文案栈 | ✅ 真机 |
 | Spin 转圈 | `src/components/Spin/index.tsx` | 裸圈 / 带文案 / 局部遮罩三模式（照原版 NewSpin） | ✅ 真机 |
@@ -142,7 +144,7 @@
 | Provider | `src/app/providers.tsx` | UI 横切挂载 | ✅ 真机 |
 | 导航配置 | `src/app/nav-config.ts` | 导航唯一来源 | ✅ 真机 |
 | 导航栏 | `src/app/nav-bar.tsx` | 侧边导航 | ✅ 真机 |
-| 图层监听 | `src/app/layer-watcher.tsx` | 唯一图层订阅者，页面只读 store | ✅ 真机 |
+| 图层监听 | `src/app/layer-watcher.tsx` | 唯一的**常驻**图层订阅者，页面只读 store；命令内的一次性事件等待（吸色等）不在此列，见 `CONVENTIONS` §3.1.5 第 5 条 | ✅ 真机 |
 | 状态持久化 | `src/hooks/usePersisted.ts` | 界面偏好，key 强类型 | ⚠️ 待真机 |
 | 全局快捷键 | `src/hooks/useShortcut.ts` | 常驻字母键；负责「打字中 / 带修饰键」两条排除；与 `useDismiss` 分工写在文件头 | ⚠️ 待真机 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 | ✅ 真机 |
@@ -249,6 +251,13 @@
 
 > 代码会腐烂，范本会过时，横切会失修。体检不是可选项，是固定动作。
 
+### 7.0 体检的首要目标：让后来者抄不错
+
+> **判据真源：`docs/adr/ADR-0001-半收口比不做更糟：做完必须自列检查项并全部过关.md`**
+> （判据、五类半收口形态、交付前 6 项检查都在那里，本文件不复述。）
+>
+> 本节只留操作顺序：**先清半收口，再看 §7.2 七项**；七项里第 2 项（重复实现）与第 6 项（文档漂移）是主战场。
+
 ### 7.1 触发条件（满足任一即必须体检）
 
 | # | 触发 | 说明 |
@@ -259,23 +268,36 @@
 | 4 | **连续 2 周没有体检** | 时间兜底 |
 | 5 | **出现「两套写法」迹象** | 发现重复实现，立即收敛 |
 
-### 7.2 体检清单（七项，逐条给结论）
+### 7.1.1 体检范围（先定范围，再跑清单）
+
+**默认范围 = 本次改动碰过的文件 + 它们的直接上下游**（谁 import 它、它 import 谁）。
+不是全仓。
+
+| 情形 | 范围 |
+|---|---|
+| 改业务代码（页面 / 组件 / 命令 / store） | 本次改动的文件 + 直接调用方 |
+| 改 `core/` 出口、`types/` 契约、公共组件 | 上述 + **该出口的全部 fan-in**（用 `mv-sync-refs.mjs refs` 列出） |
+| 用户明确说「全身体检」 | 才允许 `find-dead src`、对照目录树、全仓 grep |
+
+**禁止**：用户没说范围时自己扩到全仓；把与本轮改动无关的既有问题写进本次报告（发现就单独登记一笔债，别混进来充数）。
+
+### 7.2 体检清单（七项，逐条给结论；**按上面定的范围裁剪**）
 
 | # | 检查项 | 手段 | 通过标准 |
 |---|---|---|---|
-| 1 | 唯一入口 | 搜 `fetch(`、`evalScript`、`localStorage`、`split('\|')` | 只出现在对应 core 模块 |
+| 1 | 唯一入口 | **只在本轮改动文件里**搜 `fetch(`、`evalScript`、`localStorage`、`split('\|')` | 只出现在对应 core 模块 |
 | 2 | 重复实现 | 人工看同名能力 | 一个能力只有一处实现 |
 | 3 | 范本一致性 | `npm run check:templates` | 双向一致 |
 | 4 | 导航路由一致性 | `npm run check:nav` | 双向一致 |
-| 5 | 死代码 | 找无人 import 的文件/导出 | 无孤儿（范本页除外） |
-| 6 | 文档漂移 | 对照 `CONVENTIONS.md` §3 目录树与真实目录 | 完全一致 |
-| 7 | 公共能力没写进页面 | 搜 `features/` 里的底层调用（规则见 `CONVENTIONS.md` §4.8） | 输出为空 |
+| 5 | 死代码 | 只查**本轮改动后变成零引用**的符号（半径外对账），不跑全仓 `find-dead` | 无本轮新增孤儿 |
+| 6 | 文档漂移 | 只核本轮**新增 / 移动 / 删除 / 改名**的模块在 §3 目录树与相关表里是否同步 | 本轮涉及的部分一致 |
+| 7 | 公共能力没写进页面 | 只搜**本轮改动波及的** `features/` 文件（规则见 `CONVENTIONS.md` §4.8） | 输出为空 |
 
-附加项（每次体检顺手看）：
+附加项（按范围看）：
 
-- 横切使用矩阵：哪些横切仍是「零使用」，是否需要提前落地
-- 范本状态：`GOVERNANCE.md` §4.1 的状态列是否还准确
-- 视觉一致性：是否有新组件绕过了 Token（stylelint 会拦，但人工再看一眼）
+- 横切使用矩阵：只核本轮**用到**的横切是否走唯一入口
+- 范本状态：只核本轮**动过**的 §4.1 行是否还准确
+- 视觉一致性：只核本轮**新增 / 修改**的组件是否绕过 Token
 
 ### 7.3 AI 主动询问规则（强制）
 
@@ -292,7 +314,7 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 
 ### 7.4 体检输出
 
-每次体检产出一份报告，放在 `docs/review/REVIEW-YYYY-MM-DD[-N].md`，包含：
+每次体检产出一份报告，放在 `docs/review/REVIEW-YYYY-MM-DD[-N].md`，开头必须写**本轮范围**（改了哪些文件），包含：
 
 1. 总体结论（乱不乱）
 2. 横切使用矩阵（含状态）
@@ -306,6 +328,7 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 
 | 发现 | 动作 |
 |---|---|
+| **半收口**（抽了一半 / 改了一半 / 写了一半 / 只改主要几条就宣称收口） | **当场修完，不许拆成两次、不许排期** —— 它比不做更糟（§7.0） |
 | P0（会导致抄错） | 立即修，修完才允许继续业务 |
 | P1（容易漏改） | 当次修或排进下一步，不允许无限期挂起 |
 | P2（结构小问题） | 可延后，但必须登记在报告里 |

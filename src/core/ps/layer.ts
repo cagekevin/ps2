@@ -44,12 +44,10 @@ export async function getLayerState(): Promise<Result<LayerState>> {
 
   const kindRaw = raw.slice(0, index);
   const name = raw.slice(index + 1);
-  const kind = kindRaw.startsWith('unknown') ? 'unknown' : (kindRaw as LayerKind);
+  /* 白名单查表：查不到就是 `unknown`，不给「硬转成联合类型」留口子 */
+  const kind = VALID_KINDS.find((item) => item === kindRaw) ?? 'unknown';
 
-  return ok({
-    kind: VALID_KINDS.includes(kind) ? kind : 'unknown',
-    name
-  });
+  return ok({ kind, name });
 }
 
 /**

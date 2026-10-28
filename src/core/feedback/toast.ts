@@ -10,6 +10,7 @@
  * **未挂载不静默**：消息没人渲染 = 用户看不到，`showToast` 必须留痕。
  */
 import { log } from '../logger';
+import { createChannel, createMountGate } from './channel';
 
 export type ToastKind = 'info' | 'error';
 
@@ -31,20 +32,12 @@ const DURATION = 2600;
 let nextId = 0;
 let items: readonly ToastItem[] = [];
 
-/** 已挂载的容器数：为 0 时消息没人渲染，必须留痕 */
-let mounted = 0;
-
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
+/** 订阅表与挂载计数由通道原语提供（与 `loading` 共用同一份实现） */
+const channel = createChannel();
+const gate = createMountGate();
 
 export function subscribeToast(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return channel.subscribe(listener);
 }
 
 export function getToastItems(): readonly ToastItem[] {
@@ -53,14 +46,11 @@ export function getToastItems(): readonly ToastItem[] {
 
 /** 容器挂载/卸载：只服务于「这句话有人接吗」的留痕判断 */
 export function mountToast(): () => void {
-  mounted += 1;
-  return () => {
-    mounted -= 1;
-  };
+  return gate.mount();
 }
 
 function show(message: string, kind: ToastKind = 'info'): void {
-  if (!mounted) {
+  if (!gate.isMounted()) {
     /* 不静默：没有容器 = 这句话用户看不到，必须在日志里留痕 */
     log.warn('提示条容器未挂载，消息未显示', { kind, message });
   }
@@ -68,11 +58,11 @@ function show(message: string, kind: ToastKind = 'info'): void {
   nextId += 1;
   const id = nextId;
   items = [...items, { id, kind, message }];
-  emit();
+  channel.emit();
 
   window.setTimeout(() => {
     items = items.filter((item) => item.id !== id);
-    emit();
+    channel.emit();
   }, DURATION);
 }
 

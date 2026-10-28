@@ -8,6 +8,7 @@
  * 语义照原实现：`tips` 是**栈**，嵌套时显示最内层的提示，全部结束才隐藏。
  */
 import { log } from '../logger';
+import { createChannel, createMountGate } from './channel';
 
 export interface LoadingActions {
   /** 手动开一层；带文案时遮罩上会显示它 */
@@ -21,19 +22,13 @@ export interface LoadingActions {
 export const DEFAULT_LOADING_TIP = '处理中…';
 
 let tips: readonly string[] = [];
-let mounted = 0;
 
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
+/** 订阅表与挂载计数由通道原语提供（与 `toast` 共用同一份实现） */
+const channel = createChannel();
+const gate = createMountGate();
 
 export function subscribeLoading(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  return channel.subscribe(listener);
 }
 
 export function getLoadingTips(): readonly string[] {
@@ -42,24 +37,21 @@ export function getLoadingTips(): readonly string[] {
 
 /** 容器挂载/卸载：为 0 时转圈不会出现，必须留痕 */
 export function mountLoading(): () => void {
-  mounted += 1;
-  return () => {
-    mounted -= 1;
-  };
+  return gate.mount();
 }
 
 function show(tip?: string): void {
-  if (!mounted) {
+  if (!gate.isMounted()) {
     /* 不静默：没有容器 = 用户看不到转圈，且界面会像「点了没反应」 */
     log.warn('加载遮罩容器未挂载，转圈不会显示', { tip: tip ?? DEFAULT_LOADING_TIP });
   }
   tips = [...tips, tip ?? DEFAULT_LOADING_TIP];
-  emit();
+  channel.emit();
 }
 
 function hide(): void {
   tips = tips.slice(0, -1);
-  emit();
+  channel.emit();
 }
 
 async function run<T>(task: () => Promise<T>, tip?: string): Promise<T> {

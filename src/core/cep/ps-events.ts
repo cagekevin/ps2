@@ -20,10 +20,18 @@
  * - 一个 ID 可被多个语义共用（**注册时按 ID 去重**——同一 ID 注册两次会让先注册的静默收不到）。
  *
  * 载荷判据要拿得到事件 ID（官方的条件按 ID 分支），所以 `matches` 收两个参数。
+ *
+ * ## 两个入口，按「常驻 / 一次性」分
+ *
+ * - 常驻监听（图层变了就重读）：`subscribeHostEvent`，返回 `Result<取消函数>`，由持有者负责退订。
+ * - 一次性等待（吸色等用户取色）：`startHostEventWait`，订阅 / 超时 / 退订的生命周期都在这里，
+ *   调用方只递判据。**别再在命令层自己拼订阅数组 + 超时 + 退订顺序**。
  */
 import { getExtensionId } from './bridge';
 import { log } from '../logger';
+import { isRecord } from '../../types/guards';
 import { parseJson } from '../../types/json';
+import { fail, failWithDetail, ok, type Result } from '../../types/result';
 
 /** CEP 桥；类型来自 bridge.ts 的 declare global，这里判空取用 */
 function getBridge() {
@@ -101,6 +109,16 @@ function isTextLayerRef(payload: PhotoshopEventPayload): boolean {
   return payload.eventData?.null?._ref === 'textLayer';
 }
 
+/**
+ * 官方 `setd` 的第三支：`to._obj === 'textStyle'`（`app.v4.js:69417`）。
+ *
+ * 命中时官方重读文字属性（`ztSelectLayer`）。漏掉它 = 用户在 PS 里改字号 / 字体后，
+ * 面板显示旧值，而轮询的身份 key 是「类型 + 名字」，样式变化不改 key，兜不住。
+ */
+function isTextStyleSetd(payload: PhotoshopEventPayload): boolean {
+  return payload.eventData?.to?._obj === 'textStyle';
+}
+
 const SPECS: Record<HostEventName, HostEventSpec> = {
   /* 原始投递：官方在这两个 ID 上还判了载荷条件，我们把条件交给订阅方（吸色判 foregroundColor） */
   setd: {
@@ -120,16 +138,18 @@ const SPECS: Record<HostEventName, HostEventSpec> = {
    * - `1298866208`：载荷 `null._ref === 'textLayer'`
    * - `1936483188`（slct）：载荷有 `layerID` **且长度为 1**
    *   （官方多选时只触发 `ztSwitchLayer`，不触发 `ztSelectLayer`）
+   * - `1936028772`（setd）：载荷 `to._obj === 'textStyle'`（官方 `:69417`）
    */
   layerChanged: {
-    ids: [ID_SLCT, ID_1416785510, ID_1298866208],
+    ids: [ID_SLCT, ID_1416785510, ID_1298866208, ID_SETD],
     matches: (payload, eventId) => {
       if (eventId === ID_1416785510) return true;
       if (eventId === ID_1298866208) return isTextLayerRef(payload);
+      if (eventId === ID_SETD) return isTextStyleSetd(payload);
       const ids = layerIdsOf(payload);
       return ids !== null && ids.length === 1;
     },
-    origin: 'app.v4.js:69427 / :69460 / :69448'
+    origin: 'app.v4.js:69427 / :69460 / :69448 / :69412'
   },
 
   /**
@@ -165,12 +185,20 @@ function ensureCallback(): void {
   callbackInstalled = true;
 }
 
+/**
+ * 载荷守卫：这个类型所有字段都是可选的，能判的只有「是个对象」。
+ * 写成守卫而不是 `as` —— 断言不做校验，守卫至少把判断留在一处。
+ */
+function isEventPayload(value: unknown): value is PhotoshopEventPayload {
+  return isRecord(value);
+}
+
 /** 原版 `e.data.substring(5)` 后 JSON；解不开返回 null（调用方记日志丢弃） */
 function decodeEventPayload(raw: unknown): PhotoshopEventPayload | null {
   if (typeof raw !== 'string') return null;
   const parsed = parseJson(raw.substring(PREFIX_LENGTH), 'PS 事件载荷');
-  if (parsed.status !== 'ok' || !parsed.value || typeof parsed.value !== 'object') return null;
-  return parsed.value as PhotoshopEventPayload;
+  if (parsed.status !== 'ok' || !isEventPayload(parsed.value)) return null;
+  return parsed.value;
 }
 
 /** 原版 `bindEvent`：桥收对象不是 JSON 字符串，不补 appId */
@@ -196,7 +224,7 @@ function onPhotoshopCallback(handler: (payload: PhotoshopEventPayload) => void):
 
   const type = `${CALLBACK_PREFIX}${id}`;
   const listener = (event: unknown) => {
-    const data = (event as { data?: unknown } | undefined)?.data;
+    const data = isRecord(event) ? event.data : undefined;
     const payload = decodeEventPayload(data);
     if (!payload) {
       log.error('PS 回调载荷读不懂，已丢弃本次事件', { data });
@@ -216,42 +244,21 @@ export function isForegroundSetd(payload: PhotoshopEventPayload): boolean {
 }
 
 /**
- * `slct` 事件里的**图层 id 数组**（官方判据，见 `app.v4.js:69408` 一带的 `switch (s)`）。
+ * 订阅宿主事件，返回 `Result<取消函数>`。
  *
- * 官方用载荷里的三个字段区分三种「用户动作」：
- * - `documentID` 存在 → 切了文档
- * - `layerID` 存在 → 选区里的图层变了（**数组**；多选时长度 > 1，官方只触发 `ztSwitchLayer`）
- * - `null._ref` 存在 → 只是切了工具（官方用它取消吸色）
- *
- * **PS 的图层 id 是全局唯一的**（跨文档不撞）——这是它作为身份的优点。
- * 但**我们没有用它判图层身份**：官方也没用（`selectLayer` 无参，id 只进了 `E.layer.id`），
- * 我们的身份仍是「类型 + 图层名」，改名时会多读一次文字属性（**官方也一样重读**）。
- * 这个函数目前只暴露给需要原始 id 的调用方，不参与身份判定。
+ * **不抛异常**：订阅失败（非 CEP 环境 / 注册被宿主拒绝）是环境问题，不是代码 bug，
+ * 必须由调用方决定「降级成轮询」还是「直接报错」。返回 no-op 会让调用方以为事件会来。
  */
-export function selectionLayerIds(payload: PhotoshopEventPayload): string[] | null {
-  return layerIdsOf(payload);
-}
-
-/** `slct` 事件带 `documentID` = 用户切了文档（官方同一个判据） */
-export function selectionSwitchedDocument(payload: PhotoshopEventPayload): boolean {
-  return hasDocumentId(payload);
-}
-
-/** 官方在 `slct` 的 `null._ref` 分支里用它取消吸色（用户切到了别的工具） */
-export function selectionToolChanged(payload: PhotoshopEventPayload): boolean {
-  return typeof payload.eventData?.null?._ref !== 'undefined';
-}
-
-/** 订阅宿主事件，返回取消函数。非 CEP 环境返回 no-op */
 export async function subscribeHostEvent(
   name: HostEventName,
   listener: Listener
-): Promise<() => void> {
+): Promise<Result<() => void>> {
   const bridge = getBridge();
   const id = getExtensionId();
   if (!bridge || !id) {
-    log.warn('非 CEP 环境，跳过事件订阅', { name });
-    return () => {};
+    /* 浏览器 dev / 单测：订阅不成立，调用方必须知情（否则只剩轮询，且无任何标记） */
+    log.warn('非 CEP 环境，无法订阅 PS 事件', { name });
+    return fail('PS_UNREADY', '非 CEP 环境，无法订阅 PS 事件');
   }
 
   let set = listeners.get(name);
@@ -270,16 +277,109 @@ export async function subscribeHostEvent(
       set.delete(listener);
       if (set.size === 0) listeners.delete(name);
       log.error('PS 事件注册失败', { name, typeId: eventId });
-      throw new Error(`PS 事件注册失败：${name}`);
+      return failWithDetail('PS_UNREADY', `PS 事件注册失败：${name}`, `typeId:${eventId}`);
     }
     registeredIds.add(eventId);
   }
 
-  if (spec.ids.length && !callbackInstalled) ensureCallback();
+  if (!callbackInstalled) ensureCallback();
 
   log.info('PS 事件注册完成', { name, ids: spec.ids });
 
-  return () => {
+  return ok(() => {
     listeners.get(name)?.delete(listener);
+  });
+}
+
+/** 等待结束的三种结局；`hit` 之外的两种由调用方翻译成业务失败码 */
+export type HostEventWait =
+  | { kind: 'hit'; name: HostEventName; payload: PhotoshopEventPayload }
+  | { kind: 'cancelled'; by: HostEventName }
+  | { kind: 'timeout' };
+
+export interface WaitOptions {
+  /** 超时毫秒，必填——「一直等下去」不是可接受的默认值 */
+  timeoutMs: number;
+  /** 这些语义一出现就提前结束，结局记 `cancelled`（典型：选区变化 = 用户切走了） */
+  cancelOn?: readonly HostEventName[];
+}
+
+/** 已订阅好、正在等的把手 */
+export interface HostEventWaiter {
+  /** 结局；订阅失败在外层 `Result` 已表达，这里只会 resolve */
+  result: Promise<HostEventWait>;
+  /** 主动结束（按「取消」算），可以重复调用 */
+  close: () => void;
+}
+
+/**
+ * 等待**一次**宿主事件：订阅 → 由调用方做业务动作 → `await result`。
+ *
+ * 为什么不是「一个 await 到底」：订阅完成与业务动作之间必须留一个缝
+ * （吸色要先订阅、再切工具，否则用户立刻吸色会漏事件）。所以返回把手而不是直接返回结局。
+ *
+ * 生命周期（订阅几个语义、谁先到、超时怎么算、什么时候退订）都封在这里，
+ * 调用方只递判据。上一版这段逻辑住在 `commands/style.ts` 里，命令层要自己管
+ * 订阅数组 + 超时 + 退订顺序 —— 那是通道层知识。
+ */
+export async function startHostEventWait(
+  name: HostEventName,
+  match: (payload: PhotoshopEventPayload) => boolean,
+  options: WaitOptions
+): Promise<Result<HostEventWaiter>> {
+  const offs: (() => void)[] = [];
+
+  /* Promise executor 同步执行，`fire` 在任何 await 之前已赋值 */
+  let fire: (value: HostEventWait) => void = () => {};
+  const settled = new Promise<HostEventWait>((resolve) => {
+    fire = resolve;
+  });
+
+  let done = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const release = () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+    for (const off of offs.splice(0)) off();
   };
+
+  const end = (value: HostEventWait) => {
+    if (done) return;
+    done = true;
+    release();
+    fire(value);
+  };
+
+  const listen = async (target: HostEventName, listener: Listener): Promise<Result<void>> => {
+    const sub = await subscribeHostEvent(target, listener);
+    if (sub.status === 'error') return sub;
+    offs.push(sub.value);
+    return ok(undefined);
+  };
+
+  const main = await listen(name, (payload) => {
+    if (match(payload)) end({ kind: 'hit', name, payload });
+  });
+  if (main.status === 'error') {
+    release();
+    return main;
+  }
+
+  for (const cancelName of options.cancelOn ?? []) {
+    const sub = await listen(cancelName, () => end({ kind: 'cancelled', by: cancelName }));
+    if (sub.status === 'error') {
+      release();
+      return sub;
+    }
+  }
+
+  timer = setTimeout(() => end({ kind: 'timeout' }), options.timeoutMs);
+
+  return ok({
+    result: settled,
+    close: () => end({ kind: 'cancelled', by: name })
+  });
 }

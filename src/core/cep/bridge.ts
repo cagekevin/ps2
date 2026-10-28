@@ -55,7 +55,16 @@ let evalQueue: Promise<unknown> = Promise.resolve();
 
 function runScript(script: string, timeout: number): Promise<Result<string>> {
   const cep = window.__adobe_cep__;
-  if (!cep) return Promise.resolve(ok(''));
+  /*
+   * 没有桥 = 不是 CEP 宿主（浏览器 dev / 单测）。
+   *
+   * 空串必须是失败：`lenientVoid` 那类解析器把 `''` 判成功，界面提示已生效、
+   * PS 里什么都没发生 —— 那是静默假成功。
+   */
+  if (!cep) {
+    log.error('CEP 宿主不可用，evalScript 未执行', { script: script.slice(0, 60) });
+    return Promise.resolve(failWithDetail('PS_UNREADY', 'CEP 宿主不可用', 'bridge:no-cep'));
+  }
 
   return new Promise<Result<string>>((resolve) => {
     let settled = false;
@@ -203,14 +212,24 @@ export function getExtensionId(): string {
   return window.__adobe_cep__?.getExtensionID() ?? '';
 }
 
-/* 广播应用级 CEP 事件 */
-export function emitAppEvent(type: string, data: unknown): void {
+/**
+ * 广播应用级 CEP 事件。
+ *
+ * 返回 `Result` 而不是 `void`：静默 `return` 会让调用方以为官方面板已经收到。
+ * 调用方拿到失败**不必**把它升级成业务失败（广播不是写库），但必须留痕——
+ * 典型场景：色板写盘成功、官方面板没刷新。
+ */
+export function emitAppEvent(type: string, data: unknown): Result<void> {
   const CSEventCtor = window.CSEvent;
   const cep = window.__adobe_cep__;
-  if (!CSEventCtor || !cep) return;
+  if (!CSEventCtor || !cep) {
+    log.warn('应用事件未广播（CEP 挂接不存在）', { type });
+    return failWithDetail('PS_UNREADY', 'CEP 挂接不存在，应用事件未广播', `type:${type}`);
+  }
   const event = new CSEventCtor(type, 'APPLICATION');
   event.data = data;
   cep.dispatchEvent(event);
+  return ok(undefined);
 }
 
 /* 文件读写统一走 core/storage，这里只保留通道能力 */

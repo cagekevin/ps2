@@ -51,6 +51,26 @@ export function parseJsxRaw(raw: string): Result<unknown> {
 }
 
 /**
+ * `zt_getCurrentFontInfo` 的 data 只取家族名。
+ *
+ * 命令层拿它去系统字体缓存里找字重，除 `family` 外没有字段有用。
+ * 收在这里之后，消费者不再自己 `isRecord(x) && typeof x.family === 'string'` ——
+ * 那是「猜 vendor 返回」，按 `ADR-0003` 只允许发生在这一层。
+ * 缺字段**在这里失败**：交空串让调用方判 = 判别位落地（`ADR-0003` 判据 2）。
+ * 走到这里时图层已被 `requireTextLayer` 保证是文字图层，没有 `family` 就是数据异常。
+ */
+export function parseFontFamily(raw: string): Result<string> {
+  const data = parseDataEnvelope(raw);
+  if (data.status === 'error') return data;
+
+  const family = isRecord(data.value) ? data.value.family : undefined;
+  if (typeof family !== 'string' || !family) {
+    return failWithDetail('CORRUPT', '字体信息里没有 family', `raw:${raw.slice(0, 120)}`);
+  }
+  return ok(family);
+}
+
+/**
  * 官方直调**读**函数的哨兵：宿主说「数据已写文件，不在这里」。
  * 目前只有 `ztgl_initSystemList` 返回它（数据写 `SysFont2.json`）。
  * 全仓判 `'ok'/'OK'` 只许在这里。
@@ -58,6 +78,30 @@ export function parseJsxRaw(raw: string): Result<unknown> {
 export function isOkSentinel(raw: string): boolean {
   const trimmed = raw.trim();
   return trimmed === 'ok' || trimmed === 'OK';
+}
+
+/** `ztgl_initSystemList` 的返回：`ok` 哨兵（数据已写 `SysFont2.json`）或字体数组 */
+export type SystemFontListRaw =
+  | { kind: 'sentinel' }
+  | { kind: 'list'; value: unknown[] };
+
+/**
+ * 系统字体列表的返回判定。
+ *
+ * 哨兵与「数组 / 不是数组」都在这里判 —— 命令层只转发 `Result`，
+ * 不许自己 `isOkSentinel` / `parseJsxRaw` / `Array.isArray`（`ADR-0003` 防御归属）。
+ */
+export function parseSystemFontList(raw: string): Result<SystemFontListRaw> {
+  if (isOkSentinel(raw)) return ok({ kind: 'sentinel' });
+
+  const parsed = parseJsxRaw(raw);
+  if (parsed.status === 'error') return parsed;
+
+  if (!Array.isArray(parsed.value)) {
+    return failWithDetail('CORRUPT', '系统字体列表不是数组', `raw:${raw.slice(0, 120)}`);
+  }
+
+  return ok({ kind: 'list', value: parsed.value });
 }
 
 /**
@@ -118,7 +162,10 @@ export function dataOf(value: unknown): unknown {
 /** raw 解析器签名：能力表 `parse` 字段的类型，输入原始串、输出已翻译的结果 */
 export type Parser<T> = (raw: string) => Result<T>;
 
-/** 原样交出 raw（`ztgl_initSystemList`：调用方自己判 `ok` 哨兵，再决定要不要解析 JSON） */
+/**
+ * 原样交出 raw：**只给「返回结构未实测」的能力用**，且该能力必须在表上标 `UNVERIFIED`。
+ * 结构一旦实测，就换成具名解析器——`passthrough` 是缺口，不是常态。
+ */
 export const passthrough: Parser<string> = (raw) => ok(raw);
 
 /**

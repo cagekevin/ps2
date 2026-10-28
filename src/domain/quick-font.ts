@@ -139,3 +139,32 @@ export function canAddQuickFont(list: QuickFont[], family: string): Result<void>
   }
   return ok(undefined);
 }
+
+/** 下标是否落在 `list` 内（快捷字体的三个操作共用这一条） */
+function validIndex(file: QuickFontFile, index: number): boolean {
+  return Number.isInteger(index) && index >= 0 && index < file.list.length;
+}
+
+/**
+ * 切到第 `index` 个快捷字体。
+ *
+ * 下标判据只在这里。调用方必须把**队列里的最新 file** 传进来 ——
+ * 用读缓存时的长度判越界，并发删除后判的就是过期值。
+ */
+export function selectQuickFont(file: QuickFontFile, index: number): Result<QuickFontFile> {
+  if (!validIndex(file, index)) {
+    return failWithDetail('VALIDATION', '切换快捷字体失败：下标越界', `index:${index}`);
+  }
+  return ok({ ...file, index });
+}
+
+/** 删掉第 `index` 个；**至少要留一个**（这条与下标判据同住这里，不散到命令层） */
+export function deleteQuickFont(file: QuickFontFile, index: number): Result<QuickFontFile> {
+  if (!validIndex(file, index)) {
+    return failWithDetail('VALIDATION', '删除快捷字体失败：下标越界', `index:${index}`);
+  }
+  if (file.list.length <= 1) {
+    return fail('VALIDATION', '至少要保留一个快捷字体');
+  }
+  return ok({ index: 0, list: file.list.filter((_, position) => position !== index) });
+}

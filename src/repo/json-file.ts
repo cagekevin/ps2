@@ -17,12 +17,16 @@
 import { log } from '../core/logger';
 import { exists, readTextResult, writeTextAtomic, type StorageRoot } from '../core/storage';
 import { runSerial } from '../core/serial';
-import { decodeList } from '../types/decode-list';
-import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 
-export type JsonMutator<T> = (current: T) => T | null;
+/**
+ * 写 mutator：`ok(null)` = 不需要写，`error` = 判定失败原样上抛。
+ *
+ * **只有一个类型**：不需要判定的场合就 `return ok(next)`。分成「纯改 / 可失败」两个类型
+ * 会让每个调用点都要选一个 —— 选就要判断，判断就会错（`ADR-0005`）。
+ */
+export type JsonMutator<T> = (current: T) => Result<T | null>;
 
 interface ReadOptions<T> {
   /** 空文件按什么值读（色板文件有空文件 = 空数组的既定语义） */
@@ -74,18 +78,20 @@ async function runMutation<T>(
 
     if (policy.kind === 'error') return current;
 
-    const next = mutator(policy.empty());
-    if (next === null) return ok(undefined);
+    const outcome = mutator(policy.empty());
+    if (outcome.status === 'error') return outcome;
+    if (outcome.value === null) return ok(undefined);
 
     /* 首次创建：先确认文件确实不存在，绝不覆盖 */
-    if (policy.kind === 'create') return createJsonFile(name, root, next);
-    return writeTextAtomic(name, JSON.stringify(next), root);
+    if (policy.kind === 'create') return createJsonFile(name, root, outcome.value);
+    return writeTextAtomic(name, JSON.stringify(outcome.value), root);
   }
 
-  const next = mutator(current.value);
-  if (next === null) return ok(undefined);
+  const outcome = mutator(current.value);
+  if (outcome.status === 'error') return outcome;
+  if (outcome.value === null) return ok(undefined);
 
-  return writeTextAtomic(name, JSON.stringify(next), root);
+  return writeTextAtomic(name, JSON.stringify(outcome.value), root);
 }
 
 function enqueue(name: string, root: StorageRoot, task: () => Promise<Result<void>>) {
@@ -99,7 +105,7 @@ function enqueue(name: string, root: StorageRoot, task: () => Promise<Result<voi
 }
 
 /**
- * 读-改-写。mutator 返回 `null` 表示「不需要写」。
+ * 读-改-写。`mutator` 返回 `ok(null)` 表示「不需要写」，`error` 原样上抛。
  * 读失败时 mutator 不会被调用；同一文件整体排队，避免读改交错。
  *
  * 文件必须存在：读不到（不存在 / 坏 JSON / IO 失败）一律返回错误。
@@ -128,15 +134,7 @@ export function updateJsonFile<T>(
   options: ReadOptions<T> & { missing: () => T }
 ): Promise<Result<void>> {
   return enqueue(name, root, () =>
-    runMutation(
-      name,
-      root,
-      label,
-      decode,
-      mutator,
-      { kind: 'empty', empty: options.missing },
-      options
-    )
+    runMutation(name, root, label, decode, mutator, { kind: 'empty', empty: options.missing }, options)
   );
 }
 
@@ -193,39 +191,6 @@ async function createJsonFile<T>(
   }
 
   return writeTextAtomic(name, JSON.stringify(value), root);
-}
-
-/** 原始记录数组：写路径专用，保留未知键（丢掉就会改坏用户数据） */
-export type RawRecords = Record<string, unknown>[];
-
-/**
- * 官方设置文件（`sj_set.json` 那一类）的顶层解码：必须是一个对象，**原样返回**。
- *
- * 写路径要拿到原始对象才能保留别的页面/模块写的键，所以这里不重建、不挑字段。
- * 唯一入口：`font-set-repo` 与 `common-use-repo` 共用这一份，别在各自文件里再写一遍
- * （曾经两份逐字节相同）。
- */
-export function decodeSettingsObject(raw: unknown): Result<Record<string, unknown>> {
-  if (!isRecord(raw)) return failWithDetail('CORRUPT', '设置文件顶层不是对象', 'root');
-  return ok(raw);
-}
-
-/** 一项必须是对象：写路径的严格判据（读路径用 `decodeCommonUseItem` 那类，坏项可跳过） */
-function requireRecord(value: unknown, path: string): Result<Record<string, unknown>> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '文件里存在非对象条目', path);
-  return ok(value);
-}
-
-/**
- * 顶层必须是「对象数组」；有一个不是对象就整份拒绝，不做静默过滤（`detail` 指出第几个）。
- *
- * 由 `decodeList(..., 'reject')` 推导，**不再自己写一遍「数组 + 每项是对象」的循环**：
- * 那条判据的唯一实现在 `types/decode-list`（`decodeArray` + 逐项）。
- */
-export function decodeRawRecords(raw: unknown): Result<RawRecords> {
-  const decoded = decodeList(raw, requireRecord, 'reject');
-  if (decoded.status === 'error') return decoded;
-  return ok(decoded.value.items);
 }
 
 /**

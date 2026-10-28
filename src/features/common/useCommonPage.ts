@@ -19,7 +19,6 @@ import {
 import type { FlipDirection } from '../../commands/common-use';
 import { useToast } from '../../components/Toast';
 import type { CommonUseTile } from '../../domain/common-use';
-import type { DropPosition } from '../../domain/reorder';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useCommonUseStore, type CommonSection } from '../../store/common-use';
@@ -116,7 +115,7 @@ export function useCommonPage() {
         if (!result.dragged || !result.target) return;
         const to = Number(result.target.dataset.index);
         if (!Number.isInteger(to) || to === from) return;
-        void run(() => reorder(from, to, result.position as DropPosition));
+        void run(() => reorder(from, to, result.position));
       }
     });
   }

@@ -113,6 +113,17 @@ describe('载荷判据（官方 switch 的每个 case）', () => {
     expect(hits).toHaveLength(1);
   });
 
+  it('layerChanged：setd 且 to._obj === "textStyle" → 命中（官方 :69417 重读文字属性）', async () => {
+    const { mod, bridge } = await load();
+    const hits: unknown[] = [];
+
+    await mod.subscribeHostEvent('layerChanged', (payload) => hits.push(payload));
+    bridge.fire({ eventID: ID_SETD, eventData: { to: { _obj: 'textStyle' }, layerID: [7] } });
+    bridge.fire({ eventID: ID_SETD, eventData: { null: { _property: 'foregroundColor' } } });
+
+    expect(hits).toHaveLength(1);
+  });
+
   it('documentChanged：带 documentID → 命中（官方在 4 个 ID 上都判这一条）', async () => {
     const { mod, bridge } = await load();
     const hits: unknown[] = [];
@@ -190,38 +201,17 @@ describe('判据辅助函数', () => {
     expect(mod.isForegroundSetd({ eventData: { null: { _property: 'foregroundColor' } } })).toBe(true);
     expect(mod.isForegroundSetd({ eventData: { null: { _property: 'backgroundColor' } } })).toBe(false);
   });
-
-  it('selectionLayerIds：取出图层 id 数组；没有就 null', async () => {
-    const { mod } = await load();
-
-    expect(mod.selectionLayerIds({ eventData: { layerID: [7, 8] } })).toEqual(['7', '8']);
-    expect(mod.selectionLayerIds({ eventData: {} })).toBeNull();
-  });
-
-  it('selectionSwitchedDocument：带 documentID 才是换文档', async () => {
-    const { mod } = await load();
-
-    expect(mod.selectionSwitchedDocument({ eventData: { documentID: 3 } })).toBe(true);
-    expect(mod.selectionSwitchedDocument({ eventData: { layerID: [7] } })).toBe(false);
-  });
-
-  it('selectionToolChanged：null._ref 存在 = 用户切了工具（官方用它取消吸色）', async () => {
-    const { mod } = await load();
-
-    expect(mod.selectionToolChanged({ eventData: { null: { _ref: 'textLayer' } } })).toBe(true);
-    expect(mod.selectionToolChanged({ eventData: { layerID: [7] } })).toBe(false);
-  });
 });
 
 describe('非 CEP 环境', () => {
-  it('没有桥 → 订阅返回 no-op，不抛错（单测 / 浏览器开发都能跑）', async () => {
+  it('没有桥 → 返回 fail 而不是 no-op（调用方必须能区分「订阅成功」与「不会来事件」）', async () => {
     const { mod } = await load();
     setWindow(undefined);
 
-    const off = await mod.subscribeHostEvent('layerChanged', () => {});
+    const result = await mod.subscribeHostEvent('layerChanged', () => {});
 
-    expect(typeof off).toBe('function');
-    expect(() => off()).not.toThrow();
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('PS_UNREADY');
   });
 
   it('setd 语义仍可用（官方 ID 1936028772）', async () => {
@@ -232,5 +222,67 @@ describe('非 CEP 环境', () => {
     bridge.fire({ eventID: ID_SETD, eventData: { null: { _property: 'foregroundColor' } } });
 
     expect(hits).toHaveLength(1);
+  });
+});
+
+describe('等待单个宿主事件（startHostEventWait）', () => {
+  it('谓词命中 → hit', async () => {
+    const { mod, bridge } = await load();
+    const waiter = await mod.startHostEventWait('setd', mod.isForegroundSetd, { timeoutMs: 50 });
+    if (waiter.status === 'error') throw new Error(waiter.reason);
+
+    bridge.fire({ eventID: ID_SETD, eventData: { null: { _property: 'foregroundColor' } } });
+
+    expect(await waiter.value.result).toMatchObject({ kind: 'hit', name: 'setd' });
+  });
+
+  it('谓词不命中 → 继续等，不被错误事件提前结束', async () => {
+    const { mod, bridge } = await load();
+    const waiter = await mod.startHostEventWait('setd', mod.isForegroundSetd, { timeoutMs: 20 });
+    if (waiter.status === 'error') throw new Error(waiter.reason);
+
+    bridge.fire({ eventID: ID_SETD, eventData: { null: { _property: 'backgroundColor' } } });
+
+    expect(await waiter.value.result).toMatchObject({ kind: 'timeout' });
+  });
+
+  it('cancelOn 命中 → cancelled 并带上是哪个语义取消的', async () => {
+    const { mod, bridge } = await load();
+    const waiter = await mod.startHostEventWait('setd', mod.isForegroundSetd, {
+      timeoutMs: 50,
+      cancelOn: ['selection']
+    });
+    if (waiter.status === 'error') throw new Error(waiter.reason);
+
+    bridge.fire({ eventID: ID_SLCT, eventData: { layerID: [7] } });
+
+    expect(await waiter.value.result).toEqual({ kind: 'cancelled', by: 'selection' });
+  });
+
+  it('到点没有事件 → timeout，不悬挂', async () => {
+    const { mod } = await load();
+    const waiter = await mod.startHostEventWait('setd', () => true, { timeoutMs: 10 });
+    if (waiter.status === 'error') throw new Error(waiter.reason);
+
+    expect(await waiter.value.result).toEqual({ kind: 'timeout' });
+  });
+
+  it('没有桥 → 外层返回 fail，而不是一个永远等不到的 waiter', async () => {
+    const { mod } = await load();
+    setWindow(undefined);
+
+    const waiter = await mod.startHostEventWait('setd', () => true, { timeoutMs: 10 });
+
+    expect(waiter.status).toBe('error');
+  });
+
+  it('主动 close → 立即结束为 cancelled，不再等超时', async () => {
+    const { mod } = await load();
+    const waiter = await mod.startHostEventWait('setd', () => true, { timeoutMs: 5_000 });
+    if (waiter.status === 'error') throw new Error(waiter.reason);
+
+    waiter.value.close();
+
+    expect((await waiter.value.result).kind).toBe('cancelled');
   });
 });

@@ -55,14 +55,16 @@ export {
   renameKuGroup,
   renameKuItem
 };
-import { isForegroundSetd, subscribeHostEvent } from '../core/cep/ps-events';
+import { isForegroundSetd, startHostEventWait } from '../core/cep/ps-events';
 import {
   buildColorPairGradients,
   createGradientItem,
   type GradientLibraryItem
 } from '../domain/image-color';
 import { updateSwatchItems } from '../repo/swatch-repo';
+import type { JsonMutator } from '../repo/json-file';
 import { emitAppEvent } from '../core/cep/bridge';
+import { log } from '../core/logger';
 import type { DropPosition } from '../domain/reorder';
 import type { KuKind, StyleWarehouse } from '../domain/style-library';
 import { fail, ok, type Result } from '../types/result';
@@ -206,18 +208,29 @@ const SWATCH_EVENT = 'com.fengzi.event.seban';
 
 /** 改色板并广播；写失败返回错误（不让用户以为发送成功） */
 async function persistSwatchUpdate(
-  mutator: (items: unknown[]) => unknown[] | null
+  mutator: JsonMutator<unknown[]>
 ): Promise<Result<void>> {
   const written = await updateSwatchItems(mutator);
   if (written.status === 'error') return written;
 
-  emitAppEvent(SWATCH_EVENT, 'GengXin');
+  /*
+   * 写盘已经成功，广播失败**不升级成业务失败**（色板数据是对的，只是官方面板不会自动刷新）；
+   * 但必须留痕，否则「官方色板面板为什么不更新」查不到原因。
+   */
+  const broadcast = emitAppEvent(SWATCH_EVENT, 'GengXin');
+  if (broadcast.status === 'error') {
+    log.warn('色板已写入，但广播官方事件失败', {
+      code: broadcast.code,
+      reason: broadcast.reason,
+      detail: broadcast.detail
+    });
+  }
   return ok(undefined);
 }
 
 /** 整份替换色板 */
 function persistSwatch(items: unknown[]): Promise<Result<void>> {
-  return persistSwatchUpdate(() => items);
+  return persistSwatchUpdate(() => ok(items));
 }
 
 /** 发送到色板（单项）：整份替换为 `[项]`（原版 `:50348-50355`） */
@@ -243,7 +256,7 @@ export async function appendItemToSwatch(
   const raw = readKuItem(warehouse, kind, groupIndex, itemIndex);
   if (raw.status === 'error') return raw;
 
-  return persistSwatchUpdate((current) => [...current, raw.value]);
+  return persistSwatchUpdate((current) => ok([...current, raw.value]));
 }
 
 /** 发送到色板（整组替换为该组 list，原版 `:50260-50268`） */
@@ -267,7 +280,7 @@ export async function appendGroupToSwatch(
   const group = readKuGroupItems(warehouse, kind, groupIndex);
   if (group.status === 'error') return group;
 
-  return persistSwatchUpdate((current) => [...current, ...group.value]);
+  return persistSwatchUpdate((current) => ok([...current, ...group.value]));
 }
 
 /**
@@ -298,33 +311,26 @@ export async function pickColorToGroup(
   kind: KuKind,
   groupIndex: number
 ): Promise<Result<void>> {
-  let settle: (result: 'done' | 'cancelled' | 'timeout') => void = () => {};
-  const finished = new Promise<'done' | 'cancelled' | 'timeout'>((resolve) => {
-    settle = resolve;
+  /*
+   * 先订阅再切工具：切完用户可能立刻吸色，晚订阅会漏事件（官方同序）。
+   * 订阅 / 超时 / 退订的生命周期封在 `startHostEventWait` 里，这里只递判据。
+   */
+  const waiter = await startHostEventWait('setd', isForegroundSetd, {
+    timeoutMs: EYEDROPPER_TIMEOUT,
+    cancelOn: ['selection']
   });
-
-  const unsubscribers: Array<() => void> = [];
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  if (waiter.status === 'error') return waiter;
 
   try {
-    unsubscribers.push(
-      await subscribeHostEvent('setd', (payload) => {
-        if (isForegroundSetd(payload)) settle('done');
-      })
-    );
-    unsubscribers.push(await subscribeHostEvent('selection', () => settle('cancelled')));
-    timer = setTimeout(() => settle('timeout'), EYEDROPPER_TIMEOUT);
-
     const switched = await setTool('eyedropperTool');
     if (switched.status === 'error') return switched;
 
-    const outcome = await finished;
+    const outcome = await waiter.value.result;
     /* 用户切走选区 = 主动放弃，不是故障 */
-    if (outcome === 'cancelled') return fail('CANCELLED', '已取消吸色');
-    if (outcome === 'timeout') return fail('TIMEOUT', '吸色超时（60 秒内没有取色）');
+    if (outcome.kind === 'cancelled') return fail('CANCELLED', '已取消吸色');
+    if (outcome.kind === 'timeout') return fail('TIMEOUT', '吸色超时（60 秒内没有取色）');
   } finally {
-    if (timer) clearTimeout(timer);
-    for (const off of unsubscribers) off();
+    waiter.value.close();
   }
 
   /* 与「添加颜色」同一条路径：读前景色 → 追加到组 */

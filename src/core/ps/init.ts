@@ -15,6 +15,7 @@
 import { evalScript, loadJsx } from '../cep/bridge';
 import { log } from '../logger';
 import { injectEnv } from './env';
+import { failWithDetail, ok, type Result } from '../../types/result';
 
 export interface PsCapability {
   /** 自有能力是否可用（= 必需函数都在） */
@@ -29,6 +30,13 @@ export interface PsCapability {
    * 由 `capability.ts` 在门之后按 `spec.fn` 查这张表。
    */
   missing: string[];
+  /**
+   * 探测脚本**本身**失败时的原始失败（`TIMEOUT` / `PS_ERROR` 等），不是「函数缺失」。
+   *
+   * 非 null ⇒ `core` / `vendor` 必为 false。诊断页据此区分「jsx 没加载 / 函数没有」
+   * 与「探测没跑成」——两者排障方向相反。
+   */
+  probeFailure: Result<never> | null;
 }
 
 const CORE_FILE = 'jsx/main.jsx';
@@ -168,17 +176,27 @@ export const VENDOR_REQUIRED: readonly string[] = ['ps_onJsx', 'Sys_setSystemEnv
 
 let pending: Promise<PsCapability> | null = null;
 
-async function probe(fns: readonly string[]): Promise<string[]> {
+/**
+ * 探「清单里哪些函数不存在」。
+ *
+ * **探测脚本失败 ≠ 函数不存在**：失败时不许把清单里全部函数当成缺失 ——
+ * 一次 evalScript 超时就会让 62 个 vendor 函数全判缺失，`funcMissing` 随后报
+ * 「「某函数」未加载」，真正的原因（探测本身失败）没有痕迹。失败原样上抛，由 `load()` 关门。
+ */
+async function probe(fns: readonly string[]): Promise<Result<string[]>> {
   const expr = fns.map((name) => `typeof ${name}`).join(',');
   const raw = await evalScript(`(function(){return [${expr}].join(',');})()`);
-  if (raw.status === 'error') return [...fns];
+  if (raw.status === 'error') {
+    /* 不在这里记日志：`load()` 知道是哪扇门、会记一条带上下文的（同一失败只记一次） */
+    return failWithDetail(raw.code, raw.reason, raw.detail);
+  }
 
   const types = raw.value.split(',');
-  return fns.filter((_, index) => types[index] !== 'function');
+  return ok(fns.filter((_, index) => types[index] !== 'function'));
 }
 
 async function load(): Promise<PsCapability> {
-  const capability: PsCapability = { core: false, vendor: false, missing: [] };
+  const capability: PsCapability = { core: false, vendor: false, missing: [], probeFailure: null };
 
   const coreResult = await loadJsx(CORE_FILE);
   if (coreResult.status === 'error') {
@@ -187,14 +205,23 @@ async function load(): Promise<PsCapability> {
   }
 
   /* 分两级：必需缺了整门不可用；可选缺了只记名字，由 capability 逐个禁用 */
-  const coreMissing = await probe(CORE_FUNCS);
-  const coreRequiredMissing = coreMissing.filter((fn) => CORE_REQUIRED.includes(fn));
+  const coreProbe = await probe(CORE_FUNCS);
+  if (coreProbe.status === 'error') {
+    log.error('自有 jsx 能力探测失败，core 门关闭', {
+      code: coreProbe.code,
+      reason: coreProbe.reason,
+      detail: coreProbe.detail
+    });
+    capability.probeFailure = failWithDetail(coreProbe.code, coreProbe.reason, coreProbe.detail);
+    return capability;
+  }
+  const coreRequiredMissing = coreProbe.value.filter((fn) => CORE_REQUIRED.includes(fn));
   if (coreRequiredMissing.length) {
     log.error('自有 jsx 必需函数缺失', { missing: coreRequiredMissing });
     return capability;
   }
   capability.core = true;
-  capability.missing.push(...coreMissing);
+  capability.missing.push(...coreProbe.value);
 
   const vendorResult = await loadJsx(VENDOR_FILE);
   if (vendorResult.status === 'error') {
@@ -202,8 +229,17 @@ async function load(): Promise<PsCapability> {
     return capability;
   }
 
-  const vendorMissing = await probe(VENDOR_FUNCS);
-  const vendorRequiredMissing = vendorMissing.filter((fn) => VENDOR_REQUIRED.includes(fn));
+  const vendorProbe = await probe(VENDOR_FUNCS);
+  if (vendorProbe.status === 'error') {
+    log.error('官方 jsx 能力探测失败，vendor 门关闭', {
+      code: vendorProbe.code,
+      reason: vendorProbe.reason,
+      detail: vendorProbe.detail
+    });
+    capability.probeFailure = failWithDetail(vendorProbe.code, vendorProbe.reason, vendorProbe.detail);
+    return capability;
+  }
+  const vendorRequiredMissing = vendorProbe.value.filter((fn) => VENDOR_REQUIRED.includes(fn));
   if (vendorRequiredMissing.length) {
     log.error('官方 jsx 必需函数缺失，应用能力不可用', { missing: vendorRequiredMissing });
     return capability;
@@ -217,7 +253,7 @@ async function load(): Promise<PsCapability> {
   }
 
   capability.vendor = true;
-  capability.missing.push(...vendorMissing);
+  capability.missing.push(...vendorProbe.value);
 
   if (capability.missing.length) {
     /* 不是错误：这些能力单独不可用，其余照常。诊断页能看到清单 */

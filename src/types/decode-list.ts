@@ -7,7 +7,7 @@
  * 为什么在 `types/` 而不是 `repo/json-file`：这是与 `parseJson`（文本 → unknown）同层的
  * 结构原语，`domain` 也要用，而 `CONVENTIONS` §3 禁止 `domain` import `repo`。
  *
- * **只用于读视图**。写路径一律读原始记录（`repo/json-file.decodeRawRecords`）：拿过滤后的
+ * **只用于读视图**。写路径一律读原始记录（`repo/settings-object.decodeRawRecords`）：拿过滤后的
  * 结果去写盘，等于「读的时候跳过、写的时候删掉」——坏项会被静默删除，且不可逆
  * （`.bak` 只有上一版）。
  */

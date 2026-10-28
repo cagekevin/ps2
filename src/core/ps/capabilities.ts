@@ -35,6 +35,8 @@ function fontsOf(data: unknown): Record<string, unknown> | null {
 import {
   lenientVoid,
   parseDataEnvelope,
+  parseFontFamily,
+  parseSystemFontList,
   passthrough,
   sentinelJson,
   strictData,
@@ -61,10 +63,10 @@ export const CAP = {
     require: requireTextLayer, parse: strictVoid(FONT_UNAVAILABLE)
   },
 
-  /** 扫全机字体：300s（不能按「读」的 30s），返回字体数组或 `ok` 哨兵，原样交出由调用方判 */
+  /** 扫全机字体：300s（不能按「读」的 30s）；哨兵 / 数组的判定在 `parseSystemFontList` */
   systemFontList: {
     fn: 'ztgl_initSystemList', gate: 'vendor', channel: 'direct', timeout: LONG_TIMEOUT,
-    parse: passthrough
+    parse: parseSystemFontList
   },
 
   /* ---------------- 文本属性：读 ---------------- */
@@ -78,7 +80,7 @@ export const CAP = {
   /** 字体快选「加当前图层」：只拆 `data`，不判 err（原版不拦） */
   currentFontInfo: {
     fn: 'zt_getCurrentFontInfo', gate: 'vendor', channel: 'direct', timeout: READ_TIMEOUT,
-    require: requireTextLayer, parse: parseDataEnvelope
+    require: requireTextLayer, parse: parseFontFamily
   },
 
   /** 翻译的输入：条目里有混淆过的 `text`，同样只拆 `data` */
@@ -329,7 +331,11 @@ export const CAP = {
     })
   },
 
-  /** 读当前图层的渐变定义：`false` = 图层没有渐变、`{err:1}` = 读失败 */
+  /**
+   * 读当前图层的渐变定义：`false` = 图层没有渐变、`{err:1}` = 读失败。
+   * `data` 是**不透明载荷**：官方 `app.v4.js:50768` 把它整份塞进 `gradient`，我们同样不挑字段；
+   * 收窄发生在读回时的 `domain/gradientItem`。别在这里给 `data` 加字段校验。
+   */
   gradientInfo: {
     fn: 'ys_getGradientInfo', gate: 'vendor', channel: 'direct', timeout: READ_TIMEOUT,
     parse: strictPayload({

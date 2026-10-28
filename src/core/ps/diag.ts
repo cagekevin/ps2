@@ -5,9 +5,9 @@
  */
 
 import { callJsx } from '../cep/bridge';
-import { ok, type Result } from '../../types/result';
+import { failWithDetail, ok, type Result } from '../../types/result';
 import { gateFailed } from './capability';
-import { requireCore } from './init';
+import { ensurePsReady } from './init';
 import { parseJsxRaw } from './raw';
 
 export interface VendorDiag {
@@ -27,7 +27,18 @@ export interface VendorDiag {
 }
 
 export async function diagVendor(): Promise<Result<VendorDiag>> {
-  if (!(await requireCore())) return gateFailed('core');
+  const capability = await ensurePsReady();
+  if (!capability.core) {
+    /*
+     * 探测**本身**失败时如实报原始原因（超时 / 脚本异常）。
+     * 统一说成「PS 脚本未加载」会让排障去找根本不存在的 jsx 文件。
+     */
+    const failure = capability.probeFailure;
+    if (failure && failure.status === 'error') {
+      return failWithDetail(failure.code, failure.reason, failure.detail);
+    }
+    return gateFailed('core');
+  }
 
   const call = await callJsx('mm_diag_vendor');
   if (call.status === 'error') return call;

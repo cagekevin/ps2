@@ -33,14 +33,10 @@ import { flushPrefs, getPref, setPref } from '../core/prefs';
 import { COMMON_USE_SEED, normalizeCollapsed } from '../domain/common-use';
 import { isCommonUseSettingKey } from '../domain/common-use-options';
 import { applyListDrop, type DropPosition } from '../domain/reorder';
-import {
-  readCommonUseFile,
-  updateCommonUseFile,
-  updateCommonUseOptions
-} from '../repo/common-use-repo';
-import type { RawRecords } from '../repo/json-file';
+import { updateCommonUseFile, updateCommonUseOptions } from '../repo/common-use-repo';
+import type { RawRecords } from '../repo/settings-object';
 import { useCommonUseStore, type CommonSection } from '../store/common-use';
-import { fail, ok, type Result } from '../types/result';
+import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 /**
  * 翻转方向的字面量类型从命令层转出去。
@@ -123,7 +119,13 @@ export function sliceByGuide(): Promise<Result<void>> {
  *
  * mutator 拿到的是**原始记录**（`RawRecords`），不是读视图：文件里被跳过的坏项要原样留着。
  */
-async function commitFile(mutator: (file: RawRecords) => RawRecords | null) {
+/**
+ * 写成功后重读投影：网格顺序 / 显隐是用户一眼能看出来的东西，不做乐观更新。
+ *
+ * mutator 拿到的是**原始记录**（`RawRecords`），不是读视图：文件里被跳过的坏项要原样留着。
+ * 判定失败直接 `return fail(...)`，不走「返回 null 再由外面捞」。
+ */
+async function commitFile(mutator: (file: RawRecords) => Result<RawRecords | null>) {
   const result = await updateCommonUseFile(mutator);
   if (result.status === 'ok') useCommonUseStore.getState().load();
   return result;
@@ -134,15 +136,13 @@ async function patchItem(
   id: string,
   patch: Record<string, unknown>
 ): Promise<Result<void>> {
-  const file = readCommonUseFile();
-  if (file.status === 'error') return file;
-  if (!file.value.items.some((item) => item.id === id)) {
-    return fail('VALIDATION', '找不到该常用项');
-  }
-
-  return commitFile((items) =>
-    items.map((item) => (item.id === id ? { ...item, ...patch } : item))
-  );
+  return commitFile((items) => {
+    /* 只在队列里用最新记录判一次：两次读之间该项可能已被别的操作删掉 */
+    if (!items.some((item) => item.id === id)) {
+      return fail('VALIDATION', '找不到该常用项（可能已被删除）');
+    }
+    return ok(items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  });
 }
 
 /** 显示 / 隐藏一格：写 `sj_commonFunction.json` 的 `isShow` */
@@ -153,46 +153,40 @@ export function setShow(id: string, show: boolean): Promise<Result<void>> {
 /**
  * 拖拽排序：落点计算复用 `domain/reorder.applyListDrop`，不自己算下标。
  *
- * 先读一次校验下标（`applyListDrop` 越界抛 `RangeError`，业务函数不抛异常），
- * 写队列里再包一层 try：并发下长度可能变了，此时不写盘并留日志，而不是把异常抛给页面。
+ * 下标只在**队列里**用最新记录判一次：并发下数量可能变了，
+ * 用读缓存时的长度判会「拖 1 号却动了 3 号」；判据不成立就返回失败，不是静默不写。
  */
 export async function reorder(
   from: number,
   to: number,
   position: DropPosition
 ): Promise<Result<void>> {
-  const file = readCommonUseFile();
-  if (file.status === 'error') return file;
-
-  /* 长度取原始记录：mutator 拿到的也是原始记录，两边必须是同一个下标空间 */
-  const length = file.value.records.length;
-  const valid = (value: number) => Number.isInteger(value) && value >= 0 && value < length;
-  if (!valid(from) || !valid(to)) {
-    return fail('VALIDATION', `排序下标超出范围（0 - ${Math.max(0, length - 1)}）`);
-  }
-
   return commitFile((items) => {
-    /* 队列里再对一次长度：两次读之间文件被别的操作改过的话，下标已经指向另一项了，
-       宁可这次不写，也不要「拖 1 号却动了 3 号」 */
-    if (items.length !== length) {
-      log.warn('常用项数量已变化，本次排序未写入', { expected: length, actual: items.length });
-      return null;
+    const valid = (value: number) =>
+      Number.isInteger(value) && value >= 0 && value < items.length;
+    if (!valid(from) || !valid(to)) {
+      return failWithDetail(
+        'VALIDATION',
+        `排序下标超出范围（0 - ${Math.max(0, items.length - 1)}）`,
+        `from:${from} to:${to} len:${items.length}`
+      );
     }
 
     const next = [...items];
     try {
-      if (applyListDrop(next, from, to, position) < 0) return null;
+      if (applyListDrop(next, from, to, position) < 0) {
+        return fail('VALIDATION', '排序落点无效');
+      }
     } catch (error) {
-      log.warn('常用项排序落点无效，未写入', { from, to, position, error: String(error) });
-      return null;
+      return failWithDetail('VALIDATION', '排序落点无效', String(error));
     }
-    return next;
+    return ok(next);
   });
 }
 
 /** 重置为官方 14 项（回 `COMMON_USE_SEED` 的副本，不动只读常量） */
 export function resetAll(): Promise<Result<void>> {
-  return commitFile(() => COMMON_USE_SEED.map((item) => ({ ...item })));
+  return commitFile(() => ok(COMMON_USE_SEED.map((item) => ({ ...item }))));
 }
 
 /**

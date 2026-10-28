@@ -74,6 +74,9 @@
 
 ### 判定表（每次新增能力必须填）
 
+> 要把它做成「公共模块」之前，先答 `docs/adr/ADR-0002` 的四问（少知道什么 / 旧写法能不能删净 / 需要几个概念 / 是不是壳）。
+> 任一条答不出 ⇒ **不做**；做一半留在仓里 = 半收口，比不做糟十倍（`ADR-0001`）。
+
 | 检查项 | 通过标准 |
 |---|---|
 | 唯一入口 | 全项目只有一个 import 来源 |
@@ -110,6 +113,8 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 ```
 
 这些是**检查手段**，不是禁止规则。lint 不拦，但评审必须过——因为拦不住的错误，应该靠入口设计让它不可能发生。
+
+**只跑与本轮改动相关的行**：改了请求就查第一条，没碰日志就不必跑第四条。全仓四行只在改动 `core` 公共出口或 `types` 契约时跑一遍。
 
 ## 1. 命名总则
 
@@ -204,7 +209,7 @@ src/
 │  ├─ prefs/      界面偏好（本地 JSON，非业务数据）
 │  ├─ clipboard/  剪贴板（自动降级）
 │  ├─ dialog/     文件对话框（CEP fs API）
-│  ├─ feedback/   提示条 / 全屏加载的**状态**（零 React；components 只渲染）
+│  ├─ feedback/   提示条 / 全屏加载的**状态 + 通道原语**（`channel.ts`：订阅 / 通知 / 挂载门；零 React，components 只渲染）
 │  ├─ image/      图片解码（FileReader / canvas）
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/env/diag/raw）
 │  ├─ env/        版本、设备、环境
@@ -228,7 +233,9 @@ src/
 
 `src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
 
-### 依赖方向（只允许向下）
+### 依赖方向（只允许向下；**静态方向只写这一份**）
+
+> 本节只写 **import 方向**（编译期）。运行期链路见 §3.1.2，不要在别处再画一份方向图。
 
 ```
 features → commands → store → repo → core
@@ -241,7 +248,7 @@ components → hooks ──────→ core
 |---|---|---|
 | `core` | `types`、`core` 内部其他模块 | `commands`、`store`、`components`、`features`、`app` |
 | `store` | `core`、`domain`、`repo`、`types` | `commands`、`features`、`components` |
-| `components` | `hooks`、`core/logger`、`types`、`components` 内部 | `commands`、`features`、`store` |
+| `components` | `hooks`、`core/logger`、`core/feedback`（状态与通道原语）、`types`、`components` 内部 | `commands`、`features`、`store`、`core/ps`、`core/storage`、`core/cep` |
 | `domain` | `types`、`domain` 内部 | `core`、`repo`、`commands`、`store`、`components`、`features`、`app` |
 | `repo` | `core/storage`、`core/logger`、`core/cep/node`、`core/cep/bridge`、`core/paths`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
 | `hooks` | `core`、`domain`、`types` | `commands`、`store`、`features`、`components`、`app` |
@@ -255,17 +262,9 @@ components → hooks ──────→ core
 
 ### ESLint 锁死边界（`eslint.config.js` 扁平配置）
 
-`no-restricted-imports` 逐层分组，**每层一条**，命中即 `error`：
-
-| 层（`files`） | 禁止 import |
-|---|---|
-| `src/core/**` | `features` / `store` / `components` / `app` |
-| `src/store/**` | `features` / `components` / `app` |
-| `src/domain/**` | `core` / `commands` / `store` / `components` / `features` / `app` |
-| `src/repo/**` | `commands` / `store` / `components` / `features` / `app` |
-| `src/commands/**` | `features` / `components` / `app` |
-| `src/components/**` | `features` / `store` / `app` |
-| `src/hooks/**` | `commands` / `store` / `components` / `features` / `app` |
+`no-restricted-imports` 逐层分组，**每层一条**，命中即 `error`。它禁止什么**不在本文件重复**——
+逐条对应上表的「禁止 import」列；要核对直接读 `eslint.config.js` 或跑 `npm run lint`。
+（同一份规则写两遍，改一处漏一处必漂。）
 
 **未加机器规则的两层（已知缺口，别以为锁了）**：
 
@@ -284,6 +283,7 @@ components → hooks ──────→ core
 ### 3.1 数据流全景（2026-10-28 快照）
 
 > 本节只写**现状**（链路图 + 关键边），不放灯、不放进度。
+> **分工**：谁能 import 谁 = §3 的「依赖方向」表（唯一一份）；本节只写**运行期**谁经过谁。
 >
 > **哪部分是硬的、哪部分会漂**：
 >
@@ -296,7 +296,7 @@ components → hooks ──────→ core
 
 | 出口 | 文件 | import 方 | 说明 |
 |---|---|---|---|
-| **PS 出口** | `core/cep/bridge.ts` 的 `evalScript` | 调用方全在 `core/ps/*` 与 `core/cep/*` 内 | `callJsx` 是它的封装（串行 + 超时 + `EvalScript error.` 折算）。**唯一真正发起 PS 调用的地方**；`core/ps/init.ts` 的探针也用它（问「这个 jsx 函数在不在」） |
+| **PS 出口** | `core/cep/bridge.ts` 的 `evalScript` | 调用方多在 `core/ps/*` 与 `core/cep/*` 内；另有 `commands/style.ts:65` 直连 `emitAppEvent`（广播不是 PS 调用，见 §3.1.5 第 4 条） | `callJsx` 是它的封装（串行 + 超时 + `EvalScript error.` 折算）。**唯一真正发起 PS 调用的地方**；`core/ps/init.ts` 的探针也用它（问「这个 jsx 函数在不在」） |
 | **落盘出口** | `core/storage/index.ts` 的 `writeTextAtomic` | `repo/json-file.ts`（库文件）、`repo/style-repo.ts` / `repo/ku-archive.ts`（`.ini` 索引与解包内层文件，非 JSON，`json-file` 不适用）、`core/prefs/index.ts`（`prefs.json`，独立文件）、`commands/font.ts`（**§3 授权例外**：用户选路径的整份归档） | 所有写入最终都经过它 |
 
 #### 3.1.2 五条链
@@ -332,13 +332,24 @@ components → hooks ──────→ core
 `store/text.ts` 是「读 PS」的范本：`getTextInfoRaw()` 拿原始载荷 → `domain/text-info.decodeTextInfo()` 解码 → 投影；
 失败保留旧值 + `failure` + `stale` + `log.warn`（**读可降级但必须标记**）。
 
-#### 3.1.5 跨层边（**只有这 3 条**，其余全部向下）
+**读失败的两种姿态，按「数据源有没有换」选，不许一刀切**：
+
+| 情形 | 姿态 | 例 |
+|---|---|---|
+| **同一数据源**刷新失败（没切仓库、没换文档） | 保留旧值 + 存 `Result` + `log.warn` | `store/text`（PS 文档没变）、`store/font`（同一份标签文件）、`store/common-use` |
+| **换了数据源**后读失败（切仓库 / 切文档） | **清空** + 存 `Result` + `log.warn`；不许显示上一个源的投影 | `store/style-library`（索引失败必须重置 `warehouses` / `libraries`，否则显示的是另一个仓库） |
+
+判据：**留着旧值会不会让用户看到别处的数据？** 会 ⇒ 清空；不会 ⇒ 保留。
+
+#### 3.1.5 跨层边（5 条，全部已裁定）
 
 | # | 边 | 为什么合法 |
 |---|---|---|
 | 1 | `commands/font.ts → core/storage`（`readTextAt` / `writeTextAtAtomic`） | 用户主动选路径的**整份归档**导入导出，§3 明文授权。库文件不适用 |
-| 2 | `core/ps/style.ts → core/storage` | 只借 `ROOTS`（路径常量），**不读写** |
+| 2 | `core/ps/style.ts` / `core/ps/env.ts → core/storage` | 只借 `ROOTS`（路径常量），**不读写** |
 | 3 | `store/text.ts → core/ps/text` | 见 3.1.4，读 PS 的唯一一处，形状合规 |
+| 4 | `commands/style.ts → core/cep/bridge`（`emitAppEvent`，`:65` / `:219`） | 色板写成功后的**广播**，不是 PS 调用；`emitAppEvent` 返回 `Result`，命令层消费结果并 `log.warn` 留痕，写盘成功不因广播失败而降级 |
+| 5 | `commands/style.ts → core/cep/ps-events`（`startHostEventWait`，`:58`） | 吸色是**一次性等待**：订阅几个语义、谁先到、超时怎么算、什么时候退订，全封在 `ps-events`，命令层只递判据（`isForegroundSetd` + `cancelOn: ['selection']`）。命令层**不再直接** `subscribeHostEvent`；失败走外层 `Result` |
 
 > **已收**：2026-10-28 之前 `features/style/useStyleActions.ts` 直连 `repo/style-repo` 的 7 个函数
 > （含 `renameKu*` / `deleteKu*` / `moveKuItemTo` 三个写）——绕过编排层。
@@ -348,6 +359,7 @@ components → hooks ──────→ core
 
 **多写入者**：`sj_set.json` 由两个 repo 分别读改写：`repo/common-use-repo`（常用页那组键）、`repo/font-set-repo`（`zt*` 那组键）。
 不丢更新靠两件事：①`json-file` 的队列 key 是文件名 → 同一条队列；②§5 的「按 key 分工」（各写各的键）。
+**文件名常量只有一份**：`repo/settings-object.ts` 的 `SETTINGS_FILE`，两个 repo 都 import，不许各写一份字面量（见 §5「一个官方文件只能有一个持有者」）。
 
 **多读取入口**：同一份文件有两个读法——`store/*` 读**投影**（自己 `load`），`commands/*` 读**原始记录**（写回要原样）。
 以 `sj_set.json` 为例：`store/font-set.ts` 与 `commands/font-set.ts` 各读一次。
@@ -365,6 +377,7 @@ components → hooks ──────→ core
 
 > 这里只列「怎么查」，**不挂进 `npm run check`** —— 数据流是全局结构，一两条边变动就红会逼人绕开闸。
 > 复核的人（人或 AI）按下面的命令自己跑；跑了就把结果贴出来。
+> **范围 = 本轮改动涉及的那条边**，没改的边不必每次重跑（全跑一遍只在用户要求或改动跨层公共出口时）。
 
 | 不变量 | 复核命令 | 2026-10-28 实测 |
 |---|---|---|
@@ -382,7 +395,7 @@ components → hooks ──────→ core
 |---|---|---|
 | 1 | `core/ps/text` 返回解码后的 `TextInfo`，让 `store/text` 变纯投影（照 `core/ps/layer` 的先例） | `core/ps/layer` 能这么做，是因为 `LayerState` 是**图层身份**（`types/layer.ts` 里就是纯类型）。`TextInfo` 是**面板显示什么**（业务形状），归一化也是业务规则（缺字段用面板默认值补）。要让 `core` 返回它，就得把业务搬进 `core`（违反「core 零业务」）或把解码搬进 `types`（违反「types 只放类型」）。**两条都违规 → 这条路在本仓分层下走不通**。现状（`store/text` 调 `domain/text-info.decodeTextInfo`）是合规的：`store → domain` 允许 |
 | 2 | `core/image` 的平台原语由 `domain/image-color` 提供默认注入，页面不再自己接线 | `domain` 不能 import `core`（依赖方向）。要默认注入，就得把量化算法搬出 `domain`（那它就不是纯逻辑、没法单测）或把平台原语搬进 `domain`（那 domain 就不纯了）。**两条都违规**。现状（页面注入、domain 只出算法）是唯一能让算法保持可单测的形状 |
-| 3 | `sj_set.json` 的两个读入口（store 读投影 + commands 读原始）收成一个 | 收成「commands 不自己读」→ store 得额外存原始记录（投影变重）；收成「拆两个文件」→ **改用户文件布局**（原版可能就是这样的，风险最大）。现状靠 `decodeSettingsObject`「原样返回 + 保留未知键」保证**改键名不丢用户数据**，代价只是代码改两处 |
+| 3 | `sj_set.json` 的两个读入口（store 读投影 + commands 读原始）收成一个 | 收成「commands 不自己读」→ store 得额外存原始记录（投影变重）；收成「拆两个文件」→ **改用户文件布局**（原版可能就是这样的，风险最大）。现状靠 `decodeSettingsObject`「原样返回 + 保留未知键」保证**改键名不丢用户数据**，代价只是代码改两处。**文件名常量已收口**（`repo/settings-object.ts` 的 `SETTINGS_FILE`），剩下收不成的是两个读入口 |
 
 #### 3.1.10 图层监听：官方怎么做的，我们现在是什么样
 
@@ -403,7 +416,7 @@ components → hooks ──────→ core
 | 环节 | 现状 |
 |---|---|
 | 图层身份 | **类型 + 名字**（`useFontPanel.ts:90`、`layer-watcher.tsx:83`）—— 不含 id |
-| 触发 | 800ms 轮询（`layer-watcher.tsx:27`）+ 事件快路径（订阅 `layerChanged` / `documentChanged` 两个语义） |
+| 触发 | 800ms 轮询（`layer-watcher.tsx:29`）+ 事件快路径（订阅 `layerChanged` / `documentChanged` 两个语义）。`layerChanged` 含 4 个事件 ID：`slct`（单图层）/ `1416785510`（无条件）/ `1298866208`（文字图层引用）/ **`setd` 且 `to._obj === 'textStyle'`**（官方 `app.v4.js:69417`，PS 里改字号 / 字体后重读） |
 | 事件注册与分发 | 全在 CEP 层（`core/cep/ps-events.ts`），**不需要 jsx**；4 个语义 / 7 个事件 ID / 按 ID 去重注册 / 16 条测试 |
 | 读失败 | watcher 保持上次状态 + 一次性 `log.warn(code, detail)`；`store/text` 保留旧值 + `failure` + `stale` |
 | jsx 协议 | `mm_layer_getState` 返回**类型 + 名字**（无 id）；`mm_layer_getSelection` 返回选中数 |
@@ -487,6 +500,17 @@ TypeScript 类型在运行时被擦除，`as` 断言不做任何校验。因此�
 - 禁止 `as SomeType` 后直接当已知结构用
 - 分隔符解析（`split('|')`）后必须判空，解构元素类型是 `T | undefined`
 
+**比断言更隐蔽的是签名被放宽**：断言一眼看得见，放宽看不见 —— 编译永远过，调用方一行行变松。
+
+| 放宽 | 谁在付代价 |
+|---|---|
+| `Result<T>` → `Result<T \| null>` | 每个调用点多一个「`null` 表示什么」要猜 |
+| 必填参数 → 可选 | 少传也能编译，运行时才炸 |
+| `unknown` 往外扩散 | 消费者开始自己收窄，而收窄本来就该在生产者 |
+| `as T` / `as unknown as T` | 断言不做校验，等价于「我知道它对」 |
+
+判据：**改签名时问一句「放宽之后，调用方要多知道什么？」** 多知道一条 ⇒ 放宽没换来简化，只是把复杂度推给了调用方。
+
 ### 4.4 失败只有一种形状
 
 「缺文件」「读坏了」「IO 失败」由 `code` 区分（`NOT_FOUND` / `CORRUPT` / `IO_ERROR`），
@@ -494,6 +518,10 @@ TypeScript 类型在运行时被擦除，`as` 断言不做任何校验。因此�
 
 历史教训：曾有两套失败类型（`ReadOutcome` + `Result`）加一个 `toResult` 转换层，
 结果是每个消费点都要学两种形状、转换点还要决定「丢哪些字段」。已全部收掉。
+
+**失败由生产者给，消费者只转发**（`ADR-0003`）：判「空 / 缺失 / 坏」在生产者那一层做完并给 `Result` + `code`；
+`commands` / `store` / `hooks` / `components` / `features` 不许判空、改码、换文案、补默认值。
+渲染层可以按 `code` 决定「怎么说」（显示什么、给不给重试），但那是呈现，不是改数据。
 
 ### 4.5 写操作约定（三条硬规则）
 
@@ -626,7 +654,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
 | 存储 | `core/storage` | `readTextResult/writeTextAtomic`；导入导出用 `readTextAt/writeTextAtAtomic/copyFileAt` | 组件里直接用 `cep.fs` |
 | 官方设置文件 | `repo/*`（内部走 `repo/json-file` + `core/storage`） | `readXxx()` / `updateXxx()`，只改自己那几个键，未知键原样保留（`sj_commonFunction.json` 的根是**裸数组**，不是 `{ index, list }`） | 页面、命令、组件直接读写 `sj_*.json`；用 `core/prefs` 代管官方设置文件 |
-| CEP | `core/cep` | `callJsx(fn, args)`、`emitAppEvent(type, data)` | 组件里 `evalScript` |
+| CEP | `core/cep` | `callJsx(fn, args)`、`emitAppEvent(type, data): Result<void>` | 组件里 `evalScript` |
 | 环境 | `core/env` | `APP_TITLE`、`APP_VERSION`、`extensionId` | 各处重复取版本 |
 | 主题 | `styles/tokens.css` | CSS 变量 | 组件里写死色值 |
 
@@ -636,6 +664,8 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 - 一个文件要是真有两拨人写，就**按 key 分工**：`sj_set.json` 的 `zt*` 归 `repo/font-set-repo`、
   `cy*` 归 `repo/common-use-repo`，各写各的键、都走 `mutateJsonFile`（未知键保留）。
   不需要并发保护——不存在两个进程同时写同一个文件。
+  **分工只到「读写入口」这一层**：文件名常量与顶层形状仍只有一个出处——`repo/settings-object.ts`
+  （`SETTINGS_FILE` / `decodeSettingsObject`），两个 repo 都 import，**不许各写一份文件名或解码**。
 - 反例（已修）：`sj_kuStoreInfo.ini` 曾在 `repo/style-repo` 只读、`repo/ku-archive` 私有写，
   于是云同步要做「整包替换索引」时无处可调 —— 写入口现已归 `style-repo.writeIndexRaw`。
 - 推论：**「读原文」与「解析后重建」是两件事**。要上传/搬运给外部时读原文（`readIndexText`），

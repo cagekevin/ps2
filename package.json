@@ -15,7 +15,7 @@
     "deploy": "npm run build && node tools/deploy.mjs",
     "check:templates": "node tools/check-templates.mjs",
     "check:nav": "node tools/check-nav.mjs",
-    "check": "npm run typecheck && npm run lint && npm run lint:css && npm run check:templates && npm run check:nav && npm run test",
+    "check": "npm run typecheck && npm run lint && npm run lint:css && npm run check:templates && npm run check:nav && npm run test && node scripts/post-check.mjs",
     "new:feature": "node tools/new-feature.mjs"
   },
   "dependencies": {

@@ -29,19 +29,21 @@ import {
 import { decodeList, type Dropped } from '../types/decode-list';
 import { fail, ok, type Result } from '../types/result';
 import {
-  decodeRawRecords,
-  decodeSettingsObject,
   readJsonFile,
   readOrEmpty,
   updateOrCreateJsonFile,
-  type JsonMutator,
-  type RawRecords
+  type JsonMutator
 } from './json-file';
+import {
+  decodeRawRecords,
+  decodeSettingsObject,
+  SETTINGS_FILE,
+  type RawRecords
+} from './settings-object';
 
 const ROOT: StorageRoot = 'legacy';
 
 const FILE = 'sj_commonFunction.json';
-const SET_FILE = 'sj_set.json';
 
 /** 种子是只读常量，写盘前必须复制一份，避免后续改动污染模块级数据 */
 function cloneSeed(): CommonUseItem[] {
@@ -95,14 +97,22 @@ export function readCommonUseFile(): Result<CommonUseRead> {
  * 必须原样留在文件里，只有用户显式删除才消失——否则就是「读的时候跳过、写的时候删掉」，
  * `.bak` 只有上一版，不可逆。
  */
-export function updateCommonUseFile(mutator: JsonMutator<RawRecords>): Promise<Result<void>> {
+/**
+ * 读-改-写。mutator **可以返回失败**（`ok(null)` = 不写）。
+ *
+ * 「id 找不到」「下标越界」这类判定发生在队列里（用的是最新记录），
+ * 失败要能原样上抛，不能折成 `null` 再由调用方捞回来。
+ */
+export function updateCommonUseFile(
+  mutator: JsonMutator<RawRecords>
+): Promise<Result<void>> {
   return updateOrCreateJsonFile(FILE, ROOT, '常用功能', decodeRawRecords, mutator, {
     missing: cloneSeed
   });
 }
 
 /* ---------------- sj_set.json（只认 17 个键） ---------------- */
-/* 顶层解码走 `json-file.decodeSettingsObject`（唯一入口，别在本文件再写一份） */
+/* 顶层解码走 `settings-object.decodeSettingsObject`（唯一入口，别在本文件再写一份） */
 
 /** 解码 + 投影合成一步：调用方只拿最终形状 */
 function decodeCommonUseOptions(raw: unknown): Result<CommonUseOptions> {
@@ -114,7 +124,7 @@ function decodeCommonUseOptions(raw: unknown): Result<CommonUseOptions> {
 /** 读 17 个键；文件或键缺失都按「没设置过」返回，坏文件仍报错 */
 export function readCommonUseOptions(): Result<CommonUseOptions> {
   return readOrEmpty(
-    readJsonFile(SET_FILE, ROOT, '常用页设置', decodeCommonUseOptions),
+    readJsonFile(SETTINGS_FILE, ROOT, '常用页设置', decodeCommonUseOptions),
     () => ok(pickCommonUseOptions({}))
   );
 }
@@ -137,11 +147,11 @@ export function updateCommonUseOptions(patch: Record<string, unknown>): Promise<
   }
 
   return updateOrCreateJsonFile(
-    SET_FILE,
+    SETTINGS_FILE,
     ROOT,
     '常用页设置',
     decodeSettingsObject,
-    (raw) => mergeCommonUseOptions(raw, patch),
+    (raw) => ok(mergeCommonUseOptions(raw, patch)),
     { missing: () => ({}) }
   );
 }

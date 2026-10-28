@@ -128,6 +128,11 @@ export default tseslint.config(
             {
               group: ['**/features/**', '**/store/**', '**/app/**'],
               message: 'components 不能依赖 features / store / app'
+            },
+            {
+              group: ['**/core/ps/**', '**/core/storage/**', '**/core/cep/**'],
+              message:
+                'components 不能直接调 PS / 写盘 / 碰 CEP 桥（要什么经 hooks 或 core/feedback 原语）'
             }
           ]
         }
