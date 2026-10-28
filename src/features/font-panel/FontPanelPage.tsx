@@ -58,8 +58,6 @@ export default function FontPanelPage() {
         />
       ) : null}
 
-      <hr className="mm-font-panel__line" />
-
       {/*
         属性区**始终渲染**：内容负责撑住高度，读不到时盖一层黑底半透明遮罩。
         换成「一行提示」会让下面的图标整体上移（选字 / 不选字跳版）。

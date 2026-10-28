@@ -103,6 +103,8 @@ export function FontHierarchy({
         <IconButton
           name="iconchangguicengjiyushe"
           title="设置层级预设"
+          /* 与左边两颗同一尺寸：不传就走 IconButton 的默认 20，同一行会出现 14/14/20 */
+          size={14}
           active={editorOpen}
           onClick={() => setEditorOpen((open) => !open)}
         />

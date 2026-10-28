@@ -88,7 +88,9 @@ export default function FontManagePage() {
           <StateHint result={page.loadError} onRetry={page.refresh} />
         </div>
       ) : page.loading && !page.fonts.length ? (
-        <p className="mm-font__state">正在读取系统字体…</p>
+        <div className="mm-font__state">
+          <StateHint empty="正在读取系统字体…" />
+        </div>
       ) : !page.visible.length ? (
         <div className="mm-font__state">
           <StateHint empty={page.hasFilter ? '没有匹配的字体' : '系统里没有可用字体'} />

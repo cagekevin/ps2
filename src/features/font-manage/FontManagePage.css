@@ -211,7 +211,8 @@
 }
 
 .mm-font__preview-text-field.mm-input::placeholder {
-  color: var(--mm-color-star-on);
+  /* 占位符是弱文，不要借星级的 star-on */
+  color: var(--mm-color-text-dim);
 }
 
 .mm-font__preview-text-field.mm-input:hover,
@@ -256,9 +257,9 @@
 
 .mm-font__tags-head > span {
   flex: 1;
+  /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
+  font-size: var(--mm-font-xs);
   font-weight: 500;
-  transform: scale(0.91666667) translate(var(--mm-tag-title-shift));
-  transform-origin: left center;
 }
 
 .mm-font__tags-tools {
@@ -338,8 +339,10 @@
   border-color: var(--mm-color-accent-soft);
 }
 
+/* 选中态与筛选 chip 一致：accent 描边 + 主文色 */
 .mm-font__tag--active {
   border-color: var(--mm-color-accent);
+  color: var(--mm-color-text-inverse);
 }
 
 .mm-font__tag--menu {
@@ -360,13 +363,16 @@
 
 .mm-font__list-count {
   flex: 1;
-  color: var(--mm-color-star-on);
+  /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
+  color: var(--mm-color-text-muted);
+  font-size: var(--mm-font-xs);
   font-weight: 500;
-  transform: scale(0.91666667) translate(var(--mm-tag-title-shift));
-  transform-origin: left center;
 }
 
 .mm-font__clear-tag {
+  /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
+  height: var(--mm-list-head-h);
+  padding: 0 var(--mm-space-2);
   border: 0;
   background: transparent;
   color: var(--mm-color-accent-soft);
@@ -417,5 +423,3 @@
 .mm-font__footer {
   justify-content: flex-end;
 }
-
-/* 预览设置 */

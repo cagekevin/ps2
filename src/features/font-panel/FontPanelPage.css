@@ -2,7 +2,7 @@
  * 字体面板页样式（类名前缀统一 `mm-font-panel__`）
  *
  * 尺寸与颜色只取 token：面板底色 `--mm-color-sunken`（比页面底暗一档），
- * 按钮底 `--mm-color-bg-panel`，输入框底 `--mm-color-input-page`，
+ * 面板底 `--mm-color-font-panel-bg`、按钮底 `--mm-color-bg-panel`、输入框底 `--mm-color-sunken`（三层从暗到亮），
  * 分隔线 `--mm-color-verline`。原版值写在 tokens.css 的注释里，这里不复制。
  */
 
@@ -11,14 +11,32 @@
   width: 100%;
   height: 100%;
   flex-direction: column;
+  /*
+   * 块间距**只由这里的 gap 提供**：子块一律不给垂直 margin。
+   * 两处各给一半是上一版净间隔忽 6 忽 10 忽 12 的根因；
+   * 需要更近/更远时包一层子容器用另一个 gap，不要回到 margin。
+   */
+  gap: var(--mm-space-exact-6);
   overflow-y: auto;
+  /* 面板自己一层底：页面底比它暗，直接继承会把输入框显得比面板还亮 */
+  background: var(--mm-color-font-panel-bg);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
+}
+
+/* 面板里的下拉与数字框统一成「输入」这一层：比面板暗一档。
+   公共件 `SelectBox` 的底色是给普通页面用的，这里按面板语义覆盖 */
+.mm-font-panel .mm-select-box__trigger {
+  background: var(--mm-color-sunken);
 }
 
 /* ---------------- 图标行 ---------------- */
 
 .mm-font-panel__icons {
+  /* 两行图标之间的间距同样只由 gap 给 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-exact-6);
   padding: 0 var(--mm-space-exact-10);
 }
 
@@ -26,11 +44,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: var(--mm-space-exact-10) 0;
-}
-
-.mm-font-panel__icon-row--after {
-  margin-top: var(--mm-space-2);
+  /* 间距由父容器 gap 给，自己不给 */
+  margin: 0;
 }
 
 .mm-font-panel__divider {
@@ -42,20 +57,25 @@
 
 .mm-font-panel__line {
   height: var(--mm-border-w);
-  margin: var(--mm-space-exact-10) var(--mm-space-exact-15) var(--mm-space-exact-5);
+  /* 只留左右：上下由根容器 gap 给 */
+  margin: 0 var(--mm-space-exact-12);
   border: 0;
   background: var(--mm-color-verline);
 }
 
-.mm-font-panel__line--set {
-  margin-bottom: var(--mm-space-exact-10);
-  background: var(--mm-color-sunken);
-}
+/* `--set` 不再单独覆盖颜色：原来它是 `--mm-color-sunken`（比 #333 暗一档），
+   一页里两条线颜色不同。整页只留一种线色，靠上面的间距区分区块 */
 
 /* ---------------- 展开面板 ---------------- */
 
+/*
+ * 展开面板：与上面的预设块**同一个表面**——无边框、无圆角、底色 sunken、铺满整宽。
+ * 它的宿主挂在图标行里（那层有左右 10 的内边距），所以左右各外扩 10 才能铺满，
+ * 否则背景比预设块窄 20px、左边缘也对不齐。
+ */
 .mm-font-panel__panel {
-  padding: var(--mm-space-exact-15) var(--mm-space-exact-10);
+  margin: 0 calc(-1 * var(--mm-space-exact-10));
+  padding: var(--mm-space-3) var(--mm-space-exact-10);
   background: var(--mm-color-sunken);
 }
 
@@ -63,12 +83,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--mm-space-3);
+  /* 行内间距与 `--tight` 同档：原来 12 / 8 两种 */
+  gap: var(--mm-space-2);
 }
 
 .mm-font-panel__row--pad,
 .mm-font-panel__row--tight {
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
 }
 
 .mm-font-panel__row--tight {
@@ -78,9 +99,10 @@
 
 .mm-font-panel__label {
   flex: 0 0 auto;
-  margin: 0 var(--mm-space-exact-10) 0 0;
+  margin: 0 var(--mm-space-2) 0 0;
   color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  /* 与同一行的下拉、选项同字号：原来这里是 13，选项 12 */
+  font-size: var(--mm-font-sm);
 }
 
 /* 勾选 / 单选已上移到 components/CheckBox 与 components/RadioButton（CONVENTIONS §6），
@@ -107,13 +129,13 @@
 
 .mm-font-panel__preset-btn:hover,
 .mm-font-panel__wide-btn:hover {
-  background: var(--mm-color-surface-raised-hover);
+  background: var(--mm-color-font-btn-hover);
 }
 
 .mm-font-panel__wide-btn {
   width: 100%;
   height: var(--mm-font-panel-btn-h);
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   border: 0;
   border-radius: var(--mm-field-radius);
   background: var(--mm-color-bg-panel);
@@ -132,7 +154,7 @@
 .mm-font-panel__quick-row {
   display: flex;
   align-items: center;
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
 }
 
 .mm-font-panel__quick-select {
@@ -142,12 +164,14 @@
 
 .mm-font-panel__quick-add {
   width: 100%;
-  padding: var(--mm-space-exact-2) var(--mm-space-3);
+  /* 与下拉项同一套：同高、同左内边距、同字号，只有文字色不同（它是动作，不是选项） */
+  height: var(--mm-select-h);
+  padding: 0 var(--mm-space-4);
   border: 0;
   border-top: var(--mm-border-w) solid var(--mm-color-border-float);
   background: transparent;
   color: var(--mm-color-accent);
-  font-size: var(--mm-font-md);
+  font-size: var(--mm-font-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -168,6 +192,7 @@
 /* ---------------- 字体属性 ---------------- */
 
 .mm-font-panel__color {
+  /* 上间距由根容器 gap 给；块内各行仍只给上间距（见 color-row / styles / metric） */
   padding: 0;
 }
 
@@ -175,7 +200,7 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-2);
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   padding: 0 var(--mm-space-exact-10);
 }
 
@@ -187,7 +212,7 @@
 
 .mm-font-panel__color-label {
   flex: 0 0 auto;
-  margin: 0 0 0 var(--mm-space-exact-5);
+  margin: 0 0 0 var(--mm-space-1);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
 }
@@ -206,14 +231,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 0;
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   padding: 0 var(--mm-space-exact-10);
 }
 
 .mm-font-panel__metric {
   display: flex;
   align-items: flex-start;
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   padding: 0 var(--mm-space-exact-10);
 }
 
@@ -235,17 +260,19 @@
 }
 
 .mm-font-panel__presets {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: var(--mm-space-3);
-  row-gap: var(--mm-space-4);
-  margin-top: var(--mm-space-4);
-  padding: var(--mm-space-exact-10);
+  /* 用 grid 定列数，不用 flex-wrap + 宽度 calc：
+     后者每格宽度是小数，6 格相加会超出 1px 以内，最后一个就被挤到下一行（只剩 5 个一行） */
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  column-gap: var(--mm-space-exact-6);
+  row-gap: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-exact-6);
+  padding: var(--mm-space-2);
   background: var(--mm-color-sunken);
 }
 
 .mm-font-panel__preset {
-  width: calc((100% - 5 * var(--mm-space-exact-6)) / 6);
+  /* 宽度交给 grid 的列宽，自己不再算 */
   height: var(--mm-font-panel-btn-h);
   padding: 0;
   border: 0;
@@ -257,14 +284,15 @@
 }
 
 .mm-font-panel__preset:hover {
-  background: var(--mm-color-surface-raised-hover);
+  background: var(--mm-color-font-btn-hover);
 }
 
 /* ---------------- 层级字号 ---------------- */
 
 .mm-font-panel__hierarchy {
   width: 100%;
-  margin-top: var(--mm-space-exact-10);
+  /* 上间距由根容器 gap 给，自己不再加 */
+  margin-top: 0;
 }
 
 .mm-font-panel__hierarchy-row {
@@ -283,7 +311,7 @@
   display: flex;
   justify-content: space-between;
   gap: var(--mm-space-exact-6);
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   padding: 0 var(--mm-space-exact-10);
 }
 
@@ -300,12 +328,12 @@
 }
 
 .mm-font-panel__level:hover {
-  background: var(--mm-color-surface-raised-hover);
+  background: var(--mm-color-font-btn-hover);
 }
 
 .mm-font-panel__editor {
-  margin-top: var(--mm-space-exact-10);
-  padding: var(--mm-space-exact-13) var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
+  padding: var(--mm-space-2) var(--mm-space-exact-10);
   background: var(--mm-color-sunken);
 }
 
@@ -326,8 +354,8 @@
 .mm-font-panel__editor-actions {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-exact-10);
-  margin-top: var(--mm-space-exact-10);
+  gap: var(--mm-space-2);
+  margin-top: var(--mm-space-exact-6);
 }
 
 .mm-font-panel__preset-btn--half {
@@ -345,9 +373,9 @@
 .mm-font-panel__split-btn {
   width: calc(50% - var(--mm-space-3));
   height: var(--mm-font-panel-btn-h);
-  border: var(--mm-border-w) solid var(--mm-color-input-page);
+  border: var(--mm-border-w) solid var(--mm-color-sunken);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-input-page);
+  background: var(--mm-color-sunken);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   cursor: pointer;
@@ -360,27 +388,28 @@
 
 /* ---------------- 生成按钮 ---------------- */
 
+/* 8 个一行用 grid 定列，不用 flex + 宽度 calc（小数累积会把最后一个挤下去） */
 .mm-font-panel__quick-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-3);
-  margin-top: var(--mm-space-exact-10);
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--mm-space-2);
+  margin-top: var(--mm-space-exact-6);
 }
 
+/* 与预设按钮同一套：同高、同字号、同圆角、同底色、同横向内边距 */
 .mm-font-panel__quick-btn {
-  width: calc(12.5% - var(--mm-space-3));
   height: var(--mm-font-panel-btn-h);
-  padding: 0;
+  padding: 0 var(--mm-space-3);
   border: 0;
   border-radius: var(--mm-field-radius);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  font-size: var(--mm-font-sm);
   cursor: pointer;
 }
 
 .mm-font-panel__quick-btn:hover {
-  background: var(--mm-color-surface-raised-hover);
+  background: var(--mm-color-font-btn-hover);
 }
 
 /* ---------------- 粘贴 ---------------- */
@@ -392,7 +421,7 @@
 }
 
 .mm-font-panel__paste-row + .mm-font-panel__paste-row {
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
 }
 
 /* ---------------- 数字输入 ---------------- */
@@ -421,7 +450,7 @@
   padding: 0 var(--mm-space-exact-2);
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-field-radius);
-  background: var(--mm-color-input-page);
+  background: var(--mm-color-sunken);
   color: var(--mm-color-text);
 }
 
@@ -485,7 +514,7 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-3);
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   padding: 0;
   border: 0;
   background: transparent;
@@ -503,7 +532,7 @@
 }
 
 .mm-font-panel__help {
-  margin-top: var(--mm-space-exact-10);
+  margin-top: var(--mm-space-exact-6);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   line-height: var(--mm-line-16);

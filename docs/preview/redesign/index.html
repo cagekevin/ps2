@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8" /><title>重设计稿 · 全部页面</title>
+<style>
+  body{margin:0;padding:20px;background:#1b1b1b;color:#d6d6d6;font:13px/1.6 "Microsoft YaHei UI","Segoe UI",sans-serif}
+  h1{font-size:14px;font-weight:400;margin:0 0 6px}
+  .note{margin:0 0 18px;color:#9a9a9a;font-size:12px;max-width:900px}
+  .note code{color:#c9c9c9}
+  .row{display:flex;flex-wrap:wrap;gap:18px}
+  figure{margin:0}
+  figcaption{font-size:12px;color:#9a9a9a;margin-bottom:6px}
+  iframe{border:1px solid #333;border-radius:4px;background:#2b2b2b;display:block}
+</style></head>
+<body>
+<h1>重设计稿 · 全部页面</h1>
+<p class="note">
+一套值：间距 <code>4/8/12/16</code>、左右内边距 <code>12</code>、控件高 <code>26</code>、圆角 <code>4</code>、
+字号 <code>13/12/11</code>、表面四层（页面 <code>#2b2b2b</code> → 面板 <code>#363636</code> → 凹陷 <code>#222</code> → 按钮 <code>#4a4a4a</code>）、
+线条两种（区块 <code>#333</code> / 列表行 <code>#2e2e2e</code>）。<br>
+纵向间距只由容器 <code>gap</code> 给；满宽块左右外扩 <code>12</code>，背景铺到面板边缘。图标为真 SVG，文案为真文案。
+</p>
+<div class="row">
+  <figure><figcaption>字体面板</figcaption>
+    <iframe src="font.html" width="380" height="760" loading="lazy"></iframe></figure>
+  <figure><figcaption>字体管理</figcaption>
+    <iframe src="manage.html" width="380" height="760" loading="lazy"></iframe></figure>
+  <figure><figcaption>常用功能</figcaption>
+    <iframe src="common.html" width="380" height="760" loading="lazy"></iframe></figure>
+  <figure><figcaption>样式面板</figcaption>
+    <iframe src="style.html" width="380" height="760" loading="lazy"></iframe></figure>
+  <figure><figcaption>设置</figcaption>
+    <iframe src="set.html" width="380" height="760" loading="lazy"></iframe></figure>
+  <figure><figcaption>诊断</figcaption>
+    <iframe src="debug.html" width="380" height="760" loading="lazy"></iframe></figure>
+</div>
+</body></html>

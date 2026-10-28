@@ -57,18 +57,28 @@
 
 .mm-font__name-row {
   position: relative;
-  height: var(--mm-row-head-h);
+  /* flex 居中：12px 的名字放进 18 高的行里靠顶会偏上，和右侧操作按钮对不齐 */
+  display: flex;
+  align-items: center;
+  /* 最小高度而不是写死：无预览模式的名字是 16px/22，写死 15 会把字压到下一行上 */
+  min-height: var(--mm-row-head-h);
   line-height: 1;
 }
 
 .mm-font__family {
   display: inline-block;
-  max-width: calc(100% - var(--mm-name-reserve));
+  /* 默认不预留操作区宽度：操作区只在 hover / 选中时出现，平时不出现就别占位 */
+  max-width: 100%;
   overflow: hidden;
   font-size: var(--mm-font-sm);
   white-space: nowrap;
   text-overflow: ellipsis;
-  vertical-align: top;
+}
+
+/* 操作区出现时才给名字让位，避免长名字被长期截短 */
+.mm-font__item:hover .mm-font__family,
+.mm-font__item--active .mm-font__family {
+  max-width: calc(100% - var(--mm-name-reserve));
 }
 
 .mm-font__family--name-only {
@@ -83,7 +93,9 @@
 .mm-font__actions {
   position: absolute;
   right: 0;
-  top: 0;
+  /* 与名字行垂直居中：按钮 18、行高 18，贴顶会在无预览模式下偏上 */
+  top: 50%;
+  transform: translateY(-50%);
   display: none;
   align-items: center;
   gap: var(--mm-space-1);
@@ -138,7 +150,8 @@
 /* 预览文字 */
 .mm-font__preview {
   margin: 0;
-  padding: var(--mm-space-2) 0;
+  /* 名字是预览的标签：贴近预览（上 4），与下面的字重行留 8 */
+  padding: var(--mm-space-1) 0 var(--mm-space-2);
   color: var(--mm-color-text-preview);
   font-family: var(--mm-preview-family, inherit);
   white-space: nowrap;
@@ -176,8 +189,9 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  /* 上间距为 0：由上面预览行的下内边距提供，避免两处叠加成 20 */
-  padding: 0 0 var(--mm-space-3);
+  /* 上下都不给：上间距由预览行的下内边距提供，下间距由列表项的内边距提供。
+     自己再给一段就会变成「上紧下松」——行底部净留白比顶部多一倍 */
+  padding: 0;
 }
 
 .mm-font__weight-list {

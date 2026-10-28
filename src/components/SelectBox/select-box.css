@@ -50,8 +50,12 @@
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
   width: var(--floating-width, auto);
-  overflow: hidden;
-  border: var(--mm-border-w) solid var(--mm-color-border);
+  /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
+  max-height: var(--mm-select-panel-max-h);
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* 深色底上黑边看不见：浮层边缘用 10% 白，和标签弹层、预览卡同一档 */
+  border: var(--mm-border-w) solid var(--mm-color-border-float);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-elevated);
   box-shadow: var(--mm-shadow-pop);
@@ -61,7 +65,7 @@
 .mm-select-box__panel--inset {
   left: calc(var(--floating-x, 0) + var(--mm-space-exact-10));
   width: calc(var(--floating-width, 100%) - var(--mm-space-exact-20));
-  margin-top: var(--mm-space-exact-5);
+  margin-top: var(--mm-space-1);
 }
 
 /* 选项：原版 `.select-box__item` —— 28px 高、左侧留勾的位置 */
@@ -72,7 +76,8 @@
   height: var(--mm-select-h);
   align-items: center;
   gap: var(--mm-space-1);
-  padding: 0 var(--mm-space-2);
+  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
+  padding: 0 var(--mm-space-exact-6) 0 var(--mm-space-5);
   border: none;
   background: transparent;
   color: var(--mm-color-text);
@@ -81,6 +86,7 @@
   cursor: pointer;
 }
 
+/* 当前值靠左侧对号标记，不靠文字变色：hover 与当前项同一底色即可 */
 .mm-select-box__item:hover,
 .mm-select-box__item--active {
   background: var(--mm-color-bg-hover);
@@ -89,6 +95,9 @@
 .mm-select-box__check {
   position: absolute;
   left: var(--mm-space-1);
+  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--mm-color-accent);
 }
 

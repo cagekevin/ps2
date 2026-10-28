@@ -30,6 +30,8 @@
   height: var(--mm-gradient-h);
   border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
   border-radius: 50%;
+  /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
+  background: var(--mm-imgcolor-color);
   cursor: pointer;
 }
 
@@ -38,6 +40,7 @@
   width: var(--mm-imgcolor-grad-w);
   height: var(--mm-imgcolor-grad-h);
   border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
+  background: var(--mm-imgcolor-gradient);
   cursor: pointer;
 }
 

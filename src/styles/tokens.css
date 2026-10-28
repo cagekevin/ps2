@@ -53,7 +53,10 @@
   /* 原版分组头行高 22px（对照清单 #62） */
   --mm-group-head-h: 22px;
   /* 原版下拉触发器 / 选项都是 28px */
-  --mm-select-h: 28px;
+  /* 下拉与其它控件同高：原来 28 比面板按钮（26）、数字框（26）高一档，并排时不齐 */
+  --mm-select-h: 26px;
+  /* 下拉面板最大高度：字体列表有几百项，超过就滚动，不往屏幕外铺 */
+  --mm-select-panel-max-h: 320px;
   --mm-icon-sm: 14px;
   --mm-icon-md: 16px;
   --mm-icon-lg: 24px;
@@ -179,7 +182,9 @@
   --mm-field-h: 30px;
   --mm-field-radius: 5px;
   --mm-page-pad-x: 8px;
-  --mm-row-head-h: 15px;
+  /* 名字行最小高度：行内操作按钮 18×18 是这一行最高的元素，行高不能小于它，
+     否则按钮会压到下面的预览上（无预览模式还要容下 16px/22 的家族名） */
+  --mm-row-head-h: 18px;
   --mm-list-head-h: 26px;
   --mm-name-size: 16px;
   --mm-name-lh: 22px;
@@ -212,7 +217,8 @@
   --mm-filter-badge: 14px;
   --mm-tag-strip-h: 22px;
   --mm-tag-chip-w: 18px;
-  --mm-weight-glyph: 20px;
+  /* 字重字形、字重计数、行内操作是同一行并排的三个方块，统一 18 */
+  --mm-weight-glyph: 18px;
   --mm-weight-count: 18px;
 
   --mm-font-item-est: 120px;
@@ -233,7 +239,7 @@
   --mm-preview-card-bottom: 26px;
   --mm-filter-panel-max-h: 420px;
   --mm-filter-panel-max-w-gap: 64px;
-  --mm-tag-title-shift: -2px;
+
 
   /* ---------- 图标按钮 ---------- */
   /* 全仓唯一的图标按钮尺寸（原版 .base-icon 26×26）。字体管理页原先另立 28 的
@@ -243,6 +249,10 @@
   /* ---------- 字体面板页（面板按钮实测） ---------- */
   /* 面板里的 .btn-small 高 26 */
   --mm-font-panel-btn-h: 26px;
+  /* 字体面板的三层底：输入最暗 → 面板中间 → 按钮最亮（原版 .base-input #222 /
+     面板 #363636 / .btn-small #535353）。页面底比面板暗，别拿 bg-page 当面板底 */
+  --mm-color-font-panel-bg: #363636;
+  --mm-color-font-btn-hover: #444;
   /* 分布弹窗 / 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%） */
   --mm-font-panel-dialog-w: 220px;
   --mm-font-panel-dialog-left: 90px;
