@@ -270,7 +270,7 @@
 .mm-font-panel__hierarchy-row {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-exact-10);
+  gap: var(--mm-space-2);
   padding: 0 var(--mm-space-exact-10);
 }
 

@@ -7,7 +7,7 @@
   left: var(--mm-preview-card-left);
   bottom: var(--mm-preview-card-bottom);
   width: var(--mm-preview-card-w);
-  padding: var(--mm-space-5) 0;
+  padding: var(--mm-space-3) 0;
   border: var(--mm-border-w) solid var(--mm-color-border-float);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-float);
@@ -18,7 +18,8 @@
 .mm-font__preview-item {
   position: relative;
   width: 100%;
-  padding: var(--mm-space-exact-5) var(--mm-space-exact-30);
+  /* 左 30 是勾选位；右 16 与字重选项同一档（原来右侧 30 是多余留白） */
+  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-space-exact-30);
   border: 0;
   background: transparent;
   color: inherit;
@@ -47,7 +48,7 @@
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
   width: var(--mm-tag-panel-w);
-  padding: var(--mm-space-4);
+  padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border-float);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-float);
@@ -62,7 +63,7 @@
 }
 
 .mm-font__tag-menu-section {
-  margin: var(--mm-space-4) 0 var(--mm-space-2);
+  margin: var(--mm-space-3) 0 var(--mm-space-2);
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   line-height: 1.4;
@@ -96,22 +97,24 @@
 }
 
 .mm-font__tag-input--menu {
-  margin: var(--mm-space-4) 0 var(--mm-space-2);
+  margin: var(--mm-space-3) 0 var(--mm-space-2);
 }
 
 .mm-font__tag-input--menu .mm-font__tag-field {
   height: var(--mm-control-h);
-  padding: 0 var(--mm-space-exact-30) 0 var(--mm-space-3);
-  border: var(--mm-border-w) solid var(--mm-color-accent);
+  /* 输入框统一：左 10，右 30 给清除按钮留位 */
+  padding: 0 var(--mm-space-exact-30) 0 var(--mm-space-exact-10);
+  border: var(--mm-border-w) solid transparent;
   background: var(--mm-color-input-page);
   font-size: var(--mm-font-sm);
 }
 
 .mm-font__tag-input--modal .mm-font__tag-field {
   height: var(--mm-field-h);
-  padding: 0 var(--mm-space-4);
-  border: var(--mm-border-w) solid var(--mm-color-border-checked);
-  background: var(--mm-color-surface-raised);
+  /* 输入框统一：左 10；右侧 30 给清除按钮留位 */
+  padding: 0 var(--mm-space-exact-30) 0 var(--mm-space-exact-10);
+  border: var(--mm-border-w) solid transparent;
+  background: var(--mm-color-input-page);
   font-size: var(--mm-font-sm);
 }
 
@@ -140,7 +143,7 @@
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
   width: var(--mm-tag-ctx-w);
-  padding: var(--mm-space-exact-6) var(--mm-space-exact-12);
+  padding: var(--mm-space-1) var(--mm-space-3);
   background: var(--mm-color-accent-solid);
   color: var(--mm-color-text-inverse);
   font-size: var(--mm-font-sm);
@@ -173,7 +176,7 @@
 
 .mm-font__modal {
   width: var(--mm-modal-w);
-  padding: var(--mm-space-3) var(--mm-space-4);
+  padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border-float);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-float);
@@ -182,7 +185,7 @@
 }
 
 .mm-font__modal-title {
-  margin: 0 0 var(--mm-space-4);
+  margin: 0 0 var(--mm-space-3);
   color: var(--mm-color-text-strong);
   font-size: var(--mm-font-sm);
   font-weight: 500;
@@ -192,13 +195,13 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--mm-space-2);
-  margin-top: var(--mm-space-4);
+  margin-top: var(--mm-space-3);
 }
 
 .mm-font__modal-btn {
   height: var(--mm-control-h);
   padding: 0 var(--mm-space-4);
-  border: var(--mm-border-w) solid var(--mm-color-surface-raised);
+  border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-surface-raised);
   color: var(--mm-color-text-strong);

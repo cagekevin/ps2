@@ -6,7 +6,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--mm-space-2);
-  padding: var(--mm-space-exact-7);
+  /* 外圈留白不由自己给：遮罩态由 inset 铺满，裸态由放进来的容器决定。
+     自己带 padding 会让「按钮里的小转圈」被撑成方块 */
+  padding: 0;
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
 }

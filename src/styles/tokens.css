@@ -214,7 +214,7 @@
   --mm-tag-chip-w: 18px;
   --mm-weight-glyph: 20px;
   --mm-weight-count: 18px;
-  --mm-font-icon-btn: 28px;
+
   --mm-font-item-est: 120px;
   --mm-font-item-est-none: 48px;
   --mm-font-item-est-sm: 110px;
@@ -236,7 +236,8 @@
   --mm-tag-title-shift: -2px;
 
   /* ---------- 图标按钮 ---------- */
-  /* 原版 .base-icon 是 26×26（比字体管理页的 28 小一档），不能复用 --mm-font-icon-btn */
+  /* 全仓唯一的图标按钮尺寸（原版 .base-icon 26×26）。字体管理页原先另立 28 的
+     `--mm-font-icon-btn`，同页与页头 26 并存（同类两种尺寸），2026-10-28 并回这一档 */
   --mm-icon-btn-size: 26px;
 
   /* ---------- 字体面板页（面板按钮实测） ---------- */
