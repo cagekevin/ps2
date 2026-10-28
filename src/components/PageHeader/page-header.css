@@ -1,0 +1,23 @@
+/* 页头：40 高、深底、底部一条分隔线。原版各页的 header 高度一致 */
+.mm-page-header {
+  display: flex;
+  flex: 0 0 var(--mm-header-h);
+  height: var(--mm-header-h);
+  align-items: center;
+  gap: var(--mm-space-2);
+  padding: 0 var(--mm-page-pad-x);
+  background: var(--mm-color-header-bar);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border-soft);
+}
+
+.mm-page-header__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

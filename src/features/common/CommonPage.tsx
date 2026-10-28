@@ -15,6 +15,7 @@ import { Collapse } from '../../components/Collapse';
 import { Icon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
+import { PageHeader } from '../../components/PageHeader';
 import { StateHint } from '../../components/StateHint';
 import { TextField } from '../../components/TextField';
 import type { CommonUseTile } from '../../domain/common-use';
@@ -72,8 +73,7 @@ export default function CommonPage() {
 
   return (
     <div className="mm-common">
-      <header className="mm-common__header">
-        <h1 className="mm-common__title">常用功能页</h1>
+      <PageHeader title="常用功能页">
         {/* 计划 §1.1 的 12 类基础按钮里，只有这两个不落在网格上 */}
         <IconButton
           name="iconwenjianjiamulu"
@@ -82,7 +82,7 @@ export default function CommonPage() {
           onClick={page.openDataDirectory}
         />
         <IconButton name="iconshuaxin" title="重置常用项" size={14} onClick={page.resetTiles} />
-      </header>
+      </PageHeader>
 
       <div className="mm-common__body">
         {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}

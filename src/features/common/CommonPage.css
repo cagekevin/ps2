@@ -7,23 +7,6 @@
   background: var(--mm-color-bg-page);
 }
 
-.mm-common__header {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: var(--mm-space-2);
-  padding: var(--mm-space-2) var(--mm-page-pad-x);
-  border-bottom: var(--mm-border-w) solid var(--mm-color-row-border);
-}
-
-.mm-common__title {
-  flex: 1 1 auto;
-  margin: 0;
-  color: var(--mm-color-text-strong);
-  font-size: var(--mm-font-md);
-  font-weight: normal;
-}
-
 .mm-common__body {
   flex: 1 1 auto;
   padding: 0 var(--mm-page-pad-x) var(--mm-space-4);

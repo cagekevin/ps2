@@ -5,9 +5,9 @@
  */
 
 import { decodeBase64 } from '../core/cep/base64';
-import { readTextResult } from '../core/storage';
+import { readTextResult, type StorageRoot } from '../core/storage';
 import { resolveKuGroups } from '../domain/ku-format';
-import { mutateJsonFile, readJsonFile } from './json-file';
+import { mutateJsonFile, readJsonFile, replaceJsonFile } from './json-file';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
 import {
   decodeStyleIndex,
@@ -28,9 +28,12 @@ import { fail, ok, type Result } from '../types/result';
 /** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
 const INDEX_FILE = 'sj_kuStoreInfo.ini';
 
+/** 样式库全部在官方数据根下（与 `font-repo` 同一个写法：根写一次，不在每个调用点重复字面量） */
+const ROOT: StorageRoot = 'legacy';
+
 /** 读仓库索引 */
 export function readIndex(): Result<StyleWarehouseIndex> {
-  const text = readTextResult(INDEX_FILE, 'legacy');
+  const text = readTextResult(INDEX_FILE, ROOT);
   if (text.status === 'error') return text;
 
   const parsed = parseJson(text.value, '仓库索引');
@@ -46,7 +49,7 @@ function readLibraryText(
 ): Result<string> {
   const fileName = fileNameOf(warehouse, kind);
   if (!fileName) return fail('NOT_FOUND', '索引里没有登记这个库的文件名');
-  return readTextResult(fileName, 'legacy');
+  return readTextResult(fileName, ROOT);
 }
 
 /** 索引里取库文件名；没登记就是 NOT_FOUND */
@@ -69,7 +72,7 @@ export function readRawGroups(
   const name = libraryFileName(warehouse, kind);
   if (name.status === 'error') return name;
 
-  return readJsonFile(name.value, 'legacy', '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
+  return readJsonFile(name.value, ROOT, '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
 }
 
 /** 读某个仓库的某一类库（归一化后的视图模型） */
@@ -168,11 +171,34 @@ export async function mutateRawGroups(
 
   return mutateJsonFile(
     name.value,
-    'legacy',
+    ROOT,
     '库文件',
     (raw) => resolveKuGroups(raw, decodeBase64),
     mutator
   );
+}
+
+/* ---------------- 写：索引（唯一入口） ---------------- */
+
+/**
+ * 索引原文（`sj_kuStoreInfo.ini` 的字节内容）。
+ *
+ * 给云同步上传用：**必须读原文**，不能 `readIndex()` 之后 `JSON.stringify` ——
+ * 那会把文件里的未知键（官方客户端的字段）洗掉，上传一次就丢一次。
+ */
+export function readIndexText(): Result<string> {
+  return readTextResult(INDEX_FILE, ROOT);
+}
+
+/**
+ * 索引整包写回（导入 / 云同步下载共用）。
+ *
+ * 原先这个函数写在 `repo/ku-archive.ts` 里（`writeIndexRaw`），于是索引有**两个潜在写入者**
+ * 的错觉：一个模块只读、另一个模块写。索引归本文件所有，写入口也只在这里。
+ * 走 `replaceJsonFile`：`.bak` + 串行 + 未知键保留（传入对象本身带全量键）。
+ */
+export async function writeIndexRaw(next: Record<string, unknown>): Promise<Result<void>> {
+  return replaceJsonFile(INDEX_FILE, ROOT, next);
 }
 
 /* ---------------- 写：分组 ---------------- */

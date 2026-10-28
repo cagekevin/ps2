@@ -1,31 +1,5 @@
 /* 字体页浮层：预览档位卡 / 标签弹层 / 标签输入 / 右键菜单 / 弹窗 */
-.mm-font__preview-setting {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.mm-font__preview-icon {
-  width: var(--mm-weight-glyph);
-  height: var(--mm-weight-glyph);
-  margin-left: var(--mm-space-5);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: var(--mm-border-w) solid transparent;
-  border-radius: var(--mm-radius-md);
-  background: transparent;
-  color: var(--mm-color-icon-page);
-  cursor: pointer;
-}
-
-.mm-font__preview-icon:hover,
-.mm-font__preview-icon:active {
-  background: var(--mm-color-mask-soft);
-  border-color: var(--mm-color-border-float-strong);
-  color: var(--mm-color-text-inverse);
-}
+/* 预览设置的壳与按钮已上移 `components/BottomBar`（全仓一套） */
 
 .mm-font__preview-card {
   position: fixed;

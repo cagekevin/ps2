@@ -7,7 +7,7 @@ import { StateHint } from '../../components/StateHint';
 import { FontListItem } from './components/FontListItem';
 import { CountRow } from './components/CountRow';
 import { PageFooter } from './components/PageFooter';
-import { PageHeader } from './components/PageHeader';
+import { FontHeader } from './components/FontHeader';
 import { PreviewText } from './components/PreviewText';
 import { SearchRow } from './components/SearchRow';
 import { TagContextMenu } from './components/TagContextMenu';
@@ -24,7 +24,7 @@ export default function FontManagePage() {
 
   return (
     <div className="mm-font">
-      <PageHeader previewMode={page.previewMode} onMenuSelect={page.onMenuSelect} />
+      <FontHeader previewMode={page.previewMode} onMenuSelect={page.onMenuSelect} />
 
       <div className="mm-font__toolbar">
         <SearchRow

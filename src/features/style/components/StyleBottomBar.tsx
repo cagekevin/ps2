@@ -1,16 +1,14 @@
 /**
- * 底栏：26px 图标条。
+ * 样式页底栏：四个「添加×分组」+ 导入 + 导出（原版 `app.v4.js:49773-49874`）。
  *
- * 原版是四个「添加×分组」+ 导入 + 导出（`app.v4.js:49773-49874`）。
+ * **壳与按钮用公共件** `components/BottomBar`（26 高 / 深底 / 30 宽 / 竖线），
+ * 本文件只剩业务：两个彩虹方块 + 导入导出菜单。
  *
- * **前两个按钮的图标是图片，不是 sprite 图标**：
- * - 颜色：14×14 彩虹渐变方块（原版 `img/bottom1.f8c1ea17.svg`）
- * - 渐变：14×14 蓝色渐变方块（原版 `img/bottom2.5843fcfd.svg`）
- *
- * 用线框的 `iconchuangjian` 代替，肉眼一眼就不同（对照清单 #100）。
- * 渐变色照抄原版 SVG，id 改成 `mm-` 前缀避免两个渐变互相覆盖。
+ * 前两个按钮的图标是图片，不是 sprite：颜色 14×14 彩虹渐变、渐变 14×14 蓝色渐变
+ * （原版 `img/bottom1*.svg` / `img/bottom2*.svg`），渐变色照抄，id 改 `mm-` 前缀避免互相覆盖。
  */
 import { useRef, useState } from 'react';
+import { BottomBar, BottomBarButton, BottomBarDivider } from '../../../components/BottomBar';
 import { ContextMenu } from '../../../components/ContextMenu';
 import { Icon } from '../../../components/icons';
 import { KU_KINDS, KU_TAB_LABELS, type KuKind } from '../../../domain/style-library';
@@ -69,22 +67,21 @@ function GradientSwatch() {
   );
 }
 
-interface BottomBarProps {
+interface Props {
   onAddGroup: (kind: KuKind) => void;
   onImport: (append: boolean) => void;
   onExport: (current: boolean) => void;
 }
 
-export function BottomBar({ onAddGroup, onImport, onExport }: BottomBarProps) {
+export function StyleBottomBar({ onAddGroup, onImport, onExport }: Props) {
   const [menu, setMenu] = useState<'import' | 'export' | null>(null);
   const ioAnchor = useRef<HTMLElement | null>(null);
+
   return (
-    <div className="mm-style__bottom">
+    <BottomBar>
       {KU_KINDS.map((kind, index) => (
-        <button
+        <BottomBarButton
           key={kind}
-          type="button"
-          className="mm-style__bottom-btn"
           title={`添加${KU_TAB_LABELS[index]}分组`}
           onClick={() => onAddGroup(kind)}
         >
@@ -95,33 +92,27 @@ export function BottomBar({ onAddGroup, onImport, onExport }: BottomBarProps) {
           ) : (
             <Icon name={ICONS[kind]} size={18} />
           )}
-        </button>
+        </BottomBarButton>
       ))}
 
-      <span className="mm-style__bottom-divider" />
+      <BottomBarDivider />
 
-      <button
-        type="button"
-        className="mm-style__bottom-btn"
+      <BottomBarButton
         title="导入预设仓库"
+        name="icondaoru"
         onClick={(event) => {
           ioAnchor.current = event.currentTarget as HTMLElement;
           setMenu('import');
         }}
-      >
-        <Icon name="icondaoru" size={18} />
-      </button>
-      <button
-        type="button"
-        className="mm-style__bottom-btn"
+      />
+      <BottomBarButton
         title="导出样式仓库"
+        name="icondaochu"
         onClick={(event) => {
           ioAnchor.current = event.currentTarget as HTMLElement;
           setMenu('export');
         }}
-      >
-        <Icon name="icondaochu" size={18} />
-      </button>
+      />
 
       {menu ? (
         <ContextMenu
@@ -140,6 +131,6 @@ export function BottomBar({ onAddGroup, onImport, onExport }: BottomBarProps) {
           onClose={() => setMenu(null)}
         />
       ) : null}
-    </div>
+    </BottomBar>
   );
 }

@@ -23,6 +23,7 @@
  *   AUTH          登录失效（401）
  *   FORBIDDEN     无权限（403）
  *   VALIDATION    参数或状态不满足业务前提（如图层类型不支持）
+ *   CANCELLED     用户主动取消（关对话框 / 切走选区）：**不是故障**，按静默处理
  *   UNKNOWN       兜底，尽量不用
  */
 export type ErrorCode =
@@ -40,7 +41,7 @@ export type ErrorCode =
   | 'AUTH'
   | 'FORBIDDEN'
   | 'VALIDATION'
-| 'CANCELLED'
+  | 'CANCELLED'
   | 'UNKNOWN';
 
 export type Result<T> =

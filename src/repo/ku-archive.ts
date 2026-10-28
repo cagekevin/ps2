@@ -8,6 +8,7 @@
  * 编解码纯函数在 `domain/ku-io.ts`（app 移植）；本文件只管磁盘与索引。
  */
 import { userSubPath } from '../core/paths';
+import type { StorageRoot } from '../core/storage';
 import {
   ROOTS,
   copyFileAt,
@@ -18,10 +19,12 @@ import {
   writeTextAtAtomic
 } from '../core/storage';
 import { log } from '../core/logger';
+
+/** 样式库全部在官方数据根下（与 `style-repo` 同一个常量写法） */
+const ROOT: StorageRoot = 'legacy';
 import { fileNameOf, kuGuid } from '../domain/style-library';
-import { replaceJsonFile } from './json-file';
 import { decodeBase64, encodeBase64 } from '../core/cep/base64';
-import { readIndex } from './style-repo';
+import { readIndex, readIndexText, writeIndexRaw } from './style-repo';
 import {
   encodeKuContainer,
   isSafeKuEntryName,
@@ -75,7 +78,7 @@ function sidecarNamesOfWarehouse(warehouse: StyleWarehouse): Result<string[]> {
 
     /* 库文件不存在 = 这个库没导出过，跳过；读坏 / IO 失败必须中止
        （跳过会让导出的包少几张旁路图，而用户以为导全了） */
-    const text = readTextResult(fileName, 'legacy');
+    const text = readTextResult(fileName, ROOT);
     if (text.status === 'error') {
       if (text.code === 'NOT_FOUND') continue;
       return text;
@@ -115,7 +118,7 @@ export async function exportKuArchive(
       if (!fileName) continue;
       /* 契约 §2.5：读不到就写 false，不中断 */
       let data: string | false = false;
-      const read = readTextResult(fileName, 'legacy');
+      const read = readTextResult(fileName, ROOT);
       if (read.status === 'ok') data = encodeBase64(read.value);
       else log.warn('导出：库文件读不到', { fileName, reason: read.reason });
       arrFileData.push({ name: fileName, data });
@@ -124,7 +127,7 @@ export async function exportKuArchive(
     if (sidecars.status === 'error') return sidecars;
     for (const name of sidecars.value) {
       let data: string | false = false;
-      const read = readTextResult(name, 'legacy');
+      const read = readTextResult(name, ROOT);
       if (read.status === 'ok') data = encodeBase64(read.value);
       else log.warn('导出：旁路图读不到', { name, reason: read.reason });
       arrFileData.push({ name, data });
@@ -178,17 +181,12 @@ function recycleOldFiles(names: readonly string[]): void {
       log.warn('替换导入：旧文件回收失败（保留原件）', { name, reason: copied.reason });
       continue;
     }
-    removeFile(name, 'legacy');
+    removeFile(name, ROOT);
   }
 }
 
 export interface KuImportResult {
   warehouses: number;
-}
-
-/** 索引写回：原始 JSON 上改（保未知键），走 writeTextAtomic（.bak） */
-async function writeIndexRaw(next: Record<string, unknown>): Promise<Result<void>> {
-  return replaceJsonFile('sj_kuStoreInfo.ini', 'legacy', next);
 }
 
 /** 旧索引引用的全部文件，用于覆盖导入后的回收 */
@@ -244,7 +242,7 @@ export async function importKuArchive(
   for (const entry of file.arrFileData) {
     if (typeof entry.data !== 'string') continue;
     /* 写内层文件统一走 storage：自动 `.bak` + 同文件串行 */
-    const written = await writeTextAtomic(entry.name, decodeBase64(entry.data), 'legacy');
+    const written = await writeTextAtomic(entry.name, decodeBase64(entry.data), ROOT);
     if (written.status === 'error') {
       return fail(written.code, `写入 ${entry.name} 失败：${written.reason}`);
     }
@@ -254,7 +252,7 @@ export async function importKuArchive(
   const nextIndex = normalizeStyleIndex(file.store);
   const incoming = (nextIndex.list as StyleWarehouse[]).map((warehouse) => ({ ...warehouse }));
   if (append && before.status === 'ok') {
-    const local = readTextResult('sj_kuStoreInfo.ini', 'legacy');
+    const local = readIndexText();
     if (local.status === 'error') return local;
 
     const parsed = parseJson(local.value, '本地索引');

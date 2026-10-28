@@ -1,7 +1,12 @@
-/** 页头：标题 + 「更多」菜单（刷新 / 切换预览 / 导入导出） */
+/**
+ * 字体管理页页头：标题 + 「更多」菜单（刷新 / 切换预览 / 导入导出）。
+ *
+ * 壳用公共件 `components/PageHeader`（40 高、深底、底部一条线），本文件只剩菜单业务。
+ */
 import { useRef, useState } from 'react';
 import { ContextMenu, type MenuItem } from '../../../components/ContextMenu';
 import { Icon } from '../../../components/icons';
+import { PageHeader } from '../../../components/PageHeader';
 import { PREVIEW_LABEL, type PreviewMode } from '../../../store/font';
 
 export type HeaderMenuAction = 'refresh' | 'preview' | 'import-tags' | 'export-tags';
@@ -11,7 +16,7 @@ interface Props {
   onMenuSelect: (action: HeaderMenuAction) => void;
 }
 
-export function PageHeader({ previewMode, onMenuSelect }: Props) {
+export function FontHeader({ previewMode, onMenuSelect }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -27,8 +32,7 @@ export function PageHeader({ previewMode, onMenuSelect }: Props) {
   ];
 
   return (
-    <header className="mm-font__header">
-      <span className="mm-font__title">我的字体</span>
+    <PageHeader title="我的字体">
       <button
         ref={buttonRef}
         type="button"
@@ -50,6 +54,6 @@ export function PageHeader({ previewMode, onMenuSelect }: Props) {
           }}
         />
       ) : null}
-    </header>
+    </PageHeader>
   );
 }

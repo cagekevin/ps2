@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckBox } from '../../components/CheckBox';
+import { PageHeader } from '../../components/PageHeader';
 import { SelectBox } from '../../components/SelectBox';
 import { useToast } from '../../components/Toast';
 import { setOption, setShow } from '../../commands/common-use';
@@ -87,9 +88,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mm-settings">
-      <header className="mm-settings__header">
-        <h1 className="mm-settings__title">设置</h1>
-      </header>
+      <PageHeader title="设置" />
 
       <div className="mm-settings__body">
         <h2 className="mm-settings__section">使用设置</h2>

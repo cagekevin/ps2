@@ -460,6 +460,17 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 环境 | `core/env` | `APP_TITLE`、`APP_VERSION`、`extensionId` | 各处重复取版本 |
 | 主题 | `styles/tokens.css` | CSS 变量 | 组件里写死色值 |
 
+**一个官方文件只能有一个「持有者」模块**（2026-10-28 立，起因见下）：
+
+- 文件名常量、读写入口、形状校验都写在那个模块里；别的模块要用就 import，**不许自己写一份文件名或 `readTextResult`**。
+- 一个文件要是真有两拨人写，就**按 key 分工**：`sj_set.json` 的 `zt*` 归 `repo/font-set-repo`、
+  `cy*` 归 `repo/common-use-repo`，各写各的键、都走 `mutateJsonFile`（未知键保留）。
+  不需要并发保护——不存在两个进程同时写同一个文件。
+- 反例（已修）：`sj_kuStoreInfo.ini` 曾在 `repo/style-repo` 只读、`repo/ku-archive` 私有写，
+  于是云同步要做「整包替换索引」时无处可调 —— 写入口现已归 `style-repo.writeIndexRaw`。
+- 推论：**「读原文」与「解析后重建」是两件事**。要上传/搬运给外部时读原文（`readIndexText`），
+  别 `parse` 再 `stringify`——那会洗掉我们不认识的字段，且不可逆。
+
 ---
 
 ### 5.1 唯一入口
@@ -498,6 +509,8 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>` | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关 |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
+| 页面页头 | `components/PageHeader`（`title` + 右侧插槽） | 页面自写 `<header>` 与 `__title` 样式、各写一套高度与字号 |
+| 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField` | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width` |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`

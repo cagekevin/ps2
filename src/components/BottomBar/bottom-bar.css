@@ -1,0 +1,41 @@
+/* 底栏：26 高、深色底、图标按钮 30 宽。原版 `.button-nav-wrap` / `.bottom-hover` */
+.mm-bottom-bar {
+  display: flex;
+  flex: 0 0 var(--mm-bottom-bar-h);
+  height: var(--mm-bottom-bar-h);
+  align-items: center;
+  background: var(--mm-color-bottom-bar);
+}
+
+.mm-bottom-bar__btn {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--mm-bottom-btn-w);
+  height: var(--mm-bottom-bar-h);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+/* 原版 `.bottom-hover:hover` 是纯底色，无描边——别加 border-color */
+.mm-bottom-bar__btn:hover:not(:disabled) {
+  background: var(--mm-color-bottom-hover);
+}
+
+.mm-bottom-bar__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 竖线：1 宽 13 高，左右各 8 */
+.mm-bottom-bar__divider {
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-verline-h);
+  margin: 0 var(--mm-space-2);
+  background: var(--mm-color-verline);
+}

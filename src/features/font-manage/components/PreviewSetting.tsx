@@ -1,5 +1,6 @@
 /** 底栏预览设置：眼睛（5 档）+ Aa（预览文案输入） */
 import { useRef, useState } from 'react';
+import { BottomBarButton } from '../../../components/BottomBar';
 import { Portal } from '../../../components/Portal';
 import { Icon } from '../../../components/icons';
 import { useDismiss } from '../../../hooks/useDismiss';
@@ -19,19 +20,15 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
 
   return (
     <div className="mm-font__preview-setting">
-      <button
-        type="button"
-        className="mm-font__preview-icon"
-        aria-label="预览设置"
-        aria-haspopup="dialog"
-        aria-expanded={open}
+      <BottomBarButton
+        title="预览设置"
         onClick={() => setOpen((value) => !value)}
       >
         <Icon name="iconxianshi" size={16} />
-      </button>
-      <button type="button" className="mm-font__preview-icon" aria-label="编辑预览文案" onClick={onToggleText}>
+      </BottomBarButton>
+      <BottomBarButton title="编辑预览文案" onClick={onToggleText}>
         <Icon name="iconzihaodaxiao1" size={16} />
-      </button>
+      </BottomBarButton>
 
       {open
         ? <Portal>

@@ -370,47 +370,7 @@
 }
 
 /* ---------- 底栏：26px 图标条 ---------- */
-.mm-style__bottom {
-  display: flex;
-  flex: 0 0 var(--mm-bottom-bar-h);
-  height: var(--mm-bottom-bar-h);
-  align-items: center;
-  background: var(--mm-color-bottom-bar);
-}
-
-.mm-style__bottom-btn {
-  display: inline-flex;
-  flex: 0 0 auto;
-  width: var(--mm-bottom-btn-w);
-  height: var(--mm-bottom-bar-h);
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: var(--mm-border-w) solid transparent;
-  background: transparent;
-  color: var(--mm-color-text);
-  cursor: pointer;
-}
-
-.mm-style__bottom-btn:hover:not(:disabled) {
-  /* 原版 `.bottom-hover:hover{background-color:#222}`：纯底色，无描边（对照清单 #90） */
-  border-color: transparent;
-  background: var(--mm-color-bottom-hover);
-}
-
-.mm-style__bottom-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* 竖线：1×13 #333，左右各 8px（对照清单 #92） */
-.mm-style__bottom-divider {
-  flex: 0 0 auto;
-  width: var(--mm-border-w);
-  height: var(--mm-verline-h);
-  margin: 0 var(--mm-space-2);
-  background: var(--mm-color-verline);
-}
+/* 底栏壳 / 按钮 / 竖线已上移到 `components/BottomBar`（全仓一套），本页只留业务 */
 
 /* ---------- 三态 ----------
  * 空态 / 失败提示已上移到 `components/StateHint`，页面不再自定义。

@@ -33,7 +33,7 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { usePagedList } from '../../hooks/usePagedList';
 import { defaultPreviewText, useFontStore } from '../../store/font';
 import type { Result } from '../../types/result';
-import type { HeaderMenuAction } from './components/PageHeader';
+import type { HeaderMenuAction } from './components/FontHeader';
 import { fontFamilyValue } from './css';
 import { useTagActions } from './useTagActions';
 

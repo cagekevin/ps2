@@ -34,7 +34,7 @@ import {
 import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
 import { useStyleLibraryStore } from '../../store/style-library';
-import { BottomBar } from './components/BottomBar';
+import { StyleBottomBar } from './components/StyleBottomBar';
 import { ImgColorDialog } from './components/ImgColorDialog';
 import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
@@ -386,7 +386,7 @@ export default function StylePage() {
         />
       ) : null}
 
-      <BottomBar
+      <StyleBottomBar
         onAddGroup={startNewGroup}
         onImport={(append) => {
           if (append) handleImportKuAppend();

@@ -10,22 +10,6 @@
 }
 
 /* ---------- 页头 ---------- */
-.mm-font__header {
-  display: flex;
-  flex: 0 0 var(--mm-font-header-h);
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--mm-space-exact-10);
-  background: var(--mm-color-header-bar);
-  border-bottom: var(--mm-border-w) solid var(--mm-color-border-soft);
-}
-
-.mm-font__title {
-  font-size: var(--mm-font-sm);
-  font-weight: 500;
-  color: var(--mm-color-text-strong);
-}
-
 .mm-font__icon-btn {
   width: var(--mm-font-icon-btn);
   height: var(--mm-font-icon-btn);
@@ -420,14 +404,9 @@
 }
 
 
+/* 壳（26 高 / 深底 / 按钮宽）在 `components/BottomBar`，这里只把内容靠右 */
 .mm-font__footer {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
   justify-content: flex-end;
-  height: var(--mm-footer-h);
-  padding: var(--mm-footer-pad);
-  background: var(--mm-color-footer-bar);
 }
 
 /* 预览设置 */
