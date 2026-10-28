@@ -91,17 +91,14 @@ export function readCommonUseFile(): Result<CommonUseRead> {
 }
 
 /**
- * 改网格：文件不存在 = 首次创建，以种子为底再套 mutator。
- *
- * 写路径读**原始记录**（`decodeRawRecords`），不是读视图的过滤结果：被跳过的那一项
- * 必须原样留在文件里，只有用户显式删除才消失——否则就是「读的时候跳过、写的时候删掉」，
- * `.bak` 只有上一版，不可逆。
- */
-/**
  * 读-改-写。mutator **可以返回失败**（`ok(null)` = 不写）。
  *
  * 「id 找不到」「下标越界」这类判定发生在队列里（用的是最新记录），
  * 失败要能原样上抛，不能折成 `null` 再由调用方捞回来。
+ *
+ * 文件不存在 = 首次创建，以种子为底再套 mutator。写路径读**原始记录**（`decodeRawRecords`），
+ * 不是读视图的过滤结果：被跳过的那一项必须原样留在文件里，只有用户显式删除才消失——
+ * 否则就是「读的时候跳过、写的时候删掉」，`.bak` 只有上一版，不可逆。
  */
 export function updateCommonUseFile(
   mutator: JsonMutator<RawRecords>

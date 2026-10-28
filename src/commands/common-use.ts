@@ -118,11 +118,6 @@ export function sliceByGuide(): Promise<Result<void>> {
  * 写成功后重读投影：网格顺序 / 显隐是用户一眼能看出来的东西，不做乐观更新。
  *
  * mutator 拿到的是**原始记录**（`RawRecords`），不是读视图：文件里被跳过的坏项要原样留着。
- */
-/**
- * 写成功后重读投影：网格顺序 / 显隐是用户一眼能看出来的东西，不做乐观更新。
- *
- * mutator 拿到的是**原始记录**（`RawRecords`），不是读视图：文件里被跳过的坏项要原样留着。
  * 判定失败直接 `return fail(...)`，不走「返回 null 再由外面捞」。
  */
 async function commitFile(mutator: (file: RawRecords) => Result<RawRecords | null>) {
