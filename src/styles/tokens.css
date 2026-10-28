@@ -151,6 +151,8 @@
   --mm-color-border-float: hsla(0, 0%, 100%, 0.1);
   --mm-color-border-float-strong: hsla(0, 0%, 100%, 0.2);
   --mm-color-mask-soft: rgba(0, 0, 0, 0.25);
+  /* 区域遮罩（`components/StateMask`）：黑底压到能看出「这块不可用」，又不是全黑 */
+  --mm-color-mask-strong: rgba(0, 0, 0, 0.6);
   /* 字体页原版蓝（#3565ff），与全局 --mm-color-accent 不是同一个值；
      只在字体页用，不要拿去改全局强调色 */
   --mm-color-accent-solid: #3565ff;

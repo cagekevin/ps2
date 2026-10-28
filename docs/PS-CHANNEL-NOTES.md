@@ -271,11 +271,11 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 | # | jsx | 参数 | 语义 |
 |---|---|---|---|
-| 1 | `zt_getFontSimpleInfo` | 无 | 当前文字图层属性快照；`err === 0` 才覆盖面板，否则保留旧值并提示 |
+| 1 | `zt_getFontSimpleInfo` | 无 | 当前文字图层属性快照；`err === 0` 才覆盖面板，否则保留旧值并提示。**前提：当前图层是文字图层**——非文字图层上 PS 不返回 `{err:1}`，而是直接抛「命令"获取"当前不可用」（`core/ps/text` 先判 `mm_layer_getState` 再调，返回码 `PS_NOT_TEXT`，避免把这句报错当失败原因显示） |
 | 2 | `zt_getCurrentFontInfo` | 无 | `{ family? }`；字体快选「加当前图层」用 |
 | 3 | `zt_getCurrentText` | 无 | `TranslateItem[]`；总字数超 1000 拦截 |
 | 4 | ~~`zt_getTypeUnits`~~ | 无 | **已取消（2026-10-27）**：读出来只用于显示单位后缀，而面板不需要显示单位；`VENDOR_FUNCS` 已移除 |
-| 5 | `zt_setFontName` | `[hjm, mz, zz]` | 换字面；`hostCode === 1` = 字体缺失 |
+| 5 | `zt_setFontName` | `[hjm, mz, zz]` | 换字面；`err === 1` **不止字体缺失**——没选中文字图层时宿主给 `{err:1, msg:"请选择文字图层"}`，原因取 `msg`（见下方第 3 条） |
 | 6 | `layer_font_setFontSize` | `[size]` | 面板输入的字号 |
 | 7 | `zt_setFontSize` | `[size]` | 层级字号（层级面板点一下） |
 | 8 | `layer_font_setLeading` | `[leading]` | 行距 |
@@ -309,7 +309,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
    即调度通道；`core/ps/text.ts` 现在按直调实现，属已登记 P1（与常用页的同一函数两种通道并存，
    待真机确认 `ps_onJsx` 能调 `cy_*` 后统一成调度）。参数形态两处不同，见 §11.4 第 1 条。
 2. **参数**：全部**明文**。只有表里 29 / 30 两个 `ys_*` 要 `encodeText`；给 `zt_*` 编码会写出乱码字体名或直接失败。
-3. **err 信封（本组比 §11.2 宽松，是刻意的）**：`-1` 等约定值由 `core/ps/raw.ts` 的 `unwrapRaw` 表判定，能力函数不许自己比较字符串；能解析成 `{ err: number }` 时 `1` = 不可用（字体缺失 / 不满足前提）折 `VALIDATION`；**解析不出 `err` 时按成功处理**（这些函数可能返回裸 `1` / 空串，结构没验过）。§11.2 对 `ys_useFont` / `ztgl_setFont` 那条「信封不成立直接失败」仍然有效，两者不要互相套用。UNVERIFIED：真机确认返回形状后，这里必须收紧成只认信封。
+3. **err 信封（本组比 §11.2 宽松，是刻意的）**：`-1` 等约定值由 `core/ps/raw.ts` 的 `unwrapRaw` 表判定，能力函数不许自己比较字符串；能解析成 `{ err: number }` 时 `1` = 不满足前提，折 `VALIDATION`，**原因取信封里的 `msg`**（`raw.envelopeMessage`），宿主没给才用兜底文案——同一个 `1` 既可能是「请选择文字图层」也可能是字体缺失，写成一句笼统的「字体不可用」会让用户去重装本来装着的字体（2026-10-28 真机日志：`{"err":1,"msg":"请选择文字图层","code":0}`）；**解析不出 `err` 时按成功处理**（这些函数可能返回裸 `1` / 空串，结构没验过）。§11.2 对 `ys_useFont` / `ztgl_setFont` 那条「信封不成立直接失败」仍然有效，两者不要互相套用。UNVERIFIED：真机确认返回形状后，这里必须收紧成只认信封。
 4. **`hostCode === 1` 只有一条处理**：折成 `VALIDATION`「字体不可用」→ 页面只 toast。**任何版本都不做「前往下载」**，不给外链、不弹确认框。
 5. **两处原版拼写错误照抄**：`zt_setFauxItali`、`zt_setBackrgoudAlign`。改成「正确拼写」等于函数不存在。
 6. **`zt_setFontColor` 无参**：返回值是取色结果，不是成功标志；用户在取色器里停留久，60s 超时后队列放行、PS 侧可能仍在执行，页面要给重试。

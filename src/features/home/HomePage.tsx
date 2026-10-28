@@ -9,12 +9,13 @@
  * - 样式只用 Token
  */
 import { useState } from 'react';
+import { useConfirm } from '../../components/Confirm/useConfirm';
 import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
 import { Button } from '../../components/ui';
 import { copyText } from '../../core/clipboard';
 import { request } from '../../core/http/client';
-import { readLogText } from '../../core/logger';
+import { clearLogText, readLogText } from '../../core/logger';
 import { diagVendor, type VendorDiag } from '../../core/ps/diag';
 import { useAppStore } from '../../store/app';
 import type { LayerKind } from '../../types/layer';
@@ -59,6 +60,7 @@ function DiagRow({ label, value }: { label: string; value: string }) {
 export default function HomePage() {
   const toast = useToast();
   const loading = useLoading();
+  const confirm = useConfirm();
   /* 当前图层由 app/layer-watcher 统一写入，页面只读 */
   const layerKind = useAppStore((state) => state.layerKind);
   const layerName = useAppStore((state) => state.layerName);
@@ -86,6 +88,24 @@ export default function HomePage() {
   function handleLog() {
     const text = readLogText();
     setLogText(text || '（日志为空）');
+  }
+
+  async function handleClearLog() {
+    const agreed = await confirm({
+      title: '清空日志？',
+      message: '清空后无法恢复。',
+      confirmText: '清空'
+    });
+    if (!agreed) return;
+
+    const result = clearLogText();
+    if (result.status === 'error') {
+      toast.error(result.reason);
+      return;
+    }
+    /* 清完留在原地显示空态：整块消失会让人以为按钮点错了 */
+    setLogText('（日志为空）');
+    toast.info('日志已清空');
   }
 
   async function handleCopy(label: string, text: string) {
@@ -150,6 +170,9 @@ export default function HomePage() {
               </button>
               <button type="button" className="mm-home__copy" onClick={handleLog}>
                 刷新
+              </button>
+              <button type="button" className="mm-home__copy" onClick={() => void handleClearLog()}>
+                清空
               </button>
             </span>
           </div>

@@ -13,6 +13,7 @@
  *   CORRUPT       数据损坏、结构不符
  *   IO_ERROR      读写失败：占用、权限
  *   PS_NO_DOC     没有打开的文档
+ *   PS_NOT_TEXT   当前图层不是文字图层（换图层就好，不是故障）
  *   PS_NOT_SHAPE  当前图层不是形状图层
  *   PS_SKIPPED    官方配置显式关闭（sj_interfaceSet.ini 的 img_cya4 === false）
  *   PS_UNREADY    PS 能力未就绪（jsx 未加载 / 环境变量注入失败）
@@ -31,6 +32,7 @@ export type ErrorCode =
   | 'CORRUPT'
   | 'IO_ERROR'
   | 'PS_NO_DOC'
+  | 'PS_NOT_TEXT'
   | 'PS_NOT_SHAPE'
   | 'PS_SKIPPED'
   | 'PS_UNREADY'

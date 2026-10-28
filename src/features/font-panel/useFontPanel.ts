@@ -41,6 +41,7 @@ import { loadFontList } from '../../commands/font';
 import type { FontItem } from '../../domain/font-item';
 import type { CreateButtonConfig, FontSetSettings, PasteFontConfig } from '../../domain/font-set';
 import type { QuickFont } from '../../domain/quick-font';
+import { useAppStore } from '../../store/app';
 import { useFontSetStore } from '../../store/font-set';
 import { useTextStore } from '../../store/text';
 import type { Result } from '../../types/result';
@@ -62,10 +63,13 @@ export function useFontPanel() {
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
 
   const info = useTextStore((state) => state.info);
-  const textError = useTextStore((state) => state.error);
+  const textFailure = useTextStore((state) => state.failure);
   const refreshText = useTextStore((state) => state.refresh);
   const patchText = useTextStore((state) => state.patch);
-  const clearTextError = useTextStore((state) => state.clearError);
+  const clearTextFailure = useTextStore((state) => state.clearFailure);
+
+  const layerKind = useAppStore((state) => state.layerKind);
+  const layerName = useAppStore((state) => state.layerName);
 
   const [distribution, setDistribution] = useState<Distribution | null>(null);
   const [fonts, setFonts] = useState<FontItem[]>([]);
@@ -73,12 +77,26 @@ export function useFontPanel() {
 
   const aliveRef = useRef(true);
 
-  /* 进页面：设置 / 快选 / 层级 / 最近字体读一次，文字属性读一次，字体列表读一次。
+  /**
+   * 文字属性跟着活动图层走（原版靠 PS 选区事件调 `selectLayer`）。
+   *
+   * 少了这一步，在非文字图层上进面板会一直挂着「当前图层不是文字图层」，
+   * 用户换成文字图层也不会自己回来——那句话就成了假话。
+   * 进页面时 `lastLayerKey` 是空串，等于无条件读一次。
+   */
+  const layerKey = `${layerKind ?? ''}|${layerName}`;
+  const lastLayerKey = useRef('');
+  useEffect(() => {
+    if (lastLayerKey.current === layerKey) return;
+    lastLayerKey.current = layerKey;
+    void refreshText();
+  }, [layerKey, refreshText]);
+
+  /* 进页面：设置 / 快选 / 层级 / 最近字体读一次，字体列表读一次（文字属性见上）。
      字体列表可能触发 jsx 扫描（首次），不阻塞其余区块渲染。 */
   useEffect(() => {
     aliveRef.current = true;
     loadFontSet();
-    void refreshText();
 
     setFontsLoading(true);
     void loadFontList().then((result) => {
@@ -94,10 +112,10 @@ export function useFontPanel() {
 
     return () => {
       aliveRef.current = false;
-      /* 离开页面清掉错误与过期标记：下次进来不该看到上一次的「读取失败」 */
-      clearTextError();
+      /* 离开页面清掉失败与过期标记：下次进来不该看到上一次的「读取失败」 */
+      clearTextFailure();
     };
-  }, [loadFontSet, refreshText, clearTextError, toast]);
+  }, [loadFontSet, clearTextFailure, toast]);
 
   /** 统一的失败出口：命令层只给原因，这里不加结论 */
   const run = useCallback(
@@ -416,7 +434,7 @@ export function useFontPanel() {
     fonts,
     fontsLoading,
     info,
-    textError,
+    textFailure,
     quickFonts,
     hierarchy,
     currentQuickFont,

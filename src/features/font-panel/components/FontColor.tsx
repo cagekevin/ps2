@@ -28,7 +28,6 @@ export type StyleKind = 'caps' | 'kerning' | 'italic' | 'bold';
 
 interface Props {
   info: TextInfo;
-  error: string;
   fonts: FontItem[];
   fontsLoading: boolean;
   defaults: { size: number[]; leading: number[]; tracking: number[] };
@@ -51,7 +50,6 @@ const ALIGN_JUSTIFY = ['left', 'center', 'right'] as const;
 
 export function FontColor({
   info,
-  error,
   fonts,
   fontsLoading,
   defaults,
@@ -121,8 +119,6 @@ export function FontColor({
 
   return (
     <div className="mm-font-panel__color">
-      {error ? <p className="mm-font-panel__error">{error}</p> : null}
-
       <div className="mm-font-panel__color-row">
         <SelectBox
           className="mm-font-panel__family"

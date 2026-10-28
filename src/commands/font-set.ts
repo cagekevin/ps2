@@ -331,8 +331,8 @@ export function setStyle(
 /**
  * 应用一个字面并记入最近字体。
  *
- * `err === 1`（字体缺失）由 `core/ps/text` 折成 `VALIDATION`「字体不可用」；
- * 这里不再弹下载、不给外链（任何版本都不做）。
+ * `err === 1` 由 `core/ps/text` 折成 `VALIDATION`，原因取宿主的 `msg`
+ * （「请选择文字图层」/ 字体缺失是两回事）；这里不再弹下载、不给外链（任何版本都不做）。
  */
 export async function applyFontName(input: {
   postScriptName: string;

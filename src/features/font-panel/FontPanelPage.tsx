@@ -1,7 +1,7 @@
 /**
  * 字体面板页（`/font`）
  *
- * 页面只做组装：快选区 → 属性区 → 顶部图标行 → 层级区 → **底部两行对齐/分布（`components/BottomBar`，常驻）**。
+ * 页面只做组装：快选区 → 属性区 → 顶部图标行 → 对齐/分布两行 → 层级区。
  * 所有 PS 写入在 `commands/font-set.ts`，配置从 `store/font-set` 读，页面不碰底层。
  *
  * 顶部 6 个图标的开合全部交给 `IconPanelGroup`（互斥由它管，页面不持有 panel 状态）：
@@ -10,10 +10,12 @@
  *   翻译 = 一直禁用（方案未定）
  */
 
-import { BottomBar, BottomBarButton, BottomBarDivider } from '../../components/BottomBar';
 import { Icon } from '../../components/icons';
+import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
+import { StateMask } from '../../components/StateMask';
+import { DEFAULT_TEXT_INFO } from '../../domain/text-info';
 import { useFontPanel } from './useFontPanel';
 import { CreateButtonPanel } from './components/CreateButtonPanel';
 import { DistributionHelp } from './components/DistributionHelp';
@@ -45,8 +47,6 @@ export default function FontPanelPage() {
 
   return (
     <div className="mm-font-panel">
-      {/* 内容区滚动，底栏固定在底部（两行对齐/分布，不再随内容滚走） */}
-      <div className="mm-font-panel__scroll">
       {page.settings.ztShowQuick ? (
         <FontQuick
           fonts={page.quickFonts.list}
@@ -60,10 +60,21 @@ export default function FontPanelPage() {
 
       <hr className="mm-font-panel__line" />
 
-      {page.info ? (
+      {/*
+        属性区**始终渲染**：内容负责撑住高度，读不到时盖一层黑底半透明遮罩。
+        换成「一行提示」会让下面的图标整体上移（选字 / 不选字跳版）。
+      */}
+      <StateMask
+        overlay={
+          page.textFailure
+            ? { result: page.textFailure }
+            : page.info
+              ? null
+              : { empty: '正在读取文字属性…' }
+        }
+      >
         <FontColor
-          info={page.info}
-          error={page.textError}
+          info={page.info ?? DEFAULT_TEXT_INFO}
           fonts={page.fonts}
           fontsLoading={page.fontsLoading}
           defaults={{
@@ -79,10 +90,7 @@ export default function FontPanelPage() {
           onStyle={page.onStyle}
           onAlign={page.onTextAlign}
         />
-      ) : (
-        /* 还没读到属性就不摆默认数字：把「12 点 / 白色」当成真实属性是骗人 */
-        <p className="mm-font-panel__state">{page.textError || '正在读取文字属性…'}</p>
-      )}
+      </StateMask>
 
       <div className="mm-font-panel__icons">
         <IconPanelGroup exclusive>
@@ -145,6 +153,56 @@ export default function FontPanelPage() {
 
       <hr className="mm-font-panel__line mm-font-panel__line--set" />
 
+      <div className="mm-font-panel__icons">
+        <div className="mm-font-panel__icon-row">
+          {BOTTOM_ICONS_ONE.map((icon, index) => (
+            <IconButton
+              key={icon}
+              name={icon}
+              title={BOTTOM_TITLES_ONE[index] ?? ''}
+              onClick={() => page.onAlign('h', index)}
+            />
+          ))}
+
+          <span className="mm-font-panel__divider" />
+
+          {BOTTOM_ICONS_TWO.map((icon, index) => (
+            <IconButton
+              key={icon}
+              name={icon}
+              title={BOTTOM_TITLES_TWO[index] ?? ''}
+              onClick={() =>
+                index === 0 ? page.onAlign('bg-h') : page.openDistribution(1, BOTTOM_TITLES_TWO[1])
+              }
+            />
+          ))}
+        </div>
+
+        <div className="mm-font-panel__icon-row mm-font-panel__icon-row--after">
+          {BOTTOM_ICONS_THREE.map((icon, index) => (
+            <IconButton
+              key={icon}
+              name={icon}
+              title={BOTTOM_TITLES_THREE[index] ?? ''}
+              onClick={() => page.onAlign('v', index)}
+            />
+          ))}
+
+          <span className="mm-font-panel__divider" />
+
+          {BOTTOM_ICONS_FOUR.map((icon, index) => (
+            <IconButton
+              key={icon}
+              name={icon}
+              title={BOTTOM_TITLES_FOUR[index] ?? ''}
+              onClick={() =>
+                index === 0 ? page.onAlign('bg-v') : page.openDistribution(2, BOTTOM_TITLES_FOUR[1])
+              }
+            />
+          ))}
+        </div>
+      </div>
+
       {page.settings.ztShowCustom ? (
         <>
           <hr className="mm-font-panel__line" />
@@ -188,52 +246,6 @@ export default function FontPanelPage() {
           onClose={page.closeDistribution}
         />
       ) : null}
-      </div>
-
-      {/* 底栏：对齐 / 分布，两行各一条（公共件：26 高、30 宽、hover 纯底色） */}
-      <BottomBar>
-        {BOTTOM_ICONS_ONE.map((icon, index) => (
-          <BottomBarButton
-            key={icon}
-            title={BOTTOM_TITLES_ONE[index] ?? ''}
-            name={icon}
-            onClick={() => page.onAlign('h', index)}
-          />
-        ))}
-        <BottomBarDivider />
-        {BOTTOM_ICONS_TWO.map((icon, index) => (
-          <BottomBarButton
-            key={icon}
-            title={BOTTOM_TITLES_TWO[index] ?? ''}
-            name={icon}
-            onClick={() =>
-              index === 0 ? page.onAlign('bg-h') : page.openDistribution(1, BOTTOM_TITLES_TWO[1])
-            }
-          />
-        ))}
-      </BottomBar>
-
-      <BottomBar>
-        {BOTTOM_ICONS_THREE.map((icon, index) => (
-          <BottomBarButton
-            key={icon}
-            title={BOTTOM_TITLES_THREE[index] ?? ''}
-            name={icon}
-            onClick={() => page.onAlign('v', index)}
-          />
-        ))}
-        <BottomBarDivider />
-        {BOTTOM_ICONS_FOUR.map((icon, index) => (
-          <BottomBarButton
-            key={icon}
-            title={BOTTOM_TITLES_FOUR[index] ?? ''}
-            name={icon}
-            onClick={() =>
-              index === 0 ? page.onAlign('bg-v') : page.openDistribution(2, BOTTOM_TITLES_FOUR[1])
-            }
-          />
-        ))}
-      </BottomBar>
     </div>
   );
 }

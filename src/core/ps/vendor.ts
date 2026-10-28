@@ -17,7 +17,7 @@ import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { isRecord } from '../../types/guards';
 import { requireVendor } from './init';
-import { parseJsxRaw, unwrapRaw } from './raw';
+import { envelopeMessage, parseJsxRaw, unwrapRaw } from './raw';
 
 /** 调度通道的宿主函数名；只有这里认识这个字符串 */
 const DISPATCH = 'ps_onJsx';
@@ -49,8 +49,9 @@ export async function runVendor(fn: string, args: unknown[], label?: string): Pr
 /**
  * 直调通道：`fn(a, b)`，写操作 60s。
  *
- * `rejected` 是 `err === 1` 时给用户看的那句话——各函数「1」的含义不同
- * （换字面是字体缺失，其它是不满足前提），不许合并成一句笼统文案。
+ * `rejected` 只在 `err === 1` **且宿主没给 `msg`** 时兜底：各函数「1」的含义不同
+ * （换字面是字体缺失，其它是不满足前提），宿主给了原因就用宿主的原话
+ * （如 `{err:1, msg:"请选择文字图层"}`），不许拿一句笼统文案顶替。
  *
  * 解析不出 JSON 时按成功处理（UNVERIFIED）：这批函数可能返回裸 `1` / 空串，
  * 按严格判据会把正常操作全判成失败。真机确认形状后必须收紧。
@@ -73,7 +74,11 @@ export async function runDirect(
   if (parsed.status === 'error') return ok(undefined);
 
   if (isRecord(parsed.value) && parsed.value.err === 1) {
-    return failWithDetail('VALIDATION', rejected, `raw:${call.value.slice(0, 120)}`);
+    return failWithDetail(
+      'VALIDATION',
+      envelopeMessage(parsed.value) || rejected,
+      `raw:${call.value.slice(0, 120)}`
+    );
   }
 
   return ok(undefined);

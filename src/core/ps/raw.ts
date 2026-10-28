@@ -61,6 +61,19 @@ export function parseErrEnvelope(raw: string): Result<number> {
   return errOf(parsed.value, raw);
 }
 
+/**
+ * 已解析的值 → 信封里宿主给的那句话（没有 `msg` 时为空串）。
+ *
+ * 同一个 `err: 1` 在不同函数、甚至同一函数的不同情况下含义不同：`ztgl_setFont`
+ * 没选中文字图层时返回 `{err:1, msg:"请选择文字图层"}`，字体真缺失时又是另一句。
+ * 宿主已经说清楚了，就别拿我们猜的兜底文案顶替——把「没选文字图层」写成
+ * 「字体不可用」会让用户去重装一个本来装着的字体。
+ */
+export function envelopeMessage(value: unknown): string {
+  const msg = isRecord(value) ? value.msg : undefined;
+  return typeof msg === 'string' ? msg.trim() : '';
+}
+
 /** 已解析的值 → err 字段（避免同一段 raw 解析两次） */
 export function errOf(value: unknown, raw: string): Result<number> {
   const err = isRecord(value) ? value.err : undefined;

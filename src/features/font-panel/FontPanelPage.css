@@ -11,17 +11,9 @@
   width: 100%;
   height: 100%;
   flex-direction: column;
-  /* 滚动交给内容区：底栏要常驻（对齐/分布两行不随内容滚走） */
-  overflow: hidden;
+  overflow-y: auto;
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
-}
-
-/* 内容区：唯一滚动容器 */
-.mm-font-panel__scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 /* ---------------- 图标行 ---------------- */
@@ -35,6 +27,10 @@
   align-items: center;
   justify-content: space-between;
   margin: var(--mm-space-exact-10) 0;
+}
+
+.mm-font-panel__icon-row--after {
+  margin-top: var(--mm-space-2);
 }
 
 .mm-font-panel__divider {
@@ -124,14 +120,6 @@
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   cursor: pointer;
-}
-
-/* 属性区读取中 / 读取失败：一行提示，不摆默认数字 */
-.mm-font-panel__state {
-  margin: 0;
-  padding: var(--mm-space-exact-10);
-  color: var(--mm-color-text-dim);
-  font-size: var(--mm-font-sm);
 }
 
 /* ---------------- 字体快选 ---------------- */
@@ -491,13 +479,6 @@
 .mm-font-panel__pin--on {
   background: var(--mm-color-bg-hover);
   color: var(--mm-color-accent);
-}
-
-.mm-font-panel__error {
-  margin: var(--mm-space-exact-2) 0 0;
-  color: var(--mm-color-error);
-  font-size: var(--mm-font-sm);
-  line-height: 1em;
 }
 
 .mm-font-panel__advanced {

@@ -28,6 +28,19 @@ export function StateHint(props: Props) {
     return <p className="mm-state-hint">文件不存在</p>;
   }
 
+  /*
+   * 前提不满足不是故障：没打开文档 / 选中的不是文字图层 / 不是形状图层，
+   * 都是「换个图层就好」的提示。标红会让人以为面板坏了，而这三种码的
+   * 文案本来就说得清该做什么。
+   */
+  if (
+    result.code === 'PS_NO_DOC' ||
+    result.code === 'PS_NOT_TEXT' ||
+    result.code === 'PS_NOT_SHAPE'
+  ) {
+    return <p className="mm-state-hint">{result.reason}</p>;
+  }
+
   if (result.code === 'CORRUPT') {
     /* detail 是机器现场（哪个字段、期望什么）：不进正文，挂 title 让它可查 */
     return (

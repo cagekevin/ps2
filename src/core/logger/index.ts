@@ -5,6 +5,7 @@
  * 读写日志文件走 core/cep/node，不用 window.cep.fs。
  */
 
+import { failWithDetail, ok, type Result } from '../../types/result';
 import { nodeRequire } from '../cep/node';
 
 type Level = 'info' | 'warn' | 'error';
@@ -149,5 +150,26 @@ export function readLogText(): string {
     return fs.readFileSync(file, 'utf8');
   } catch {
     return '';
+  }
+}
+
+/**
+ * 清空日志文件（诊断页「清空」用）。
+ *
+ * 与 `readLogText` 不同，这里必须返回 `Result`：读失败顶多显示空，清空失败却要
+ * 让用户知道「日志还在」——静默失败会让下一次排障拿到上一次的旧日志。
+ * 文件不存在时写一个空文件，等同成功（用户要的结果就是没有日志）。
+ */
+export function clearLogText(): Result<void> {
+  const fs = nodeRequire<NodeFs>('fs');
+  const file = logPath();
+  if (!fs || !file) return failWithDetail('IO_ERROR', '日志文件不可用', 'fs:false');
+  try {
+    fs.writeFileSync(file, '', 'utf8');
+    /* 折叠窗口也要一起清：否则清空后 3 秒内复现同一个问题，第一行会被当成「重复」吞掉 */
+    recent.clear();
+    return ok(undefined);
+  } catch (error) {
+    return failWithDetail('IO_ERROR', '清空日志失败', `${file} ${String(error)}`);
   }
 }

@@ -9,20 +9,38 @@
  * 参数一律明文——只有 `ys_*` 两条要 `encodeText`，给 `zt_*` 编码会写出乱码字体名。
  * 函数清单、两处原版拼写错误、`hostCode === 1` 的含义见 `docs/PS-CHANNEL-NOTES.md` §11.3。
  *
- * 两条硬边界：
+ * 三条硬边界：
  *   1. **不 import `domain`**（依赖表禁止）：读函数只返回 raw / 已拆 `data` 的载荷，归一化在 domain
  *   2. **返回结构全部 UNVERIFIED**：写函数只把「能识别的失败」当失败（约定值、`{err:1}`），
  *      认不出结构时按成功处理——真机验完必须收紧，别让宽松解析变成永久契约
+ *   3. **三个读函数先判「当前图层是文字图层」**：非文字图层上 PS 不是返回 `{err:1}`，
+ *      而是直接抛「命令"获取"当前不可用」，那句话会被当成失败原因显示给用户
  */
 
 import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { isRecord } from '../../types/guards';
 import { requireVendor } from './init';
-import { dataOf, parseDataEnvelope, parseJsxRaw } from './raw';
+import { getLayerState } from './layer';
+import { dataOf, envelopeMessage, parseDataEnvelope, parseJsxRaw } from './raw';
 import { runDirect, UNREADY } from './vendor';
 
 /* ---------------- 读（返回 raw / 已拆 data 的载荷） ---------------- */
+
+/**
+ * 读函数的前提：当前图层是文字图层。
+ *
+ * 原版把这种情况吞掉了（`selectLayer` 只在 `err === 0` 时覆盖面板，`app.v4.js:42523`），
+ * 面板停在旧值上，用户看不出为什么；这里提前判，失败原因才说得清楚。
+ */
+async function requireTextLayer(): Promise<Result<void>> {
+  const layer = await getLayerState();
+  if (layer.status === 'error') return layer;
+  if (layer.value.kind !== 'text') {
+    return failWithDetail('PS_NOT_TEXT', '当前图层不是文字图层', `kind:${layer.value.kind}`);
+  }
+  return ok(undefined);
+}
 
 /**
  * 当前文字图层属性快照（`zt_getFontSimpleInfo`）。
@@ -34,6 +52,9 @@ import { runDirect, UNREADY } from './vendor';
 export async function getTextInfoRaw(): Promise<Result<unknown>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', UNREADY);
 
+  const layer = await requireTextLayer();
+  if (layer.status === 'error') return layer;
+
   const call = await callJsx('zt_getFontSimpleInfo', []);
   if (call.status === 'error') return call;
 
@@ -42,7 +63,11 @@ export async function getTextInfoRaw(): Promise<Result<unknown>> {
 
   const value = parsed.value;
   if (isRecord(value) && typeof value.err === 'number' && value.err !== 0) {
-    return failWithDetail('VALIDATION', '当前图层没有可读的文字属性', `err:${value.err}`);
+    return failWithDetail(
+      'VALIDATION',
+      envelopeMessage(value) || '当前图层没有可读的文字属性',
+      `err:${value.err}`
+    );
   }
   return ok(dataOf(value));
 }
@@ -50,6 +75,9 @@ export async function getTextInfoRaw(): Promise<Result<unknown>> {
 /** 当前图层字体信息（`zt_getCurrentFontInfo`）：字体快选「加当前图层」用，只有 `family` 有用 */
 export async function getCurrentFontInfoRaw(): Promise<Result<unknown>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', UNREADY);
+
+  const layer = await requireTextLayer();
+  if (layer.status === 'error') return layer;
 
   const call = await callJsx('zt_getCurrentFontInfo', []);
   if (call.status === 'error') return call;
@@ -60,6 +88,9 @@ export async function getCurrentFontInfoRaw(): Promise<Result<unknown>> {
 export async function getCurrentTextRaw(): Promise<Result<unknown>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', UNREADY);
 
+  const layer = await requireTextLayer();
+  if (layer.status === 'error') return layer;
+
   const call = await callJsx('zt_getCurrentText', []);
   if (call.status === 'error') return call;
   return parseDataEnvelope(call.value);
@@ -67,7 +98,12 @@ export async function getCurrentTextRaw(): Promise<Result<unknown>> {
 
 /* ---------------- 写（全部 Result<void>） ---------------- */
 
-/** 换字面（`zt_setFontName(hjm, mz, zz)`）；`err === 1` 就是字体缺失 */
+/**
+ * 换字面（`zt_setFontName(hjm, mz, zz)`）。
+ *
+ * `err === 1` 不止「字体缺失」：没选中文字图层时宿主给 `{err:1, msg:"请选择文字图层"}`，
+ * 原因由 `runDirect` 取 `msg`，兜底才是「字体不可用」。
+ */
 export function setFontName(
   postScriptName: string,
   name: string,

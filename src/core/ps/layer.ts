@@ -20,7 +20,10 @@ export interface LayerState {
 }
 
 /**
- * 一次拿到类型 + 名称，供图层轮询用（唯一入口，全项目只有 layer-watcher 订阅它）。
+ * 一次拿到类型 + 名称（唯一入口）。
+ *
+ * 两个消费者：`app/layer-watcher` 轮询、`core/ps/text` 的读函数判「当前是不是文字图层」
+ * （非文字图层上 PS 会直接抛错，见 `text.ts` 文件头第 3 条）。
  */
 export async function getLayerState(): Promise<Result<LayerState>> {
   if (!(await requireCore())) return failWithDetail('PS_UNREADY', 'PS 脚本未加载', 'core:false');

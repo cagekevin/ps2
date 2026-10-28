@@ -80,12 +80,12 @@
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 | ✅ 真机 |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 | ✅ 真机 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 | ✅ 真机 |
-| 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 | ✅ 真机 |
+| 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 + 清空入口（诊断页） | ✅ 真机 |
 | 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） | ✅ 真机 |
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 | ⚠️ 待真机 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） | ✅ 真机 |
 | 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用（真机）；`ztgl_*` 系统字体列表/应用（待真机） | ⚠️ 待真机 |
-| 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`（返回结构 UNVERIFIED） | ⚠️ 待真机 |
+| 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`（返回结构 UNVERIFIED）；3 个读函数先判「当前图层是文字图层」 | ⚠️ 待真机 |
 | 官方 jsx 通道 | `src/core/ps/vendor.ts` | 两条通道唯一实现：`runVendor`（`ps_onJsx` 调度）/ `runDirect`（直调 60s） | ✅ 调度真机 / ⚠️ 直调沿用 text 结论 |
 | PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄 | ⚠️ 待真机 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL | ⚠️ 待真机（缩略图待复验） |
@@ -102,7 +102,7 @@
 | 样式命令 | `src/commands/style.ts` | 颜色 / 渐变 / 字体 / 图层样式 / 修饰键 | ✅ 真机 |
 | 类型 | `src/types/result.ts` | 全仓唯一结果形状（status/code/reason/detail） | ✅ 单测 |
 | JSON 解析 | `src/types/json.ts` | 唯一的文本 → unknown 入口（label 必填） | ✅ 单测 |
-| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值 / JSON / err 信封唯一解析处（表驱动） | ✅ 单测 |
+| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值 / JSON / err 信封唯一解析处（表驱动）；信封 `msg`（失败原因）走 `envelopeMessage` | ✅ 单测 |
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
 | 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 + kuListOf/kuEnsureListOf | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
@@ -169,7 +169,8 @@
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 | ✅ 真机 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 | ✅ 真机 |
 | 命令执行 | `src/hooks/useRunCommand.ts` | 包 loading + 失败提示 + 原因留痕（code/detail 进日志，人话进 toast）；面板/页面不再各写一份 | ⚠️ 待真机 |
-| 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口 | ⚠️ 待真机 |
+| 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口；前提类码（`PS_NO_DOC` / `PS_NOT_TEXT` / `PS_NOT_SHAPE`）灰字，不标红 | ⚠️ 待真机 |
+| 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` | ⚠️ 待真机 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 | ✅ 真机 |
 | 组件样式 | `src/components/ui/ui.css` | 基础控件形状 | ✅ 编译 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页 | ✅ 真机 |
@@ -380,6 +381,13 @@ AI 在以下时机**必须主动问一句**，不能等用户提：
 | 2026-10-28 | **云同步计划**（`docs/plan/07-云同步-2026-10-28.md`）：地址照抄参考实现（`ps/src/config/cloud.ts` 的 GAS `…/exec`，**地址即账号**），协议 `{action:'push_data'\|'pull_data', data}`、快照 `{type:'psz_sync',schema:1,rev,updatedAt,units}`、6 个失败码全部照抄。相对参考实现做减法：**去掉定时/去抖/退避/pending/增量推送**，只留人工上传与下载；unit 从 5 个减到 2 个（`style.library` + `action.library`，字体 4 个不同步，图片/PSD 不同步）。**新增 `mergeUnits`**：`push_data` 是整包覆盖，先 pull 再 push 才不会抹掉云端其它 unit。4 条命令（upload/download/preview/clearLedger，确认由页面弹）、台账进 `core/prefs`、入口只在设置页 | docs |
 | 2026-10-28 | **重命名页计划**（`docs/plan/06-重命名-2026-10-28.md`）：按 `ps/docs/页面/07-重命名.md` + ps 参考实现（`domain/rename.ts` / `commands/rename.ts` / `cep/jsx/rename.ts` / `pages/rename/index.vue`）落事实表，**未回官方源码**。要点：表达式**求值在 PS 侧**（我们只删旧标记 + 拼新标记，删除顺序 `%%nn→%%n→%nn→%n=→%n`）、`.cmm` 新版 JSON / 旧版 `<z>`/`<>` 兼容读、第 0 组「最近使用」不可改删加、历史去重上限 8、7 色 + 清除；13 条命令 / 2 个 jsx（只发不读，先探针后登记）。尺寸全部映射公共件（底栏 `BottomBar`、折叠 `Collapse`、输入 `TextField`、勾选 `CheckBox`、弹窗 `InputDialog`、右键 `ContextMenu`、空态 `StateHint`、拖拽 `useLongPressDrag`），本页只新增 2 个 token（37 模式条 / 24 色块）与 2 个自有组件 | docs |
 | 2026-10-28 | **字体面板底栏并入公共件**：对齐/分布两行从内容区挪到面板底部并改用 `components/BottomBar`（`BottomBar` + `BottomBarButton` + `BottomBarDivider`），不再用 10 个 `IconButton`；面板根 `overflow` 改 `hidden`，新增 `.mm-font-panel__scroll` 作唯一滚动容器（底栏常驻）；删掉死规则 `.mm-font-panel__icon-row--after`。至此**三个有底栏的页面（样式 / 字体管理 / 字体面板）共用一套 26 高底栏** | features/font-panel、features/font-manage、styles、docs |
+| 2026-10-28 | **视觉一致性计划**（`docs/plan/09-视觉一致性-2026-10-28.md`）：**不改交互、不改位置、不改尺寸**，只收敛间距、统一同排图文、统一线条。`CONVENTIONS` §7 新增第 5–8 条：间距六档 2/4/6/8/12/16（贴合/同行并列/组内/组间/区块内/区块间，取自 Vue 版设计 token 的语义，命名沿用本仓 `--mm-space-*` **不重命名**）+ 横向例外「页内块左右内边距统一 10」；「同一组内」间距不得大于组内图标边长（不是绝对规则）；12 号字配 14 图标、13 号字配 16 图标（本项目取舍，非 Vue 规则，对不上缩图标）；一页只用一种线条（行分隔 `#2e2e2e` / 页面分隔 `#333` / 浮层边缘 10% 白，字体面板保留 `#333` 是偏离 Vue 的判断）。实测：21 个 exact 档里 7 个不在阶梯上（5/7/10/13/15/20/30，10 被引用 43 次，其中横向保留）；字体面板两条页面分隔线（#333 + #222）违规。执行：字体管理页 → 字体面板 → 常用页 → 公共件。**第二版删掉了「阶梯改名 40 个文件」**（真正需要的档只有 6，`exact-6` 已在用）。§7 再补第 9–11 条硬约束：**同类同尺寸**（同页同角色只能一个尺寸）、**两端对齐**（左右内边距相等，标题/内容/分隔线同一左边界）、**不留无意义间隔**（相邻两块只给一处间距，不许 margin 叠加；末项多余 margin 删掉）。据此新查出：字体管理页工具栏 28 与页头 26 同页并存、字体面板分隔线左右 15 与内容 10 不齐、三处叠加间隔（15/20/24 实际值）。同日写过的三份「紧凑化」计划（把间距统一写成改版式/少滚动）已删除 | docs/CONVENTIONS、docs/plan（待执行） |
+| 2026-10-28 | **「没选中文字图层」升级为独立状态 + 区域遮罩公共件**：新增码 `PS_NOT_TEXT`（与 `PS_NO_DOC` / `PS_NOT_SHAPE` 同族，前提不满足 ≠ 故障），`StateHint` 让这三个码走灰字、不标红；新建 `components/StateMask`（内容照常渲染撑高度，提示盖在上面），字体面板属性区改为**始终渲染 + 遮罩**，`store/text` 的 `error: string` 换成 `failure: Result<void>`（码决定语气），删掉页面自绘的 `.mm-font-panel__state` / `__error` 与 `FontColor` 的 `error` 参数。`CONVENTIONS` §6 新增「区域不可用」一行 | types、components、core/ps、store、features/font-panel、docs |
+| 2026-10-28 | 体检 `REVIEW-2026-10-28-24`（聚焦本轮 4 段改动）：§7.2 七项 7 通过、附加三项已给；P0×0、P1×2（当场修：保留旧值补「下方是上一次读到的值」、`clearLogText` 补 `recent.clear()`）、P1 未修 2（apply 前无结构守卫、`zt_changeTextBranchMerge` 待真机）、P2×6。真机三步未跑 | docs/review、store/text、core/logger |
+| 2026-10-28 | **诊断页日志加「清空」**：`core/logger.clearLogText(): Result<void>`（写失败要能看见，静默失败会让下次排障拿到旧日志；文件不存在等同成功），诊断页头部「复制 / 刷新 / 清空」三按钮，清空走 `useConfirm()` 二次确认，清完显示「（日志为空）」 | core/logger、features/home、docs |
+| 2026-10-28 | **拆「没选中文字图层」与「字体缺失」**：`ztgl_setFont` / `zt_setFontName` 的 `err:1` 被当成一种失败（文案「字体不可用（系统里可能没装这个字体）」），真机日志里实际是 `{"err":1,"msg":"请选择文字图层","code":0}`——用户被引去重装一个装着的字体。新增 `core/ps/raw.envelopeMessage`（信封 `msg` 的唯一读取处），`runDirect`、`setFontByNames`、`applyFont`、`getFontInfo`、`getTextInfoRaw` 的 `err === 1` 一律先取宿主原话，没给才用兜底文案；补 2 条单测 | core/ps、commands/font-set（注释）、docs |
+| 2026-10-28 | **修「命令"获取"当前不可用」**：`zt_getFontSimpleInfo` / `zt_getCurrentFontInfo` / `zt_getCurrentText` 在非文字图层上不是返回 `{err:1}`，而是让 PS 抛这句；`core/ps/text` 三个读函数先判 `mm_layer_getState` 的 kind，非文字图层直接返回 `VALIDATION`「当前图层不是文字图层」，不再把 PS 原文当失败原因显示（原版靠 `err === 0` 才覆盖面板把这种情况吞掉）。`core/ps/layer.getLayerState` 因此多一个消费者（原注释写「只有 layer-watcher」已改） | core/ps、docs |
+| 2026-10-28 | **撤销「字体面板底栏并入公共件」**：对齐/分布两行不是底栏，按原版回到内容区（两行 `IconButton` + 竖分隔线，随内容滚动）；删掉 `.mm-font-panel__scroll` 包裹与样式，面板根恢复 `overflow-y: auto`，`.mm-font-panel__icon-row--after` 恢复。`components/BottomBar` 仍由样式页 / 字体管理页使用 | features/font-panel、docs |
 | 2026-10-28 | **字体管理页底栏也并入公共件**：`PageFooter` 改用 `components/BottomBar`，`PreviewSetting` 的两个自绘按钮（20×20、hover 带描边）改用 `BottomBarButton`（30×26、hover 纯底色）；`FontManagePage.css` 的 `.mm-font__footer` 只剩 `justify-content`，`FontPopovers.css` 删 `.mm-font__preview-setting` / `__preview-icon` 两段；`tokens.css` 删 `--mm-footer-h` / `--mm-footer-pad` / `--mm-color-footer-bar`（24/#545454 那套没了，全仓底栏只剩 26/#535353 一套） | features/font-manage、styles、docs |
 | 2026-10-28 | **底栏上移为公共件**：新建 `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`，26 高 / 30 宽 / hover 纯底色无描边 / 1×13 竖线，全走 `--mm-bottom-*`）；`features/style/components/BottomBar.tsx` 改名 `StyleBottomBar.tsx` 并改用公共件（只留彩虹方块 + 导入导出菜单），`StylePage.css` 删 42 行底栏样式；`tokens.css` 修掉 `--mm-color-bottom-hover` 的重复定义（`#222` 与 `rgba(0,0,0,.2)` 两份，后者盖前者）；`CONVENTIONS` §6 新增「页面底栏」一行 | components、features/style、styles、docs |
 | 2026-10-28 | 常用页 M3（两个子面板）：`features/common/components/SpacingPanel`（间距输入 + 水平/垂直两颗图标按钮 + 按图层/按坐标两个单选）与 `ReferencePanel`（宽度 + 应用 + 清除参考线 + 基于参考线切片）；网格改「每 3 个一行 + 每行一个 `IconPanelGroup`（受控 `openId`）」，`TileButton` 作为 `IconPanel` 的 trigger，面板落在本行之后；`TextField` 增第四档 `fill`；可点判定改为「有面板或命令」。**v2 缺口**：智能参考线勾选框未做 | features/common、components/TextField、docs |

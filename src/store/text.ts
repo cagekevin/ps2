@@ -5,7 +5,11 @@
  * 写操作成功之后由页面调 `patch()` 做本地乐观更新；**失败时不许 patch**——
  * 图层没变却把面板改成新值，用户会以为已经生效。
  *
- * v1 不订阅 PS 选区事件：进页面 `refresh()` 一次，切图层后由用户重新进页面。
+ * 失败存**整个 `Result`**（不是一句字符串）：码决定界面语气（前提不满足 vs 真失败），
+ * 拼文案的事交给 `components/StateHint`，页面不再自己判断该标红还是该灰。
+ *
+ * 不订阅 PS 选区事件：`features/font-panel` 在 `layer-watcher` 报告活动图层变了时调 `refresh()`
+ * （进页面也算一次变化），切到非文字图层由 `core/ps/text` 返回 `PS_NOT_TEXT`。
  *
  * 不 import `commands`（依赖表禁止）：读走 `core/ps`，归一化走 `domain`。
  */
@@ -14,16 +18,17 @@ import { create } from 'zustand';
 import { getTextInfoRaw } from '../core/ps/text';
 import { log } from '../core/logger';
 import { applyTextPatch, normalizeTextInfo, type TextInfo } from '../domain/text-info';
+import { failWithDetail, type Result } from '../types/result';
 
 interface TextState {
   info: TextInfo | null;
-  /** 非空 = 上一次读取失败的原因；面板保留旧值并显示这一行 */
-  error: string;
+  /** 非 null = 上一次读取失败；面板用遮罩盖住属性区并显示这一条 */
+  failure: Result<void> | null;
   /** 快照可能已过期（读失败 / 切过图层） */
   stale: boolean;
   refresh: () => Promise<void>;
   patch: (next: Partial<TextInfo>) => void;
-  clearError: () => void;
+  clearFailure: () => void;
 }
 
 /** 刷新序号：连点两次时只让后一次的结果落地（前一次可能返回更晚） */
@@ -31,7 +36,7 @@ let refreshSeq = 0;
 
 export const useTextStore = create<TextState>()((set, get) => ({
   info: null,
-  error: '',
+  failure: null,
   stale: false,
 
   async refresh() {
@@ -41,27 +46,27 @@ export const useTextStore = create<TextState>()((set, get) => ({
     if (seq !== refreshSeq) return;
 
     if (raw.status === 'error') {
-      /* 保留旧值：清空会让整个属性面板闪成默认值，用户以为属性被重置了 */
+      /* 旧值保留在 `info` 里（清空会让面板闪成默认值），由页面用遮罩挡住 */
       log.warn('读取文字属性失败', { code: raw.code, reason: raw.reason });
-      set({ error: raw.reason, stale: true });
+      set({ failure: failWithDetail(raw.code, raw.reason, raw.detail), stale: true });
       return;
     }
 
     const info = normalizeTextInfo(raw.value);
     if (info.status === 'error') {
       log.warn('文字属性结构不认识', { reason: info.reason, detail: info.detail });
-      set({ error: info.reason, stale: true });
+      set({ failure: failWithDetail(info.code, info.reason, info.detail), stale: true });
       return;
     }
 
-    set({ info: info.value, error: '', stale: false });
+    set({ info: info.value, failure: null, stale: false });
   },
 
   patch(next) {
     set({ info: applyTextPatch(get().info, next) });
   },
 
-  clearError() {
-    set({ error: '', stale: false });
+  clearFailure() {
+    set({ failure: null, stale: false });
   }
 }));

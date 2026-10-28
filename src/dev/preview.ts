@@ -23,6 +23,6 @@ export function installPreviewData(): void {
       useAutoLeading: false,
       color: { r: 240, g: 240, b: 240 }
     },
-    error: ''
+    failure: null
   });
 }

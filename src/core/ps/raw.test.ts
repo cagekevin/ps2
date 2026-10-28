@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isOkSentinel, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
+import { envelopeMessage, isOkSentinel, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 describe('unwrapRaw', () => {
   it('约定失败码折成对应子码，detail 带原始值', () => {
@@ -54,6 +54,21 @@ describe('isOkSentinel', () => {
   it('其它值不算哨兵', () => {
     expect(isOkSentinel('1')).toBe(false);
     expect(isOkSentinel('{"arr":[]}')).toBe(false);
+  });
+});
+
+describe('envelopeMessage', () => {
+  it('取宿主的 msg（trim 前后空白）', () => {
+    expect(envelopeMessage({ err: 1, msg: '请选择文字图层', code: 0 })).toBe('请选择文字图层');
+    expect(envelopeMessage({ err: 1, msg: ' 字体缺失 ' })).toBe('字体缺失');
+  });
+
+  it('没有 msg / msg 不是字符串 → 空串（调用方走兜底文案）', () => {
+    expect(envelopeMessage({ err: 1 })).toBe('');
+    expect(envelopeMessage({ err: 1, msg: null })).toBe('');
+    expect(envelopeMessage({ code: 'OK' })).toBe('');
+    expect(envelopeMessage('not json')).toBe('');
+    expect(envelopeMessage(null)).toBe('');
   });
 });
 

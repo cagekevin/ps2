@@ -22,7 +22,10 @@ import { callJsx, LONG_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
-import { dataOf, errOf, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
+import { dataOf, envelopeMessage, errOf, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
+
+/** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
+const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
 
 /**
  * 检查字体是否可用。
@@ -61,7 +64,7 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
 
   const err = errOf(value, call.value);
   if (err.status === 'ok' && err.value === 1) {
-    return failWithDetail('PS_ERROR', '读取字体属性失败', `raw:${call.value}`);
+    return failWithDetail('PS_ERROR', envelopeMessage(value) || '读取字体属性失败', `raw:${call.value}`);
   }
 
   /* 信封拆包走 raw.ts——这里只判「fonts 是否非空」，不认识返回形状 */
@@ -86,10 +89,16 @@ export async function applyFont(item: Record<string, unknown>): Promise<Result<v
   const call = await callJsx('ys_useFont', [payload], { timeout: WRITE_TIMEOUT });
   if (call.status === 'error') return call;
 
-  const err = parseErrEnvelope(call.value);
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  const err = errOf(parsed.value, call.value);
   if (err.status === 'error') return err;
   if (err.value === 1) {
-    return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
+    return failWithDetail(
+      'VALIDATION',
+      envelopeMessage(parsed.value) || FONT_UNAVAILABLE,
+      `raw:${call.value}`
+    );
   }
 
   return ok(undefined);
@@ -114,7 +123,9 @@ export async function getSystemFontList(): Promise<Result<string>> {
  * 应用系统字体（原版字体管理页 `ztgl_setFont(hjm, mz, zz)`）。
  *
  * 直调通道；三个参数是**明文**，不要 `encodeText`（与 `ys_useFont` 的区别）。
- * `{err:1}` = 字体缺失；`-1` 等约定值统一交给 `unwrapRaw`。
+ * `{err:1}` 的含义**不止一种**：没选中文字图层时宿主给 `{err:1, msg:"请选择文字图层"}`，
+ * 字体真缺失时是另一句——所以原因取 `msg`，只有宿主没给才用兜底文案。
+ * `-1` 等约定值统一交给 `unwrapRaw`。
  */
 export async function setFontByNames(
   postScriptName: string,
@@ -131,10 +142,16 @@ export async function setFontByNames(
   const unwrapped = unwrapRaw(call.value);
   if (unwrapped.status === 'error') return unwrapped;
 
-  const err = parseErrEnvelope(call.value);
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+  const err = errOf(parsed.value, call.value);
   if (err.status === 'error') return err;
   if (err.value === 1) {
-    return failWithDetail('VALIDATION', '字体不可用（系统里可能没装这个字体）', `raw:${call.value}`);
+    return failWithDetail(
+      'VALIDATION',
+      envelopeMessage(parsed.value) || FONT_UNAVAILABLE,
+      `raw:${call.value}`
+    );
   }
 
   return ok(undefined);
