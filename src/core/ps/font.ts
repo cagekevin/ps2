@@ -22,6 +22,7 @@ import { callJsx, LONG_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { requireVendor } from './init';
+import { requireTextLayer } from './layer';
 import { dataOf, envelopeMessage, errOf, parseErrEnvelope, parseJsxRaw, unwrapRaw } from './raw';
 
 /** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
@@ -81,9 +82,18 @@ export async function getFontInfo(): Promise<Result<Record<string, unknown>>> {
   return ok(data as Record<string, unknown>);
 }
 
-/** 应用字体到当前文字图层 */
+/**
+ * 应用字体到当前文字图层。
+ *
+ * 先判「当前是不是文字图层」：不判的话 PS 会直接抛
+ * 「命令"设置"当前不可用」，那句话被当成失败原因显示出来，
+ * 用户看到的是「Photoshop 版本不支持」——而事实是没选中文字。
+ */
 export async function applyFont(item: Record<string, unknown>): Promise<Result<void>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+
+  const layer = await requireTextLayer();
+  if (layer.status === 'error') return layer;
 
   const payload = encodeText(JSON.stringify(item));
   const call = await callJsx('ys_useFont', [payload], { timeout: WRITE_TIMEOUT });
@@ -133,6 +143,11 @@ export async function setFontByNames(
   weight: string
 ): Promise<Result<void>> {
   if (!(await requireVendor())) return fail('PS_UNREADY', '官方 PS 能力未就绪');
+
+  /* 字体管理页点字体的入口：不先判前提，没选中文字图层时 PS 会抛
+     「命令"设置"当前不可用」，用户以为 PS 版本不支持 */
+  const layer = await requireTextLayer();
+  if (layer.status === 'error') return layer;
 
   const call = await callJsx('ztgl_setFont', [postScriptName, name, weight], {
     timeout: WRITE_TIMEOUT

@@ -26,7 +26,7 @@ const CSS = `
   /* 间距：4 / 8 / 12 / 16，只有这四档 */
   --s1:4px; --s2:8px; --s3:12px; --s4:16px;
   /* 页面左右内边距：全站唯一 */
-  --pad:12px;
+  --pad:10px;
 
   /* 控件：高 26、圆角 4、图标 18 */
   --h:26px; --r:4px; --icon:18px;
@@ -63,14 +63,13 @@ body{
   font:var(--fs)/1.5 "Microsoft YaHei UI","Segoe UI",sans-serif;
   display:flex;align-items:flex-start;justify-content:center;padding:16px;
 }
-/* 固定面板框：稿子在任何窗口里都是同一个宽度 */
-.shell{width:360px;height:720px}
 button,input{font:inherit;color:inherit}
 svg{display:block;flex:0 0 auto}
 .missing{width:18px;height:18px;background:#666;border-radius:2px;display:inline-block}
 
 /* ---------- 外壳：左导航 + 内容 ---------- */
-.shell{display:flex;width:100%;height:100%;background:var(--bg-page)}
+/* 固定面板框：280×640（PS 面板实际宽度），任何窗口下都是这个尺寸 */
+.shell{display:flex;width:280px;height:640px;background:var(--bg-page);overflow:hidden}
 .nav{
   flex:0 0 48px;display:flex;flex-direction:column;align-items:center;
   gap:2px;padding:6px 0;background:var(--bg-page);border-right:1px solid var(--line);
@@ -95,10 +94,17 @@ svg{display:block;flex:0 0 auto}
   flex:0 0 var(--h-bar);display:flex;align-items:center;justify-content:flex-end;
   gap:var(--s1);padding:0 var(--pad);border-top:1px solid var(--line);
 }
+/* 底栏图标比正文弱一档，但仍然看得见（之前用 --t1 太暗） */
+.footer .icon-btn{color:var(--t2)}
+.footer .icon-btn:hover{color:var(--t1)}
 
 /* ---------- 内容：纵向间距只由容器 gap 给 ---------- */
-.body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s2);padding:var(--s2) 0}
-.block{padding:0 var(--pad)}
+/* 块间距 12（区块）、行间距 8（组内）——两级，不能都是 8。
+   左右内边距写在容器上（不是每个块上），这样满宽块的负边距正好铺到面板边缘，不会溢出 */
+.body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s3);padding:var(--s3) var(--pad)}
+/* 块自己不再加左右内边距（由 .body 统一给） */
+.block{min-width:0}
+.block > *{min-width:0}
 .block--full{
   margin:0 calc(-1 * var(--pad));padding:var(--s3) var(--pad);
   background:var(--bg-sunken);
@@ -108,6 +114,11 @@ svg{display:block;flex:0 0 auto}
 .row--split > *{flex:1;min-width:0}
 /* 行内控件必须能缩，否则窄面板会把整行顶出去 */
 .row > .field{flex:1;min-width:0}
+/* 等宽两列：并排的两个数字框必须一样宽 */
+.row--pair{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.row--pair > *{min-width:0}
+/* 图标行沿用 PS 的「两端对齐」：一排工具图标撑满整行 */
+.spacer{flex:1}
 .label{flex:0 0 auto;font-size:var(--fs2);color:var(--t2)}
 .line{height:1px;margin:0 calc(-1 * var(--pad));background:var(--line);border:0}
 .line--in{margin:0}
@@ -271,7 +282,7 @@ const PAGE_FONT = `
 <div class="main">
   <div class="body">
     <div class="block">
-      <button class="btn--ghost" style="height:var(--h)">添加当前图层字体</button>
+      <button class="btn btn--ghost">添加当前图层字体</button>
       <div class="select field" style="margin-top:var(--s2)">
         <span class="select__text">思源黑体</span>${ic('iconxiala', 12)}
       </div>
@@ -281,15 +292,15 @@ const PAGE_FONT = `
     </div>
 
     <div class="block">
-      <div class="row">
-        <div class="field" style="flex:1">
+      <div class="row--pair">
+        <div class="field">
           ${ic('iconzihaodaxiao1', 14)}<input value="24" /><span class="field__unit">pt</span>${ic('iconxiala', 12)}
         </div>
-        <div class="field" style="flex:1">
+        <div class="field">
           ${ic('iconzihaodaxiao3', 14)}<input value="20" /><span class="field__unit">pt</span>${ic('iconxiala', 12)}
         </div>
       </div>
-      <div class="row">
+      <div class="row" style="margin-top:var(--s2)">
         <div class="field" style="flex:1">
           ${ic('iconzihaodaxiao5', 14)}<input value="12" /><span class="field__unit">pt</span>
         </div>
@@ -297,13 +308,17 @@ const PAGE_FONT = `
       </div>
       <div class="row">
         <button class="swatch"></button>
+        <span class="divider-v"></span>
         <button class="icon-btn">${ic('iconzihaodaxiao7', 18)}</button>
         <button class="icon-btn">${ic('iconqingxie', 18)}</button>
         <button class="icon-btn">${ic('iconquanbudaxie', 18)}</button>
-        <span class="divider-v"></span>
+      </div>
+      <div class="row">
         <button class="icon-btn">${ic('iconzuoduiqi', 18)}</button>
         <button class="icon-btn">${ic('iconchuizhiduiqi', 18)}</button>
         <button class="icon-btn">${ic('iconyouduiqi', 18)}</button>
+        <button class="icon-btn">${ic('iconchuizhijuzhongfenbu', 18)}</button>
+        <span class="spacer"></span>
       </div>
     </div>
 

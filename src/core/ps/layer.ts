@@ -8,7 +8,7 @@
 
 import { callJsx } from '../cep/bridge';
 import { failWithDetail, ok, type Result } from '../../types/result';
-import type { LayerKind } from '../../types/layer';
+import { LAYER_KIND_LABEL, type LayerKind } from '../../types/layer';
 import { requireCore } from './init';
 import { unwrapRaw } from './raw';
 
@@ -49,4 +49,41 @@ export async function getLayerState(): Promise<Result<LayerState>> {
     kind: VALID_KINDS.includes(kind) ? kind : 'unknown',
     name
   });
+}
+
+/**
+ * 前提判断的**唯一出口**：当前图层类型必须在 `allow` 里。
+ *
+ * 为什么不各自判：不满足时 PS 不是返回 `{err:1}`，而是直接抛
+ * 「命令"获取/设置"当前不可用」——那句原文会被当成失败原因显示出来，
+ * 于是「没选中文字」被说成「Photoshop 版本不支持」。每个能力各写一遍判断，
+ * 迟早有一处漏写、文案也各说一套；所以只在 `core/ps/layer` 判一次。
+ *
+ * `need` 是给人看的目标名（「文字图层」/「形状图层」/「智能对象」）；
+ * 提示里同时给出当前实际类型，用户才知道该换成什么。
+ */
+export async function requireLayerKind(
+  allow: readonly LayerKind[],
+  need: string
+): Promise<Result<void>> {
+  const layer = await getLayerState();
+  if (layer.status === 'error') return layer;
+  if (!allow.includes(layer.value.kind)) {
+    return failWithDetail(
+      'PS_WRONG_LAYER',
+      `当前图层是「${LAYER_KIND_LABEL[layer.value.kind]}」，需要「${need}」`,
+      `kind:${layer.value.kind}`
+    );
+  }
+  return ok(undefined);
+}
+
+/** 文字属性读写的前提（`requireLayerKind` 的语义化快捷方式） */
+export function requireTextLayer(): Promise<Result<void>> {
+  return requireLayerKind(['text'], '文字图层');
+}
+
+/** 形状相关操作的前提 */
+export function requireShapeLayer(): Promise<Result<void>> {
+  return requireLayerKind(['shape'], '形状图层');
 }

@@ -29,15 +29,11 @@ export function StateHint(props: Props) {
   }
 
   /*
-   * 前提不满足不是故障：没打开文档 / 选中的不是文字图层 / 不是形状图层，
-   * 都是「换个图层就好」的提示。标红会让人以为面板坏了，而这三种码的
-   * 文案本来就说得清该做什么。
+   * 前提不满足不是故障：没打开文档 / 当前图层类型不对（文字、形状、智能对象…），
+   * 都是「换一下就好」的提示。标红会让人以为面板坏了，而这两个码的文案
+   * 本来就说得清当前是什么、需要什么。
    */
-  if (
-    result.code === 'PS_NO_DOC' ||
-    result.code === 'PS_NOT_TEXT' ||
-    result.code === 'PS_NOT_SHAPE'
-  ) {
+  if (result.code === 'PS_NO_DOC' || result.code === 'PS_WRONG_LAYER') {
     return <p className="mm-state-hint">{result.reason}</p>;
   }
 

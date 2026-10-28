@@ -15,7 +15,7 @@ import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/res
 
 const RAW_FAILURES: Record<string, { code: ErrorCode; reason: string }> = {
   'no-doc': { code: 'PS_NO_DOC', reason: '没有打开的文档' },
-  'not-shape': { code: 'PS_NOT_SHAPE', reason: '当前图层不是形状图层' },
+  'not-shape': { code: 'PS_WRONG_LAYER', reason: '当前图层不是形状图层' },
   skipped: {
     code: 'PS_SKIPPED',
     reason: '自动填充已关闭（sj_interfaceSet.ini 里的 img_cya4 为 false）'

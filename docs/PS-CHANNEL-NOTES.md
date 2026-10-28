@@ -247,7 +247,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 | 调用 | 通道 | 超时 | 参数 / 返回 |
 |---|---|---|---|
 | `ztgl_initSystemList` | 直调 `jsx()` | `LONG_TIMEOUT` 300s | 无参；返回字体数组，或 `"ok"` 哨兵（数据写 `SysFont2.json` 的 `{ arr: [...] }`） |
-| `ztgl_setFont` | 直调 `jsx()` | `WRITE_TIMEOUT` 60s | `(hjm, mz, zz)` 三个**明文**字符串，**不要 `encodeText`**；`{err:1}` = 字体缺失 |
+| `ztgl_setFont` | 直调 `jsx()` | `WRITE_TIMEOUT` 60s | `(hjm, mz, zz)` 三个**明文**字符串，**不要 `encodeText`**；`{err:1}` 不止字体缺失（没选中文字图层时宿主给 `msg:"请选择文字图层"`）。**写之前必须先判「当前是文字图层」**（`core/ps/layer.requireTextLayer`）：否则 PS 直接抛「命令"设置"当前不可用」，那句话会被当成失败原因 |
 
 与 §十一 开头那条（`ys_checkUseFont` / `ys_useFont`）的区别：`ys_*` 服务**样式库字体项**，参数要编码；`ztgl_*` 服务**系统字体列表**。两条通道不要合并。
 

@@ -21,26 +21,11 @@ import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { isRecord } from '../../types/guards';
 import { requireVendor } from './init';
-import { getLayerState } from './layer';
+import { requireTextLayer } from './layer';
 import { dataOf, envelopeMessage, parseDataEnvelope, parseJsxRaw } from './raw';
 import { runDirect, UNREADY } from './vendor';
 
 /* ---------------- 读（返回 raw / 已拆 data 的载荷） ---------------- */
-
-/**
- * 读函数的前提：当前图层是文字图层。
- *
- * 原版把这种情况吞掉了（`selectLayer` 只在 `err === 0` 时覆盖面板，`app.v4.js:42523`），
- * 面板停在旧值上，用户看不出为什么；这里提前判，失败原因才说得清楚。
- */
-async function requireTextLayer(): Promise<Result<void>> {
-  const layer = await getLayerState();
-  if (layer.status === 'error') return layer;
-  if (layer.value.kind !== 'text') {
-    return failWithDetail('PS_NOT_TEXT', '当前图层不是文字图层', `kind:${layer.value.kind}`);
-  }
-  return ok(undefined);
-}
 
 /**
  * 当前文字图层属性快照（`zt_getFontSimpleInfo`）。

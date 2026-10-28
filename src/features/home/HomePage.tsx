@@ -18,17 +18,8 @@ import { request } from '../../core/http/client';
 import { clearLogText, readLogText } from '../../core/logger';
 import { diagVendor, type VendorDiag } from '../../core/ps/diag';
 import { useAppStore } from '../../store/app';
-import type { LayerKind } from '../../types/layer';
+import { LAYER_KIND_LABEL } from '../../types/layer';
 import './HomePage.css';
-
-const KIND_LABEL: Record<LayerKind, string> = {
-  normal: '普通图层',
-  shape: '形状图层',
-  text: '文字图层',
-  smartObject: '智能对象',
-  group: '图层组',
-  unknown: '未知'
-};
 
 function formatDiag(diag: VendorDiag): string {
   return [
@@ -122,7 +113,7 @@ export default function HomePage() {
     <section className="mm-home">
       <p className="mm-home__row">
         当前图层：
-        {layerKind ? `${KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}` : '—'}
+        {layerKind ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}` : '—'}
       </p>
 
       <div className="mm-home__actions">

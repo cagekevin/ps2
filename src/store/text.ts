@@ -9,7 +9,8 @@
  * 拼文案的事交给 `components/StateHint`，页面不再自己判断该标红还是该灰。
  *
  * 不订阅 PS 选区事件：`features/font-panel` 在 `layer-watcher` 报告活动图层变了时调 `refresh()`
- * （进页面也算一次变化），切到非文字图层由 `core/ps/text` 返回 `PS_NOT_TEXT`。
+ * （进页面也算一次变化），切到非文字图层由 `core/ps/layer.requireTextLayer` 返回
+ * `PS_WRONG_LAYER`（reason 写明「当前是 X，需要 Y」）。
  *
  * 不 import `commands`（依赖表禁止）：读走 `core/ps`，归一化走 `domain`。
  */
