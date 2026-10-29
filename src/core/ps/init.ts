@@ -160,7 +160,17 @@ export const VENDOR_FUNCS = [
   'cy_ExportImage',
   'cy_BatchExportLayer',
   'cy_BatchExportSecondLayer',
-  'cy_BacthExportPsdToImage'
+  'cy_BacthExportPsdToImage',
+  /* v2 事件驱动用的 3 条（无 UI 按钮，由 `app/common-use-watcher` 触发）：
+     缺了只让对应开关无效，不影响其余能力，故不进 `VENDOR_REQUIRED` */
+  'cy_smartFillColor',
+  'cy_smartFillLineColor',
+  'cy_smartReferenceLine',
+  /* 动作页（05）：`05` 计划原要求「先真机探针再登记」，2026-10-29 用户决定改为
+     **照抄可运行的 Vue 版实践**（Vue 用同名函数、调用方式一致）⇒ 直接登记。
+     风险：我们这份 vendor 副本若缺这两个函数，只有动作页失效（`funcMissing` 分级后不再整片不可用）。 */
+  'dz_callAction',
+  'dz_getActionList'
 ] as const;
 
 /**

@@ -170,9 +170,19 @@ function roundNo(f) {
  *   未提交的新文件 → 退 `birthtime`（创建时间，同样不受后编辑影响）→ `mtime`。
  *   **取证**：全库「同日期 + 有号/无号并存」共 **10 组**，其中 **7 组**原实现判的"最新"与 git 加入顺序**不一致** ⇒ 债成立。
  */
+/** 「跨区」轮次：覆盖多个区域，不属于任何单个区域，不占区域行（否则会被错挂到该区号） */
+const CROSS_RE = /-跨区-/;
+
+function listCrossRounds() {
+  return readdirSync(ARCH_DIR)
+    .filter((f) => f.endsWith('.md') && CROSS_RE.test(f) && !f.startsWith('index'))
+    .sort()
+    .reverse();
+}
+
 function listRounds(nn) {
   return readdirSync(ARCH_DIR)
-    .filter((f) => f.startsWith(nn + '-') && f.endsWith('.md'))
+    .filter((f) => f.startsWith(nn + '-') && f.endsWith('.md') && !CROSS_RE.test(f))
     .sort((a, b) => {
       const byDate = dateOf(a).localeCompare(dateOf(b));
       if (byDate !== 0) return byDate;
@@ -306,6 +316,9 @@ function render() {
 
   const missing = AREAS.filter(([nn]) => listRounds(nn).length === 0).map(([nn]) => nn);
 
+  /* 跨区轮次单列：它们是「一次覆盖多个区域」的审计，挂到任何单区都会让进度表说谎 */
+  const cross = listCrossRounds();
+
   return [
     '# 架构日志 · 区域清单（机器生成 · 禁手改）',
     '',
@@ -338,6 +351,19 @@ function render() {
     .concat(
       missing.length
         ? [`> ⚠️ 下列区号在 ` + '`AREAS`' + ` 中登记但目录里无轮次文件：${missing.join(' / ')}`, '']
+        : [],
+    )
+    .concat(
+      cross.length
+        ? [
+            '',
+            '## 跨区轮次（不占区域行）',
+            '',
+            '> 文件名含 `-跨区-` 的轮次覆盖多个区域，**不挂到任何单区**；结论只在文件里，不参与上面的进度灯。',
+            '',
+            ...cross.map((f) => `- [${f.replace(/^\d\d-/, '').replace(/\.md$/, '')}](${f})`),
+            ''
+          ]
         : [],
     )
     .join('\n');

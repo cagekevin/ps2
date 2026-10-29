@@ -8,7 +8,8 @@
  *
  * 用法：
  *   <PageHeader title="设置" />
- *   <PageHeader title="常用功能页">{两个 IconButton}</PageHeader>
+ *   <PageHeader title="设置" />
+ *   <PageHeader title="字体管理">{两个 IconButton}</PageHeader>
  *
  * 禁止：页面再写 `<header>` + 自己的 `__title` 样式；标题字号与条高走 token。
  */

@@ -508,8 +508,7 @@
 <tr><td>CheckBox</td><td><code>components/CheckBox</code></td><td><code>check-box.css</code></td><td>12×12 / 圆角 3；根排列、隐藏 input、标签省略已上移 <code>global.css</code></td></tr>
 <tr><td>RadioButton</td><td><code>components/RadioButton</code></td><td><code>radio-button.css</code></td><td>12×12 正圆；与 CheckBox 共用 <code>global.css</code> 的根与标签规则</td></tr>
 <tr><td>IconButton</td><td><code>components/IconButton</code></td><td><code>icon-button.css</code></td><td>26×26 图标按钮，含选中态与角标</td></tr>
-<tr><td>IconPanel / Group</td><td><code>components/IconPanel</code></td><td><span class="tag">无 CSS</span></td><td>图标 + 展开抽屉；原 <code>icon-panel.css</code> 只有抽屉底色，去色后已删</td></tr>
-<tr><td>Collapse</td><td><code>components/Collapse</code></td><td><code>collapse.css</code></td><td>24 高折叠行；标题单行省略在 <code>global.css</code></td></tr>
+<tr><td>IconPanel / Group</td><td><code>components/IconPanel</code></td><td><code>icon-panel.css</code></td><td>图标 / 标题行触发器 + 展开抽屉（<code>sectionTrigger</code> 是第二种默认触发器）</td></tr>
 <tr><td>Chevron</td><td><code>components/Chevron</code></td><td><code>chevron.css</code></td><td>展开 / 折叠箭头，<code>rotate(-90deg)</code> 表示收起</td></tr>
 <tr><td>PageHeader</td><td><code>components/PageHeader</code></td><td><code>page-header.css</code></td><td>40 高页头 + 标题 + 右侧插槽</td></tr>
 <tr><td>BottomBar</td><td><code>components/BottomBar</code></td><td><code>bottom-bar.css</code></td><td>26 高底栏（按钮 30 宽 + 1×13 竖线；竖线形状在 <code>global.css</code>）</td></tr>
@@ -535,9 +534,8 @@
 <tr><td>IconButton</td><td>默认 / 选中 / 禁用</td><td>禁用 <code>opacity .4</code></td><td>hover、选中底色</td></tr>
 <tr><td>SelectBox</td><td>收起 / 展开 / 项 / 当前项 / 禁用</td><td>展开后出面板、当前项有对勾位</td><td>项 hover、当前项底色</td></tr>
 <tr><td>Chevron</td><td>展开 / 收起（<code>--closed</code>）</td><td>收起 <code>rotate(-90deg)</code>，120ms</td><td>—（纯几何，未受影响）</td></tr>
-<tr><td>TextField</td><td><code>--wide</code> / <code>--half</code> / <code>--compact</code> / <code>--fill</code></td><td>四档宽度（80 / 50%-6 / 70 / 撑满）</td><td>—（纯尺寸）</td></tr>
+<tr><td>TextField</td><td><code>--wide</code> / <code>--half</code> / <code>--fill</code></td><td>三档宽度（80 / 50%-6 / 撑满）；<code>--compact</code> 已删</td><td>—（纯尺寸）</td></tr>
 <tr><td>TileButton</td><td>默认 / hover / <code>--active</code> / <code>--filled</code> / <code>--disabled</code></td><td>角标位置、禁用态</td><td>hover 叠白、展开中凹底、已填充标记色</td></tr>
-<tr><td>Collapse</td><td>展开 / 收起</td><td>收起不渲染内容</td><td>—（纯结构）</td></tr>
 <tr><td>TagChip</td><td>默认 / <code>--on</code>（选中）</td><td>—</td><td>选中底色与描边（全部靠颜色）</td></tr>
 <tr><td>FontListItem</td><td>默认 / hover / <code>--active</code> / <code>--unavailable</code></td><td>不可用项的文字说明</td><td>hover 底、当前项底、不可用灰化</td></tr>
 <tr><td>ItemView</td><td>四库（<code>--color/--gradient/--font/--style</code>）/ <code>--editing</code></td><td>四档尺寸</td><td>hover 描边、编辑中高亮</td></tr>
@@ -616,7 +614,6 @@
 <tr><td><code>BottomBarButton</code></td><td><code>src/components/BottomBar/index.tsx</code></td><td>title, name, size = 18, disabled = false, onClick, children</td></tr>
 <tr><td><code>CheckBox</code></td><td><code>src/components/CheckBox/index.tsx</code></td><td>label, checked, title, disabled = false, onChange</td></tr>
 <tr><td><code>Chevron</code></td><td><code>src/components/Chevron/index.tsx</code></td><td>open, size = 14, className = &#39;&#39;</td></tr>
-<tr><td><code>Collapse</code></td><td><code>src/components/Collapse/index.tsx</code></td><td>title, open, onToggle, children, className = &#39;&#39;</td></tr>
 <tr><td><code>Confirm</code></td><td><code>src/components/Confirm/index.tsx</code></td><td>open, title, message, confirmText = &#39;删除&#39;, onConfirm, onCancel</td></tr>
 <tr><td><code>ContextMenu</code></td><td><code>src/components/ContextMenu/index.tsx</code></td><td>x, y, anchor, items, inside, onClose</td></tr>
 <tr><td><code>IconButton</code></td><td><code>src/components/IconButton/index.tsx</code></td><td>name, title, size = 20, active = false, badge = false, disabled = false, ariaExpanded, ariaControls, onClick, onContextMenu</td></tr>
@@ -833,7 +830,7 @@
   <figure class="w"><figcaption>DistributionHelp 高级用法</figcaption>
     <div class="rowline"><span>高级用法</span><span>▾</span></div>
     <div class="pw-part" style="margin-top:4px">展开后的说明文字</div>
-    <p>折叠行复用 <code>Collapse</code> 的交互（点整行开合）</p></figure>
+    <p>折叠行复用抽屉的标题行触发器（<code>IconPanel</code> 的 <code>sectionTrigger</code>，点整行开合）</p></figure>
 </div>
 <h2>三、应用外壳（<code>app/</code>）</h2>
 <table>
@@ -975,7 +972,6 @@
 <tr><td><code>src/components/TextField/text-field.css</code></td><td>21</td><td>8</td><td>0/0/0/0/0</td><td>Input 的定宽外壳</td></tr>
 <tr><td><code>src/components/IconButton/icon-button.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>IconButton</td></tr>
 <tr><td><code>src/components/Chevron/chevron.css</code></td><td>5</td><td>1</td><td>0/0/0/0/0</td><td>Chevron</td></tr>
-<tr><td><code>src/components/Collapse/collapse.css</code></td><td>22</td><td>9</td><td>0/0/0/0/0</td><td>Collapse</td></tr>
 <tr><td><code>src/components/PageHeader/page-header.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>PageHeader</td></tr>
 <tr><td><code>src/components/BottomBar/bottom-bar.css</code></td><td>8</td><td>4</td><td>0/0/0/0/0</td><td>BottomBar</td></tr>
 <tr><td><code>src/components/ContextMenu/menu.css</code></td><td>10</td><td>3</td><td>0/0/0/0/0</td><td>ContextMenu</td></tr>

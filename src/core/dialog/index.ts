@@ -44,6 +44,15 @@ export function openFile(title: string, extensions: string[]): string | null {
   return normalizePath(result.data[0]);
 }
 
+/** 选目录；取消返回 null（与 openFile / saveFile 同一取消语义）。选目录必须单选，否则 CEP 只回一个路径却选了多个 */
+export function chooseFolder(title: string): string | null {
+  const fs = cepFs();
+  if (!fs || typeof fs.showOpenDialogEx !== 'function') return null;
+  const result = fs.showOpenDialogEx(false, true, title, '', []);
+  if (result.err !== 0 || !result.data[0]) return null;
+  return normalizePath(result.data[0]);
+}
+
 /** 保存文件；取消返回 null。扩展名不存在时自动补第一个 */
 export function saveFile(title: string, extensions: string[], defaultName: string): string | null {
   const fs = cepFs();

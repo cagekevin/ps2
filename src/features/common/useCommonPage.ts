@@ -8,13 +8,16 @@
  */
 
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { flip, openDirectory, reorder, resetAll, zoom } from '../../commands/common-use';
+import { flip, reorder, toggleAutoFill, zoom } from '../../commands/common-use';
 import type { FlipDirection } from '../../commands/common-use';
 import type { CommonUseTile } from '../../domain/common-use';
+import { MSG } from '../../domain/messages';
+import { booleanOptionOf } from '../../domain/common-use-options';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useRunCommand } from '../../hooks/useRunCommand';
+import { useToast } from '../../hooks/useToast';
 import { useCommonUseStore } from '../../store/common-use';
-import { TILE_COMMANDS } from './common-constants';
+import { AUTO_FILL_TILE_ID, TILE_COMMANDS } from './common-constants';
 
 /** 拖拽落点候选的选择器：功能格自己（长按拖的是格子） */
 const TILE_SELECTOR = '.mm-common__tile';
@@ -24,15 +27,19 @@ export function useCommonPage() {
   const dropped = useCommonUseStore((state) => state.dropped);
   const reasons = useCommonUseStore((state) => state.reasons);
   const load = useCommonUseStore((state) => state.load);
-  /* 显隐键默认开：文件里没有这个键 ≠ 用户关掉了（与 domain 的投影约定一致）。
-     订阅派生布尔而不是整个 options 对象：另外 15 个键变化不该重渲染本页 */
-  const showZoom = useCommonUseStore((state) => state.options.cyShowZoom !== false);
-  const showTransformation = useCommonUseStore(
-    (state) => state.options.cyShowTransformation !== false
+  /*
+   * 显隐键默认开：判据走 `booleanOptionOf`（官方默认表里这两键就是 `true`），
+   * 不自己写 `!== false` —— 那样等于在页面里放第二份默认值。
+   * 订阅派生布尔而不是整个 options 对象：另外 15 个键变化不该重渲染本页。
+   */
+  const showZoom = useCommonUseStore((state) => booleanOptionOf(state.options, 'cyShowZoom'));
+  const showTransformation = useCommonUseStore((state) =>
+    booleanOptionOf(state.options, 'cyShowTransformation')
   );
 
   /* 包 loading + 失败提示 + 原因留痕：只有一处实现（`hooks/useRunCommand`） */
   const run = useRunCommand();
+  const toast = useToast();
   const drag = useLongPressDrag();
   const gridRef = useRef<HTMLDivElement | null>(null);
 
@@ -54,16 +61,19 @@ export function useCommonPage() {
     void run(() => flip(direction));
   }
 
-  /** 页头的两个基础按钮（计划 §1.1 的 12 类里，只有这两个不落在网格上） */
-  function openDataDirectory(): void {
-    void run(openDirectory);
-  }
-
-  function resetTiles(): void {
-    void run(resetAll);
-  }
-
+  /**
+   * 网格左键：开关类走 `toggleAutoFill`（官方是切开关，不是执行一次），其余查 `TILE_COMMANDS`。
+   *
+   * 提示文案留在页面（命令层只回答「现在是什么」）：官方两句是「开启智能填色」/「已关闭」。
+   */
   function activate(tile: CommonUseTile): void {
+    if (tile.id === AUTO_FILL_TILE_ID) {
+      void run(toggleAutoFill, { spin: false }).then((result) => {
+        if (result.status === 'ok') toast.info(result.value ? MSG.common.fillOn : MSG.common.fillOff);
+      });
+      return;
+    }
+
     const command = TILE_COMMANDS[tile.id];
     if (!command) return;
     void run(command);
@@ -104,8 +114,6 @@ export function useCommonPage() {
     setExpandedId,
     zoomTo,
     flipTo,
-    openDataDirectory,
-    resetTiles,
     activate,
     startDrag,
     gridRef,

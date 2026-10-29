@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ConfirmHost } from '../components/Confirm/useConfirm';
 import { APP_TITLE, APP_VERSION } from '../core/env';
+import { CommonUseWatcher } from './common-use-watcher';
 import { LayerWatcher } from './layer-watcher';
 import { NavBar } from './nav-bar';
 import './layout.css';
@@ -19,6 +20,8 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="mm-layout">
       <LayerWatcher />
+      {/* 常用页的常驻事件订阅（拖入 / 粘贴 / 剪贴蒙版 / 填色 / 参考线）；页面不订阅 */}
+      <CommonUseWatcher />
       {/* 全局唯一确认弹窗：页面用 useConfirm() 命令式调用，不用自己渲染 */}
       <ConfirmHost />
       <NavBar />

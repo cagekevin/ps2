@@ -1,0 +1,20 @@
+/* 骨架：只留结构与定位 */
+
+.mm-action__warehouse{
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: 100%;
+}
+
+/* 下拉底部：改名 + 新建仓库（两个并排按钮，结构而已，间距留给视觉重写） */
+.mm-action__warehouse-footer{
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.mm-action__warehouse-action{
+  flex: 1 1 0;
+  min-width: 0;
+}

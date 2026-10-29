@@ -15,3 +15,11 @@
   left: var(--mm-space-tight);
   content: '';
 }
+
+/* 半选：与选中同样的结构位（视觉重写时再给各自的图形，03 §0.5 不写颜色/尺寸档） */
+.mm-check__input:indeterminate + .mm-check__box::after{
+  position: absolute;
+  top: var(--mm-space-tight);
+  left: var(--mm-space-tight);
+  content: '';
+}

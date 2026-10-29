@@ -468,6 +468,23 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 ---
 
+### 11.5 动作页（第五条：一调度 + 一直调，**参数是整个对象**）
+
+| 函数 | 通道 | 参数 | 说明 |
+|---|---|---|---|
+| `dz_callAction` | **调度**（`ps_onJsx`，官方 `case 96 → jsxHistoryNoCheck`） | `[{ group, name, alias? }]` **整个 item** | 只传 `name` 会执行到别的组（官方 `:1823179`）；`alias` 只在显示用，执行仍靠 `group + name` |
+| `dz_getActionList` | **直调**（`jsxNoCheck`） | 无参 | 返回形状 `UNVERIFIED`：Vue 版同时兜 `ActionGroup[]` 与 `{ info: ActionGroup[] }`；归一化在 `domain`，`core` 只 `passthrough` |
+
+两条要点：
+
+1. **超时不同**：`dz_callAction` 是批处理式长任务，给 `LONG_TIMEOUT`(300s)——它是**调度通道唯一的超时例外**，
+   白名单写在 `capability.test.ts`（`LONG_RUN_DISPATCH`）。给 30s 会「先报超时、PS 还在跑」。
+2. **派发名不同**：官方 dispatch 的 `n` 是 `"动作-" + name`；我们静态写「动作」（`n` 只影响 PS 历史面板显示名）。
+   若真机要求历史名带动作名，就得给 `CapabilitySpec` 加 `labelOf(args)`——那是新增形状，需先改约定。
+
+登记方式（2026-10-29 改判）：`05` 原要求先真机 `typeof` 探针再登记；无真机期间按用户指示**照抄可运行的 Vue 版实践**
+（`ps/src/cep/jsx/action.ts`）。探针已加进 `mm_diag_vendor`（`callAction` / `getActionList` 两个字段），真机时复核。
+
 ## 十二、库文件数据契约（抄错就丢用户数据）
 
 ### 12.1 索引 `sj_kuStoreInfo.ini`

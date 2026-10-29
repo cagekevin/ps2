@@ -183,11 +183,19 @@ describe('CAP', () => {
     }
   });
 
-  it('调度通道一律 30s：调度器只转发，耗时在 jsx 内部（曾靠 runVendor 写死，现在只能靠表）', () => {
-    const dispatches = Object.values(CAP).filter((spec) => spec.channel === 'dispatch');
+  it('调度通道默认 30s；长任务例外必须点名（白名单只有 callAction）', () => {
+    /**
+     * 例外**只许一个**：`callAction` 执行的是 PS 动作，可能跑几分钟（Vue 版同样给长超时）。
+     * 30s 会先报超时、而 PS 还在执行——那比多等更糟。新增例外必须同时改这张表和这条断言。
+     */
+    const LONG_RUN_DISPATCH = new Set(['callAction']);
+
+    const dispatches = Object.entries(CAP).filter(([, spec]) => spec.channel === 'dispatch');
 
     expect(dispatches.length).toBeGreaterThan(0);
-    for (const spec of dispatches) expect(spec.timeout).toBe(READ_TIMEOUT);
+    for (const [name, spec] of dispatches) {
+      expect(spec.timeout, name).toBe(LONG_RUN_DISPATCH.has(name) ? LONG_TIMEOUT : READ_TIMEOUT);
+    }
   });
 
   it('多选类能力共用同一个前置（位置对换 / 颜色互换 / 元素替换 / 两个分布形态）', () => {

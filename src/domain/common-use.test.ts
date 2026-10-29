@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { COMMON_USE_SEED, decodeCommonUseItem, toTiles } from './common-use';
+import {
+  BATCH_CONFIRM_OVER,
+  COMMON_USE_SEED,
+  decodeCommonUseItem,
+  decodePsdList,
+  needsBatchConfirm,
+  toTiles
+} from './common-use';
 
 describe('COMMON_USE_SEED', () => {
   it('是官方 14 项，且 id 顺序不是数字顺序', () => {
@@ -117,5 +124,29 @@ describe('toTiles', () => {
     const tiles = toTiles([{ id: 'a', comName: '' }, { id: 'b', comName: 'comspacing' }]);
     expect(tiles[0]?.comName).toBeNull();
     expect(tiles[1]?.comName).toBe('comspacing');
+  });
+});
+
+describe('decodePsdList（PSD 列表的唯一判形状处）', () => {
+  it('字符串数组 → 过滤空串后原样返回（空数组不算失败）', () => {
+    expect(decodePsdList(['a.psd', '', 'b.psd'])).toEqual({ status: 'ok', value: ['a.psd', 'b.psd'] });
+    expect(decodePsdList([])).toEqual({ status: 'ok', value: [] });
+  });
+
+  it('顶层不是数组 → VALIDATION，原样进 detail（不猜形状）', () => {
+    const result = decodePsdList({ files: ['a.psd'] });
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('VALIDATION');
+      expect(result.detail).toContain('files');
+    }
+  });
+});
+
+describe('needsBatchConfirm（官方 >30 才确认）', () => {
+  it('29 / 30 不弹，31 弹', () => {
+    expect(needsBatchConfirm(29)).toBe(false);
+    expect(needsBatchConfirm(BATCH_CONFIRM_OVER)).toBe(false);
+    expect(needsBatchConfirm(31)).toBe(true);
   });
 });

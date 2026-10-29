@@ -74,6 +74,11 @@ export interface RunOptions {
    * 失败留痕（`log.warn` + toast）一条不少。
    */
   spin?: boolean;
+  /**
+   * 遮罩上的文案。不传走 `useLoading` 的默认文案——那对「导出图片 / 转智能对象」
+   * 这类耗时动作不给任何上下文，用户只看到转圈。
+   */
+  tip?: string;
 }
 
 /**
@@ -134,7 +139,7 @@ export function useRunCommand(): <T>(
   return useCallback(
     async <T,>(task: () => Promise<Result<T>>, options: RunOptions = {}) => {
       /* 不转圈时直接跑：`task` 自己保证返回 Result（命令层从不抛），异常照旧上抛 */
-      const result = options.spin === false ? await task() : await loading.run(task);
+      const result = options.spin === false ? await task() : await loading.run(task, options.tip);
 
       if (result.status === 'error') {
         announce(result, options, toast, '命令执行失败');

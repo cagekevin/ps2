@@ -1,4 +1,6 @@
 /**
+ * 本域（结果形状）以此为准：`src/types/result.ts` 的 `ok` / `fail` / `failWithDetail`。新增失败只加 `ErrorCode`，不再新建形状或构造文件。
+ *
  * 【范本】全仓唯一的结果形状
  *
  * 成功 / 失败只有这一个形状：文件三态、jsx 宿主层、业务失败全部收进 `code`。
@@ -67,3 +69,12 @@ export function failWithDetail<T = never>(
 ): Result<T> {
   return { status: 'error', code, reason, detail };
 }
+
+/**
+ * 失败臂（不带 payload）：`Result` 去掉 ok 分支。
+ *
+ * 用于「只需要记住失败」的地方（如 store 的 `reasons`）。存整条 `Result` 会让
+ * 「没失败（ok）」与「没读过（null）」两个状态混在一个字段里，读的时候必须再判一次 `status`
+ * —— 那正是 `TD-09-3`。这里只留失败臂，`null` 就只有一个意思：**最近一次读没有失败**。
+ */
+export type Failure = Extract<Result<unknown>, { status: 'error' }>;

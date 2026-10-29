@@ -19,9 +19,11 @@ import { useEffect, useState } from 'react';
 import { CheckBox } from '../../components/CheckBox';
 import { PageHeader } from '../../components/PageHeader';
 import { SelectBox } from '../../components/SelectBox';
+import { Button } from '../../components/ui';
 import { useRunCommand } from '../../hooks/useRunCommand';
-import { setOption, setShow } from '../../commands/common-use';
+import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
+import { booleanOptionOf } from '../../domain/common-use-options';
 import { UNITS, unitIndexOf } from '../../domain/units';
 import { useCommonUseStore } from '../../store/common-use';
 import { useFontSetStore } from '../../store/font-set';
@@ -35,10 +37,13 @@ export default function SettingsPage() {
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
   const [saving, setSaving] = useState(false);
 
-  /* 订阅派生布尔而不是整个 options：另外 15 个键变化与本页无关 */
-  const showZoom = useCommonUseStore((state) => state.options.cyShowZoom !== false);
-  const showTransformation = useCommonUseStore(
-    (state) => state.options.cyShowTransformation !== false
+  /*
+   * 订阅派生布尔而不是整个 options：另外 15 个键变化与本页无关。
+   * 判据走 `booleanOptionOf`（官方默认表），不写 `!== false` —— 那是页面里的第二份默认值。
+   */
+  const showZoom = useCommonUseStore((state) => booleanOptionOf(state.options, 'cyShowZoom'));
+  const showTransformation = useCommonUseStore((state) =>
+    booleanOptionOf(state.options, 'cyShowTransformation')
   );
   const tiles = useCommonUseStore((state) => state.tiles);
   const loadOptions = useCommonUseStore((state) => state.load);
@@ -131,6 +136,21 @@ export default function SettingsPage() {
             />
           ))}
         </div>
+
+        {/*
+         * 「重置常用功能排序」——官方 `:1991384` 把它放在**设置页的常用功能区最后一行**，
+         * 不在常用页页头（v1 放错过，2026-10-29 改回）。
+         * 官方文案是「重置常用功能排序」，但 `resetConfig()` 返回的是整份 14 项默认配置
+         * （顺序 + 显隐 + title/svg 全恢复）——名字只说排序会骗人，所以文案改成「重置常用功能」，
+         * 句式保持官方原样、只删一个词。**这是登记的文案偏离**（`03` §4.5），别顺手改回官方原文，
+         * 也别改成「恢复默认常用功能」（会与设置页的「恢复默认设置」混淆，那是重置整个客户端）。
+         */}
+        <Button
+          className="mm-settings__reset"
+          onClick={() => void run(resetAll, { spin: false })}
+        >
+          重置常用功能
+        </Button>
       </div>
     </div>
   );

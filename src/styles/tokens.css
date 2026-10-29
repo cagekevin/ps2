@@ -43,9 +43,6 @@
   --mm-row-head-h: 18px;
   --mm-warehouse-h: 36px;
   --mm-tab-line-h: 20px;
-  --mm-collapse-h: 24px;
-  --mm-collapse-arrow-w: 20px;
-  --mm-collapse-arrow-h: 13px;
   --mm-check-size: 12px;
   --mm-check-radius: 3px;
   --mm-check-slot: 20px;
@@ -154,7 +151,6 @@
      写成 50%-5px 时两个框加起来比容器宽 2px，右边的框会压出边界 */
   --mm-input-w-wide: 80px;
   --mm-input-w-half: calc(50% - 6px);
-  --mm-input-w-compact: 70px;
   --mm-btn-half: calc(50% - 6px);
 
   /* ---------- 8. 颜色 ----------

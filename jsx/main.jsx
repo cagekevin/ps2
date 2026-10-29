@@ -402,6 +402,9 @@ function mm_diag_vendor() {
 			btnUseStyle: typeof ps_ysBtnUseStyle,
 			setForegroundColor: typeof ys_setForegroundColor,
 			useShapeFill: typeof ys_useShapeFill,
+			/* 动作页（05）用：jsxbin 里静态搜不到，只能运行期探 */
+			callAction: typeof dz_callAction,
+			getActionList: typeof dz_getActionList,
 			configSet: new File(setPath).exists,
 			configInterface: new File(ifacePath).exists,
 			autoFillColor: null

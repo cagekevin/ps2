@@ -1,0 +1,27 @@
+/* 骨架：只留结构与定位，视觉待重写（`03` §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+
+.mm-group-head{
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* 内层 button 撑满剩余宽度：点计数也算开合 */
+.mm-group-head__toggle{
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.mm-group-head__title{
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mm-group-head__count,
+.mm-group-head__trailing{
+  flex: 0 0 auto;
+}

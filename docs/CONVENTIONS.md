@@ -92,6 +92,7 @@
 |---|---|---|---|
 | UI 控件 | `components/ui` | `<Button>` 比手写 className 短 | 样式不一致，肉眼可见 |
 | 请求 | `request('key')` | 不写泛型、不拼 URL | key 写错编译失败 |
+| PS 动作 | `core/ps/action.ts` | 动作页两条 jsx（一调度一直调），参数形状照抄可运行的 Vue 版 | 直接 `callJsx` 要自己转结果 |
 | PS 能力 | `core/ps/*` | 不记 jsx 函数名、自动处理 Result | 直接 `callJsx` 要自己转结果 |
 | 部署 | `npm run deploy` | 一条命令 | 手工复制漏文件（已发生过） |
 | 日志 | `log.*` | 自动脱敏 | 自己拼串会泄漏 token |
@@ -143,7 +144,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 | `parse*` | **`string`**（原文） | `Result<T>` | 文本 → 值（JSON / jsx raw / 库文件文本） | `parseJson`、`parseJsxRaw`、`parseKuContainer` |
 | `decode*` | **`unknown`**（不可信） | `Result<T>` | 判据 + 收窄，**失败可见** | `decodeList`、`decodeFontList`、`decodeStyleIndex` |
 | `decode*` | **`string`**（编码过的文本） | 解码后的值 | 纯 codec，不做判据 | `decodeBase64`、`decodeImage`、`decodeText` |
-| `normalize*` | **已可信的值** | `T`（**不返回 `Result`**） | 纯投影 / 补默认，失败给默认值 | `normalizeTextColor`、`normalizeCollapsed`、`normalizeFontSetSettings` |
+| `normalize*` | **已可信的值** | `T`（**不返回 `Result`**） | 纯投影 / 补默认，失败给默认值 | `normalizeTextColor`、`normalizeFontSetSettings`、`normalizeStyleIndex` |
 
 判据一句话：**返回 `Result` 的，入参是 `string` 就叫 `parse`，入参是 `unknown` 就叫 `decode`；不返回 `Result` 的才叫 `normalize`。**
 
@@ -229,7 +230,7 @@ src/
 ├─ dev/           仅开发用的假数据（`preview.ts`，`import.meta.env.DEV` 守卫，生产不加载）
 ├─ main.tsx       入口（挂 root）
 ├─ App.tsx        应用装配（Providers + Router + Layout，无业务）
-└─ app/           router、layout、providers、layer-watcher
+└─ app/           router、layout、providers、layer-watcher、common-use-watcher
 ```
 
 `src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
@@ -680,6 +681,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 |---|---|---|
 | UI 控件 | `components/ui`（Button/Input/Select/Field） | 页面自己写按钮、输入框样式 |
 | 请求 | `request('endpointKey')`，类型自动推导 | 手写泛型、自己拼 URL |
+| PS 动作 | `core/ps/action.ts` | 动作页两条 jsx（一调度一直调），参数形状照抄可运行的 Vue 版；直接 `callJsx` 要自己转结果 |
 | PS 能力 | `core/ps/*` | 直接 `callJsx` |
 | 路径 / 资源 URL | `core/paths`（`userAssetUrl` / `userSubPath`） | 手拼 `file://`、反斜杠、自己接 `SheJiZhuLi` |
 | 日志 | `log.info/warn/error`（内部已脱敏） | 传 token 前自己处理 |
@@ -923,6 +925,9 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 - 技术错误：`log.error(msg, ctx)`，不弹给用户
 - 禁止 `try/catch` 吞掉错误不留日志
 - 错误文案统一中文，不带技术细节（堆栈只进日志）
+- **文案只有一个入口：`src/domain/messages.ts` 的 `MSG`。** 任何层要显示给用户的字（失败 / 标签 / 标题 / 菜单 / 空态 / 进度 / 确认）都从这里取；**页面上不许出现中文字面量**，`fail` / `toast` 里也不许再写中文。
+  - `core/` **不许 import `domain`**，所以 `core` 里也不许出现中文文案：那里只说错误码 + 英文技术 `detail`，中文由消费方用 `MSG` 或码映射给出（现存 72 处属存量债 `TD-04-1`，按文件清，不新写）。
+  - 唯一的非文案例外：传给 jsx 的**参数值**（如翻转方向 `'左右'`）必须与官方逐字一致，留在调用点，不算文案。
 
 ---
 

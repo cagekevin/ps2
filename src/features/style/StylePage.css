@@ -49,19 +49,6 @@
 .mm-style__group,
 
 /* 横排与两端对齐走公共 `.mm-u-row`，这里只留撑满 */
-.mm-style__group-head{
-  width: 100%;
-}
-
-.mm-style__group-name{
-  flex: 1;
-  overflow: hidden;
-}
-
-.mm-style__count{
-  flex: 0 0 auto;
-}
-
 .mm-style__items{
   display: flex;
   flex-wrap: wrap;

@@ -1,5 +1,9 @@
 /**
- * 自由面板文件形状（只定契约，本页不实现）
+ * 自由面板文件形状（**契约完整，写入口未做** —— 见 `daily/架构日志/05-跨区-自由面板-现状与接续-2026-10-29.md`）
+ *
+ * 现状一句话：本文件的四个 interface 与 `free-panel-legacy.ts` 的映射表都已定稿，
+ * 但仓里**没有任何代码写** `sj_appFreePanel.json`（缺 `repo/free-panel-repo.ts` 与 `commands.addToFreePanel`）。
+ * 手势口径：**普通右键 = 展开子面板**（已实现，勿改）；**Ctrl+右键 = 加入自由面板**（未接，债 `TD-09-7`）。
  *
  * 字体面板 v1 **不写** `sj_appFreePanel.json`：Ctrl+点击只提示「未上线」。
  * 这里先把形状冻结，以后接自由面板时不再改字面板命令的 payload。

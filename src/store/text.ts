@@ -19,12 +19,17 @@ import { create } from 'zustand';
 import { getTextInfoRaw } from '../core/ps/text';
 import { log } from '../core/logger';
 import { applyTextPatch, decodeTextInfo, type TextInfo } from '../domain/text-info';
-import { failWithDetail, type Result } from '../types/result';
+import type { Failure } from '../types/result';
 
 interface TextState {
   info: TextInfo | null;
-  /** 非 null = 上一次读取失败；面板用遮罩盖住属性区并显示这一条 */
-  failure: Result<void> | null;
+  /**
+   * 非 null = 上一次读取失败；面板用遮罩盖住属性区并显示这一条。
+   *
+   * 只存**失败臂**（`Failure`）：存整条 `Result` 会让「读成功」与「没读过」在这个字段上同形，
+   * 读之前还得再判一次 `status`（`TD-09-4`）。
+   */
+  failure: Failure | null;
   /** 快照可能已过期（读失败 / 切过图层） */
   stale: boolean;
   refresh: () => Promise<void>;
@@ -49,14 +54,14 @@ export const useTextStore = create<TextState>()((set, get) => ({
     if (raw.status === 'error') {
       /* 旧值保留在 `info` 里（清空会让面板闪成默认值），由页面用遮罩挡住 */
       log.warn('读取文字属性失败', { code: raw.code, reason: raw.reason });
-      set({ failure: failWithDetail(raw.code, raw.reason, raw.detail), stale: true });
+      set({ failure: raw, stale: true });
       return;
     }
 
     const info = decodeTextInfo(raw.value);
     if (info.status === 'error') {
       log.warn('文字属性结构不认识', { reason: info.reason, detail: info.detail });
-      set({ failure: failWithDetail(info.code, info.reason, info.detail), stale: true });
+      set({ failure: info, stale: true });
       return;
     }
 

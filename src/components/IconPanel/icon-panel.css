@@ -6,3 +6,16 @@
 .mm-icon-panel__box{
   width: 100%;
 }
+
+/* 标题行触发器（`sectionTrigger`）：整行可点，箭头 + 标题。只给结构，视觉待重写（03 §0.5） */
+.mm-icon-panel__title{
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.mm-icon-panel__title-text{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}

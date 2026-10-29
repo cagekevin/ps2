@@ -1,0 +1,39 @@
+/* 骨架：只留结构与定位（03 §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+
+.mm-action{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mm-action__body{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mm-action__list{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mm-action__items{
+  display: grid;
+}
+
+/* 动作按钮：文字过长时截断，不撑破格子（05 §4.3 第 2 条） */
+.mm-action__item{
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 「添加动作」弹窗里那颗全选框与列表的排布（结构而已） */
+.mm-action-dialog__empty{
+  display: block;
+}

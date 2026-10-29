@@ -10,6 +10,7 @@
 import { useLayoutEffect } from 'react';
 import { useDismiss } from '../../hooks/useDismiss';
 import { useFloatingPosition } from '../../hooks/useFloatingPosition';
+import { Icon } from '../icons';
 import './menu.css';
 
 export interface MenuItem {
@@ -20,6 +21,11 @@ export interface MenuItem {
   disabled?: boolean;
   /** 分隔线；为 true 时忽略 label / onSelect */
   separator?: boolean;
+  /**
+   * 单选型菜单的「当前项」标记（列数 1/2/3 那种）。
+   * 标记画在菜单项内，**不在页面里画勾**（官方用 4px svg，我们不引这种尺寸的图标）。
+   */
+  checked?: boolean;
   onSelect?: () => void;
 }
 
@@ -61,12 +67,14 @@ export function ContextMenu({ x, y, anchor, items, inside, onClose }: ContextMen
             role="menuitem"
             disabled={item.disabled}
             className={`mm-menu__item${item.danger ? ' mm-menu__item--danger' : ''}`}
+            aria-checked={item.checked}
             onClick={() => {
               item.onSelect?.();
               onClose();
             }}
           >
-            {item.label}
+            <span>{item.label}</span>
+            {item.checked ? <Icon name="icongouxuan" size={12} /> : null}
           </button>
         )
       )}

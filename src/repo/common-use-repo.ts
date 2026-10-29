@@ -15,6 +15,7 @@
  */
 
 import { type StorageRoot } from '../core/storage';
+import { MSG } from '../domain/messages';
 import {
   COMMON_USE_SEED,
   decodeCommonUseItem,
@@ -27,7 +28,7 @@ import {
   type CommonUseOptions
 } from '../domain/common-use-options';
 import { decodeList, type Dropped } from '../types/decode-list';
-import { fail, ok, type Result } from '../types/result';
+import { failWithDetail, ok, type Result } from '../types/result';
 import {
   readJsonFile,
   readOrEmpty,
@@ -139,7 +140,7 @@ export function updateCommonUseOptions(patch: Record<string, unknown>): Promise<
   const unknown = keys.filter((key) => !isCommonUseSettingKey(key));
   if (unknown.length) {
     return Promise.resolve(
-      fail('VALIDATION', `不允许写 sj_set.json 的未知键：${unknown.join('、')}`)
+      failWithDetail('VALIDATION', MSG.badArgument, unknown.join('、'))
     );
   }
 

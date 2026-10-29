@@ -48,7 +48,8 @@ describe('decodeList', () => {
         items: [1, 3],
         /* records 是**原始数组**：调用方靠它保下标与写回空间，不必二次解码 */
         records: [1, 'x', 3],
-        dropped: [{ path: 'root[1]', code: 'CORRUPT', reason: '不是数字' }]
+        /* `detail` 一并带过来：只有 path 时看不出「坏在哪个字段」（刀14） */
+        dropped: [{ path: 'root[1]', code: 'CORRUPT', reason: '不是数字', detail: 'root[1]' }]
       })
     );
   });

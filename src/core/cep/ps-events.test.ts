@@ -172,6 +172,57 @@ describe('一个 ID 多个语义', () => {
   });
 });
 
+describe('常用页语义（V2 新增 5 个）', () => {
+  it('三个拖入类 ID 各自只投给自己的语义（通道层不判开关）', async () => {
+    const { mod, bridge } = await load();
+    const dropped: unknown[] = [];
+    const pasted: unknown[] = [];
+    const clip: unknown[] = [];
+
+    await mod.subscribeHostEvent('imageDropped', (payload) => dropped.push(payload));
+    await mod.subscribeHostEvent('imagePasted', (payload) => pasted.push(payload));
+    await mod.subscribeHostEvent('clipMaskCreated', (payload) => clip.push(payload));
+
+    bridge.fire({ eventID: '1349280544', eventData: {} });
+    bridge.fire({ eventID: '1885434740', eventData: {} });
+    bridge.fire({ eventID: '1198682188', eventData: {} });
+
+    expect(dropped).toHaveLength(1);
+    expect(pasted).toHaveLength(1);
+    expect(clip).toHaveLength(1);
+  });
+
+  it('setd 三分支互不串：textStyle → 图层、_property → 填色、to._obj → 参考线', async () => {
+    const { mod, bridge } = await load();
+    const layer: unknown[] = [];
+    const fill: unknown[] = [];
+    const guide: unknown[] = [];
+
+    await mod.subscribeHostEvent('layerChanged', (payload) => layer.push(payload));
+    await mod.subscribeHostEvent('fillColorChanged', (payload) => fill.push(payload));
+    await mod.subscribeHostEvent('referenceDrawn', (payload) => guide.push(payload));
+
+    bridge.fire({ eventID: ID_SETD, eventData: { to: { _obj: 'textStyle' } } });
+    bridge.fire({ eventID: ID_SETD, eventData: { null: { _property: 'foregroundColor' } } });
+    bridge.fire({ eventID: ID_SETD, eventData: { to: { _obj: 'singleRow' } } });
+    bridge.fire({ eventID: ID_SETD, eventData: { to: { _obj: 'singleColumn' } } });
+
+    expect(layer).toHaveLength(1);
+    expect(fill).toHaveLength(1);
+    expect(guide).toHaveLength(2);
+  });
+
+  it('fillColorOf / referenceTargetOf：非本支返回 null（订阅方据此走哪条分支）', async () => {
+    const { mod } = await load();
+
+    expect(mod.fillColorOf({ eventData: { null: { _property: 'foregroundColor' } } })).toBe('foregroundColor');
+    expect(mod.fillColorOf({ eventData: { null: { _property: 'backgroundColor' } } })).toBe('backgroundColor');
+    expect(mod.fillColorOf({ eventData: { to: { _obj: 'textStyle' } } })).toBe(null);
+    expect(mod.referenceTargetOf({ eventData: { to: { _obj: 'singleColumn' } } })).toBe('singleColumn');
+    expect(mod.referenceTargetOf({ eventData: {} })).toBe(null);
+  });
+});
+
 describe('坏载荷', () => {
   it('解不开 JSON → 丢弃本次事件，不投递给监听方（不静默当成功）', async () => {
     const { mod, bridge } = await load();
@@ -284,5 +335,15 @@ describe('等待单个宿主事件（startHostEventWait）', () => {
     waiter.value.close();
 
     expect((await waiter.value.result).kind).toBe('cancelled');
+  });
+});
+
+describe('droppedPathOf（路径归一化在通道层）', () => {
+  it('反斜杠转正斜杠；空串 / 非字符串 → null', async () => {
+    const { mod } = await load();
+
+    expect(mod.droppedPathOf({ eventData: { null: { _path: 'C:\\a\\b.png' } } })).toBe('C:/a/b.png');
+    expect(mod.droppedPathOf({ eventData: { null: { _path: '  ' } } })).toBe(null);
+    expect(mod.droppedPathOf({ eventData: {} })).toBe(null);
   });
 });

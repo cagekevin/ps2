@@ -115,7 +115,6 @@ button{
   overflow: hidden;
 }
 
-.mm-collapse__title,
 .mm-select-box__label{
   flex: 1 1 auto;
   overflow: hidden;

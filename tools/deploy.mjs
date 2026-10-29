@@ -45,7 +45,7 @@ if (!existsSync(join(root, 'dist', 'index.html'))) {
 rmSync(target, { recursive: true, force: true });
 mkdirSync(target, { recursive: true });
 
-for (const dir of ['CSXS', 'dist', 'jsx']) {
+for (const dir of ['CSXS', 'dist', 'jsx', 'preset']) {
   cpSync(join(root, dir), join(target, dir), { recursive: true });
 }
 

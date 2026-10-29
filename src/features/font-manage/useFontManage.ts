@@ -234,6 +234,10 @@ export function useFontManage() {
   );
 
   /** 失败原因只有一个出口（标签、评分、分类共用） */
+  /**
+   * 收原因：`tagsRead` / `starsRead` 存的是整条 `Result`（页面还要读 `value.dropped`），
+   * `classificationRead` 已收窄成失败臂（`TD-09-4`）—— 前者是后者的父类型，一个函数收两种。
+   */
   function reasonOf(read: Result<unknown> | null): string {
     return read?.status === 'error' ? read.reason : '';
   }

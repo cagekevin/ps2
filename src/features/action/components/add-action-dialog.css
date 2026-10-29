@@ -1,0 +1,26 @@
+/* 骨架：只留结构与定位（03 §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+
+.mm-action-dialog{
+  display: flex;
+  flex-direction: column;
+  max-height: var(--mm-card-max-h, 50vh);
+}
+
+.mm-action-dialog__list{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.mm-action-dialog__footer{
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.mm-action-dialog__btn{
+  flex: 1 1 0;
+  min-width: 0;
+}

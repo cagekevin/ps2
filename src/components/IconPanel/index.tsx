@@ -1,6 +1,12 @@
 /**
  * 【唯一入口】图标 + 展开面板 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
  *
+ * **右键语义**：`onContextMenu` 只做「展开 / 收起」，**不判 Ctrl** —— 这与官方一致
+ * （官方普通右键展开）。官方还有一层「**Ctrl+右键** 把该项加入自由面板」，
+ * 我方**未接**（`TD-09-7`，解释见 `daily/架构日志/05-跨区-自由面板-现状与接续-2026-10-29.md`）。
+ * 接的时候只改这一处：`if (event.ctrlKey || event.metaKey) → commands.addToFreePanel(...)`，
+ * **不要在页面里另接 `contextmenu`**。
+ *
  * 【范本】图标 + 展开面板（触发器与面板的公共壳）
  *
  * 用在哪：一排工具图标，点图标是主操作，右键在图标行**下方**展开它的设置区
@@ -40,6 +46,7 @@ import {
 import { createPortal } from 'react-dom';
 import './icon-panel.css';
 import { log } from '../../core/logger';
+import { Chevron } from '../Chevron';
 import { IconButton } from '../IconButton';
 import type { IconName } from '../icons';
 
@@ -167,6 +174,31 @@ interface PanelProps {
   disabled?: boolean;
   /** 自定义触发器（数字框右侧小箭头这类），需要自己处理 active 与 aria */
   trigger?: (handlers: TriggerHandlers) => ReactNode;
+}
+
+/**
+ * 标题行触发器：整行「箭头 + 标题」，点整行开合（原 `Collapse` 的头部）。
+ *
+ * 这是**触发器的第二种默认形态**（第一种是图标按钮），不是第二个组件：
+ * 需要「一行标题开合一块内容」时传 `trigger={sectionTrigger('标题')}`，
+ * 不要自己拼 `<button>` + `Chevron` + aria —— 那会在页面里长出第三个折叠实现。
+ *
+ * 收起时箭头转 `-90deg`（与抽屉默认触发器的「弹层指示恒朝下」刻意不同：
+ * 这里是开合，那里是指示）。
+ */
+export function sectionTrigger(title: string) {
+  return (handlers: TriggerHandlers) => (
+    <button
+      type="button"
+      className="mm-icon-panel__title"
+      aria-expanded={handlers['aria-expanded']}
+      aria-controls={handlers['aria-controls']}
+      onClick={handlers.toggle}
+    >
+      <Chevron open={handlers.active} size={12} />
+      <span className="mm-icon-panel__title-text">{title}</span>
+    </button>
+  );
 }
 
 /** 一个触发器 + 它要展开的面板（面板 portal 到组末尾的宿主里） */

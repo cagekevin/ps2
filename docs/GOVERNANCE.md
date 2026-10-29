@@ -99,6 +99,11 @@
 | 环境 | `src/core/env/index.ts` | 版本号、扩展 ID | ✅ 真机 |
 | 网络 | `src/core/http/client.ts` | 唯一请求入口 | ⚠️ 未实测 |
 | 接口登记 | `src/core/http/endpoints.ts` | 标注来源与验证状态 | ⚠️ 未实测 |
+| 动作库形状 | `src/domain/action-library.ts` | 7 形状里的 4 个 + 解码（结构 reject / 项 filter）+ 11 个纯编辑函数；`group` 执行必带、别名空串 = 删别名、删分组补「默认分组」 | ⚠️ 待真机 |
+| `.dzx` 编解码 | `src/domain/action-dzx.ts` | 外层字段名照抄官方 `arrFileData` / `store`；解码严格（不合格 `CORRUPT`）；`planImportFiles` 只算计划，写序在 repo | ⚠️ 待真机 |
+| 动作库读写 | `src/repo/action-repo.ts` | 索引（对象）+ 仓库文件（裸数组）两个入口；缺失读默认值**不写盘**；导入写序「先文件、最后索引」；`readWarehouseText` 取原文（不重新序列化） | ⚠️ 待真机 |
+| 动作库投影 | `src/store/action.ts` | 只读投影 + `columns`（prefs `action.listColumns`，坏值归 2）；不写文件、`Result` 原样进 `reasons` | ⚠️ 待真机 |
+| PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，返回不解码）。2026-10-29 按「照抄可运行的 Vue 版实践」登记，未经真机探针 | ⚠️ 待真机 |
 | PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（62 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` | ✅ 真机 |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） | ✅ 真机 |
 | PS 样式 | `src/core/ps/style.ts` | 颜色走自有移植版，渐变/样式走 `ps_onJsx` | ✅ 真机 |
@@ -126,6 +131,9 @@
 | 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源各自留失败原因 | ⚠️ 待真机 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
 | UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-input-surface` | ✅ 真机 |
+| 失败文案 | `src/domain/messages.ts` | 唯一入口：`MSG.corrupt`（文件坏）/ `MSG.badPayload`（宿主返回认不出）/ `MSG.stale`（状态过期）+ 分域的官方逐字句；`fail` / `failWithDetail` 里**不许再写中文**，现场（字段路径 / 下标）一律进 `detail`。存量：`font`/`style` 约 99 处（`TD-09-6`）、`core/ps` 29 处（`TD-04-1`） | ⚠️ 待真机 |
+| 分组头 | `src/components/GroupHead/index.tsx` | 整行「箭头 + 名称 + 计数（可选）+ 行尾插槽（可选）」；内层 button 管开合 / 右键 / 拖拽，`data-*` 挂在它上面（拖拽落点靠它选节点）；`titleSlot` 为就地改名态（不渲染 button）。**与 `IconPanel`（触发器+面板）、已删的 `Collapse`（标题+内容）不同层**：这里没有面板、没有内容区 | ⚠️ 待真机 |
+| 段选 | `src/components/Segment/index.tsx` | 2–4 档并排互斥按钮组；高 `--mm-control-h`、圆角 `--mm-radius-md`、选中 `--mm-color-accent`；判据：**≤4 档且要并排看全 → 段选**，选项多 / 有列表语义 → `SelectBox`，逐项长文本 → `RadioButton` | ⚠️ 待真机 |
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 | ⚠️ 待真机 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） | ✅ 真机 |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox | ✅ 真机 |
@@ -149,6 +157,7 @@
 | 导航配置 | `src/app/nav-config.ts` | 导航唯一来源 | ✅ 真机 |
 | 导航栏 | `src/app/nav-bar.tsx` | 侧边导航 | ✅ 真机 |
 | 图层监听 | `src/app/layer-watcher.tsx` | 唯一的**常驻**图层订阅者，页面只读 store；命令内的一次性事件等待（吸色等）不在此列，见 `CONVENTIONS` §3.1.5 第 5 条 | ✅ 真机 |
+| 常用页事件 | `src/app/common-use-watcher.tsx` | 常用页 5 个语义（拖入 / 粘贴 / 剪贴蒙版 / 填色 / 参考线）的唯一订阅者；按 store 的 5 个设置开关 + `guideOn` 订阅 / 退订，失败只 `log.warn` 不弹 toast；与 `layer-watcher` 分开（那个永不写盘） | ⚠️ 待真机 |
 | 状态持久化 | `src/hooks/usePersisted.ts` | 界面偏好，key 强类型 | ⚠️ 待真机 |
 | 全局快捷键 | `src/hooks/useShortcut.ts` | 常驻字母键；负责「打字中 / 带修饰键」两条排除；与 `useDismiss` 分工写在文件头 | ⚠️ 待真机 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 | ✅ 真机 |
@@ -172,7 +181,6 @@
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input | ⚠️ 待真机 |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 | ⚠️ 待真机 |
 | 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` | ⚠️ 待真机 |
-| 折叠行 | `src/components/Collapse/index.tsx` | 整行 100%×24、箭头位 20×13；**自身不带上下 margin**，区块间距由容器 `gap` 给（`HANDOFF-2026-10-29` 债 4）；收起不渲染内容 | ⚠️ 待真机 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 | ✅ 真机 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 | ✅ 真机 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 | ✅ 真机 |

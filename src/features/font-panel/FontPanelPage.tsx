@@ -14,6 +14,7 @@ import { Icon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
+import { StateHint } from '../../components/StateHint';
 import { DEFAULT_TEXT_INFO } from '../../domain/text-info';
 import { useFontPanel } from './useFontPanel';
 import { CreateButtonPanel } from './components/CreateButtonPanel';
@@ -55,6 +56,14 @@ export default function FontPanelPage() {
           onAdd={page.onQuickAdd}
           onRemove={page.onQuickRemove}
         />
+      ) : null}
+
+      {/*
+        文字属性读失败：`info` 仍保留上一次的值（面板不闪），所以**必须**把失败显示出来，
+        否则用户会把旧值当当前值。重试直接再读一次（读路径不写盘）。
+      */}
+      {page.textFailure ? (
+        <StateHint result={page.textFailure} onRetry={() => void page.refreshText()} />
       ) : null}
 
       {/*

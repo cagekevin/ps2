@@ -13,12 +13,20 @@
  * `role` / `tabIndex` / 空格键，漏一个就是无障碍缺陷。
  */
 
-import type { ChangeEvent } from 'react';
+import { useEffect, useRef, type ChangeEvent } from 'react';
 import './check-box.css';
 
 interface Props {
   label: string;
   checked: boolean;
+  /**
+   * 半选（全选组的「选了一部分」）。
+   *
+   * 原生 `:indeterminate` **只能靠 DOM 属性打开**，HTML 没有对应 attribute，
+   * 所以这里用一个 ref 在渲染后写 `input.indeterminate`——不要改成自绘「减号方块」，
+   * 那会丢掉键盘与读屏对 checkbox 的语义（`CONVENTIONS` §6）。
+   */
+  indeterminate?: boolean;
   /** 悬停提示；缺省不输出该属性 */
   title?: string;
   disabled?: boolean;
@@ -26,10 +34,24 @@ interface Props {
 }
 
 /** 一行「方框 + 文字」，点击整行切换 */
-export function CheckBox({ label, checked, title, disabled = false, onChange }: Props) {
+export function CheckBox({
+  label,
+  checked,
+  indeterminate = false,
+  title,
+  disabled = false,
+  onChange
+}: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
   return (
     <label className={disabled ? 'mm-check mm-check--disabled' : 'mm-check'} title={title}>
       <input
+        ref={inputRef}
         type="checkbox"
         className="mm-check__input"
         checked={checked}

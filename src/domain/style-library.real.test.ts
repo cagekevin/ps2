@@ -8,7 +8,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { decodeStyleIndex, fileNameOf, readKuGroups, type KuKind } from './style-library';
 
-const LEGACY_DIR = join(homedir(), 'AppData', 'Roaming', 'SheJiZhuLi');
+/**
+ * 官方数据根按平台取：Windows `%APPDATA%` = `~/AppData/Roaming`，
+ * macOS CEP 的 userData = `~/Library/Application Support`。
+ * 只认 Windows 路径会让 macOS 上 `HAS_DATA` 恒为 false，整份真实数据测试永远跳过。
+ */
+const USER_DATA =
+  process.platform === 'win32'
+    ? join(homedir(), 'AppData', 'Roaming')
+    : join(homedir(), 'Library', 'Application Support');
+const LEGACY_DIR = join(USER_DATA, 'SheJiZhuLi');
 const INDEX_FILE = join(LEGACY_DIR, 'sj_kuStoreInfo.ini');
 const HAS_DATA = existsSync(INDEX_FILE);
 

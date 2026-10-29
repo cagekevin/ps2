@@ -1,4 +1,6 @@
 /**
+ * 本域（宿主事件）以此为准：`src/core/cep/ps-events.ts` 的 `HostEventName` + `SPECS`。新增事件只加语义行（ID 列表 + 载荷判据），不开第二个订阅模块。
+ *
  * 【范本】PS 宿主事件订阅（原版 `$psEvent.add` 的可读移植）。
  *
  * CEP 面板收 PS 脚本事件的两步（缺一步事件静默不来）：
@@ -51,12 +53,23 @@ export type HostEventName =
   /** 当前图层变了：官方 `ztSelectLayer` 的触发条件 */
   | 'layerChanged'
   /** 切了文档：官方 `tbSwitchDocument` 的触发条件 */
-  | 'documentChanged';
+  | 'documentChanged'
+  /** 拖入图片：常用页自动嵌入 / 转链接智能对象（开关在订阅方） */
+  | 'imageDropped'
+  /** 粘贴图片：常用页自动嵌入 */
+  | 'imagePasted'
+  /** 用剪贴蒙版：常用页自动嵌入 */
+  | 'clipMaskCreated'
+  /** 前景 / 背景色被改：常用页智能填色 */
+  | 'fillColorChanged'
+  /** 拖出参考线：常用页智能参考线 */
+  | 'referenceDrawn';
 
 export interface PhotoshopEventPayload {
   eventID?: number;
   eventData?: {
-    null?: { _ref?: string; _property?: string };
+    /** `_path` 只在拖入类事件里有：被拖入文件的绝对路径（官方 `app.v4.js:69430` 一带） */
+    null?: { _ref?: string; _property?: string; _path?: string };
     to?: { _obj?: string };
     [key: string]: unknown;
   };
@@ -86,6 +99,9 @@ const ID_1298866208 = '1298866208'; // 官方：documentID → 换文档；null.
 const ID_1131180832 = '1131180832'; // 官方：documentID → 换文档
 const ID_1332768288 = '1332768288'; // 官方：documentID → 换文档
 const ID_437 = '437'; // 官方：documentID → 换文档
+const ID_1349280544 = '1349280544'; // 拖入图片（常用页）
+const ID_1885434740 = '1885434740'; // 粘贴图片（常用页）
+const ID_1198682188 = '1198682188'; // 用剪贴蒙版（常用页）
 
 /** 原版 `e.data.substring(5)` */
 const PREFIX_LENGTH = 5;
@@ -117,6 +133,38 @@ function isTextLayerRef(payload: PhotoshopEventPayload): boolean {
  */
 function isTextStyleSetd(payload: PhotoshopEventPayload): boolean {
   return payload.eventData?.to?._obj === 'textStyle';
+}
+
+/**
+ * `setd` 的第二支：前景 / 背景色被改（官方两支分别喂 `cy_smartFillColor` / `cy_smartFillLineColor`）。
+ * 返回具体是哪一个，好让订阅方一次判完就走对应分支——两个语义各自再判一遍就会分叉。
+ */
+export function fillColorOf(payload: PhotoshopEventPayload): 'foregroundColor' | 'backgroundColor' | null {
+  const prop = payload.eventData?.null?._property;
+  if (prop === 'foregroundColor' || prop === 'backgroundColor') return prop;
+  return null;
+}
+
+/**
+ * 拖入类载荷里的文件绝对路径（官方 `eventData.null._path`）。
+ *
+ * **归一化在通道层做**（`\` → `/`）：路径来自 PS，Windows 上是反斜杠；
+ * 让每个订阅方自己 `replace` 一遍，就是第 2、3 份同样的字符串处理。
+ * 空串 / 非字符串返回 null —— 「拿不到路径」与「路径是空串」对调用方是同一件事。
+ */
+const BACKSLASH = /\\/g;
+
+export function droppedPathOf(payload: PhotoshopEventPayload): string | null {
+  const raw = payload.eventData?.null?._path;
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  return raw.replace(BACKSLASH, '/');
+}
+
+/** `setd` 的参考线支：`to._obj` 是 `singleRow`（水平）或 `singleColumn`（竖直） */
+export function referenceTargetOf(payload: PhotoshopEventPayload): 'singleRow' | 'singleColumn' | null {
+  const obj = payload.eventData?.to?._obj;
+  if (obj === 'singleRow' || obj === 'singleColumn') return obj;
+  return null;
 }
 
 const SPECS: Record<HostEventName, HostEventSpec> = {
@@ -160,6 +208,39 @@ const SPECS: Record<HostEventName, HostEventSpec> = {
     ids: [ID_SLCT, ID_1298866208, ID_1131180832, ID_1332768288, ID_437],
     matches: (payload) => hasDocumentId(payload),
     origin: 'app.v4.js:69427 / :69448 / :69424 / :69443 / :69455'
+  },
+
+  /*
+   * 常用页三条拖入类语义：官方在这三个 ID 上**没有载荷判据**，
+   * 是否动作由订阅方按设置开关门控（`13-常用-V2` §1.4）。
+   * 通道层只投递，不判开关——判开关会让「开关的值从哪来」渗进通道层。
+   */
+  imageDropped: {
+    ids: [ID_1349280544],
+    matches: () => true,
+    origin: 'app.v4.js:69408-69440（ID 与语义见 plan 13 §1.4）'
+  },
+  imagePasted: {
+    ids: [ID_1885434740],
+    matches: () => true,
+    origin: 'app.v4.js:69408-69440（ID 与语义见 plan 13 §1.4）'
+  },
+  clipMaskCreated: {
+    ids: [ID_1198682188],
+    matches: () => true,
+    origin: 'app.v4.js:69408-69440（ID 与语义见 plan 13 §1.4）'
+  },
+  /** 智能填色：与 `layerChanged` 共用 `setd`，判据不同（`_property` vs `to._obj`） */
+  fillColorChanged: {
+    ids: [ID_SETD],
+    matches: (payload) => fillColorOf(payload) !== null,
+    origin: 'app.v4.js:69412-69423'
+  },
+  /** 智能参考线：同上共用 `setd` */
+  referenceDrawn: {
+    ids: [ID_SETD],
+    matches: (payload) => referenceTargetOf(payload) !== null,
+    origin: 'app.v4.js:69412-69423'
   }
 };
 
@@ -238,9 +319,14 @@ function onPhotoshopCallback(handler: (payload: PhotoshopEventPayload) => void):
   return () => {};
 }
 
-/** `setd` 的官方判据（`app.v4.js:69412-69423` 第一支）：只有前景色被改才算吸色完成 */
+/**
+ * `setd` 的官方判据（`app.v4.js:69412-69423` 第一支）：只有前景色被改才算吸色完成。
+ *
+ * **推导，不是第二份判据**：判据只有 `fillColorOf` 一张表，这里只回答「是不是前景那一支」。
+ * 自己再读一遍 `_property` 就会出现两份比对，改一处漏一处。
+ */
 export function isForegroundSetd(payload: PhotoshopEventPayload): boolean {
-  return payload.eventData?.null?._property === 'foregroundColor';
+  return fillColorOf(payload) === 'foregroundColor';
 }
 
 /**

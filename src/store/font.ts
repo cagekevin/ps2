@@ -15,7 +15,7 @@ import { familyLang } from '../domain/font-lang';
 import type { FontTag } from '../domain/font-meta';
 import { readClassification, readFontStars, readFontTags } from '../repo/font-repo';
 import type { Dropped } from '../types/decode-list';
-import type { Result } from '../types/result';
+import type { Failure, Result } from '../types/result';
 
 export type PreviewMode = 'none' | 'small' | 'medium' | 'large' | 'extra-large';
 
@@ -50,8 +50,11 @@ interface FontState {
    * 以前是 `classificationDegraded: string`：空串正常、非空坏，但 `.value` 永远可取，
    * 而且把「读失败的原因」和「分类为空」两种不同的事塞进同一个字符串——
    * 失败码位写人话，页面只能原样拼进 UI。
+   *
+   * 只存**失败臂**（`Failure`），读成功时是 `null`：页面读它只为拿 `reason`，
+   * 分类本身在 `classification`（`TD-09-4`）。
    */
-  classificationRead: Result<Classification> | null;
+  classificationRead: Failure | null;
   previewMode: PreviewMode;
   previewText: string;
   loadTags: () => void;
@@ -109,7 +112,7 @@ export const useFontStore = create<FontState>()((set, get) => ({
       set({ classificationRead: read });
       return;
     }
-    set({ classification: read.value, classificationRead: read });
+    set({ classification: read.value, classificationRead: null });
   },
 
   setPreviewMode(mode) {

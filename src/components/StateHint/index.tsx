@@ -26,8 +26,13 @@ export function StateHint(props: Props) {
   const { result, onRetry } = props;
   if (result.status === 'ok') return null;
 
+  /*
+   * `NOT_FOUND` **不再改写成「文件不存在」**：生产者的 reason 往往更准
+   *（「文件夹内没有PSD文件」「索引里没有登记这个库的文件名」），
+   * 统一改成「文件不存在」等于替生产者改口径。只有 reason 为空时才回落。
+   */
   if (result.code === 'NOT_FOUND') {
-    return <div className="mm-u-row mm-state-hint">文件不存在</div>;
+    return <div className="mm-u-row mm-state-hint">{result.reason || '文件不存在'}</div>;
   }
 
   /*

@@ -23,8 +23,10 @@ export type PrefKey =
   | 'nav.lastPath'
   | 'font.previewMode'
   | 'font.previewText'
-  /** 常用页三个区域（zoom / transformation / grid）的折叠态，值与 `CommonSection` 同形 */
-  | 'common.collapsed';
+  /** 动作页列表列数（1|2|3）；官方存 `dzShowListType` 0|1|2，我们只存自己的 */
+  | 'action.listColumns'
+  /** 动作页「首次引导」是否已问过（点取消也算问过） */
+  | 'action.guideDone'
 
 const FILE = 'prefs.json';
 

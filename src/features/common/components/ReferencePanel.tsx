@@ -4,34 +4,61 @@
  * v1 三个动作，与原版一致：输入宽度 → 生成安全区；清除参考线；基于参考线切片。
  * 宽度空值在前端拦（原版 `useGuide` 也是先判空再发 jsx，提示「请输入宽度」）。
  *
- * **「开启智能参考线」勾选框不在 v1**：它要 `Tool_set(["marqueeSingleRowTool"])` +
- * PS 事件 `1936028772` 才算完整，计划 §4.2 排到 v2。这里不渲染半个开关。
+ * v2 补上最上面那一行「开启智能参考线」：勾选 → `commands.toggleSmartGuide(true)`
+ * 切 PS 的参考线工具并把 `store.guideOn` 置真；真正的订阅在 `app/common-use-watcher`
+ * （页面不订阅 PS 事件，`CONVENTIONS` §4.8），拖出参考线时它调 `cy_smartReferenceLine`。
+ *
+ * 「使用后请关闭」是官方文案的一部分，别删：开关开着时 PS 一直处于单行参考线工具，
+ * 用户会以为画布操作坏了。
  */
 
 import { useState } from 'react';
+import { CheckBox } from '../../../components/CheckBox';
 import { TextField } from '../../../components/TextField';
 import { Button } from '../../../components/ui';
-import { clearGuide, referenceWidth, sliceByGuide } from '../../../commands/common-use';
+import {
+  clearGuide,
+  referenceWidth,
+  sliceByGuide,
+  toggleSmartGuide
+} from '../../../commands/common-use';
+import { MSG } from '../../../domain/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
+import { useCommonUseStore } from '../../../store/common-use';
 import './panel.css';
 
 export function ReferencePanel() {
   const [width, setWidth] = useState('20');
+  /* 开关本身是界面状态（不落盘），真值在 store：watcher 要按它订阅 / 退订事件 */
+  const guideOn = useCommonUseStore((state) => state.guideOn);
   /* 包 loading + 失败提示只有一处实现（`hooks/useRunCommand`） */
   const run = useRunCommand();
 
   return (
     <div className="mm-common__panel">
+      <CheckBox
+        label={MSG.common.guideOn}
+        title={MSG.common.guideOnTip}
+        checked={guideOn}
+        onChange={(value) => void run(() => toggleSmartGuide(value))}
+      />
+
+      <div className="mm-common__panel-rule" />
+
       <div className="mm-u-row mm-common__panel-row">
         <TextField
           variant="fill"
-          title="参考线宽度"
+          title={MSG.common.guideWidth}
           placeholder="20"
           inputMode="decimal"
           value={width}
           onChange={setWidth}
         />
-        <Button className="mm-common__panel-btn" onClick={() => void run(() => referenceWidth(width))}>
+        <Button
+          className="mm-common__panel-btn"
+          title={MSG.common.safeAreaTitle}
+          onClick={() => void run(() => referenceWidth(width))}
+        >
           应用
         </Button>
       </div>

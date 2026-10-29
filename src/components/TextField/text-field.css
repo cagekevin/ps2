@@ -21,3 +21,10 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+
+/* 右插槽（选目录 / 选文件图标）：结构位，间距与配色留给视觉重写（03 §0.5） */
+.mm-text-field__right{
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}

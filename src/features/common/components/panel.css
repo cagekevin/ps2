@@ -1,9 +1,12 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 骨架：只留结构与定位，视觉待重写。间距（padding / gap）按 03 §0.5 一律不写 */
 
 .mm-common__panel{
   display: flex;
   flex-direction: column;
   width: 100%;
+  /* 7 个面板共用的凹陷底（官方 .embed-wrap / .export-wrap 等全是 #222）：
+     壳 IconPanel 明确不画背景，所以底色归这里一处，不按面板各写一份 */
+  background: var(--mm-color-bg-drawer);
 }
 
 /* 横排两端铺满走公共 `.mm-u-row` */

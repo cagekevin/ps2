@@ -15,6 +15,7 @@
 
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
+import { MSG } from './messages';
 
 /** 一条常用项：官方写 10 个键，其余键不解释但不丢 */
 export interface CommonUseItem {
@@ -221,28 +222,6 @@ export const COMMON_USE_SEED: readonly CommonUseItem[] = [
   }
 ];
 
-/* ---------------- 折叠态（三个区域） ---------------- */
-
-/** 三个可折叠区域的键，别的字符串一律不认 */
-export const COMMON_SECTIONS = ['zoom', 'transformation', 'grid'] as const;
-
-export type CommonSection = (typeof COMMON_SECTIONS)[number];
-
-/**
- * 折叠态归一化：prefs 里是任意 JSON，**逐键判真假**，坏值 / 缺键都按「展开」。
- *
- * 原先 `store` 的读取与 `commands.setCollapsed` 的写入各写一遍同样的三个比较——
- * 同一判据两处实现，改一处就会一边认「1」一边不认。收成这一个函数。
- */
-export function normalizeCollapsed(raw: unknown): Record<CommonSection, boolean> {
-  const source = isRecord(raw) ? raw : {};
-  return {
-    zoom: source.zoom === true,
-    transformation: source.transformation === true,
-    grid: source.grid === true
-  };
-}
-
 /** 图标 id 在文件里带前导 `#`（`#iconqianrutupian`），sprite 组件不收 */
 function stripHash(value: string): string {
   return value.startsWith('#') ? value.slice(1) : value;
@@ -305,7 +284,7 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
  * 跳过它并记账（`sj_commonFunction.json` 第 10 项缺 id 曾导致整页 `CORRUPT`）。
  */
 export function decodeCommonUseItem(value: unknown, path: string): Result<CommonUseItem> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '常用功能项不是对象', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
   if (typeof value.id === 'string' && value.id) return ok(value);
   /**
    * 缺 `id` 但带 `comName` 的项**是能用的功能**，不是坏数据：
@@ -314,5 +293,29 @@ export function decodeCommonUseItem(value: unknown, path: string): Result<Common
    * 这种情况用 `comName` 兜底当 id（见 `toTiles`），真正什么都没有的项才记账跳过。
    */
   if (typeof value.comName === 'string' && value.comName) return ok(value);
-  return failWithDetail('CORRUPT', '常用功能项既没有 id 也没有 comName', `${path}.id`);
+  return failWithDetail('CORRUPT', MSG.corrupt, `${path}.id`);
+}
+
+/**
+ * `cy_getPsdForFolder` 的返回 → 文件列表（**唯一判形状处**，`commands` 只判空）。
+ *
+ * 返回结构 `UNVERIFIED`（官方 jsx 自己弹选目录），所以只接受「字符串数组」这一种形状：
+ * 顶层不是数组 ⇒ 失败并把原样塞 `detail`；项不是非空字符串 ⇒ 跳过（jsx 可能混入空串）。
+ * 空数组**不算失败**——「目录里没有 PSD」是业务结论，由 `commands` 判 `NOT_FOUND`，
+ * 两件事分开才能分别说清原因（刀 5：判形状与判空不同函数）。
+ */
+export function decodePsdList(raw: unknown): Result<string[]> {
+  if (!Array.isArray(raw)) {
+    /* `String(raw)` 会得到 `[object Object]`，机器现场等于没有；载荷来自 JSON，直接序列化 */
+    return failWithDetail('VALIDATION', MSG.badPayload, JSON.stringify(raw) ?? '');
+  }
+  return ok(raw.filter((item): item is string => typeof item === 'string' && item.trim() !== ''));
+}
+
+/** 批量导出的确认阈值：官方 `:37005` 是 `> 30` 才弹（29 / 30 都不弹） */
+export const BATCH_CONFIRM_OVER = 30;
+
+/** 批量导出要不要先问用户确认；判据只有这一处，命令层与页面都调它 */
+export function needsBatchConfirm(count: number): boolean {
+  return count > BATCH_CONFIRM_OVER;
 }

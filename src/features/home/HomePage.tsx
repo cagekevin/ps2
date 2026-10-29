@@ -30,6 +30,8 @@ function formatDiag(diag: VendorDiag): string {
     `ps_ysBtnUseStyle       ${diag.btnUseStyle}`,
     `ys_setForegroundColor  ${diag.setForegroundColor}`,
     `ys_useShapeFill        ${diag.useShapeFill}`,
+    `dz_callAction          ${diag.callAction}`,
+    `dz_getActionList       ${diag.getActionList}`,
     '',
     '官方配置依赖',
     `sj_set.json            ${diag.configSet}`,
@@ -131,6 +133,8 @@ export default function HomePage() {
           <DiagRow label="ps_ysBtnUseStyle" value={diag.btnUseStyle} />
           <DiagRow label="ys_setForegroundColor" value={diag.setForegroundColor} />
           <DiagRow label="ys_useShapeFill" value={diag.useShapeFill} />
+          <DiagRow label="dz_callAction（动作页）" value={diag.callAction} />
+          <DiagRow label="dz_getActionList（动作页）" value={diag.getActionList} />
 
           <div className="mm-home__diag-title">官方配置依赖</div>
           <DiagRow label="sj_set.json" value={String(diag.configSet)} />

@@ -220,7 +220,8 @@ export function installPreviewData(): void {
     classification: PREVIEW_CLASSIFICATION,
     tagsRead: ok({ tags: PREVIEW_TAGS, dropped: [] }),
     starsRead: ok({ stars: PREVIEW_STARS, dropped: [] }),
-    classificationRead: ok(PREVIEW_CLASSIFICATION),
+    /* 读成功 ⇒ 失败臂为空（`TD-09-4` 收窄后不再是 ok 结果） */
+    classificationRead: null,
     loadTags: () => {},
     loadStars: () => {},
     loadClassification: () => {}

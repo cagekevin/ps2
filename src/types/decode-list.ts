@@ -19,6 +19,13 @@ export interface Dropped {
   path: string;
   code: ErrorCode;
   reason: string;
+  /**
+   * 机器现场（哪个字段、期望什么），与 `Result.detail` 同义。
+   *
+   * **必须带**：`filter` 策略把坏项收进 `dropped` 后，这是唯一能追到具体字段的东西；
+   * 只留 `path` 时，日志里能看出「第 13 项坏了」，看不出「坏在 id」。
+   */
+  detail: string;
 }
 
 /** 一项坏时：整份失败（结构性错误）还是丢掉那一项（字段级错误） */
@@ -67,7 +74,7 @@ export function decodeList<T>(
     }
 
     if (policy === 'reject') return decoded;
-    dropped.push({ path, code: decoded.code, reason: decoded.reason });
+    dropped.push({ path, code: decoded.code, reason: decoded.reason, detail: decoded.detail });
   }
 
   /* 三样一次交全，调用方不必再拿原始数组二次解码：

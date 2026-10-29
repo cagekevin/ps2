@@ -1,9 +1,10 @@
 /**
  * 常用页（`/common`）：缩放区 → 变换区 → 分隔线 → 14 项功能网格。
  *
- * 结构照 `docs/plan/03-常用-2026-10-27.md` §5。三处折叠（缩放 / 变换 / 常用功能）的折叠态存
- * `core/prefs`，两块区域的显隐来自 `sj_set.json` 的 `cyShowZoom` / `cyShowTransformation`——
- * **这是两件事**：折叠是本地偏好，显隐是官方设置文件。
+ * 结构照 `docs/plan/03-常用-2026-10-27.md` §5。**本页不做折叠**（2026-10-29 决定）：
+ * 三块区域的折叠只省高度，但要额外维护一份本地偏好，收益不抵；需要「一行标题开合一块内容」
+ * 时用 `IconPanel` + `sectionTrigger`（唯一实现，`Collapse` 组件已删除）。
+ * 两块区域的显隐来自 `sj_set.json` 的 `cyShowZoom` / `cyShowTransformation`（走 `domain.booleanOptionOf`）。
  *
  * 本页不写底层：命令走 `commands/common-use`，状态走 `store/common-use`，
  * 图标与控件走 `components/*`。手势只有三层（左键执行 / 右键与左键一样开面板 / Ctrl+右键进自由面板），
@@ -15,10 +16,16 @@ import { Chevron } from '../../components/Chevron';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { PageHeader } from '../../components/PageHeader';
+import { MSG } from '../../domain/messages';
 import { StateHint } from '../../components/StateHint';
 import { Icon, type IconName } from '../../components/icons';
 import type { CommonUseTile } from '../../domain/common-use';
-import { FLIP_ITEMS, TILE_COMMANDS, ZOOM_LEVELS } from './common-constants';
+import { AUTO_FILL_TILE_ID, FLIP_ITEMS, TILE_COMMANDS, ZOOM_LEVELS } from './common-constants';
+import { CustomTransformPanel } from './components/CustomTransformPanel';
+import { EmbedPanel } from './components/EmbedPanel';
+import { ExportPanel } from './components/ExportPanel';
+import { ImportPanel } from './components/ImportPanel';
+import { OptimizePanel } from './components/OptimizePanel';
 import { ReferencePanel } from './components/ReferencePanel';
 import { SpacingPanel } from './components/SpacingPanel';
 import { TileButton } from './components/TileButton';
@@ -28,10 +35,20 @@ import './CommonPage.css';
 /** 每行 3 个（原版每格占宽 33%）；面板落在该行之后 */
 const COLUMNS = 3;
 
-/** `comName` → 子面板。v1 只有两个；其余 5 个是 v2，返回 undefined 即「这一项没有面板」 */
+/**
+ * `comName` → 子面板。
+ *
+ * **7 个全部已接**：间距 / 参考线（v1）+ 嵌入 / 导入 / 优化 / 导出 / 自定义变换（v2）。
+ * 唯一没有面板的是 v2 未做的子面板（`comembed` 之外的 5 个都已接）——返回 undefined 即「这一项没有面板」。
+ */
 function panelOf(tile: CommonUseTile): ReactNode {
   if (tile.comName === 'comspacing') return <SpacingPanel />;
   if (tile.comName === 'comreference') return <ReferencePanel />;
+  if (tile.comName === 'comembed') return <EmbedPanel />;
+  if (tile.comName === 'comimport') return <ImportPanel />;
+  if (tile.comName === 'comoptimization') return <OptimizePanel />;
+  if (tile.comName === 'comexport') return <ExportPanel />;
+  if (tile.comName === 'comcustomChange') return <CustomTransformPanel />;
   return undefined;
 }
 
@@ -131,16 +148,13 @@ export default function CommonPage() {
 
   return (
     <div className="mm-common">
-      <PageHeader title="常用功能页">
-        {/* 计划 §1.1 的 12 类基础按钮里，只有这两个不落在网格上 */}
-        <IconButton
-          name="iconwenjianjiamulu"
-          title="打开所在目录"
-          size={14}
-          onClick={page.openDataDirectory}
-        />
-        <IconButton name="iconshuaxin" title="重置常用项" size={14} onClick={page.resetTiles} />
-      </PageHeader>
+      {/*
+       * 页头**没有右侧按钮**（2026-10-29 两次改判后）：
+       *   - 「打开所在目录」属导出面板（官方 `cy_openDirectory` 两处调用都在那里）；
+       *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
+       * 两个入口都不是页头的，别再加回来。
+       */}
+      <PageHeader title={MSG.common.pageTitle} />
 
       <div className="mm-common__body">
         {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}
@@ -148,7 +162,15 @@ export default function CommonPage() {
           <StateHint result={page.reasons.options} onRetry={page.reload} />
         ) : null}
         {page.dropped.length ? (
-          <div className="mm-common__warning">{page.dropped.length} 项无法识别，已跳过</div>
+          <div
+            className="mm-common__warning"
+            title={page.dropped
+              .slice(0, 3)
+              .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
+              .join('\n')}
+          >
+            {page.dropped.length} {MSG.droppedSummary}
+          </div>
         ) : null}
 
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
@@ -157,7 +179,7 @@ export default function CommonPage() {
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
-              label="放大"
+              label={MSG.common.zoomEnlarge}
               quick={ZOOM_LEVELS.enlargePart}
               all={ZOOM_LEVELS.enlargeAll}
               openId={page.expandedId}
@@ -167,7 +189,7 @@ export default function CommonPage() {
             <ZoomRow
               id="zoom-narrow"
               icon="iconshousuo"
-              label="缩小"
+              label={MSG.common.zoomShrink}
               quick={ZOOM_LEVELS.narrowPart}
               all={ZOOM_LEVELS.narrowAll}
               openId={page.expandedId}
@@ -206,17 +228,17 @@ export default function CommonPage() {
                   {row.map((tile) => {
                     const panel = panelOf(tile);
                     const command = TILE_COMMANDS[tile.id];
-                    /* 有面板 = 左键展开；有命令 = 左键执行；都没有 = 灰态（v2 才接） */
-                    const enabled = panel !== undefined || command !== undefined;
+                    /* 有命令 = 左键执行（有面板也执行，右键展开）；只有面板 = 左键展开；
+                       「自动填充颜色」是开关（不在 `TILE_COMMANDS` 里），单独算可点；都没有 = 灰态 */
+                    const enabled =
+                      panel !== undefined || command !== undefined || tile.id === AUTO_FILL_TILE_ID;
                     return (
                       <IconPanel
                         key={tile.id}
                         id={tile.id}
                         title={tile.title || tile.name}
                         panel={panel}
-                        onPrimary={
-                          panel === undefined && command ? () => page.activate(tile) : undefined
-                        }
+                        onPrimary={command ? () => page.activate(tile) : undefined}
                         trigger={(handlers) => (
                           <TileButton
                             tile={tile}
@@ -235,7 +257,7 @@ export default function CommonPage() {
               ))}
             </div>
           ) : (
-            <StateHint empty="没有可显示的常用功能" />
+            <StateHint empty={MSG.emptyCommonGrid} />
           )}
       </div>
     </div>

@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Portal } from '../../components/Portal';
 import { ContextMenu } from '../../components/ContextMenu';
-import { Chevron } from '../../components/Chevron';
+import { GroupHead } from '../../components/GroupHead';
 import { Icon } from '../../components/icons';
 import { InlineEdit } from '../../components/InlineEdit';
 import { SelectBox } from '../../components/SelectBox';
@@ -217,22 +217,27 @@ export default function StylePage() {
                   }`}
                 >
                   {editing?.type === 'group' && editing.groupIndex === index ? (
-                    <div className="mm-u-row mm-style__group-head">
-                      <Chevron open={isOpen} size={9} />
-                      <InlineEdit
-                        value={group.name}
-                        onCommit={(next) => void handleRename({ type: 'group', groupIndex: index }, next)}
-                        onCancel={() => setEditing(null)}
-                      />
-                      <span className="mm-style__count">{group.items.length}</span>
-                    </div>
+                    <GroupHead
+                      title={group.name}
+                      open={isOpen}
+                      onToggle={() => undefined}
+                      count={group.items.length}
+                      titleSlot={
+                        <InlineEdit
+                          value={group.name}
+                          onCommit={(next) =>
+                            void handleRename({ type: 'group', groupIndex: index }, next)
+                          }
+                          onCancel={() => setEditing(null)}
+                        />
+                      }
+                    />
                   ) : (
-                    <button
-                      type="button"
-                      className="mm-u-row mm-style__group-head"
-                      data-group-head
-                      data-group-index={index}
-                      onClick={() => {
+                    <GroupHead
+                      title={group.name}
+                      open={isOpen}
+                      count={group.items.length}
+                      onToggle={() => {
                         /* 刚拖完的那次 click 不算折叠 */
                         if (draggedRef.current) {
                           draggedRef.current = false;
@@ -251,11 +256,9 @@ export default function StylePage() {
                           y: event.clientY
                         });
                       }}
-                    >
-                      <Chevron open={isOpen} size={9} />
-                      <span className="mm-style__group-name">{group.name}</span>
-                      <span className="mm-style__count">{group.items.length}</span>
-                    </button>
+                      /* 拖拽落点靠这两个属性选节点（`useStyleActions` 的 `[data-group-head]`），别改名 */
+                      data={{ 'data-group-head': '', 'data-group-index': index }}
+                    />
                   )}
 
                   {isOpen ? (

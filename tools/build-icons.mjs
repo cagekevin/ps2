@@ -129,7 +129,36 @@ const WHITELIST = [
   'iconxiangzuofanzhuan',
   'iconxiangyoufanzhuan',
   'iconxiangxiafanzhuan',
-  'iconxiangshangfanzhuan'
+  'iconxiangshangfanzhuan',
+  /* 常用页 v2 · 自定义变换面板的 6 个输入框左图标（顺序 = 官方 6 个输入：数量 / 比例 / 左右 / 上下 / 角度 / 透明度） */
+  'iconfuzhishuliang',
+  'iconsuofangbili',
+  'iconzuoyoujuli',
+  'iconzuoyoujuli-1',
+  'iconxuanzhuanjiaodu',
+  'icontoumingdudijian',
+  /* 常用页 v2 · 导出面板「保存到」右侧的选目录图标 */
+  'iconwenjianjiaguanli',
+  /* 常用页 v2 · 九宫格锚点 9 格 × 2 态（常色 / 选中蓝）。命名没有连字符：
+     `iconmaodianbianhuandianweizhi{n}` / `...weizhilan{n}`，照 sprite 原样 */
+  'iconmaodianbianhuandianweizhi1',
+  'iconmaodianbianhuandianweizhi2',
+  'iconmaodianbianhuandianweizhi3',
+  'iconmaodianbianhuandianweizhi4',
+  'iconmaodianbianhuandianweizhi5',
+  'iconmaodianbianhuandianweizhi6',
+  'iconmaodianbianhuandianweizhi7',
+  'iconmaodianbianhuandianweizhi8',
+  'iconmaodianbianhuandianweizhi9',
+  'iconmaodianbianhuandianweizhilan1',
+  'iconmaodianbianhuandianweizhilan2',
+  'iconmaodianbianhuandianweizhilan3',
+  'iconmaodianbianhuandianweizhilan4',
+  'iconmaodianbianhuandianweizhilan5',
+  'iconmaodianbianhuandianweizhilan6',
+  'iconmaodianbianhuandianweizhilan7',
+  'iconmaodianbianhuandianweizhilan8',
+  'iconmaodianbianhuandianweizhilan9'
 ];
 
 if (!existsSync(SPRITE)) {

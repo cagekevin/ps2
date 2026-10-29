@@ -1,0 +1,13 @@
+/* 骨架：只留结构与定位，视觉待重写（03 §0.5：不写 margin / padding / gap） */
+
+.mm-common__anchors{
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.mm-common__anchor{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}

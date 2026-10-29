@@ -4,23 +4,24 @@
  * 【范本】文本输入框（原版 `baseInput`）
  *
  * 与 `components/ui` 的 `Input` 分工：`Input` 是不带宽度约定的基础形状，
- * 这里是「定宽 + 可选左图标 + Enter 提交」那一层。**内部渲染的就是 `Input`**，
+ * 这里是「定宽 + 可选左图标 + 可选右插槽 + Enter 提交」那一层。**内部渲染的就是 `Input`**，
  * 边框与圆角只有 `ui.css` 一份来源——不要在这里再画一套。
  *
- * 三档宽度用 `variant` 选（宽 80 / 一半减 5 / 70×30），**不接受裸 width**：
- * 原版这三套是按位置定的（`.inputcom1` / `.inputcom-2` / `.switch-input`），
- * 放开任意宽度只会让同一页的输入框对不齐。
+ * 宽度用 `variant` 选（`wide` 80 / `half` 一半 / `fill` 占满剩余），**不接受裸 width**：
+ * 原版这几套是按位置定的（`.inputcom1` / `.inputcom-2`），放开任意宽度只会让同一页的输入框对不齐。
+ * 原版还有一档「70×30」，30 高会成为同页第三种控件高度，已删（`13-常用-V2` §2.3 第 7 条）。
  *
  * 提交时机：只在 Enter（原版 `@keyup.enter` → `inputSize`），**失焦不提交**；
  * 输入法选词时的 Enter 不算提交（判据在 `hooks/input-method-enter`）。
  */
 
+import type { ReactNode } from 'react';
 import { enterSubmit } from '../../hooks/input-method-enter';
 import { Icon, type IconName } from '../icons';
 import { Input } from '../ui';
 import './text-field.css';
 
-type Variant = 'wide' | 'half' | 'compact' | 'fill';
+type Variant = 'wide' | 'half' | 'fill';
 
 interface Props {
   value: string;
@@ -28,10 +29,7 @@ interface Props {
   onChange: (value: string) => void;
   /** Enter 提交；不传则 Enter 不做任何事 */
   onSubmit?: (value: string) => void;
-  /**
-   * 三档定宽（`wide` 80 / `half` 一半减 5 / `compact` 70×30），默认 `wide`；
-   * `fill` 是「占满剩余宽度」，只给面板里的间距 / 宽度输入用（旁边还有按钮时不能定宽）。
-   */
+  /** 定宽档（`wide` 80 / `half` 一半 / `fill` 占满剩余），默认 `wide` */
   variant?: Variant;
   /**
    * 必填：这批输入框都没有可见的文字标签（靠左侧图标表意），
@@ -41,6 +39,13 @@ interface Props {
   placeholder?: string;
   /** 左侧插槽图标（放大 / 缩小这类） */
   icon?: IconName;
+  /**
+   * 右侧插槽（原版 `baseInput` 的右图标位：选目录 / 选水印文件）。
+   *
+   * 必须留在这里：让页面自己拼「Input + 绝对定位图标」就是第二个输入框入口，
+   * 描边 / 圆角 / 高度会在两处各写一遍。
+   */
+  rightSlot?: ReactNode;
   inputMode?: 'text' | 'decimal';
   disabled?: boolean;
 }
@@ -54,6 +59,7 @@ export function TextField({
   title,
   placeholder,
   icon,
+  rightSlot,
   inputMode = 'text',
   disabled = false
 }: Props) {
@@ -75,6 +81,7 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={enterSubmit(() => onSubmit?.(value))}
       />
+      {rightSlot ? <span className="mm-text-field__right">{rightSlot}</span> : null}
     </div>
   );
 }

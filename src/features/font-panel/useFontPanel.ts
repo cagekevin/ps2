@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
+import { MSG } from '../../domain/messages';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { align as alignCommand } from '../../commands/font-set';
 import {
@@ -66,7 +67,13 @@ export function useFontPanel() {
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
 
   const info = useTextStore((state) => state.info);
-  /* 不再订阅 `failure`：属性区不盖遮罩，失败原因只走 toast（`runCommand` 已留痕） */
+  /*
+   * 订阅 `failure`：文字属性读失败时 `info` 保留旧值（否则面板会闪成默认值），
+   * 页面必须把这条失败显示出来，否则用户看到的是**上一次的属性当当前值**。
+   * 注意：`refresh()` 是直接调用的（`:94` `void refreshText()`），**不走 `run`**，
+   * 所以「只走 toast」不成立 —— 那条路没有 toast。
+   */
+  const textFailure = useTextStore((state) => state.failure);
   const refreshText = useTextStore((state) => state.refresh);
   const patchText = useTextStore((state) => state.patch);
 
@@ -418,12 +425,14 @@ export function useFontPanel() {
 
   /** Ctrl+点击：自由面板 v1 不上线，只提示，不写任何文件 */
   const onCtrlClick = useCallback(() => {
-    toast.info('自由面板未上线');
+    toast.info(MSG.freePanelOffline);
   }, [toast]);
 
   return {
     settings,
     distribution,
+    textFailure,
+    refreshText,
     fonts,
     fontsLoading,
     info,

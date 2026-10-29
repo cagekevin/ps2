@@ -1,4 +1,6 @@
 /**
+ * 本域（PS 能力）以此为准：`src/core/ps/capabilities.ts` 一行一个能力 + `core/ps/<域>.ts` 的薄函数。新增 jsx 只加表行，不写第二套通道 / 解析。
+ *
  * 【范本】PS 能力表（唯一事实）
  *
  * 一行一个能力：`fn` 是 jsx 函数名，`parse` 决定「返回什么形状 + 认不出时算不算失败」。
@@ -314,6 +316,129 @@ export const CAP = {
   psdList: {
     fn: 'cy_getPsdForFolder', gate: 'vendor', channel: 'direct', timeout: READ_TIMEOUT,
     parse: passthrough
+  },
+
+  /* ---------------- 常用页 v2：嵌入 / 智能对象 / 优化 / 变换 / 导出（plan 13 §1.2） ----------------
+     通道逐条按原版调用点，不按前缀猜：`cy_insertionImage` 走 `jsxHistory`、
+     `Layer_placedLayerRelinkToFile` 走 `jsx`，二者同为「嵌入」却是两条通道。
+
+     超时：**调度通道一律 30s**（`capability.test.ts` 的硬规则）——调度器只把任务转发给宿主，
+     耗时发生在 jsx 内部，把超时放宽不会让长任务更安全，只会让「点了没反应」多等几分钟。
+     导出这类长任务因此也不放宽（plan 13 原来写的 120s 作废，见该文件 §11）。 */
+
+  /** 嵌入图片：`path` 恒空 = 用 PS 里当前置入的图，参数由 commands 拼 */
+  embedImage: {
+    fn: 'cy_insertionImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '嵌入图片', parse: unwrapRaw
+  },
+
+  /** 嵌入多图片：jsx 自己处理拖入的多图，无参 */
+  embedMultipleImage: {
+    fn: 'cy_embedMultipleImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '嵌入多图片', parse: unwrapRaw
+  },
+
+  /** 导入多图片：参数 `[{ path, toLinkObject }]` */
+  importMultipleImage: {
+    fn: 'cy_importMultipleImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '导入多图片', parse: unwrapRaw
+  },
+
+  /** 转链接智能对象（改路径）：直调，参数 `[path]` */
+  relinkPlacedLayer: {
+    fn: 'Layer_placedLayerRelinkToFile', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid('转链接智能对象失败')
+  },
+
+  toLinkSmartObject: {
+    fn: 'cy_smartToLinkSmartObject', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '转链接智能对象', parse: unwrapRaw
+  },
+
+  linkSmartObjectToSmartObject: {
+    fn: 'cy_linkSmartObjectToSmartObject', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '转智能对象', parse: unwrapRaw
+  },
+
+  /** 优化当前文档：参数是三个开关组成的一个对象 */
+  optimizeDoc: {
+    fn: 'cy_optimizeDoc', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '优化文档', parse: unwrapRaw
+  },
+
+  /** 优化单个 PSD：直调，参数 `[option, file]`；跨文档的循环在 commands（§8 例外） */
+  batchOptimizeDoc: {
+    fn: 'cy_batchOptimizeDoc', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid('优化文档失败')
+  },
+
+  /** 自定义变换：参数顺序由 `CustomTransformParams` 具名字段保证，见 `common-use.ts` */
+  customBuildTransform: {
+    fn: 'cy_customBuildTransform', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '自定义变换', parse: unwrapRaw
+  },
+
+  /** 导出当前图片：整块 `cyExport`，导出比普通写慢，给 120s */
+  exportImage: {
+    fn: 'cy_ExportImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '导出图片', parse: unwrapRaw
+  },
+
+  /** 导出一级 / 二级图层：同一个配置块，函数不同 */
+  exportFirstLevelLayers: {
+    fn: 'cy_BatchExportLayer', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '批量导出一级图片', parse: unwrapRaw
+  },
+
+  exportSecondLevelLayers: {
+    fn: 'cy_BatchExportSecondLayer', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '批量导出二级图片', parse: unwrapRaw
+  },
+
+  /** 单个 PSD 导图：`Bacth` 是官方拼写，照抄 */
+  exportPsdImage: {
+    fn: 'cy_BacthExportPsdToImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '导出 PSD', parse: unwrapRaw
+  },
+
+  /* ---------------- 动作页（05）：两条 jsx，通道不同 ---------------- */
+
+  /**
+   * 执行 PS 动作：官方走**调度**，参数是**整个 item**（`{group,name,alias?}`），
+   * 官方历史名 `n` 是「动作-名」，这里静态写「动作」（`n` 只影响 PS 历史面板显示名）。
+   *
+   * 超时给 300s：批处理式动作可能跑几分钟。**这是调度通道唯一的超时例外**，
+   * 白名单写在 `capability.test.ts` 里（`LONG_RUN_DISPATCH`），新增例外必须同时改那处。
+   */
+  callAction: {
+    fn: 'dz_callAction', gate: 'vendor', channel: 'dispatch', timeout: LONG_TIMEOUT,
+    label: '动作', parse: unwrapRaw
+  },
+
+  /** 取 PS 动作面板的分组与动作：直调、无参；返回形状交给 `domain` 归一（Vue 版也是这么做的） */
+  getActionList: {
+    fn: 'dz_getActionList', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: passthrough
+  },
+
+  /* ---------------- 常用页 v2：事件驱动（无 UI 按钮，由 watcher 触发） ---------------- */
+
+  /** 智能填色：前景色方向 */
+  smartFillColor: {
+    fn: 'cy_smartFillColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '智能填充颜色', parse: unwrapRaw
+  },
+
+  /** 智能填色：背景色方向（填边框色），与上一条是两个函数 */
+  smartFillLineColor: {
+    fn: 'cy_smartFillLineColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '智能填充边框颜色', parse: unwrapRaw
+  },
+
+  /** 智能参考线：参数是 `singleRow` / `singleColumn` */
+  smartReferenceLine: {
+    fn: 'cy_smartReferenceLine', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '智能参考线', parse: unwrapRaw
   },
 
   /* ---------------- 样式：颜色走自有 jsx（gate core），渐变 / 图层样式走调度 ---------------- */

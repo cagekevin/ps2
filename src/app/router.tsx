@@ -9,6 +9,7 @@ import { DEFAULT_PATH } from './nav-config';
 
 const StylePage = lazy(() => import('../features/style/StylePage'));
 const CommonPage = lazy(() => import('../features/common/CommonPage'));
+const ActionPage = lazy(() => import('../features/action/ActionPage'));
 const FontManagePage = lazy(() => import('../features/font-manage/FontManagePage'));
 const FontPanelPage = lazy(() => import('../features/font-panel/FontPanelPage'));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
@@ -23,6 +24,7 @@ export function AppRoutes() {
         <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />
         <Route path="/style" element={<StylePage />} />
         <Route path="/common" element={<CommonPage />} />
+        <Route path="/action" element={<ActionPage />} />
         <Route path="/font" element={<FontPanelPage />} />
         <Route path="/font-manage" element={<FontManagePage />} />
         <Route path="/set" element={<SettingsPage />} />

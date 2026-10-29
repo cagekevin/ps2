@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMMON_USE_SETTING_KEYS,
+  booleanOptionOf,
+  exportConfigOf,
   isCommonUseSettingKey,
+  linkObjectOf,
+  missingOptionKeys,
   mergeCommonUseOptions,
+  optionPatchOf,
   pickCommonUseOptions
 } from './common-use-options';
 
@@ -76,5 +81,65 @@ describe('mergeCommonUseOptions', () => {
     );
     expect(merged.cyShowZoom).toBeNull();
     expect(merged.cyShowBatch).toBe(false);
+  });
+});
+
+describe('optionPatchOf', () => {
+  it('一级键 → 整值补丁', () => {
+    const patch = optionPatchOf('cyShowZoom', false);
+    expect(patch).toEqual({ status: 'ok', value: { cyShowZoom: false } });
+  });
+
+  it('一级子路径 → 嵌套一层（cyExport.compress 的 4 个键）', () => {
+    const patch = optionPatchOf('cyExport.compress.width', '800');
+    expect(patch).toEqual({ status: 'ok', value: { cyExport: { compress: { width: '800' } } } });
+    expect(optionPatchOf('cyExport.ext', 'PNG').status).toBe('ok');
+  });
+
+  it('白名单外的路径 → VALIDATION（不拼未知键）', () => {
+    for (const path of ['notAKey', 'cyExport.compress.foo', 'cyShowZoom.deep.deeper', 'cyExport.']) {
+      expect(optionPatchOf(path, 1).status, path).toBe('error');
+    }
+    expect(optionPatchOf('cyShowZoom.deep.deeper', 1)).toMatchObject({ code: 'VALIDATION' });
+  });
+
+  it('cyExport.compress 整块可写（只有 compress 的**子键**受 4 键白名单约束）', () => {
+    const patch = optionPatchOf('cyExport.compress', { width: '800' });
+    expect(patch).toEqual({ status: 'ok', value: { cyExport: { compress: { width: '800' } } } });
+  });
+});
+
+describe('官方默认值（唯一出处）', () => {
+  it('booleanOptionOf：文件是布尔就用文件，缺键用官方默认', () => {
+    const empty = pickCommonUseOptions({});
+    expect(booleanOptionOf(empty, 'cyShowZoom')).toBe(true);
+    expect(booleanOptionOf(empty, 'cyDragInAutoEmbed')).toBe(false);
+
+    const filled = pickCommonUseOptions({ cyShowZoom: false, cyDragInAutoEmbed: true });
+    expect(booleanOptionOf(filled, 'cyShowZoom')).toBe(false);
+    expect(booleanOptionOf(filled, 'cyDragInAutoEmbed')).toBe(true);
+  });
+
+  it('linkObjectOf：只认 -1/1/2，字符串与缺键回默认 -1（Vue 那套字符串写法作废）', () => {
+    expect(linkObjectOf(pickCommonUseOptions({ cyLinkObject: 2 }))).toBe(2);
+    expect(linkObjectOf(pickCommonUseOptions({ cyLinkObject: '2' }))).toBe(-1);
+    expect(linkObjectOf(pickCommonUseOptions({}))).toBe(-1);
+  });
+
+  it('exportConfigOf：官方默认 + 文件值逐键合并，缺 compress 也补齐', () => {
+    const config = exportConfigOf(pickCommonUseOptions({ cyExport: { ext: 'PNG', compress: { width: '800' } } }));
+
+    expect(config.ext).toBe('PNG');
+    expect(config.quality).toBe(100); // 官方默认
+    expect(config.pathType).toBe(2);
+    expect(config.compress).toEqual({ width: '800', height: '', watermark: '', exportOriginalGraph: false });
+    /* 不认识的子键必须留着：整块交给 jsx，洗掉就等于改用户配置 */
+    const extra = exportConfigOf(pickCommonUseOptions({ cyExport: { foo: 1 } }));
+    expect(extra.foo).toBe(1);
+  });
+
+  it('missingOptionKeys：缺键与「用户选了默认值」必须能分开', () => {
+    expect(missingOptionKeys(pickCommonUseOptions({}))).toHaveLength(17);
+    expect(missingOptionKeys(pickCommonUseOptions({ cyShowZoom: false }))).toHaveLength(16);
   });
 });

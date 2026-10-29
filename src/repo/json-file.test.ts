@@ -252,3 +252,42 @@ describe('updateOrCreateJsonFileOr（mutator 可以直接失败）', () => {
     expect(h.writes).toHaveLength(1);
   });
 });
+
+describe('并发写：mutator 拿到的是队列内最新记录', () => {
+  /**
+   * 这条是 `TD-01-16` 的凭据：`commands.patchItem` 把「该项还在不在」的判断放在 mutator 里，
+   * 只有当 mutator 拿到**队列内刚读到的**记录时，那个判断才有效（否则两次读之间被删 = 假成功）。
+   */
+  it('第二个 mutator 看到的是第一个写完之后的内容', async () => {
+    h.files.set(`data:${FILE}`, JSON.stringify([{ id: 'a' }]));
+    const seen: number[] = [];
+
+    const first = updateOrCreateJsonFile(
+      FILE,
+      'data',
+      '测试',
+      decodeRawRecords,
+      (records) => {
+        seen.push(records.length);
+        return ok([]); // 把它删空
+      },
+      { missing: () => [] }
+    );
+    const second = updateOrCreateJsonFile(
+      FILE,
+      'data',
+      '测试',
+      decodeRawRecords,
+      (records) => {
+        seen.push(records.length);
+        return ok(records);
+      },
+      { missing: () => [] }
+    );
+
+    await Promise.all([first, second]);
+
+    /* 第二次看到 0 条 = 真的重读了；若拿到读缓存就会看到 1 条，patchItem 的存在性判断随即失效 */
+    expect(seen).toEqual([1, 0]);
+  });
+});

@@ -1,6 +1,6 @@
 /**
- * 【范本】PS 常用页能力（26 个官方 jsx：v1 覆盖 11 个 —— 12 条命令，`cy_guideFunction` 一函数两用 ——
- * 另有 2 个只登记不接线，其余 13 条排 v2）
+ * 【范本】PS 常用页能力（26 个官方 jsx + v2 追加的 3 条事件驱动：v1 覆盖 11 个 —— 12 条命令，
+ * `cy_guideFunction` 一函数两用 —— 2 个只登记，其余 16 个在 v2 接线）
  *
  * 通道**不是一刀切**：按原版调用点用的方法分两批（`docs/PS-CHANNEL-NOTES.md` §11.4），
  *   dispatch（原版 `jsxHistory*`）：`cy_transformPosition` / `cy_locationTrade` /
@@ -125,4 +125,142 @@ export function getImagePath(): Promise<Result<unknown>> {
 /** 扫文件夹取 PSD 列表（`cy_getPsdForFolder`）：jsx 自己弹选目录，**无参**，返回同样不解码 */
 export function getPsdList(): Promise<Result<unknown>> {
   return callCapability(CAP.psdList);
+}
+
+/* ---------------- v2：嵌入 / 导入（3） ---------------- */
+
+/**
+ * 嵌入图片：`cy_insertionImage([{ path, bLink2, bDelete }])`。
+ *
+ * `path` 恒空串——官方两处调用都是空串，意思是「嵌 PS 里当前置入的那张图」，
+ * **不弹选图**。`bLink2` 取 `cyLinkObject`（-1 不存链接 / 1 原始路径 / 2 与 PSD 同目录），
+ * `bDelete` 取 `cyDeleteNext`；两个值由 `commands` 从设置读出后传进来，`core` 不读设置。
+ */
+export function embedImage(bLink2: number, bDelete: boolean): Promise<Result<void>> {
+  return callCapability(CAP.embedImage, [{ path: '', bLink2, bDelete }]);
+}
+
+/** 嵌入多图片：`cy_embedMultipleImage([])`，多张图由 jsx 自己处理 */
+export function embedMultipleImage(): Promise<Result<void>> {
+  return callCapability(CAP.embedMultipleImage);
+}
+
+/** 导入多图片：`cy_importMultipleImage([{ path, toLinkObject }])` */
+export function importMultipleImage(imagePath: string, toLinkObject: boolean): Promise<Result<void>> {
+  return callCapability(CAP.importMultipleImage, [{ path: imagePath, toLinkObject }]);
+}
+
+/* ---------------- v2：智能对象转换（3） ---------------- */
+
+/** 把置入层的链接路径改掉：`Layer_placedLayerRelinkToFile([path])`，直调 */
+export function relinkPlacedLayer(path: string): Promise<Result<void>> {
+  return callCapability(CAP.relinkPlacedLayer, [path]);
+}
+
+/** 转链接智能对象：`cy_smartToLinkSmartObject([])`，走调度，标签「转链接智能对象」 */
+export function toLinkSmartObject(): Promise<Result<void>> {
+  return callCapability(CAP.toLinkSmartObject);
+}
+
+/** 转回普通智能对象：`cy_linkSmartObjectToSmartObject([])`，标签「转智能对象」 */
+export function linkSmartObjectToSmartObject(): Promise<Result<void>> {
+  return callCapability(CAP.linkSmartObjectToSmartObject);
+}
+
+/* ---------------- v2：优化（2） ---------------- */
+
+/** 优化文档的三个开关：键名与 `sj_set.json` 的设置键同名（官方 `:36006-36013` 的 option 就是这三键） */
+export interface OptimizeOptions {
+  cyOptimizeAll: boolean;
+  cyOptimizeDeleteAllEmpty: boolean;
+  cyOptimizeDeleteAllHide: boolean;
+}
+
+/** 优化当前文档：`cy_optimizeDoc([{ 三键 }])`，走调度（原版 `jsxHistoryNoCheck`） */
+export function optimizeDoc(options: OptimizeOptions): Promise<Result<void>> {
+  return callCapability(CAP.optimizeDoc, [{ ...options }]);
+}
+
+/**
+ * 优化单个 PSD：`cy_batchOptimizeDoc([option, file])`，直调（原版 `jsxNoCheck`）。
+ *
+ * **跨文档批量，循环在 `commands`**：一次 `evalScript` 只作用于当前打开的文档，
+ * 这是 `CONVENTIONS` §8「批量在 jsx 内循环」的**登记例外**（`13-常用-V2` §4.6）。
+ */
+export function batchOptimizeDoc(options: OptimizeOptions, file: string): Promise<Result<void>> {
+  return callCapability(CAP.batchOptimizeDoc, [{ ...options }, file]);
+}
+
+/* ---------------- v2：自定义变换（1） ---------------- */
+
+/**
+ * 自定义变换的 7 个参数（具名字段；**拼数组只在 `customBuildTransform` 里做一次**）。
+ *
+ * 官方顺序是 `[number, angle, leftRigth, topBottom, pointIndex, scale, opacity]`
+ * （`app.v4.js:36415`）。Vue 参考实现写成 `[number, scale, leftRight, topBottom, angle, opacity, anchor]`，
+ * 照它拼会把角度当缩放、锚点当透明度——真机上不报错，只是结果全不对。
+ * `leftRigth` 的拼写照抄官方（Rigth），不要顺手改成 Right。
+ */
+export interface CustomTransformParams {
+  /** 复制数量 */
+  number: number;
+  /** 缩放比例（百分比整数） */
+  scale: number;
+  /** 左右距离（原样传，可能带单位） */
+  leftRigth: string;
+  /** 上下距离（原样传） */
+  topBottom: string;
+  /** 旋转角度 */
+  angle: number;
+  /** 透明度递减 */
+  opacity: number;
+  /** 九宫格锚点下标 0-8（官方默认 0） */
+  pointIndex: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+}
+
+/** 自定义变换：`cy_customBuildTransform([...7])`，走调度 */
+export function customBuildTransform(params: CustomTransformParams): Promise<Result<void>> {
+  return callCapability(CAP.customBuildTransform, [
+    params.number,
+    params.angle,
+    params.leftRigth,
+    params.topBottom,
+    params.pointIndex,
+    params.scale,
+    params.opacity
+  ]);
+}
+
+/* ---------------- v2：导出（3 个函数 / 4 条 jsx） ---------------- */
+
+/**
+ * 导出当前图片：`cy_ExportImage([cyExport])`，走调度（原版 `jsxHistoryNoCheck`）。
+ *
+ * 传的是磁盘上 `cyExport` 的**整块**（含 `compress` 与不认识的子键）——官方
+ * `getKey("cyExport")` 就是整块，只传面板管的那几个字段会让 PS 读不到配置。
+ */
+export function exportImage(config: Record<string, unknown>): Promise<Result<void>> {
+  return callCapability(CAP.exportImage, [config]);
+}
+
+/** 批量导出图层：`level` 1 = `cy_BatchExportLayer`、2 = `cy_BatchExportSecondLayer`，配置同上整块 */
+export function exportLayers(level: 1 | 2, config: Record<string, unknown>): Promise<Result<void>> {
+  return callCapability(level === 1 ? CAP.exportFirstLevelLayers : CAP.exportSecondLevelLayers, [config]);
+}
+
+/** 单个 PSD 导图：`cy_BacthExportPsdToImage([file, config])`，`Bacth` 是官方拼写照抄 */
+export function exportPsdImage(file: string, config: Record<string, unknown>): Promise<Result<void>> {
+  return callCapability(CAP.exportPsdImage, [file, config]);
+}
+
+/* ---------------- v2：事件驱动（2 个函数 / 3 条 jsx） ---------------- */
+
+/** 智能填色：`color` = 前景色 → `cy_smartFillColor`；`line` = 背景色 → `cy_smartFillLineColor` */
+export function smartFill(kind: 'color' | 'line'): Promise<Result<void>> {
+  return callCapability(kind === 'color' ? CAP.smartFillColor : CAP.smartFillLineColor);
+}
+
+/** 智能参考线：`cy_smartReferenceLine([singleRow | singleColumn])` */
+export function smartReferenceLine(target: 'singleRow' | 'singleColumn'): Promise<Result<void>> {
+  return callCapability(CAP.smartReferenceLine, [target]);
 }

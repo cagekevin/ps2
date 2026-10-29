@@ -1,0 +1,29 @@
+/* 骨架：只留结构与定位，视觉待重写。间距（padding / gap）按 03 §0.5 一律不写 */
+
+.mm-segment{
+  display: flex;
+  align-items: center;
+  height: var(--mm-control-h);
+  border-radius: var(--mm-radius-md);
+  /* 选中项底色要贴着圆角裁掉，否则直角方块会顶出圆角 */
+  overflow: hidden;
+}
+
+.mm-segment__item{
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.mm-segment__item--on{
+  background: var(--mm-color-accent);
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-segment--disabled{
+  opacity: 0.4;
+}
