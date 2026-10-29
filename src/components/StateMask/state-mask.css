@@ -1,5 +1,5 @@
 /* 区域遮罩：只负责盖住与居中，文案样式在 components/StateHint */
-.mm-state-mask {
+.mm-state-mask{
   position: relative;
 }
 
@@ -7,12 +7,11 @@
  * 黑底半透明：看得出这块还在（不是内容丢了），又一眼知道现在用不了。
  * 盖住就不需要再给下面的控件加 disabled —— 点不到就是点不到。
  */
-.mm-state-mask__cover {
+.mm-state-mask__cover{
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--mm-color-mask-strong);
   text-align: center;
 }

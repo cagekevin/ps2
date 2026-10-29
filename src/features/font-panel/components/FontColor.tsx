@@ -115,7 +115,6 @@ export function FontColor({
     });
   }
 
-  const swatch = `rgb(${info.color.r},${info.color.g},${info.color.b})`;
 
   return (
     <div className="mm-font-panel__color">
@@ -145,12 +144,11 @@ export function FontColor({
           className="mm-font-panel__swatch"
           title="设置颜色"
           aria-label="设置颜色"
-          style={{ '--mm-font-panel-color': swatch } as React.CSSProperties}
           onClick={onColor}
         />
       </div>
 
-      <div className="mm-font-panel__styles">
+      <div className="mm-row mm-row--wrap mm-font-panel__styles">
         <IconButton
           name="iconzihaodaxiao7"
           title="加粗"

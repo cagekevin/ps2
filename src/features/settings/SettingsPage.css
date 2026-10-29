@@ -1,24 +1,16 @@
 /**
  * 设置页样式（类名前缀 `mm-settings__`）
- *
- * 页头与字体管理页同高同底色（`--mm-color-header-bar`），保持切页时不跳。
  */
-
-  /* 底色由外壳给；文字色 / 字号 / box-sizing 由 global.css 给。页面根都不写 */
-.mm-settings {  /* 底色由外壳给；文字色 / 字号 / box-sizing 由 global.css 给。页面根都不写 */
-
-  display: flex;
-  height: 100%;
-  flex-direction: column;
+/* 根容器的布局在 `global.css` 的公共布局原语里，本文件只保留自己滚这条差异 */
+.mm-settings{
   overflow-y: auto;
 }
 
 
 
-.mm-settings__row {
+.mm-settings__row{
   display: flex;
   align-items: center;
-  gap:0;
 }
 
 
@@ -30,9 +22,8 @@
  */
 
 
-.mm-settings__label {
+.mm-settings__label{
   flex: 0 0 auto;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-md);
 }
 
@@ -41,20 +32,18 @@
  * 原来这里限了 220 宽，而 220 是字体面板输入弹窗的宽度（借来的 token），
  * 结果这一行右边短 33px，整页只有它收不到头。
  */
-.mm-settings__select {
+.mm-settings__select{
   flex: 1;
   min-width: 0;
 }
 
-.mm-settings__section {
-  color: var(--mm-color-text-dim);
+.mm-settings__section{
   font-size: var(--mm-font-sm);
   font-weight: normal;
 }
 
 /* 14 个功能项的显隐：两列排布，标签与常用页网格同名（取自文件里的 name） */
-.mm-settings__tiles {
+.mm-settings__tiles{
   display: grid;
-  gap:0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

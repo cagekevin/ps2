@@ -115,11 +115,11 @@ export default function HomePage() {
 
       {diag ? (
         <div className="mm-home__diag">
-          <div className="mm-home__diag-head">
+          <div className="mm-row mm-home__diag-head">
             <span className="mm-home__diag-title">官方 jsx 函数</span>
             <button
               type="button"
-              className="mm-home__copy"
+              className="mm-btn mm-home__copy"
               onClick={() => void handleCopy('诊断结果', formatDiag(diag))}
             >
               复制
@@ -141,16 +141,16 @@ export default function HomePage() {
 
       {logText ? (
         <div className="mm-home__log">
-          <div className="mm-home__diag-head">
+          <div className="mm-row mm-home__diag-head">
             <span className="mm-home__diag-title">日志（%TEMP%\maomao.log）</span>
             <span className="mm-home__log-actions">
-              <button type="button" className="mm-home__copy" onClick={() => void handleCopy('日志', logText)}>
+              <button type="button" className="mm-btn mm-home__copy" onClick={() => void handleCopy('日志', logText)}>
                 复制
               </button>
-              <button type="button" className="mm-home__copy" onClick={handleLog}>
+              <button type="button" className="mm-btn mm-home__copy" onClick={handleLog}>
                 刷新
               </button>
-              <button type="button" className="mm-home__copy" onClick={() => void handleClearLog()}>
+              <button type="button" className="mm-btn mm-home__copy" onClick={() => void handleClearLog()}>
                 清空
               </button>
             </span>

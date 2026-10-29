@@ -1,4 +1,4 @@
-.mm-toast {
+.mm-toast{
   position: fixed;
   left: 0;
   right: 0;
@@ -6,20 +6,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap:0;
   pointer-events: none;
   z-index: var(--mm-z-toast-top);
 }
 
-.mm-toast__item {
+.mm-toast__item{
   max-width: 90%;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
-  box-shadow: var(--mm-shadow-pop);
-}
-
-.mm-toast__item--error {
-  color: var(--mm-color-error);
 }

@@ -7,7 +7,7 @@
  * 颜色与渐变对都是本地 state（照原版 arrCol / arrGrads）：删一个色，含它的渐变对一起消失。
  * 落盘 / 应用通过回调交给页面。
  */
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { Button, stopClickPropagation } from '../../../components/ui';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { buildColorPairGradients } from '../../../domain/image-color';
@@ -81,7 +81,6 @@ export function ImgColorDialog({
               key={`${hex}-${index}`}
               type="button"
               className="mm-imgcolor__swatch"
-              style={{ '--mm-imgcolor-color': hex } as CSSProperties}
               title="左键应用，右键删除"
               onClick={() => onApplyColor(hex)}
               onContextMenu={contextToRemove(() => removeColorAt(index))}
@@ -106,7 +105,6 @@ export function ImgColorDialog({
               key={css}
               type="button"
               className="mm-imgcolor__grad"
-              style={{ '--mm-imgcolor-gradient': css } as CSSProperties}
               title="左键应用，右键删除"
               onClick={() => onApplyGradient(pair)}
               onContextMenu={contextToRemove(() =>

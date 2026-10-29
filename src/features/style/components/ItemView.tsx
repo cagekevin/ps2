@@ -5,10 +5,10 @@
  * 差异全在 CSS 的 `--color / --gradient / --font / --style` 修饰类里，
  * 这里只决定用哪个类、画什么内容。
  */
-import type { CSSProperties, MouseEvent } from 'react';
+import type { MouseEvent } from 'react';
 import { InlineEdit } from '../../../components/InlineEdit';
 import { userAssetUrl } from '../../../core/paths';
-import { fontFamilyOf, type KuItem, type KuKind } from '../../../domain/style-library';
+import { type KuItem, type KuKind } from '../../../domain/style-library';
 
 interface Props {
   kind: KuKind;
@@ -97,18 +97,10 @@ export function ItemView({
               <span className="mm-style__font-count">{preview.count}</span>
               <span className="mm-style__font-size">{preview.size}</span>
               {preview.color ? (
-                <span
-                  className="mm-style__font-dot"
-                  style={{ '--mm-dot-color': preview.color } as CSSProperties}
-                />
+                <span className="mm-style__font-dot" />
               ) : null}
             </span>
-            <span
-              className="mm-style__font-sample"
-              style={{ '--mm-sample-font': fontFamilyOf(preview) } as CSSProperties}
-            >
-              中文字
-            </span>
+            <span className="mm-style__font-sample">中文字</span>
           </>
         ) : (
           <span className="mm-style__font-family">{item.name}</span>
@@ -117,10 +109,6 @@ export function ItemView({
     );
   }
 
-  /* 颜色与渐变共用一个色块，尺寸由修饰类决定。
-     目录名是 Gradient（大写 G），不是 kuGradient——原版 path.kuGradient 的值就是 'Gradient' */
-  const background = item.image ? `url(${userAssetUrl('Gradient', item.image)})` : item.swatch;
-
   return (
     <button
       type="button"
@@ -128,7 +116,6 @@ export function ItemView({
       title={item.name}
       data-group-index={groupIndex}
       data-item-index={itemIndex}
-      style={{ '--mm-swatch': background } as CSSProperties}
       onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
       onContextMenu={menu}
       onMouseDown={down}

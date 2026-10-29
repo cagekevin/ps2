@@ -1,6 +1,6 @@
   /*
 /* 底栏：26 高、深色底、图标按钮 30 宽。原版 `.button-nav-wrap` / `.bottom-hover` */
-.mm-bottom-bar {  /*
+.mm-bottom-bar{  /*
    * 内容靠右：这一条原本由页面自己给（字体管理页 `justify-content: flex-end`、
    * 样式页没给于是默认靠左），结果一页的按钮在右、一页在左，
    * 窄面板下右边空出 115px。对齐属于壳的形状，收进组件里定死。
@@ -13,10 +13,9 @@
   align-items: center;
   justify-content: flex-end;
      比上方所有内容（都留 8）更靠外，右边缘对不齐 */
-  background: var(--mm-color-bg-panel);
 }
 
-.mm-bottom-bar__btn {
+.mm-bottom-bar__btn{
   display: inline-flex;
   flex: 0 0 auto;
   width: var(--mm-bottom-btn-w);
@@ -24,25 +23,12 @@
   align-items: center;
   justify-content: center;
   border: 0;
-  background: transparent;
-  color: var(--mm-color-text);
   cursor: pointer;
 }
 
-/* 原版 `.bottom-hover:hover` 是纯底色，无描边——别加 border-color */
-.mm-bottom-bar__btn:hover:not(:disabled) {
-  background: var(--mm-color-bg-active);
-}
-
-.mm-bottom-bar__btn:disabled {
+.mm-bottom-bar__btn:disabled{
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* 竖线：1 宽 13 高，左右各 8 */
-.mm-bottom-bar__divider {
-  flex: 0 0 auto;
-  width: var(--mm-border-w);
-  height: var(--mm-verline-h);
-  background: var(--mm-color-border);
-}
+/* 竖线的形状在 `global.css` 的公共布局原语里 */

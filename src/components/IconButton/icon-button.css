@@ -3,7 +3,7 @@
  *
  */
 
-.mm-icon-btn {
+.mm-icon-btn{
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
@@ -11,33 +11,17 @@
   justify-content: center;
   width: var(--mm-icon-btn-size);
   height: var(--mm-icon-btn-size);
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: 0;
-  background: transparent;
-  color: var(--mm-color-text);
   cursor: pointer;
 }
 
-.mm-icon-btn:hover:not(:disabled),
-.mm-icon-btn--active {
-  border-color: var(--mm-color-border-control);
-}
-
-.mm-icon-btn:hover:not(:disabled) {
-  background: var(--mm-color-bg-hover);
-}
-
-.mm-icon-btn--active {
-  background: var(--mm-color-bg-sunken);
-}
-
-.mm-icon-btn:disabled {
+.mm-icon-btn:disabled{
   opacity: 0.4;
   cursor: not-allowed;
 }
 
 /* 原版角标是 baseIcon 的第二个 flex 子项（不是绝对定位），mt12 压到右下 */
-.mm-icon-btn__badge {
-  color: inherit;
+.mm-icon-btn__badge{
   pointer-events: none;
 }

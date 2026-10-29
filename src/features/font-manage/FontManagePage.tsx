@@ -112,7 +112,6 @@ export default function FontManagePage() {
               active={page.activeFamily === font.family}
               previewMode={page.previewMode}
               sample={page.sampleOf(font)}
-              previewFamily={page.previewFamilyOf(font)}
               currentWeight={page.currentWeight(font.family)}
               unavailableReason={page.faceErrorOf(font)}
               onApply={page.apply}

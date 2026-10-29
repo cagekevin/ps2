@@ -3,12 +3,11 @@
    底色走遮罩档，不借 `--mm-color-bg-hover`——那是 hover 的叠白（8%），
    盖在整屏上根本看不出「挡住了」，与弹窗 / 区域遮罩也不是同一套口径 */
 
-.mm-loading-mask {
+.mm-loading-mask{
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--mm-color-mask);
   z-index: var(--mm-z-loading);
 }

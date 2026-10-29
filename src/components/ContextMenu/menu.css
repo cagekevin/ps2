@@ -1,42 +1,24 @@
 /* 右键菜单：定位与表面来自 `.mm-popover`（`global.css`）。
    层级比其它下拉高一档——菜单可能从下拉里再弹出来 */
-.mm-menu {
+.mm-menu{
 
   z-index: var(--mm-z-tooltip);
   min-width: var(--mm-menu-min-w);
 }
 
-.mm-menu__item {
+.mm-menu__item{
   display: block;
   width: 100%;
   border: none;
   border-radius: var(--mm-radius-sm);
-  background: transparent;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   text-align: left;
   cursor: pointer;
 }
 
-.mm-menu__item:hover {
-  background: var(--mm-color-bg-panel);
-}
-
-.mm-menu__item--danger {
-  color: var(--mm-color-error);
-}
-
-.mm-menu__hr {
-  border: 0;
-  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
-}
+/* 横向分隔线的形状在 `global.css` 的公共布局原语里 */
 
 /* 未实现的命令：看得见但点不动 */
-.mm-menu__item:disabled {
-  color: var(--mm-color-text-dim);
+.mm-menu__item:disabled{
   cursor: not-allowed;
-}
-
-.mm-menu__item:disabled:hover {
-  background: transparent;
 }

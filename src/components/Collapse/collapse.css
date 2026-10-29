@@ -1,29 +1,22 @@
 /* 折叠行：整行高 24 / 箭头位 20×13 / 上下间距 12（官方 .opencom / .open-wrap） */
 /* 折叠行：整行高 24 / 箭头位 20×13（官方 .opencom / .open-wrap）。
    上下间距归容器给，本组件自己不带 margin */
-.mm-collapse {
+.mm-collapse{
   width: 100%;
 }
 
-.mm-collapse__head {
+.mm-collapse__head{
   display: flex;
   align-items: center;
-gap:0;
   width: 100%;
   height: var(--mm-collapse-h);
   border: none;
-  background: transparent;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   text-align: left;
   cursor: pointer;
 }
 
-.mm-collapse__head:hover {
-  color: var(--mm-color-text-strong);
-}
-
-.mm-collapse__arrow {
+.mm-collapse__arrow{
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -32,13 +25,8 @@ gap:0;
   height: var(--mm-collapse-arrow-h);
 }
 
-.mm-collapse__title {
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* 标题的单行省略在 `global.css`（与下拉标签共用一份） */
 
-.mm-collapse__body {
+.mm-collapse__body{
   width: 100%;
 }

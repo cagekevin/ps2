@@ -1,10 +1,7 @@
   /*
 /* 【范本】基础组件样式：只用 Token
- *
- * 【唯一入口】控件表面（按钮 / 输入框 / 字段）—— 底色、描边、圆角、字号只在这里写。
- * 页面与 feature 的类只许覆盖宽度 / 间距 / 文字色 / 焦点色；再写一份 background / border /
- * border-radius / font-size 就是第二个输入框（2026-10-29 刚把三种底色收成一种）。 */
-.mm-btn {
+ */
+.mm-btn{
   height: var(--mm-control-h);
   border: none;
   border-radius: var(--mm-radius-md);
@@ -12,27 +9,7 @@
   cursor: pointer;
 }
 
-.mm-btn--ghost {
-  background: var(--mm-color-bg-overlay);
-  color: var(--mm-color-text);
-}
-
-.mm-btn--ghost:hover:not(:disabled) {
-  background: var(--mm-color-bg-hover);
-}
-
-.mm-btn--primary {
-  background: var(--mm-color-accent);
-  color: var(--mm-color-text);
-}
-
-/* 实底蓝上叠白会偏灰，hover 走亮一档的蓝。不用 `opacity` —— 半透明会把下面的深底透上来，
-   蓝反而变暗，与「hover 必须比静态亮」相反 */
-.mm-btn--primary:hover:not(:disabled) {
-  background: var(--mm-color-accent-hover);
-}
-
-.mm-btn:disabled {
+.mm-btn:disabled{
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -40,31 +17,22 @@
 /*
  * 输入位表面：**全仓只有这一处写底色 / 描边 / 圆角 / 文字色 / 字号**。
  *
- * - `.mm-input`：真输入框。`components/ui` 的 `Input` 是唯一渲染入口，`TextField` /
- *   `InputDialog` / `InlineEdit` / 标签与搜索框都渲染它，所以它们的底色自动跟着走。
+ * - `.mm-input`：真输入框。`components/ui` 的 `Input` 渲染，`TextField` /
+ *   `InputDialog` / `InlineEdit` / 标签与搜索框都渲染它。
  * - `.mm-field-surface`：不是 input、但视觉上是「输入位」的壳——下拉触发器（`SelectBox`）、
  *   复合数字框外壳（字体面板 `NumberField`）。它们加这个类即可，**不许再抄一份表面**。
  *
  * 底色 `--mm-color-bg-input`（纯黑）不参与浮起阶梯；要改输入框颜色，只改 tokens 那一行。
  */
 .mm-input,
-.mm-field-surface {
-  border: var(--mm-border-w) solid var(--mm-color-border);
+.mm-field-surface{
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-input);
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
 }
 
-/* 抽屉里的输入位再深一档（纯黑）：抽屉底就是 #222，同色会让框消失。
-   只看「在不在 `.mm-icon-panel__box` 里」，不按页面区分 */
-.mm-icon-panel__box .mm-input,
-.mm-icon-panel__box .mm-field-surface {
-  background: var(--mm-color-bg-input-in-drawer);
-}
-
 /* 只有真输入框才有这些：壳的高度 / 内边距由各自布局决定 */
-.mm-input {  /*
+.mm-input{  /*
    * 表面与下拉触发器（`select-box.css`）同一套：sunken 底 + 亮描边。
    * 原来这里是 overlay（比页面底亮一档，那是浮层色）+ 暗描边，于是全仓输入框有三种底色
    * （overlay / sunken / 透明）——输入框是「凹进去」的，不该用浮层的色。
@@ -76,31 +44,21 @@
 }
 
 /* 页内宽输入框（原版 `.inputcom*` / `.switch-input` 那一类）：只多给左右 12。
-   表面（底色 / 描边 / 圆角 / 字号）继承 `.mm-input`，变体不再重复声明——
-   重复一次就是两个出处，改底色时必漏一处 */
+   变体不再重复声明 `.mm-input` 的表面。 */
 
-
-.mm-input:focus {
-  outline: var(--mm-border-w) solid var(--mm-color-accent);
+.mm-input:focus{
+  outline-width: var(--mm-border-w); outline-style: solid;
 }
 
-/* 放在 --page 之后：校验中的边框要压过形状色 */
-.mm-input--invalid {
-  border-color: var(--mm-color-error);
-}
-
-.mm-field {
+.mm-field{
   display: flex;
   flex-direction: column;
-gap:0;
 }
 
-.mm-field__label {
+.mm-field__label{
   font-size: var(--mm-font-xs);
-  color: var(--mm-color-text-dim);
 }
 
-.mm-field__hint {
+.mm-field__hint{
   font-size: var(--mm-font-xs);
-  color: var(--mm-color-text-dim);
 }

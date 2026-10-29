@@ -1,27 +1,20 @@
-  /*
-/**
- * 样式面板。
- *
- * 规格照 `app/src/pages/style/index.css`（它已对齐原版 scoped 段）：
- *   仓库条 36px → tabs 四等分带竖线 → 滚动列表 → 底栏 26px 图标条。
- *
- * 四库格子尺寸**不共用一套**（原版就是四段独立 scoped）：
- *   颜色 25×25 无圆角 / 渐变 50×26 r4 / 字体 70×44 r4 / 样式 26×26 无圆角。
- */
-  /* box-sizing 由 `global.css` 的 `*` 统一给，底色由外壳给，这里都不写 */
-.mm-style {  /* box-sizing 由 `global.css` 的 `*` 统一给，底色由外壳给，这里都不写 */
+  /**
+   * 样式面板。
+   *
+   * 规格照 `app/src/pages/style/index.css`（它已对齐原版 scoped 段）：
+   *   仓库条 36px → tabs 四等分带竖线 → 滚动列表 → 底栏 26px 图标条。
+   *
+   * 四库格子尺寸**不共用一套**（原版就是四段独立 scoped）：
+   *   颜色 25×25 无圆角 / 渐变 50×26 r4 / 字体 70×44 r4 / 样式 26×26 无圆角。
+   */
+  /* 根容器的布局在 `global.css` 的公共布局原语里，本文件不再写 */
 
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
 
 /* ---------- 仓库条 ---------- */
 /* ---------- 仓库条 ----------
    通栏触发器：尺寸与底色在这里，表面（描边 / 圆角）来自 `.mm-field-surface`，
    这里把描边与圆角去掉——通栏顶栏带描边圆角会在面板顶部画出一个圆角方框 */
-.mm-style__warehouse {
+.mm-style__warehouse{
   /* 高度用 height 表达，不要写成 flex-basis：这个类同时挂在触发器上，
      flex-basis 会把它锁成 36 宽，图标与仓库名挤在一起 */
 
@@ -30,31 +23,27 @@
   height: var(--mm-warehouse-h);
   border: none;
   border-radius: 0;
-  background: var(--mm-color-bg-input);
 }
 
-/* 仓库名是标题性文字，不是选中态：颜色与 `PageHeader__title` 同档（`--mm-color-text-strong`）。
-/* 仓库名是标题性文字，不是选中态：13 号与左侧 16 图标配对（§7 规则 7） */
-.mm-style__warehouse .mm-select-box__label {
-  color: var(--mm-color-text-strong);
+.mm-style__warehouse .mm-select-box__label{
   font-size: var(--mm-font-md);
 }
 
 /* ---------- tabs：四等分 + 1px 竖线 ---------- */
-.mm-style__tabs {
+.mm-style__tabs{
   display: flex;
   flex: 0 0 auto;
   align-items: center;
 }
 
-.mm-style__tab-cell {
+.mm-style__tab-cell{
   display: flex;
   flex: 1;
   min-width: 0;
   align-items: center;
 }
 
-.mm-style__tab {  /*
+.mm-style__tab{  /*
    * 原版 `.w95` 是 95% 宽（对照清单 #8），但四个 tab 加起来右边会留 5% 的空，
    * 面板拉窄拉宽时最后一颗始终收不到头（实测右内边距比左多 2~4px，四个宽度都有）。
    * 改成 100%：文字仍是居中的，两侧的空间由文字宽度自然让出，不会贴到竖线。
@@ -63,32 +52,22 @@
   width: 100%;
   min-width: 0;
   border: none;
-  background: transparent;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   text-align: center;
   cursor: pointer;
 }
 
-/* 原版 `.switch-context-wrap:hover p{color:#fff}`（对照清单 #11）。
-   放在 --active 之前：两者特异性相同，靠书写顺序让选中态压过 hover */
-.mm-style__tab:hover {
-  color: var(--mm-color-text-strong);
-}
+/* 原版 `.switch-context-wrap:hover p{color:#fff}
 
-.mm-style__tab--active {
-  color: var(--mm-color-accent);
-}
-
-.mm-style__tab-line {
+.mm-style__tab-line{
   flex: 0 0 auto;
   width: var(--mm-border-w);
   height: var(--mm-tab-line-h);
-  background: var(--mm-color-border);
 }
 
 /* ---------- 悬停浮层（照 app `.style-describe`：fixed 定位 + 三行内容） ---------- */
-.mm-style__describe {
+/* ---------- 悬停浮层（照 app `.style-describe`：fixed 定位 + 三行内容） ---------- */
+.mm-style__describe{
   position: fixed;
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
@@ -96,62 +75,43 @@
   width: max-content;
   max-width: var(--mm-describe-max-w);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-sunken);
-  box-shadow: var(--mm-shadow-pop);
   pointer-events: none;
 }
 
-.mm-style__describe-name {
+.mm-style__describe-name{
   overflow: hidden;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mm-style__describe-meta {
+.mm-style__describe-meta{
   overflow: hidden;
-  color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* ---------- 滚动区 ---------- */
-.mm-style__list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
+/* 滚动容器的布局在 `global.css` 的公共布局原语里 */
 
 /* ---------- 组 ---------- */
 /* 颜色库与渐变 / 样式库用同一档左右内边距：
    原先颜色组只给左 12 右边不留、渐变组才左右都给，同页两种边 */
 .mm-style__group,
 
-
-.mm-style__group-head {
+.mm-style__group-head{
   display: flex;
   align-items: center;
-gap:0;
   width: 100%;
   height: var(--mm-group-head-h);
   border: none;
-  background: transparent;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   text-align: left;
   cursor: pointer;
 }
 
-/* 原版 `.base-group-mian:hover p, :hover svg{color:#fff}`（对照清单 #66） */
-.mm-style__group-head:hover .mm-style__group-name,
-.mm-style__group-head:hover .mm-chevron {
-  color: var(--mm-color-text-strong);
-}
-
-  /* 原版 `p.ml8`：名称离箭头 8px（对照清单 #64） */
-.mm-style__group-name {  /* 原版 `p.ml8`：名称离箭头 8px（对照清单 #64） */
+.mm-style__group-name{
 
   flex: 1;
   overflow: hidden;
@@ -159,93 +119,60 @@ gap:0;
   white-space: nowrap;
 }
 
-.mm-style__count {
+.mm-style__count{
   flex: 0 0 auto;
-  color: var(--mm-color-text-dim);
   font-size: var(--mm-font-xs);
 }
 
 /* ---------- 项容器 ---------- */
-.mm-style__items {
+.mm-style__items{
   display: flex;
   flex-wrap: wrap;
-gap:0;
-}
-
-/* 颜色：行距 6 */
-.mm-style__items--color {
-gap:0;
-}
-
-/* 样式：横向 6 / 行距 7 */
-.mm-style__items--style {
-  column-gap:0;
-  row-gap:0;
 }
 
 /* ---------- 项 ---------- */
-.mm-style__item {
+.mm-style__item{
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: var(--mm-border-w) solid transparent;
-  background: transparent;
-  color: var(--mm-color-icon);
+  border-width: var(--mm-border-w); border-style: solid;
   cursor: pointer;
 }
 
-.mm-style__item--color {
+.mm-style__item--color{
   width: var(--mm-swatch-w);
   height: var(--mm-swatch-h);
 }
 
 /* 渐变块原版无默认边框，hover 才加 */
-.mm-style__item--gradient {
+.mm-style__item--gradient{
   width: var(--mm-gradient-w);
   height: var(--mm-gradient-h);
   border: none;
   border-radius: var(--mm-radius-md);
 }
 
-.mm-style__item--font {
+.mm-style__item--font{
   width: var(--mm-font-card-w);
   height: var(--mm-font-card-h);
   flex-direction: column;
   justify-content: flex-start;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
 }
 
-.mm-style__item--style {
+.mm-style__item--style{
   width: var(--mm-style-thumb);
   height: var(--mm-style-thumb);
-  background: var(--mm-color-bg-sunken);
 }
 
-/* hover 只改边框（原版四段一致） */
-.mm-style__item--color:hover,
-.mm-style__item--gradient:hover {
-  border-color: var(--mm-color-border-control);
-}
-
-.mm-style__item--font:hover {
-  border-color: var(--mm-color-text);
-}
-
-.mm-style__item--style:hover {
-  border-color: var(--mm-color-border-control);
-}
-
-/* --mm-swatch 可能是色值或 url(...)，必须用 background 简写 */
-.mm-style__swatch {
+.mm-style__swatch{
   display: block;
   width: 100%;
   height: 100%;
-  background: var(--mm-swatch) center / cover no-repeat;
 }
 
-.mm-style__thumb {
+.mm-style__thumb{
   display: block;
   width: 100%;
   height: 100%;
@@ -254,18 +181,16 @@ gap:0;
 }
 
 /* 重命名项时占一个格子。宽度按字体卡片给，颜色/渐变也能放下输入框 */
-.mm-style__item--editing {
+.mm-style__item--editing{
   width: var(--mm-font-card-w);
   height: var(--mm-font-card-h);
-  border-color: var(--mm-color-accent);
-  background: var(--mm-color-bg-overlay);
   cursor: default;
 }
 
 /* ---------- 字体卡片四件套（原版 render `:50956-50971`，对照清单 #24） ---------- */
 
 /* 原版 `.f-alignNone.w100`：数量 / N点 / 色点三件 space-between 一行 */
-.mm-style__font-head {
+.mm-style__font-head{
   display: flex;
   width: 100%;
   justify-content: space-between;
@@ -273,28 +198,21 @@ gap:0;
 
 /* 原版继承全局 `p{color:#c3c3c3;font-size:12px}` */
 .mm-style__font-count,
-.mm-style__font-size {
-  color: var(--mm-color-text);
+.mm-style__font-size{
   font-size: var(--mm-font-sm);
 }
 
-
-
-/* 原版 `.block-color`：5×5 圆点，颜色由项数据给 */
-.mm-style__font-dot {
+.mm-style__font-dot{
   flex: 0 0 auto;
   width: var(--mm-space-1);
   height: var(--mm-space-1);
   border-radius: 50%;
-  background: var(--mm-dot-color, transparent);
 }
 
 /* 原版 `.block-context`：中文字预览，14px / 700 / 白 / 居中 */
-.mm-style__font-sample {
+.mm-style__font-sample{
   width: 100%;
   overflow: hidden;
-  color: var(--mm-color-text-strong);
-  font-family: var(--mm-sample-font, inherit);
   font-size: var(--mm-font-md);
   font-weight: 700;
   text-align: center;
@@ -303,10 +221,9 @@ gap:0;
 }
 
 /* 无 fontPreview 的兜底：只显名字 */
-.mm-style__font-family {
+.mm-style__font-family{
   width: 100%;
   overflow: hidden;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   text-align: center;
   text-overflow: ellipsis;
@@ -314,43 +231,36 @@ gap:0;
 }
 
 /* ---------- 各组末尾的「+」 ---------- */
-.mm-style__add {
+.mm-style__add{
   display: flex;
   align-items: center;
   justify-content: center;
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-icon);
   cursor: pointer;
 }
 
-.mm-style__add--color {
+.mm-style__add--color{
   width: var(--mm-swatch-w);
   height: var(--mm-swatch-h);
 }
 
-.mm-style__add--gradient {
+.mm-style__add--gradient{
   width: var(--mm-gradient-w);
   height: var(--mm-gradient-h);
 }
 
-.mm-style__add--font {
+.mm-style__add--font{
   width: var(--mm-font-card-w);
   height: var(--mm-font-card-h);
 }
 
-.mm-style__add--style {
+.mm-style__add--style{
   width: var(--mm-style-thumb);
   height: var(--mm-style-thumb);
 }
 
-.mm-style__add:hover {
-  background: var(--mm-color-bg-hover);
-}
-
 /* ---------- 底栏：26px 图标条 ---------- */
-/* 底栏壳 / 按钮 / 竖线已上移到 `components/BottomBar`（全仓一套），本页只留业务 */
 
 /* ---------- 三态 ----------
  * 空态 / 失败提示已上移到 `components/StateHint`，页面不再自定义。

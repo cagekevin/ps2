@@ -1,93 +1,51 @@
 /* 【范本】feature 样式：只用 Token 变量，禁止色值与 px；通用控件样式在 components/ui */
 
-
-.mm-home__row {
+.mm-home__row{
   font-size: var(--mm-font-sm);
-  color: var(--mm-color-text);
 }
 
-.mm-home__actions {
+.mm-home__actions{
   display: flex;
-  gap:0;
 }
 
-.mm-home__message {
-  font-size: var(--mm-font-xs);
-  color: var(--mm-color-text-dim);
-}
-
-.mm-home__diag {
-  border: var(--mm-border-w) solid var(--mm-color-border);
+.mm-home__diag{
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
 }
 
-.mm-home__diag-title {
+.mm-home__diag-title{
   font-size: var(--mm-font-xs);
-  color: var(--mm-color-text-dim);
 }
 
-.mm-home__diag-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap:0;
-}
-
-.mm-home__copy {
-  border: var(--mm-border-w) solid var(--mm-color-border);
-  border-radius: var(--mm-radius-sm);
-  background: transparent;
-  color: var(--mm-color-text-dim);
-  font-size: var(--mm-font-xs);
-  cursor: pointer;
-}
-
-  /* hover 不用蓝（§7 规则 12）：这只是「可以点」，不是状态 */
-.mm-home__copy:hover {  /* hover 不用蓝（§7 规则 12）：这只是「可以点」，不是状态 */
-
-  color: var(--mm-color-text);
-  border-color: var(--mm-color-border-control);
-}
-
-.mm-home__log {
-  border: var(--mm-border-w) solid var(--mm-color-border);
+.mm-home__log{
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
 }
 
-.mm-home__log-actions {
+.mm-home__log-actions{
   display: flex;
-  gap:0;
 }
 
-.mm-home__log-body {
+.mm-home__log-body{
   max-height: var(--mm-log-max-h);
   overflow: auto;
   font-size: var(--mm-font-xs);
   line-height: 1.4;
-  color: var(--mm-color-text);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.mm-home__diag-row {
+.mm-home__diag-row{
   display: flex;
   justify-content: space-between;
-  gap:0;
   font-size: var(--mm-font-xs);
-  color: var(--mm-color-text);
 }
 
-.mm-home__diag-row--bad {
-  color: var(--mm-color-error);
-}
-
-.mm-home__diag-key {
+.mm-home__diag-key{
   flex: 0 0 auto;
 }
 
-.mm-home__diag-value {
+.mm-home__diag-value{
   flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;

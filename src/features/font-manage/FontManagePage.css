@@ -1,16 +1,5 @@
-  /*
 /* 字体管理页：原版 app.bf68b505.css 实测值 → token。 */
-.mm-font {  /*
-   * 底色由外壳 `.mm-layout` 给；文字色 / 字号由 `global.css` 的 body 给；
-   * box-sizing 由 `global.css` 的 `*` 给。页面根都不写，
-   * 否则下一页照抄时就会跟着写一遍，写错一个就是一页不一致。
-   */
-
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
+/* 根容器的布局在 `global.css` 的公共布局原语里，本文件不再写 */
 
 /* ---------- 页头 ---------- */
 /* 「更多」菜单的按钮走公共 `components/IconButton`（与字体面板、常用页同一实现），
@@ -21,38 +10,36 @@
  * 原先各块自己撑，档位是 8 / 8 / 4 / 12 四种，相邻两处还会叠成两档——
  * 整页节奏与常用页（全 12）、设置页（12 / 16）都对不上。
  */
-.mm-font__toolbar {
+.mm-font__toolbar{
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-gap:0;
 }
 
   /* 筛选按钮是 absolute 定位、不占高度，这里的行高就是搜索框的高度 */
-.mm-font__search-row {  /* 筛选按钮是 absolute 定位、不占高度，这里的行高就是搜索框的高度 */
+.mm-font__search-row{
 
   position: relative;
 }
 
-.mm-font__search-box {
+.mm-font__search-box{
   position: relative;
 }
 
-.mm-font__search-input.mm-input {
+.mm-font__search-input.mm-input{
   width: 100%;
 }
 
-.mm-font__search-icon {
+.mm-font__search-icon{
   position: absolute;
   right: var(--mm-space-2);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--mm-color-text-muted);
   pointer-events: none;
 }
 
   /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
-.mm-font__filter-btn {  /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
+.mm-font__filter-btn{
 
   position: absolute;
   right: 0;
@@ -65,34 +52,21 @@ gap:0;
   justify-content: center;
   border: 0;
   border-radius: var(--mm-radius-md);
-  background: transparent;
-  color: var(--mm-color-icon);
   cursor: pointer;
 }
 
-.mm-font__filter-btn:hover {
-  background: var(--mm-color-bg-hover);
-}
-
-/* 筛选开启是选中态，用蓝的正档；`--mm-color-accent-hover` 只属于 hover（§7 规则 12） */
-.mm-font__filter-btn--on {
-  color: var(--mm-color-accent);
-}
-
-.mm-font__filter-btn:disabled {
+.mm-font__filter-btn:disabled{
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.mm-font__filter-badge {
+.mm-font__filter-badge{
   position: absolute;
   top: var(--mm-space-1);
   right: var(--mm-space-tight);
   min-width: var(--mm-filter-badge);
   height: var(--mm-filter-badge);
   border-radius: var(--mm-radius-pill);
-  background: var(--mm-color-accent);
-  color: var(--mm-color-text-strong);
   font-size: var(--mm-font-xs);
   line-height: var(--mm-filter-badge);
   text-align: center;
@@ -102,7 +76,7 @@ gap:0;
    外壳不需要自己的声明——宽度与内边距在里面的 `.mm-font__filter-panel` 上 */
 
   /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
-.mm-font__filter-panel {  /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
+.mm-font__filter-panel{
 
   width: var(--mm-filter-panel-w);
   max-width: calc(100vw - var(--mm-filter-panel-max-w-gap));
@@ -110,134 +84,87 @@ gap:0;
   overflow-y: auto;
 }
 
-
-
-.mm-font__filter-title {
-  color: var(--mm-color-text-muted);
+.mm-font__filter-title{
   font-size: var(--mm-font-sm);
   line-height: 1.4;
 }
 
-.mm-font__filter-chips {
+.mm-font__filter-chips{
   display: flex;
   flex-wrap: wrap;
-gap:0;
 }
 
   /* 与标签 chip 同一套内边距（同类同尺寸） */
-.mm-font__filter-chip {  /* 与标签 chip 同一套内边距（同类同尺寸） */
+.mm-font__filter-chip{
 
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-16);
   white-space: nowrap;
   cursor: pointer;
 }
 
-.mm-font__filter-chip:hover {
-  background: var(--mm-color-bg-hover);
-}
-
-.mm-font__filter-chip--on {
-  border-color: var(--mm-color-accent);
-  color: var(--mm-color-text-strong);
-}
-
 /* ---------- 预览文案面板 ---------- */
-  /* 与上一块、下一块的距离都由 toolbar 的 gap 给，这里不再补一份 */
-.mm-font__text-panel {  /* 与上一块、下一块的距离都由 toolbar 的 gap 给，这里不再补一份 */
-
-}
-
-.mm-font__preview-text {
+.mm-font__preview-text{
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   position: relative;
 }
 
-.mm-font__preview-text-icon {
+.mm-font__preview-text-icon{
   position: absolute;
   left: var(--mm-space-3);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--mm-color-icon);
 }
 
 /* 只给布局与文字色；表面（底色 / 描边 / 圆角 / 字号）继承 `.mm-input`，
    全仓输入框一套表面，别在这里再描一遍 */
   /* 左 30 是图标位；右 10 与搜索框同一档 */
-.mm-font__preview-text-field.mm-input {  /* 左 30 是图标位；右 10 与搜索框同一档 */
+.mm-font__preview-text-field.mm-input{
 
   flex: 1;
-  color: var(--mm-color-text-strong);
 }
 
-  /* 占位符是弱文，不要借星级的 star-on */
-.mm-font__preview-text-field.mm-input::placeholder {  /* 占位符是弱文，不要借星级的 star-on */
-
-  color: var(--mm-color-text-dim);
-}
-
-/* 静态描边已是 `border-control`（继承 `.mm-input`），hover 不再单独给；
-   focus 才是状态，用蓝正档，且不借 `outline`（这里是边框表达焦点） */
-.mm-font__preview-text-field.mm-input:focus {
-  border-color: var(--mm-color-accent);
-  outline: none;
-}
-
-  /* 填充型按钮的描边与底色同值（看不见的 1px），统一成透明，状态才上色 */
-.mm-font__preview-text-btn {  /* 填充型按钮的描边与底色同值（看不见的 1px），统一成透明，状态才上色 */
+  .mm-font__preview-text-btn{
 
   height: var(--mm-control-h);
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-text-strong);
   font-size: var(--mm-font-sm);
   cursor: pointer;
 }
 
-.mm-font__preview-text-btn:disabled {
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-text-muted);
+.mm-font__preview-text-btn:disabled{
   cursor: default;
 }
 
-/* ---------- 我的标签 ---------- */
-  /* 到计数行的距离由 toolbar 的 padding-bottom 给 */
-.mm-font__tags {  /* 到计数行的距离由 toolbar 的 padding-bottom 给 */
-
-}
-
   /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
-.mm-font__tags-head {  /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
+/* ---------- 我的标签 ---------- */
+.mm-font__tags-head{
 
   display: flex;
   align-items: center;
   height: var(--mm-tag-strip-h);
-  color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
 }
 
   /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
-.mm-font__tags-head > span {  /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
+.mm-font__tags-head > span{
 
   flex: 1;
   font-size: var(--mm-font-xs);
   font-weight: 500;
 }
 
-.mm-font__tags-tools {
+.mm-font__tags-tools{
   display: flex;
   align-items: center;
-gap:0;
 }
 
-.mm-font__tags-add {
+.mm-font__tags-add{
   width: var(--mm-tag-chip-w);
   height: var(--mm-tag-chip-w);
   display: inline-flex;
@@ -245,141 +172,104 @@ gap:0;
   justify-content: center;
   border: 0;
   border-radius: var(--mm-radius-sm);
-  background: transparent;
-  color: var(--mm-color-icon);
   font-size: var(--mm-font-md);
   line-height: 1;
   cursor: pointer;
 }
 
-.mm-font__tags-add:hover {
-  color: var(--mm-color-text-strong);
-}
-
-.mm-font__tags-toggle {
+.mm-font__tags-toggle{
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  background: transparent;
-  color: var(--mm-color-icon);
   cursor: pointer;
 }
 
-.mm-font__tags-toggle--open {
+.mm-font__tags-toggle--open{
   transform: rotate(180deg);
 }
 
-.mm-font__tag-list {
+.mm-font__tag-list{
   display: flex;
   flex-wrap: wrap;
-gap:0;
 }
 
-.mm-font__tag-list--collapsed {
+.mm-font__tag-list--collapsed{
   max-height: var(--mm-tag-collapse-h);
   overflow: hidden;
 }
 
-.mm-font__tags-error {
-  color: var(--mm-color-error);
+.mm-font__tags-error{
   font-size: var(--mm-font-sm);
   line-height: 1.5;
 }
 
-  /* 与底色同值的描边看不见，去掉；hover / 选中时才有 accent 描边 */
-.mm-font__tag {  /* 与底色同值的描边看不见，去掉；hover / 选中时才有 accent 描边 */
+  .mm-font__tag{
 
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-16);
   white-space: nowrap;
   cursor: pointer;
 }
 
-/* hover 不借蓝（§7 规则 12）：走亮线档，与输入框 hover 同一套 */
-.mm-font__tag:hover {
-  border-color: var(--mm-color-border-control);
-}
-
-/* 选中态与筛选 chip 一致：accent 描边 + 主文色 */
-.mm-font__tag--active {
-  border-color: var(--mm-color-accent);
-  color: var(--mm-color-text-strong);
-}
-
-
-
 /* ---------- 计数行 ---------- */
-.mm-font__list-head {
+.mm-font__list-head{
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   height: var(--mm-list-head-h);
-  border-top: var(--mm-border-w) solid var(--mm-color-border);
-  color: var(--mm-color-text-muted);
+  border-top-width: var(--mm-border-w); border-top-style: solid;
   font-size: var(--mm-font-sm);
 }
 
   /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
-.mm-font__list-count {  /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
+.mm-font__list-count{
 
   flex: 1;
-  color: var(--mm-color-text-muted);
   font-size: var(--mm-font-xs);
   font-weight: 500;
 }
 
   /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
-.mm-font__clear-tag {  /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
-  /* 可点动作用蓝（§7 规则 12 第 4 类），但用正档：hover 档只在 :hover 里出现 */
-
+.mm-font__clear-tag{
+  
   height: var(--mm-list-head-h);
   border: 0;
-  background: transparent;
-  color: var(--mm-color-accent);
   font-size: var(--mm-font-sm);
   cursor: pointer;
 }
 
 /* ---------- 提示与状态 ---------- */
-.mm-font__warnings {
+.mm-font__warnings{
   flex: 0 0 auto;
 }
 
-.mm-font__warning {
-  color: var(--mm-color-warn);
+.mm-font__warning{
   font-size: var(--mm-font-sm);
 }
 
   /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
-.mm-font__state {  /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
+.mm-font__state{
 
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-gap:0;
-  color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   text-align: center;
 }
 
-.mm-font__retry {
+.mm-font__retry{
   height: var(--mm-control-h);
   white-space: nowrap;
-  border: var(--mm-border-w) solid transparent;
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-raised);
-  color: var(--mm-color-text-strong);
   font-size: var(--mm-font-sm);
   cursor: pointer;
 }
-
 
 /* 底栏壳（26 高 / 深底 / 30 宽按钮 / 内容靠右）全在 `components/BottomBar`，
    本页不再各写一份对齐——原先只有这里给 flex-end，样式页没给，两页一左一右 */

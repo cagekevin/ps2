@@ -1,52 +1,23 @@
 /* 遮罩用 `ui.css` 的 `.mm-modal-mask`（与图片取色弹层共用），本文件只画面板本体 */
 
-.mm-confirm {
+.mm-confirm{
   min-width: var(--mm-modal-min-w);
   max-width: var(--mm-modal-max-w);
-  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
 }
 
-.mm-confirm__title {
-  color: var(--mm-color-text);
+.mm-confirm__title{
   font-size: var(--mm-font-sm);
 }
 
-.mm-confirm__message {
-  color: var(--mm-color-text-dim);
+.mm-confirm__message{
   font-size: var(--mm-font-xs);
   line-height: 1.5;
 }
 
-.mm-confirm__actions {
+.mm-confirm__actions{
   display: flex;
   justify-content: flex-end;
-  gap:0;
 }
 
-.mm-confirm__btn {
-  border: var(--mm-border-w) solid var(--mm-color-border);
-  border-radius: var(--mm-radius-sm);
-  background: transparent;
-  color: var(--mm-color-text);
-  font-size: var(--mm-font-xs);
-  cursor: pointer;
-}
-
-/* hover 是临时反馈，按 §7 规则 12 不用蓝：改成亮线那一档。
-   蓝留给「选中 / 主操作」，危险按钮的红由 `--danger` 给，两者不混 */
-.mm-confirm__btn:hover {
-  border-color: var(--mm-color-border-control);
-}
-
-.mm-confirm__btn--danger {
-  border-color: var(--mm-color-error);
-  color: var(--mm-color-error);
-}
-
-.mm-confirm__btn--danger:hover {
-  background: var(--mm-color-error);
-  color: var(--mm-color-text-on-accent);
-}

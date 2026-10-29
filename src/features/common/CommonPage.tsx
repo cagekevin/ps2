@@ -46,7 +46,7 @@ function toRows(tiles: CommonUseTile[]): CommonUseTile[][] {
 /** 一个缩放档位按钮：宽度由容器决定（行内 4 等分 / 抽屉里 5 列），自己不写宽 */
 function ZoomPreset({ value, onClick }: { value: number; onClick: () => void }) {
   return (
-    <button type="button" className="mm-common__preset" title={String(value)} onClick={onClick}>
+    <button type="button" className="mm-btn mm-common__preset" title={String(value)} onClick={onClick}>
       {value}
     </button>
   );
@@ -177,7 +177,7 @@ export default function CommonPage() {
         ) : null}
 
         {page.showTransformation ? (
-          <div className="mm-common__flips">
+          <div className="mm-row mm-row--wrap mm-common__flips">
             {FLIP_ITEMS.map((item) => (
               <IconButton
                 key={item.direction}

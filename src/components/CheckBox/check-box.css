@@ -1,76 +1,45 @@
-/* 勾选框：12×12 / 圆角 3 / 1px #707070（官方 .base-check 本页实测值） */
 /* 勾选框：12×12 / 圆角 3 / 1px `--mm-color-border-control`（尺寸与圆角照官方 `.base-check`；
    描边已并入亮线档，选中态换 accent 底） */
-.mm-check {
-  display: inline-flex;
-  /* 收缩规则（`min-width: 0` + `max-width: 100%`）在 `styles/global.css` 的 `.mm-check, .mm-radio`
-     一处，与单选框共用；不要在本文件补一份，两份必漂 */
-  align-items: center;
-  gap:0;
-  color: var(--mm-color-text);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-  user-select: none;
-}
+/* 根容器的排列与收缩规则在 `global.css`（与单选框共用一份） */
 
-/* 原生控件只保留语义与焦点，不占布局位置 */
-.mm-check__input {
-  position: absolute;
-  width: var(--mm-space-tight);
-  height: var(--mm-space-tight);
-  opacity: 0;
-}
+/* 原生 input 的隐藏与标签省略在 `global.css`（与单选框共用一份） */
 
-.mm-check__box {
+.mm-check__box{
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
   width: var(--mm-check-size);
   height: var(--mm-check-size);
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-check-radius);
-  background: var(--mm-color-bg-sunken);
-}
-
-.mm-check__input:checked + .mm-check__box {
-  border-color: var(--mm-color-accent);
-  background: var(--mm-color-accent);
 }
 
 /* 对勾用两条边框拼出：不用 svg，省一个图标也不用随尺寸改 viewBox */
-.mm-check__input:checked + .mm-check__box::after {
+.mm-check__input:checked + .mm-check__box::after{
   position: absolute;
   top: var(--mm-space-tight);
   left: var(--mm-space-tight);
   width: var(--mm-space-tight);
   height: var(--mm-space-inline);
-  border: solid var(--mm-color-text-strong);
+  border-style: solid;
   border-width: 0 var(--mm-space-tight) var(--mm-space-tight) 0;
   content: '';
   transform: rotate(45deg);
 }
 
 /* 原生控件是 1px 透明，焦点环画在可见方框上；不补这一条键盘用户看不到自己在哪 */
-.mm-check__input:focus-visible + .mm-check__box {
-  outline: var(--mm-border-w) solid var(--mm-color-accent);
+.mm-check__input:focus-visible + .mm-check__box{
+  outline-width: var(--mm-border-w); outline-style: solid;
 }
 
 /* 灰掉是 0.5 透明（03 计划 §4.3 第 2 条），不是换色 */
 .mm-check__input:disabled + .mm-check__box,
-.mm-check__input:disabled ~ .mm-check__label {
+.mm-check__input:disabled ~ .mm-check__label{
   opacity: 0.5;
 }
 
 /* 不用 `:has()`：Chromium 103 不支持，靠组件给的修饰类 */
-.mm-check--disabled {
+.mm-check--disabled{
   cursor: not-allowed;
 }
 
-.mm-check__label {
-  /* ellipsis 要真的生效必须有 min-width: 0，否则 flex 子项按内容宽度撑开 */
-
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}

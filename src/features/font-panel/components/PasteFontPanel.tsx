@@ -26,7 +26,7 @@ const FIELDS: ReadonlyArray<{ key: keyof PasteFontConfig; label: string }> = [
 export function PasteFontPanel({ keeps, onChange, onReset }: Props) {
   return (
     <div className="mm-font-panel__panel mm-font-panel__paste">
-      <div className="mm-font-panel__paste-row">
+      <div className="mm-row mm-font-panel__paste-row">
         {FIELDS.slice(0, 3).map((field) => (
           <CheckBox
             key={field.key}
@@ -36,7 +36,7 @@ export function PasteFontPanel({ keeps, onChange, onReset }: Props) {
           />
         ))}
       </div>
-      <div className="mm-font-panel__paste-row">
+      <div className="mm-row mm-font-panel__paste-row">
         {FIELDS.slice(3).map((field) => (
           <CheckBox
             key={field.key}

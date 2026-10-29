@@ -2,7 +2,7 @@
  * 字重选择：每个字重渲染成该字体自己的字形（英文 A / 中文 永），最多 7 个；
  * 第 8 个是数量 chip，点开是带勾选的下拉。
  */
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '../../../components/icons';
 import { Portal } from '../../../components/Portal';
 import { stopClickPropagation } from '../../../components/ui';
@@ -10,7 +10,6 @@ import { isAsciiFamily } from '../../../domain/font-lang';
 import type { FontItem } from '../../../domain/font-item';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { useFloatingPosition } from '../../../hooks/useFloatingPosition';
-import { fontFamilyValue } from '../css';
 
 interface Props {
   font: FontItem;
@@ -54,7 +53,6 @@ export function FontWeight({ font, current, onSelect }: Props) {
               key={`${ps}-${index}`}
               type="button"
               className={`mm-font__glyph${index === current ? ' mm-font__glyph--current' : ''}`}
-              style={{ '--mm-glyph-font': fontFamilyValue(ps, font.family) } as CSSProperties}
               onClick={(event) => {
                 event.stopPropagation();
                 pick(index);

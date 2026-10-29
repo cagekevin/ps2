@@ -138,7 +138,7 @@ export function useLongPressDrag() {
         if (floatClass) node.classList.remove(floatClass);
       }
 
-      /** 浮层跟手 + 浮层里的 p 变白 */
+      /** 浮层跟手 */
       function follow(event: MouseEvent): void {
         node.style.cssText = [
           nodeCss,
@@ -148,10 +148,6 @@ export function useLongPressDrag() {
         ]
           .filter(Boolean)
           .join(';');
-        /* 拖起来文字变纯白：#fff 走 token（原版 hover 就是纯白，不是 #f5f5f5） */
-        if (paragraph) {
-          paragraph.style.cssText = `${paragraphCss};color:var(--mm-color-text-strong)`;
-        }
       }
 
       /** 存原样、造克隆占位、给每个候选挂落点判定 */

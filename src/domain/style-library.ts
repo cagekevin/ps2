@@ -103,19 +103,6 @@ export function describeDetail(kind: KuKind, item: KuItem): string {
   return '';
 }
 
-/**
- * 中文字预览的 font-family（原版 `pages/style/index.vue:324-328`）。
- *
- * 同一族名写三遍：裸名、引号名、`族名 字重`——不同渲染路径对带空格/字重的
- * 字体名解析不同，三连写保证 Windows 的「等线 DengXian Light」这类也能命中。
- * `scriptFamily`（简/繁脚本变体）兜底。
- */
-export function fontFamilyOf(preview: KuFontPreview): string {
-  if (!preview.family) return '';
-  const { family, weight, scriptFamily } = preview;
-  return `${family},'${family}','${family} ${weight}',${scriptFamily}`;
-}
-
 export interface KuGroup {
   name: string;
   show: boolean;

@@ -41,7 +41,6 @@ import { createPortal } from 'react-dom';
 import { log } from '../../core/logger';
 import { IconButton } from '../IconButton';
 import type { IconName } from '../icons';
-import './icon-panel.css';
 
 type TriggerHandlers = {
   /** 无参开关：绑到「点一下就展开」的小按钮（数字框右侧箭头这类） */

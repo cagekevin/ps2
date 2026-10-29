@@ -1,60 +1,29 @@
-/* 单选框：12×12 / 50% 正圆 / 1px #707070（官方 .base-radio 本页实测值） */
 /* 单选框：12×12 / 50% 正圆 / 1px `--mm-color-border-control`（尺寸照官方 `.base-radio`；
    描边已并入亮线档，选中态换 accent 底） */
-  /* 与 CheckBox 同一套收缩规则 */
-.mm-radio {  /* 与 CheckBox 同一套收缩规则 */
-  /* 与 CheckBox / 按钮 / 输入框同字号（原来这三个各不相同） */
+/* 根容器的排列与收缩规则在 `global.css`（与勾选框共用一份） */
 
-  display: inline-flex;
-  align-items: center;
-gap:0;
-  color: var(--mm-color-text);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-  user-select: none;
-}
+/* 原生 input 的隐藏与标签省略在 `global.css`（与勾选框共用一份） */
 
-.mm-radio__input {
-  position: absolute;
-  width: var(--mm-space-tight);
-  height: var(--mm-space-tight);
-  opacity: 0;
-}
-
-.mm-radio__dot {
+.mm-radio__dot{
   display: inline-flex;
   flex: 0 0 auto;
   width: var(--mm-check-size);
   height: var(--mm-check-size);
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-pill);
-  background: var(--mm-color-bg-sunken);
-}
-
-/* 选中：外圈强调色 + 内圈留一圈底色，形成实心点 */
-.mm-radio__input:checked + .mm-radio__dot {
-  border-color: var(--mm-color-accent);
-  box-shadow: inset 0 0 0 var(--mm-space-tight) var(--mm-color-bg-sunken);
-  background: var(--mm-color-accent);
 }
 
 /* 焦点环画在可见圆点上（原生 input 只有 1px 且透明） */
-.mm-radio__input:focus-visible + .mm-radio__dot {
-  outline: var(--mm-border-w) solid var(--mm-color-accent);
+.mm-radio__input:focus-visible + .mm-radio__dot{
+  outline-width: var(--mm-border-w); outline-style: solid;
 }
 
 .mm-radio__input:disabled + .mm-radio__dot,
-.mm-radio__input:disabled ~ .mm-radio__label {
+.mm-radio__input:disabled ~ .mm-radio__label{
   opacity: 0.5;
 }
 
-.mm-radio--disabled {
+.mm-radio--disabled{
   cursor: not-allowed;
 }
 
-.mm-radio__label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}

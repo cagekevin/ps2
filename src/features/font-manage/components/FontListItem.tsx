@@ -2,7 +2,7 @@
  * 字体列表项：家族名 + 操作区 / 预览 / 字重行。
  * `memo`：列表 30+ 条时，父级菜单开关不应让每一行重渲染。
  */
-import { memo, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react';
+import { memo, type KeyboardEvent, type MouseEvent } from 'react';
 import { Icon } from '../../../components/icons';
 import type { FontItem } from '../../../domain/font-item';
 import type { PreviewMode } from '../../../store/font';
@@ -15,7 +15,6 @@ interface Props {
   active: boolean;
   previewMode: PreviewMode;
   sample: string;
-  previewFamily: string;
   currentWeight: number;
   /** 非空 = 当前字重不能应用；内容就是失败原因（判据在 `domain/font-item`） */
   unavailableReason: string;
@@ -30,14 +29,12 @@ function FontListItemInner({
   active,
   previewMode,
   sample,
-  previewFamily,
   currentWeight,
   unavailableReason,
   onApply,
   onRate,
   onOpenTags
 }: Props) {
-  const familyStyle = { '--mm-preview-family': previewFamily } as CSSProperties;
   const unavailable = unavailableReason.length > 0;
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
@@ -63,7 +60,6 @@ function FontListItemInner({
         <div className="mm-font__name-row">
           <span
             className={`mm-font__family${previewMode === 'none' ? ' mm-font__family--name-only' : ''}`}
-            style={familyStyle}
           >
             {font.family}
           </span>
@@ -86,7 +82,7 @@ function FontListItemInner({
         {previewMode !== 'none' ? (
           /* 用 div 而不是 pre：pre 带 UA 默认的 margin，页面上不许有 margin 声明。
              换行保留靠 CSS 的 `white-space: pre-wrap` */
-          <div className={`mm-font__preview mm-font__preview--${previewMode}`} style={familyStyle}>
+          <div className={`mm-font__preview mm-font__preview--${previewMode}`}>
             {sample}
           </div>
         ) : null}

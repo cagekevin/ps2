@@ -34,7 +34,6 @@ import { usePagedList } from '../../hooks/usePagedList';
 import { defaultPreviewText, useFontStore } from '../../store/font';
 import { ok, type Result } from '../../types/result';
 import type { HeaderMenuAction } from './components/FontHeader';
-import { fontFamilyValue } from './css';
 import { useTagActions } from './useTagActions';
 
 export function useFontManage() {
@@ -157,16 +156,6 @@ export function useFontManage() {
     [weightIndex]
   );
 
-  /* 只决定预览用什么字面渲染：缺名字时回落到家族名只影响观感，与「能不能应用」是两件事 */
-  const previewFamilyOf = useCallback(
-    (font: FontItem) => {
-      const index = weightIndex[font.family] ?? 0;
-      const ps = font.postScriptNames[index] ?? font.postScriptNames[0] ?? font.family;
-      return fontFamilyValue(ps, font.family);
-    },
-    [weightIndex]
-  );
-
   const sampleOf = useCallback(
     (font: FontItem) => previewText || defaultPreviewText(font.family),
     [previewText]
@@ -273,7 +262,6 @@ export function useFontManage() {
     clearFilters,
     activeFamily,
     currentWeight,
-    previewFamilyOf,
     sampleOf,
     faceErrorOf,
     previewMode,

@@ -68,9 +68,7 @@ export default function StylePage() {
   const [describe, setDescribe] = useState<DescribeTarget | null>(null);
   const describeAnchor = useMemo(() => describe?.el ?? null, [describe]);
   const { floatingRef: describeRef, update: updateDescribe } = useFloatingPosition({
-    placement: 'bottom-start',
-    offset: 6,
-    padding: 8
+    placement: 'bottom-start'
   });
 
   useEffect(() => {

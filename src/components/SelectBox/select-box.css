@@ -7,7 +7,7 @@
  * 本文件只写触发器布局、选项与滚动——**不写 position / border / background / box-shadow**。
  */
 
-.mm-select-box__trigger {  /*
+.mm-select-box__trigger{  /*
    * 表面与输入框（`ui.css` 的 `.mm-input`）同一套：sunken 底 + 亮边框。
    * 原来是 overlay（比页面亮）+ 无边框，靠反差区分；而字体面板又按「面板语义」
    * 覆盖成 sunken，于是两页的下拉一个亮一个暗。
@@ -18,39 +18,30 @@
   width: 100%;
   height: var(--mm-control-h);
   align-items: center;
-gap:0;
   text-align: left;
   cursor: pointer;
 }
 
-.mm-select-box__trigger:disabled {
+.mm-select-box__trigger:disabled{
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.mm-select-box__icon {
+.mm-select-box__icon{
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  color: var(--mm-color-icon);
 }
 
-/* 名字吃掉剩余宽度，箭头固定在右边 */
-.mm-select-box__label {
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* 标签的单行省略在 `global.css`（与折叠标题共用一份） */
 
-.mm-select-box__arrow {
+.mm-select-box__arrow{
   flex: 0 0 auto;
-  color: var(--mm-color-icon);
 }
 
 /* 面板：宽度由组件按触发器宽写成 inline；这里只管滚动（字体下拉有几百项） */
   /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
-.mm-select-box__panel {  /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
+.mm-select-box__panel{
   /* 深色底上黑边看不见：浮层边缘用 10% 白，和标签弹层、预览卡同一档 */
 
   max-height: var(--mm-select-panel-max-h);
@@ -60,38 +51,29 @@ gap:0;
 
 /* 选项：与控件同高，左侧留出勾选位（对号是当前值标记，文字不变色） */
   /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
-.mm-select-box__item {  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
+.mm-select-box__item{
 
   position: relative;
   display: flex;
   width: 100%;
   height: var(--mm-control-h);
   align-items: center;
-gap:0;
   border: none;
-  background: transparent;
-  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   text-align: left;
   cursor: pointer;
 }
 
-.mm-select-box__item:hover,
-.mm-select-box__item--active {
-  background: var(--mm-color-bg-hover);
-}
-
   /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
-.mm-select-box__check {  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
+.mm-select-box__check{
 
   position: absolute;
   left: var(--mm-space-1);
   top: 50%;
   transform: translateY(-50%);
-  color: var(--mm-color-accent);
 }
 
-.mm-select-box__item-label {
+.mm-select-box__item-label{
   flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -99,7 +81,7 @@ gap:0;
   text-align: left;
 }
 
-.mm-select-box__remove {
+.mm-select-box__remove{
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -108,12 +90,5 @@ gap:0;
   height: var(--mm-space-4);
   border: 0;
   border-radius: var(--mm-radius-sm);
-  background: transparent;
-  color: var(--mm-color-text-dim);
   cursor: pointer;
-}
-
-.mm-select-box__remove:hover {
-  background: var(--mm-color-bg-hover);
-  color: var(--mm-color-text-strong);
 }

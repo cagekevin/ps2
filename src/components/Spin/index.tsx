@@ -11,25 +11,19 @@
  * **全屏加载不要直接用 mask 模式**——用 `useLoading()`（LoadingProvider 的全屏遮罩），
  * 那是全屏加载的唯一入口；本组件的 mask 只给局部场景（列表内刷新之类）。
  */
-import type { CSSProperties } from 'react';
 import './spin.css';
 
 export interface SpinProps {
-  /** 圆环直径，默认 18px（原版默认值） */
-  size?: number;
   /** 圈下方的提示文字 */
   tip?: string;
   /** 局部遮罩模式：absolute 铺满最近定位父级 */
   mask?: boolean;
 }
 
-export function Spin({ size = 18, tip, mask = false }: SpinProps) {
+export function Spin({ tip, mask = false }: SpinProps) {
   return (
     <span className={`mm-spin${mask ? ' mm-spin--mask' : ''}`}>
-      <span
-        className="mm-spin__ring"
-        style={{ '--mm-spin-size': `${size}px` } as CSSProperties}
-      />
+      <span className="mm-spin__ring" />
       {tip ? <span className="mm-spin__tip">{tip}</span> : null}
     </span>
   );

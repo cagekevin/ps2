@@ -5,52 +5,47 @@
  * 想「看起来更居中」要先改原版依据，别就地调。
  */
 
-.mm-input-dialog {
+.mm-input-dialog{
   position: fixed;
   inset: 0;
   z-index: var(--mm-z-input-box);
-  background: var(--mm-color-mask-faint);
 }
 
   /* 上下 16 / 左右 16：原版这里左右是 20，不在六档内，且和上下不成对 */
-.mm-input-dialog__main {  /* 上下 16 / 左右 16：原版这里左右是 20，不在六档内，且和上下不成对 */
+.mm-input-dialog__main{
 
   position: fixed;
   top: 30%;
   left: calc(50vw - var(--mm-dialog-offset-x));
   width: var(--mm-dialog-w);
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-width: var(--mm-border-w); border-style: solid;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
 }
 
-.mm-input-dialog__head {
+.mm-input-dialog__head{
   display: flex;
   align-items: center;
 }
 
-.mm-input-dialog__title {
-  color: var(--mm-color-text-strong);
+.mm-input-dialog__title{
   font-size: var(--mm-font-md);
 }
 
-.mm-input-dialog__grow {
+.mm-input-dialog__grow{
   flex: 1;
 }
 
 /* 表面（高度 / 边框 / 圆角 / 底色）来自 `ui.css` 的 `.mm-input--page`，这里只给布局 */
-.mm-input-dialog__input {
+.mm-input-dialog__input{
   width: 100%;
 }
 
-.mm-input-dialog__error {
-  color: var(--mm-color-error);
+.mm-input-dialog__error{
   font-size: var(--mm-font-sm);
   line-height: 1em;
 }
 
-.mm-input-dialog__footer {
+.mm-input-dialog__footer{
   display: flex;
   justify-content: flex-end;
 }

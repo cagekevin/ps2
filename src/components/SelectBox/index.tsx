@@ -6,7 +6,7 @@
  * 不用原生 `<select>`：箭头是浏览器画的（原版用 `iconxiala`）、面板样式不可控、
  * 选中项要在左侧打勾，原生没有那个位置。
  *
- * 面板 = `Portal` 挂 body（不被任何滚动容器裁）+ `.mm-popover`（`global.css` 里唯一的浮层壳）。
+ * 面板 = `Portal` 挂 body（不被任何滚动容器裁）+ `.mm-popover`（`global.css` 里的浮层壳）。
  * **没有变体**：宽度只有一个值（触发器宽），位置只有一个来源（`useFloatingPosition`）。
  */
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -56,8 +56,6 @@ export function SelectBox({
   /* `flip: false`：下拉面板永远贴触发器左边、向下展开；放不下只夹取，不翻到另一侧 */
   const { floatingRef, update } = useFloatingPosition({
     placement: 'bottom-start',
-    offset: 4,
-    padding: 8,
     flip: false
   });
 

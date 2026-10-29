@@ -43,7 +43,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
 
   return (
     <div className="mm-font-panel__panel mm-font-panel__create">
-      <div className="mm-font-panel__row">
+      <div className="mm-row mm-font-panel__row">
         <RadioButton
           label="圆角"
           name="mm-font-panel-button-type"
@@ -66,7 +66,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-font-panel__row mm-font-panel__row--pad">
+      <div className="mm-row mm-font-panel__row mm-font-panel__row--pad">
         <div className="mm-font-panel__label" title="形状内边距，10,5 表示 宽=10 高=5">
           自定义边距
         </div>
@@ -82,13 +82,13 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-font-panel__row mm-font-panel__row--tight">
+      <div className="mm-row mm-font-panel__row mm-font-panel__row--tight">
         <div className="mm-font-panel__label">预设</div>
         {CREATE_BUTTON_PADDINGS.map((value) => (
           <button
             key={value}
             type="button"
-            className="mm-font-panel__preset-btn"
+            className="mm-btn mm-font-panel__preset-btn"
             title={`内边距 ${value}`}
             onClick={() => commitPadding(value)}
           >
@@ -102,7 +102,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
           <button
             key={value}
             type="button"
-            className="mm-font-panel__quick-btn"
+            className="mm-btn mm-font-panel__quick-btn"
             title={`预设样式${value}`}
             onClick={() => commitPadding(`自动生成${value}`)}
           >
