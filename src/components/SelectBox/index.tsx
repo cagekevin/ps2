@@ -3,8 +3,11 @@
  *
  * 【范本】下拉选择器。
  *
- * 不用原生 `<select>`：箭头是浏览器画的（原版用 `iconxiala`）、面板样式不可控、
+ * 不用原生 `<select>`：箭头是浏览器画的、面板样式不可控、
  * 选中项要在左侧打勾，原生没有那个位置。
+ *
+ * 右侧箭头固定渲染 `<Chevron>`（全仓唯一箭头件，不传 `open` 即恒朝下）；
+ * **没有 `arrowIcon` / `arrowSize` 参数**——需要别的箭头就是第二种形状，按约定不许有。
  *
  * 面板 = `Portal` 挂 body（不被任何滚动容器裁）+ `.mm-popover`（`global.css` 里的浮层壳）。
  * **没有变体**：宽度只有一个值（触发器宽），位置只有一个来源（`useFloatingPosition`）。
@@ -12,8 +15,9 @@
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useDismiss } from '../../hooks/useDismiss';
 import { anchorRect, useFloatingPosition } from '../../hooks/useFloatingPosition';
+import { Chevron } from '../Chevron';
 import { Portal } from '../Portal';
-import { Icon, type IconName } from '../icons';
+import { Icon } from '../icons';
 import './select-box.css';
 
 export interface SelectBoxOption {
@@ -27,9 +31,6 @@ interface SelectBoxProps {
   onChange: (value: string) => void;
   /** 触发器左侧图标（仓库图标、字体图标这类） */
   icon?: ReactNode;
-  /** 右侧箭头，默认 `iconxiala`；仓库条用 `iconzhankaizhedie` */
-  arrowIcon?: IconName;
-  arrowSize?: number;
   className?: string;
   disabled?: boolean;
   /** 面板底部固定内容；传函数是为了让调用方能拿到 `close` */
@@ -43,8 +44,6 @@ export function SelectBox({
   value,
   onChange,
   icon,
-  arrowIcon = 'iconxiala',
-  arrowSize = 12,
   className = '',
   disabled = false,
   footer,
@@ -89,7 +88,7 @@ export function SelectBox({
       >
         {icon ? <span className="mm-select-box__icon">{icon}</span> : null}
         <span className="mm-select-box__label">{current?.label ?? ''}</span>
-        <Icon name={arrowIcon} size={arrowSize} className="mm-select-box__arrow" />
+        <Chevron size={12} />
       </button>
 
       {open ? (

@@ -11,6 +11,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { Chevron } from '../../components/Chevron';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { PageHeader } from '../../components/PageHeader';
@@ -97,7 +98,7 @@ function ZoomRow({
           >
             <Icon name={icon} size={14} />
             <span className="mm-common__zoom-label">{label}</span>
-            <Icon name="iconxiala" size={12} className="mm-common__zoom-arrow" />
+            <Chevron size={12} />
           </button>
         )}
         panel={(close) => (

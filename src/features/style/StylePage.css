@@ -5,6 +5,8 @@
   width: 100%;
 }
 
+
+
 .mm-style__tabs{
   display: flex;
   flex: 0 0 auto;
@@ -46,9 +48,8 @@
 
 .mm-style__group,
 
+/* 横排与两端对齐走公共 `.mm-row`，这里只留撑满 */
 .mm-style__group-head{
-  display: flex;
-  align-items: center;
   width: 100%;
 }
 
@@ -90,10 +91,9 @@
   height: 100%;
 }
 
+/* 两端对齐走公共 `.mm-row`，这里只留撑满 */
 .mm-style__font-head{
-  display: flex;
   width: 100%;
-  justify-content: space-between;
 }
 
 .mm-style__font-dot{

@@ -12,17 +12,12 @@
   min-width: 0;
 }
 
+/* 横向排列与两端对齐走公共 `.mm-row`，这里只留自己不收缩这一条 */
 .mm-layout__header{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex: 0 0 auto;
 }
 
-.mm-layout__actions{
-  display: flex;
-  align-items: center;
-}
+
 
 .mm-layout__body{
   flex: 1 1 auto;

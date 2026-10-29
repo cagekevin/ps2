@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>猫猫设计工具 · 控件现状（骨架版）</title>
+<style>
+  :root{ --ink:#1a1a1a; --muted:#6b6b6b; --line:#d8d8d8; --soft:#f5f5f5; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; padding:32px 40px 64px; font:14px/1.7 system-ui,"Microsoft Yahei",sans-serif; color:var(--ink); background:#fff; max-width:1180px; }
+  h1{ font-size:22px; margin:0 0 6px; }
+  h2{ font-size:16px; margin:36px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .lead{ color:var(--muted); margin:0 0 4px; }
+  .stats{ display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0; }
+  .stat{ border:1px solid var(--line); border-radius:6px; padding:10px 14px; min-width:132px; }
+  .stat b{ display:block; font-size:20px; line-height:1.3; }
+  .stat span{ color:var(--muted); font-size:12px; }
+  table{ width:100%; border-collapse:collapse; margin:6px 0 0; font-size:13px; }
+  th,td{ text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--soft); font-weight:600; white-space:nowrap; }
+  code{ font:12px/1.5 ui-monospace,Consolas,monospace; background:var(--soft); padding:1px 5px; border-radius:3px; }
+  ul{ margin:6px 0 0; padding-left:20px; }
+  li{ margin:3px 0; }
+  .tag{ display:inline-block; font-size:11px; padding:1px 6px; border:1px solid var(--line); border-radius:10px; color:var(--muted); }
+  footer{ margin-top:44px; color:var(--muted); font-size:12px; border-top:1px solid var(--line); padding-top:12px; }
+  /* ---- 控件线框示意 ---- */
+  .wire{ display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:12px; }
+  .w{ border:1px solid var(--line); border-radius:6px; padding:12px; margin:0; }
+  .w figcaption{ font-size:12px; font-weight:600; margin-bottom:8px; }
+  .w p{ margin:8px 0 0; font-size:11px; color:var(--muted); line-height:1.5; }
+  .wbox{ display:flex; align-items:center; gap:8px; min-height:46px; flex-wrap:wrap; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; height:26px; padding:0 8px; border:1px solid var(--ink); border-radius:4px; font-size:12px; }
+  .field{ display:flex; align-items:center; height:26px; padding:0 4px; border:1px solid var(--ink); border-radius:4px; font-size:12px; color:var(--muted); min-width:120px; }
+  .field.on{ outline:1px solid var(--ink); outline-offset:1px; }
+  .box12{ width:12px; height:12px; border:1px solid var(--ink); border-radius:3px; flex:0 0 auto; }
+  .dot12{ width:12px; height:12px; border:1px solid var(--ink); border-radius:50%; flex:0 0 auto; }
+  .ibtn{ width:26px; height:26px; border:1px solid var(--ink); border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; }
+  .hbar{ height:40px; border:1px solid var(--ink); display:flex; align-items:center; padding:0 8px; font-size:12px; width:100%; }
+  .bbar{ height:26px; border:1px solid var(--ink); display:flex; align-items:center; gap:6px; padding:0 6px; width:100%; }
+  .bbar i{ display:block; width:30px; height:13px; border:1px solid var(--ink); }
+  .vline{ width:1px; height:13px; background:var(--ink); }
+  .pop{ border:1px solid var(--ink); border-radius:4px; padding:4px; width:150px; font-size:12px; }
+  .pop b{ display:flex; align-items:center; height:22px; padding:0 6px; font-weight:400; }
+  .hr{ height:1px; background:var(--ink); margin:4px 0; }
+  .rowline{ display:flex; align-items:center; justify-content:space-between; border:1px dashed var(--line); padding:4px 6px; font-size:12px; width:100%; }
+  .ring{ width:18px; height:18px; border:2px solid var(--ink); border-top-color:transparent; border-radius:50%; }
+  .maskbox{ position:relative; border:1px solid var(--ink); height:58px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .maskbox::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(45deg,#ececec,#ececec 4px,#fff 4px,#fff 8px); }
+  .maskbox span{ position:relative; z-index:1; background:#fff; padding:0 4px; }
+  .drawer{ border:1px solid var(--ink); border-top:0; padding:8px; font-size:11px; width:100%; }  /* ---- 整页线框 ---- */
+  .page-wire{ border:1px solid var(--ink); border-radius:6px; margin:10px 0 0; font-size:11px; overflow:hidden; }
+  .pw-nav{ display:flex; align-items:stretch; }
+  .pw-navbar{ width:40px; border-right:1px solid var(--ink); display:flex; flex-direction:column; gap:2px; padding:2px; }
+  .pw-navbar i{ display:block; height:36px; border:1px solid var(--line); }
+  .pw-main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  .pw-head{ height:40px; border-bottom:1px solid var(--ink); display:flex; align-items:center; justify-content:space-between; padding:0 8px; }
+  .pw-body{ flex:1; padding:8px; display:flex; flex-direction:column; gap:6px; min-height:120px; }
+  .pw-foot{ height:26px; border-top:1px solid var(--ink); display:flex; align-items:center; gap:6px; padding:0 6px; }
+  .pw-part{ border:1px dashed var(--line); padding:4px 6px; }
+  .pw-part b{ font-weight:600; }
+  .pw-row{ display:flex; gap:6px; align-items:center; }
+  .pw-cell{ height:26px; border:1px solid var(--ink); border-radius:4px; display:flex; align-items:center; justify-content:center; padding:0 6px; }
+  .pw-tile{ width:50px; height:50px; border:1px solid var(--ink); display:flex; align-items:center; justify-content:center; }
+  .pw-sq{ width:25px; height:25px; border:1px solid var(--ink); }
+  .pw-line{ height:1px; background:var(--ink); }  .chip{ height:18px; padding:0 6px; border:1px solid var(--ink); border-radius:9px; display:inline-flex; align-items:center; font-size:10px; }
+  .circle{ width:18px; height:18px; border-radius:50%; border:1px solid var(--ink); }
+  .gradbar{ height:22px; width:42px; border:1px solid var(--ink); background:repeating-linear-gradient(90deg,#ececec,#ececec 6px,#fff 6px,#fff 12px); }  .tick{ display:block; width:5px; height:8px; border:solid var(--ink); border-width:0 1px 1px 0; transform:rotate(45deg); }
+  .fs11{ font-size:11px } .fs12{ font-size:12px } .fs13{ font-size:13px }  .sq{ display:inline-block; width:14px; height:14px; border:1px solid var(--ink); }
+  /* ---- 原版配色示意：值逐条来自 Vue tokens.css，不是设计稿 ---- */
+  .ov{ --v-bg:#363636; --v-sunken:#222; --v-raised:#4b4b4b; --v-raised-hover:#575757; --v-input:#2c2c2c;
+        --v-float:rgba(64,64,64,.96); --v-border:#2e2e2e; --v-border-strong:#4b4b4b; --v-active:#424242;
+        --v-text:#c3c3c3; --v-text-strong:#f5f5f5; --v-text-dim:#9a9a9a; --v-text-faint:#8e8e8e;
+        --v-accent:#006fff; --v-accent-soft:#759fff; --v-danger:#f14c4c; --v-header:#333; --v-bar:#535353; }
+  .ov{ background:var(--v-bg); border-color:#4b4b4b; color:var(--v-text); }
+  .ov figcaption{ color:var(--v-text-strong); }
+  .ov p{ color:var(--v-text-dim); }
+  .ov-btn{ display:inline-flex; align-items:center; justify-content:center; height:28px; padding:0 12px; border:1px solid var(--v-raised); border-radius:4px; background:var(--v-raised); color:var(--v-text-strong); font-size:12px; white-space:nowrap; }
+  .ov-btn--sm{ height:24px; padding:0 8px; }
+  .ov-btn--hover{ background:var(--v-raised-hover); border-color:var(--v-raised-hover); }
+  .ov-btn--primary{ background:var(--v-accent); border-color:var(--v-accent); color:#fff; }
+  .ov-btn--danger{ background:transparent; border-color:rgba(241,76,76,.16); color:var(--v-danger); }
+  .ov-btn--text{ background:transparent; border-color:transparent; color:var(--v-text-dim); }
+  .ov-btn--off{ opacity:.45; }
+  .ov-field{ display:flex; align-items:center; height:28px; padding:0 8px; border:1px solid var(--v-input); border-radius:4px; background:var(--v-input); color:var(--v-text); font-size:12px; min-width:140px; }
+  .ov-field--focus{ border-color:var(--v-accent-soft); }
+  .ov-field--off{ opacity:.5; }
+  .ov-check{ display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--v-text); }
+  .ov-check__box{ width:12px; height:12px; border:1px solid var(--v-border-strong); border-radius:2px; background:var(--v-sunken); display:inline-flex; align-items:center; justify-content:center; color:var(--v-text-strong); font-size:10px; line-height:1; }
+  .ov-check__box--on{ border-color:var(--v-accent); background:var(--v-accent); }
+  .ov-dot{ width:12px; height:12px; border:1px solid var(--v-border-strong); border-radius:50%; background:var(--v-sunken); flex:0 0 auto; }
+  .ov-dot--on{ border-color:var(--v-accent); background:var(--v-accent); }
+  .ov-select{ display:flex; align-items:center; justify-content:space-between; height:28px; padding:0 6px; border-radius:5px; background:var(--v-sunken); color:var(--v-text); font-size:12px; min-width:130px; }
+  .ov-pop{ border:1px solid var(--v-border-strong); border-radius:5px; background:var(--v-float); box-shadow:0 4px 20px rgba(0,0,0,.4); padding:4px 0; font-size:12px; color:var(--v-text); }
+  .ov-pop__item{ height:28px; display:flex; align-items:center; padding:0 12px 0 16px; }
+  .ov-pop__item--hover{ background:var(--v-active); }
+  .ov-menu{ min-width:120px; padding:6px 0; border-radius:4px; }
+  .ov-menu__item{ height:28px; display:flex; align-items:center; padding:0 12px; color:var(--v-text-strong); font-size:12px; }
+  .ov-menu__item--hover{ background:rgba(255,255,255,.1); }
+  .ov-menu__item--on{ color:var(--v-accent-soft); }
+  .ov-collapse__head{ display:flex; align-items:center; height:28px; padding:0 10px; color:var(--v-text-strong); font-size:11px; }
+  .ov-collapse__body{ background:var(--v-sunken); color:var(--v-text); font-size:11px; padding:10px; }
+  .ov-arrow{ width:6px; height:6px; border-top:1px solid var(--v-text); border-right:1px solid var(--v-text); transform:rotate(135deg); display:inline-block; }
+  .ov-arrow--closed{ transform:rotate(45deg); }
+  .ov-head{ height:40px; display:flex; align-items:center; padding:0 8px; background:var(--v-header); border-bottom:1px solid var(--v-border); color:var(--v-text-strong); font-size:12px; }
+  .ov-head__tab{ position:relative; height:100%; display:flex; align-items:center; font-weight:500; }
+  .ov-head__tab::after{ content:""; position:absolute; left:50%; bottom:0; width:18px; height:2px; margin-left:-9px; background:var(--v-accent); }
+  .ov-bar{ height:26px; display:flex; align-items:center; gap:2px; padding:0 10px; background:var(--v-bar); }
+  .ov-bar__icon{ width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; border:1px solid transparent; color:var(--v-text); font-size:11px; }
+  .ov-bar__icon--hover{ background:rgba(0,0,0,.2); border-color:#444; }
+  .ov-bar__div{ width:1px; height:13px; background:#333; margin:0 2px; }
+  .ov-modal{ width:260px; border:1px solid var(--v-raised); border-radius:4px; background:var(--v-float); box-shadow:0 4px 20px rgba(0,0,0,.45); color:var(--v-text-strong); }
+  .ov-modal__head{ height:34px; display:flex; align-items:center; padding:0 8px 0 12px; border-bottom:1px solid rgba(255,255,255,.1); font-size:13px; font-weight:500; }
+  .ov-modal__body{ padding:12px; font-size:12px; color:var(--v-text); }
+  .ov-modal__foot{ display:flex; justify-content:flex-end; gap:8px; padding:8px 12px 12px; }
+  .ov-toast{ display:inline-flex; align-items:center; gap:6px; max-width:280px; padding:6px 12px; border:1px solid rgba(255,255,255,.1); border-radius:4px; background:var(--v-float); box-shadow:0 4px 20px rgba(0,0,0,.45); color:var(--v-text-strong); font-size:12px; }
+  .ov-ring{ width:18px; height:18px; border:2px solid var(--v-border); border-top-color:var(--v-accent); border-radius:50%; animation:ov-spin .8s linear infinite; display:inline-block; }
+  @keyframes ov-spin{ to{ transform:rotate(360deg) } }
+  .ov-seg{ display:inline-flex; height:30px; border-radius:5px; background:var(--v-sunken); overflow:hidden; }
+  .ov-seg__item{ display:inline-flex; align-items:center; padding:0 8px; font-size:12px; color:var(--v-text); }
+  .ov-seg__item--on{ background:var(--v-accent); color:#fff; }
+  .ov-tabs{ display:flex; width:100%; align-items:center; }
+  .ov-tabs__cell{ display:flex; flex:1; align-items:center; }
+  .ov-tabs__label{ flex:1; text-align:center; font-size:12px; color:var(--v-text); }
+  .ov-tabs__label--on{ color:var(--v-accent); }
+  .ov-tabs__line{ width:1px; height:20px; background:var(--v-sunken); }
+  .ov-anchor{ width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--v-border-strong); border-radius:2px; background:var(--v-sunken); color:var(--v-text); font-size:10px; }
+  .ov-anchor--on{ border-color:var(--v-accent); background:var(--v-accent); color:#fff; }
+  .ov-empty{ color:var(--v-text-faint); font-size:12px; }
+  .ov-field--sm{ height:24px; padding:0 6px; min-width:0; }
+  .ov-tile{ display:flex; flex-direction:column; align-items:center; gap:4px; width:33.33%; }
+  .ov-tile__icon{ position:relative; display:flex; width:32px; height:32px; align-items:center; justify-content:center; border-radius:10px; background:var(--v-sunken); color:var(--v-text-strong); font-size:12px; }
+  .ov-tile__icon--on{ background:var(--v-bg); color:var(--v-accent); }
+  .ov-tile__mark{ position:absolute; top:4px; right:4px; width:4px; height:4px; border-radius:999px; background:var(--v-accent); }
+  .ov-tile__text{ font-size:12px; color:var(--v-text); text-align:center; white-space:nowrap; }
+  .ov-drawer{ width:100%; padding:0 12px; }
+  .ov-drawer__inner{ display:flex; flex-direction:column; gap:12px; padding:12px 0; }
+  .ov-trigger{ display:flex; align-items:center; justify-content:space-between; height:28px; padding:0 6px; border-radius:5px; background:var(--v-sunken); color:var(--v-text); font-size:12px; }
+  .ov-caret{ width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-top:5px solid var(--v-text); }
+  .ov-caret--up{ transform:rotate(180deg); }
+  .ov-toast--ok .ov-ic{ color:#4ec9b0; }
+  .ov-toast--error .ov-ic{ color:#f14c4c; }
+  .ov-toast--warn .ov-ic{ color:#dcdcaa; }
+  .ov-toast--info .ov-ic{ color:#759fff; }
+  /* 字体面板抽屉：图标行 26×26 直角 + 全宽 #222 面板 */
+  .ov-iconbtn{ position:relative; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; width:26px; height:26px; padding:0; border:1px solid transparent; border-radius:0; background:transparent; color:var(--v-text); font-size:12px; }
+  .ov-iconbtn--hover{ background:rgba(0,0,0,.2); border-color:#444; }
+  .ov-iconbtn--on{ background:var(--v-sunken); border-color:#444; }
+  .ov-iconbtn__badge{ position:absolute; right:2px; bottom:2px; width:4px; height:4px; border-radius:999px; background:var(--v-accent); }
+  .ov-row{ display:flex; align-items:center; justify-content:space-between; padding:0 10px; margin:10px 0; }
+  .ov-panelbody{ padding:15px 10px; background:var(--v-sunken); }
+  .ov-caret6{ display:inline-block; width:6px; height:6px; border-top:1px solid var(--v-text); border-right:1px solid var(--v-text); transform:rotate(135deg); }
+  .ov-caret6--closed{ transform:rotate(45deg); }
+  .ov-caret6--left{ transform:rotate(-45deg); }
+  .ov-iconbox{ display:inline-flex; align-items:center; justify-content:center; border:1px dashed #5a5a5a; }
+  .ov-hud{ width:260px; padding:8px; border:1px solid var(--v-border-strong); border-radius:6px; background:var(--v-float); box-shadow:0 4px 20px rgba(0,0,0,.4); color:var(--v-text); font-size:11px; }
+  .ov-hud__row{ display:flex; align-items:baseline; gap:4px; }
+  .ov-hud__bar{ height:2px; margin-top:4px; border-radius:999px; background:var(--v-border-strong); overflow:hidden; }
+  .ov-hud__fill{ display:block; width:62%; height:100%; background:var(--v-accent); }
+  .ov-backtop{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:5px; background:var(--v-bar); color:var(--v-text); font-size:12px; }
+  .ov-settingrow{ display:flex; align-items:center; gap:8px; min-height:28px; }
+  .ov-select2{ display:flex; align-items:center; justify-content:space-between; gap:8px; height:24px; padding:0 6px; border:1px solid transparent; border-radius:5px; background:var(--v-sunken); color:var(--v-text); font-size:12px; }
+  .ov-select2--plain{ height:22px; justify-content:center; gap:8px; padding:0; border:0; background:transparent; font-size:14px; }
+  .ov-num{ display:flex; align-items:center; height:24px; gap:8px; }
+  .ov-num__grip{ flex:0 0 auto; color:var(--v-text-dim); font-size:12px; }
+  .ov-num__box{ display:flex; flex:1; min-width:0; align-items:center; gap:4px; padding:0 4px; border:1px solid transparent; border-radius:5px; background:var(--v-sunken); }
+  .ov-num__input{ flex:1; text-align:center; font-size:12px; color:var(--v-text); }
+  .ov-num__suffix{ flex:0 0 auto; font-size:10px; color:var(--v-text-dim); }
+</style>
+</head>
+<body>
+<h1>猫猫设计工具 · 控件改造清单</h1>
+<p class="lead"><b>本页用途：</b>把「该改的地方」先统计出来，配效果预览，看过效果再决定往页面里加什么。<b>它不是现状记录，也不是终版规格</b>；标准仍是 <code>docs/CONVENTIONS.md</code> §6 / §7 与 <code>src/styles/tokens.css</code>，与那两处冲突时以那两处为准。</p>
+<p class="lead">2026-10-29 快照：全部 CSS 已骨架化，只留 <code>display</code> / <code>flex</code> / <code>position</code> / <code>overflow</code> / <code>z-index</code> 与尺寸。<b>颜色 / 间距 / 圆角 / 阴影 / 动效五类声明，34 个文件全部为 0</b>——逐文件缺口见「十」。</p>
+<div class="stats">
+  <div class="stat"><b>1375</b><span>CSS 总行数</span></div>
+  <div class="stat"><b>34</b><span>CSS 文件</span></div>
+  <div class="stat"><b>5</b><span>缺失类别（全站为 0）</span></div>
+  <div class="stat"><b>22</b><span>基础控件</span></div>
+  <div class="stat"><b>31</b><span>页面公共组件</span></div>
+  <div class="stat"><b>5</b><span>原版有、我方无公共件</span></div>
+  <div class="stat"><b>5</b><span>应用外壳</span></div>
+  <div class="stat"><b>6</b><span>页面</span></div>
+  <div class="stat"><b>17</b><span>公共布局原语</span></div>
+  <div class="stat"><b>102</b><span>结构 token</span></div>
+  <div class="stat"><b>14</b><span>交互原语</span></div>
+  <div class="stat"><b>189</b><span>图标</span></div>
+</div><h2>零、效果参照（Vue 工程实测 · 带图 · 每个功能只留一种）</h2>
+<p class="lead"><b>这一节是「改成什么样」的效果参照，不是本仓标准。</b>色值与本仓 <code>tokens.css</code> 冲突时以 <code>tokens.css</code> 为准；与 <code>CONVENTIONS</code> §7 硬规则（圆角不超过 4、字号 11–13、间距六档）冲突时以 §7 为准——那几条要改约定才能动。</p>
+<p class="lead">来源为仓外 Vue 工程（<code>src/styles/tokens.css</code>、<code>src/components/*.vue</code>、<code>src/styles/layout.css</code>）。下方每个色块与尺寸都按源码值渲染，不是示意图。</p>
+<p class="lead">Vue 版里同一功能有多份实现的（浮层壳 2 套、折叠 2 套、菜单 2 套、转圈 2 套、页面自绘浮层 9 处），这里<b>只画一种</b>，取舍见 0.3。</p>
+
+<h3 style="font-size:13px;margin:18px 0 4px">0.1 基础控件（真配色）</h3>
+<div class="wire">
+  <figure class="w ov"><figcaption>Button</figcaption>
+    <div class="wbox">
+      <span class="ov-btn">默认</span>
+      <span class="ov-btn ov-btn--hover">hover</span>
+      <span class="ov-btn ov-btn--primary">主操作</span>
+      <span class="ov-btn ov-btn--danger">删除</span>
+      <span class="ov-btn ov-btn--text">文字</span>
+      <span class="ov-btn ov-btn--off">禁用</span>
+    </div>
+    <p>28 高（small 24）· padding 0 12 · 圆角 4 · 底 #4b4b4b · 字 #f5f5f5 · hover #575757 · primary #006fff · danger #f14c4c · 禁用 opacity .45</p></figure>
+
+  <figure class="w ov"><figcaption>Input</figcaption>
+    <div class="wbox">
+      <span class="ov-field">输入内容</span>
+      <span class="ov-field ov-field--focus">focus</span>
+      <span class="ov-field ov-field--off">禁用</span>
+    </div>
+    <p>28 高 · padding 0 8 · 圆角 4 · 底/边 #2c2c2c · 字 #c3c3c3 · placeholder #8e8e8e · focus 边 #759fff · 禁用 opacity .5</p></figure>
+
+  <figure class="w ov"><figcaption>CheckBox / RadioButton</figcaption>
+    <div class="wbox">
+      <span class="ov-check"><span class="ov-check__box"></span>未选</span>
+      <span class="ov-check"><span class="ov-check__box ov-check__box--on">✓</span>选中</span>
+      <span class="ov-check" style="opacity:.5"><span class="ov-check__box"></span>禁用</span>
+      <span class="ov-check"><span class="ov-dot"></span>单选</span>
+      <span class="ov-check"><span class="ov-dot ov-dot--on"></span>选中</span>
+    </div>
+    <p>12×12 · 勾选圆角 2 / 单选 50% · 边 1px #4b4b4b · 底 #222 · 选中底与边 #006fff · 与文字 gap 4（勾选）/ 6（单选）</p></figure>
+
+  <figure class="w ov"><figcaption>下拉（唯一实现：选项列表）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:6px">
+      <span class="ov-select2"><span>思源黑体</span><span>▾</span></span>
+      <div class="ov-pop" style="width:100%">
+        <div style="display:flex;gap:8px;padding:4px 6px;font-size:11px;color:#9a9a9a"><span style="color:#006fff">全部</span><span>最近</span></div>
+        <div class="ov-pop__item ov-pop__item--hover">✓ 思源黑体</div>
+        <div class="ov-pop__item">苹方</div>
+      </div>
+      <span class="ov-select2 ov-select2--plain"><span>字体快选</span><span>▾</span></span>
+    </div>
+    <p>触发器 24 高（可传 30）· padding 0 6 · 圆角 5 · 底 #222 · <b>hover 只变字 #f5f5f5，不动底色</b> · 有「当前值 + 对勾」就用这一个：分组 tabs / 搜索 / 行内重命名都是它的开关，不另造第二个 · <code>plain</code> 变体 22 高 / 透明 / 居中 / 字 14 / 箭头 -90°→0° · 面板 max-height 220 · 边 hsla(0,0%,100%,.1) · 项 padding 4 6 · 对勾 #006fff</p></figure>
+
+  <figure class="w ov"><figcaption>ContextMenu / 下拉菜单</figcaption>
+    <div class="wbox">
+      <div class="ov-pop ov-menu">
+        <div class="ov-menu__item ov-menu__item--hover">重命名</div>
+        <div class="ov-menu__item">删除</div>
+        <div class="ov-menu__item ov-menu__item--on">当前项</div>
+      </div>
+    </div>
+    <p>min-width 120 · padding 6 0 · 圆角 4 · 项 28 高 · padding 0 12 · hover rgba(255,255,255,.1) · 当前项字 #759fff</p></figure>
+
+  <figure class="w ov"><figcaption>Collapse</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:0">
+      <div class="ov-collapse__head"><span style="margin-right:8px">分组标题</span><span class="ov-arrow"></span></div>
+      <div class="ov-collapse__body">body 底 #222</div>
+    </div>
+    <p>head 28 高 · padding 0 10 · 字 11 #f5f5f5 · 箭头 6×6 折角（展开 135° / 收起 45°）· body 底 #222 · padding 10</p></figure>
+
+  <figure class="w ov"><figcaption>PageHeader</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch">
+      <div class="ov-head"><span class="ov-head__tab">我的字体</span><span style="margin-left:auto;color:#8e8e8e;font-size:11px">259</span></div>
+    </div>
+    <p>40 高 · padding 0 8 · 底 #333 · 底边 1px #2e2e2e · 标题 12 / 500 / #f5f5f5 · 标题下 18×2 蓝条居中</p></figure>
+
+  <figure class="w ov"><figcaption>BottomBar</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch">
+      <div class="ov-bar">
+        <span class="ov-bar__icon">A</span>
+        <span class="ov-bar__icon ov-bar__icon--hover">B</span>
+        <span class="ov-bar__div"></span>
+        <span class="ov-bar__icon">C</span>
+        <span style="margin-left:auto;color:#8e8e8e;font-size:11px">26</span>
+      </div>
+    </div>
+    <p>26 高 · padding 0 10 · gap 2 · 底 #535353 · 按钮 26×26 直角 · hover 底 rgba(0,0,0,.2) + 边 #444 · 竖线 1×13 #333</p></figure>
+
+  <figure class="w ov"><figcaption>Modal（Confirm / 输入弹窗）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch">
+      <div class="ov-modal">
+        <div class="ov-modal__head">确认删除？<span style="margin-left:auto;color:#9a9a9a">×</span></div>
+        <div class="ov-modal__body">这条记录会从库里移除，不可恢复。</div>
+        <div class="ov-modal__foot"><span class="ov-btn ov-btn--sm">取消</span><span class="ov-btn ov-btn--sm ov-btn--primary">删除</span></div>
+      </div>
+    </div>
+    <p>宽 260 · 圆角 4 · 底 rgba(64,64,64,.96) · 阴影 · head 34 高 · body padding 12 · 遮罩 rgba(0,0,0,.45)</p></figure>
+
+  <figure class="w ov"><figcaption>Toast</figcaption>
+    <div class="wbox"><span class="ov-toast">✓ 已复制到剪贴板</span></div>
+    <p>max-width 280 · padding 6 12 · 圆角 4 · 底 rgba(64,64,64,.96) · 阴影 · 距底 16 · 字 12 #f5f5f5</p></figure>
+
+  <figure class="w ov"><figcaption>Spin / Loading</figcaption>
+    <div class="wbox"><span class="ov-ring"></span><span style="font-size:12px;color:#9a9a9a">加载中…</span></div>
+    <p>环 18×18 · 边 2px #2e2e2e · 顶边 #006fff · 0.8s linear 无限 · 文字 12 #9a9a9a · 全屏加载再叠一层 rgba(0,0,0,.45)</p></figure>
+
+  <figure class="w ov"><figcaption>Segment / Tabs</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="ov-seg"><span class="ov-seg__item ov-seg__item--on">JPG</span><span class="ov-seg__item">PNG</span></div>
+      <div class="ov-tabs">
+        <span class="ov-tabs__cell"><span class="ov-tabs__label ov-tabs__label--on">颜色</span><span class="ov-tabs__line"></span></span>
+        <span class="ov-tabs__cell"><span class="ov-tabs__label">渐变</span><span class="ov-tabs__line"></span></span>
+        <span class="ov-tabs__cell"><span class="ov-tabs__label">字体</span></span>
+      </div>
+    </div>
+    <p>Segment 30 高 · 圆角 5 · 底 #222 · 选中底 #006fff 字白 · Tab 等分 · 选中字 #006fff · 竖线 1×20 #222</p></figure>
+
+  <figure class="w ov"><figcaption>AnchorGrid</figcaption>
+    <div class="wbox">
+      <span class="ov-anchor ov-anchor--on">1</span><span class="ov-anchor">2</span><span class="ov-anchor">3</span><span class="ov-anchor">4</span>
+    </div>
+    <p>18×18 · 圆角 2 · 边 1px #4b4b4b · 底 #222 · 选中底与边 #006fff 字白 · 两行各 6 个</p></figure>
+
+  <figure class="w ov"><figcaption>EmptyState</figcaption>
+    <div class="wbox" style="flex-direction:column;justify-content:center">
+      <span class="ov-empty">没有找到匹配的字体</span>
+    </div>
+    <p>文案 12 #8e8e8e · 插画 120×120 · padding 24 · gap 12</p></figure>
+
+  <figure class="w ov"><figcaption>抽屉（字体面板：图标行 + 全宽面板）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:0">
+      <div class="ov-row">
+        <span class="ov-iconbtn">▣</span>
+        <span class="ov-iconbtn ov-iconbtn--on">▣<span class="ov-iconbtn__badge"></span></span>
+        <span class="ov-iconbtn ov-iconbtn--hover">▣</span>
+        <span class="ov-iconbtn">▣</span>
+        <span class="ov-bar__div"></span>
+        <span class="ov-iconbtn">▣</span>
+        <span class="ov-iconbtn">▣</span>
+      </div>
+      <div class="ov-panelbody">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ov-trigger" style="flex:1">中文</span>
+          <span class="ov-iconbtn">⇄</span>
+          <span class="ov-trigger" style="flex:1">英文</span>
+        </div>
+        <div class="ov-check" style="margin-top:15px"><span class="ov-check__box"></span>替换原图层</div>
+      </div>
+    </div>
+    <p>图标按钮 26×26 · <b>直角</b> · 1px 透明边 · hover 底 rgba(0,0,0,.2) + 边 #444 · <b>选中底 #222 + 边 #444，图标不变蓝</b> · 角标 4px 压右下 · 图标行左右 10 / 上下 10 · 面板<b>全宽底 #222</b> · padding 15 10 · 竖线 1×13 #333</p></figure>
+
+  <figure class="w ov"><figcaption>下拉（触发器 + 面板，上下两向）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:6px">
+      <span class="ov-trigger"><span>仓库：默认仓库</span><span class="ov-caret"></span></span>
+      <div class="ov-pop" style="width:100%">
+        <div class="ov-pop__item ov-pop__item--hover">✓ 默认仓库</div>
+        <div class="ov-pop__item">客户 A</div>
+      </div>
+      <span class="ov-trigger" style="justify-content:flex-start;gap:6px"><span class="ov-caret ov-caret--up"></span><span>向上弹（底栏菜单）</span></span>
+    </div>
+    <p>触发器 28 高 · padding 0 6 · 圆角 5 · 底 #222 · 箭头 5×4 三角 · 面板 <code>position:fixed</code> + 定位变量 · 宽度默认跟触发器（可设 <code>--dropdown-width</code>）· 上方弹与下方弹同一套 · 层级 50 · 点外部 / Esc 关闭 · 翻转与夹取由 <code>usePopover</code> 算</p></figure>
+
+  <figure class="w ov"><figcaption>Toast 四种</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:flex-start;gap:6px">
+      <span class="ov-toast ov-toast--ok"><span class="ov-ic">✓</span>已复制到剪贴板</span>
+      <span class="ov-toast ov-toast--error"><span class="ov-ic">✕</span>文件读取失败</span>
+      <span class="ov-toast ov-toast--warn"><span class="ov-ic">!</span>已跳过 3 项</span>
+      <span class="ov-toast ov-toast--info"><span class="ov-ic">i</span>正在应用…</span>
+    </div>
+    <p>max-width 280 · padding 6 12 · gap 6 · 圆角 4 · 底 rgba(64,64,64,.96) · 阴影 · 图标色 ok #4ec9b0 / error #f14c4c / warn #dcdcaa / info #759fff · 多条向上堆叠 · 距底 16 · 层级 9000 · 点击关闭</p></figure>
+
+  <figure class="w ov"><figcaption>IconButton（原版 baseIcon）</figcaption>
+    <div class="wbox">
+      <span class="ov-iconbtn">▣</span>
+      <span class="ov-iconbtn ov-iconbtn--hover">▣</span>
+      <span class="ov-iconbtn ov-iconbtn--on">▣</span>
+      <span class="ov-iconbtn">▣<span class="ov-iconbtn__badge"></span></span>
+      <span class="ov-iconbtn" style="opacity:.4">▣</span>
+    </div>
+    <p>26×26 · <b>直角</b> · 1px 透明边 · 图标 18（底栏 16 / 字体面板 20）· hover 底 rgba(0,0,0,.2) + 边 #444 · 选中底 #222 + 边 #444 · 角标 4px 右下 · 禁用 opacity .4 · 默认 / hover / 选中 / 角标 / 禁用</p></figure>
+
+  <figure class="w ov"><figcaption>Chevron（折叠箭头）</figcaption>
+    <div class="wbox">
+      <span class="ov-caret6"></span><span style="font-size:11px;color:#9a9a9a">展开 135°</span>
+      <span class="ov-caret6 ov-caret6--closed"></span><span style="font-size:11px;color:#9a9a9a">收起 45°</span>
+      <span class="ov-caret6 ov-caret6--left"></span><span style="font-size:11px;color:#9a9a9a">左箭头 -45°</span>
+    </div>
+    <p>原版 6×6 折角（上 + 右各 1px <code>currentColor</code>）· 展开 135° / 收起 45° / 左箭头 -45° · 120ms ease。<b>本仓不用这套 CSS 折角</b>，改用 svg 图标 + <code>rotate(-90deg)</code>；实际存在 4 套调用，统计与收敛方案见「十」节末。</p></figure>
+
+  <figure class="w ov"><figcaption>Icon（1em + 预设档）</figcaption>
+    <div class="wbox" style="align-items:flex-end;gap:10px">
+      <span class="ov-iconbox" style="width:9px;height:9px"></span>
+      <span class="ov-iconbox" style="width:10px;height:10px"></span>
+      <span class="ov-iconbox" style="width:14px;height:14px"></span>
+      <span class="ov-iconbox" style="width:16px;height:16px"></span>
+      <span class="ov-iconbox" style="width:18px;height:18px"></span>
+      <span class="ov-iconbox" style="width:20px;height:20px"></span>
+      <span class="ov-iconbox" style="width:24px;height:24px"></span>
+    </div>
+    <p>默认 <code>1em</code> 跟随字号（原版 <code>.icon{width:1em;height:1em}</code>）· 预设 2xs 9 / xs 10 / sm 14 / md 16 / lg 18 / xl 20 / 2xl 24 · 3xs 4 只做角标 · <code>fill: currentColor</code> · inline-block + <code>flex:0 0 auto</code></p></figure>
+
+  <figure class="w ov"><figcaption>TaskHud（长任务浮层）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch">
+      <div class="ov-hud">
+        <div class="ov-hud__row">
+          <span style="color:#f5f5f5">导出样式库</span>
+          <span style="color:#8e8e8e">第 3/5 组</span>
+          <span style="margin-left:auto;color:#9a9a9a">取消</span>
+        </div>
+        <div class="ov-hud__bar"><span class="ov-hud__fill"></span></div>
+      </div>
+    </div>
+    <p>宽 260 · padding 8 · 边 1px #4b4b4b · 圆角 6 · 底 rgba(64,64,64,.96) · 阴影 · 底部居中（距底 24）· 层级 9000 · 标题 11 #f5f5f5 · 明细 #8e8e8e · 进度条 2 高 圆角 pill 底 #4b4b4b 填充 #006fff · 不确定进度时改用 Spin 12</p></figure>
+
+  <figure class="w ov"><figcaption>BackTop（回到顶部）</figcaption>
+    <div class="wbox"><span class="ov-backtop">↑</span></div>
+    <p>26×26 · 圆角 5 · 底 #535353 · 图标 14 #c3c3c3 · 定位 right 10 / bottom 47 · <b>常显</b>：原版没有滚动阈值、不监听滚动</p></figure>
+
+  <figure class="w ov"><figcaption>SettingsRow（设置行）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="ov-settingrow"><span style="font-size:12px;color:#c3c3c3">默认仓库</span><span class="ov-trigger" style="flex:1">默认</span></div>
+      <div class="ov-settingrow"><span style="font-size:12px;color:#c3c3c3">预览文字</span><span class="ov-field" style="flex:1">示例文本</span></div>
+    </div>
+    <p>flex · min-height 28 · 居中 · gap 8 · 唯一间距出口 <code>--set-gap</code>（设置页 8 / 常用页 0）· 页面不再各写 <code>u-row</code> / <code>u-gap</code></p></figure>
+
+  <figure class="w ov"><figcaption>数字框（拖动 + 单位 + 预设）</figcaption>
+    <div class="wbox" style="flex-direction:column;align-items:stretch;gap:6px">
+      <div class="ov-num"><span class="ov-num__grip">⇔</span><span class="ov-num__box"><span class="ov-num__input">24</span><span class="ov-num__suffix">px</span><span style="color:#9a9a9a">▾</span></span></div>
+      <div class="ov-num" style="opacity:.45"><span class="ov-num__grip">⇔</span><span class="ov-num__box"><span class="ov-num__input">12</span><span class="ov-num__suffix">px</span></span></div>
+    </div>
+    <p>高 24 · 拖拽手柄在框<b>外左侧</b>（margin-right 8、色 #9a9a9a、<code>w-resize</code>）· 框 padding 0 4 · 圆角 5 · 底 #222 · 输入居中 12 · 单位 10 #9a9a9a · 预设箭头在右 · 禁用 opacity .45 · 左右拖动改值 / 滚轮 / Enter / 失焦提交</p></figure>
+</div>
+
+<h3 style="font-size:13px;margin:18px 0 4px">0.2 Token 目标值（重建 <code>tokens.css</code> 时照这张表）</h3>
+<p class="lead">这是 <b>Vue 原版值</b>，当重建目标用；命名要换成 <code>--mm-*</code>（<code>CONVENTIONS</code> §1 命名总则）。<b>下列 4 项与 §7 硬规则冲突，建变量前必须先改约定，不能直接照抄</b>：圆角 5 / 6（§7 规则 4「不超过 4」）、间距 24 与 <code>--sp-exact-*</code>（规则 5「六档、最大 16」，exact 档已明文删除）、字号 18（规则 4「11–13 三档」）、控件高 28（现 <code>--mm-control-h</code> 为 26）。</p>
+<table>
+<tr><th>类别</th><th>变量</th><th>值</th><th>用途</th></tr>
+<tr><td rowspan="8">表面</td><td><code>--c-bg</code> / <code>--c-surface</code></td><td>#363636</td><td>面板基色</td></tr>
+<tr><td><code>--c-sunken</code></td><td>#222</td><td>凹陷层：输入框、导航激活、折叠 body</td></tr>
+<tr><td><code>--c-surface-hover</code></td><td>#3d3d3d</td><td>表面 hover</td></tr>
+<tr><td><code>--c-surface-active</code></td><td>#424242</td><td>列表行 / 下拉项 hover</td></tr>
+<tr><td><code>--c-surface-raised</code></td><td>#4b4b4b</td><td>按钮底与边框</td></tr>
+<tr><td><code>--c-surface-raised-hover</code></td><td>#575757</td><td>按钮 hover</td></tr>
+<tr><td><code>--c-input</code></td><td>#2c2c2c</td><td>输入框底与边框</td></tr>
+<tr><td><code>--c-float</code></td><td>rgba(64,64,64,.96)</td><td>浮层 / 弹窗 / toast 底</td></tr>
+<tr><td rowspan="4">遮罩</td><td><code>--c-mask</code></td><td>rgba(0,0,0,.45)</td><td>弹窗 / 全屏加载</td></tr>
+<tr><td><code>--c-mask-soft</code></td><td>rgba(0,0,0,.25)</td><td>图标按钮 hover 底</td></tr>
+<tr><td><code>--c-mask-faint</code></td><td>rgba(0,0,0,.1)</td><td>输入弹窗遮罩</td></tr>
+<tr><td><code>--c-hover-2</code></td><td>hsla(0,0%,100%,.1)</td><td>菜单项 hover</td></tr>
+<tr><td rowspan="4">描边</td><td><code>--c-border</code></td><td>#2e2e2e</td><td>暗线：页面 / 列表分隔</td></tr>
+<tr><td><code>--c-border-strong</code></td><td>#4b4b4b</td><td>亮线：控件 / 勾选框 / 浮层外缘</td></tr>
+<tr><td><code>--c-border-checked</code></td><td>#6e6e6e</td><td>字重预览选中框</td></tr>
+<tr><td><code>--c-border-float</code></td><td>hsla(0,0%,100%,.1)</td><td>浮层外边缘</td></tr>
+<tr><td rowspan="7">文字</td><td><code>--c-text</code></td><td>#c3c3c3</td><td>正文</td></tr>
+<tr><td><code>--c-text-strong</code></td><td>#f5f5f5</td><td>标题 / 强调 / hover 转白</td></tr>
+<tr><td><code>--c-text-dim</code></td><td>#9a9a9a</td><td>次要</td></tr>
+<tr><td><code>--c-text-faint</code></td><td>#8e8e8e</td><td>placeholder / 空态 / 计数</td></tr>
+<tr><td><code>--c-text-inverse</code></td><td>#ffffff</td><td>蓝底反白</td></tr>
+<tr><td><code>--c-text-preview</code></td><td>#e0e0e0</td><td>字体预览文字</td></tr>
+<tr><td><code>--c-text-name</code></td><td>#eaeaea</td><td>无预览模式家族名</td></tr>
+<tr><td rowspan="6">语义</td><td><code>--c-accent</code></td><td>#006fff</td><td>选中 / 焦点 / 主操作</td></tr>
+<tr><td><code>--c-accent-hover</code></td><td>#2a86ff</td><td>强调 hover</td></tr>
+<tr><td><code>--c-accent-soft</code></td><td>#759fff</td><td>输入框 focus 边 / 当前项字</td></tr>
+<tr><td><code>--c-danger</code></td><td>#f14c4c</td><td>危险</td></tr>
+<tr><td><code>--c-ok</code></td><td>#4ec9b0</td><td>成功</td></tr>
+<tr><td><code>--c-warn</code></td><td>#dcdcaa</td><td>警告</td></tr>
+<tr><td rowspan="4">间距</td><td><code>--sp-1</code> ~ <code>--sp-7</code></td><td>2 / 4 / 6 / 8 / 12 / 16 / 24</td><td>唯一间距阶梯</td></tr>
+<tr><td><code>--sp-exact-1/3/5/7/10/12/14/15</code></td><td>1 / 3 / 5 / 7 / 10 / 12 / 14 / 15</td><td>像素级还原原版时用</td></tr>
+<tr><td><code>--page-pad-x</code></td><td>8</td><td>页面左右留白（只由 PageShell 给）</td></tr>
+<tr><td><code>--set-gap</code></td><td>8</td><td>设置行内间距</td></tr>
+<tr><td rowspan="3">字号</td><td><code>--fs-xs</code> ~ <code>--fs-2xl</code></td><td>10 / 11 / 12 / 13 / 14 / 15 / 18</td><td>正文默认 <code>--fs-md</code> 12</td></tr>
+<tr><td><code>--fs-name</code> / <code>--fs-name-lh</code></td><td>16 / 22</td><td>无预览模式家族名</td></tr>
+<tr><td><code>--preview-sm</code> ~ <code>--preview-xl</code></td><td>24/34 · 38/53 · 50/70 · 72/101</td><td>字体预览四档（字号/行高）</td></tr>
+<tr><td>图标</td><td><code>--icon-3xs</code> ~ <code>--icon-2xl</code></td><td>4 / 9 / 10 / 14 / 16 / 18 / 20 / 24</td><td>默认 <code>1em</code> 跟随字号</td></tr>
+<tr><td rowspan="2">圆角</td><td><code>--r-sm</code> / <code>--r-md</code> / <code>--r-input</code> / <code>--r-lg</code></td><td>2 / 4 / 5 / 6</td><td>小件 / 通用 / 输入框 / 浮层</td></tr>
+<tr><td><code>--r-tile</code> / <code>--r-pill</code></td><td>10 / 999</td><td>常用页图标块 / 全圆</td></tr>
+<tr><td rowspan="2">尺寸</td><td><code>--h-control</code> / <code>--h-control-sm</code> / <code>--h-row</code></td><td>28 / 24 / 26</td><td>控件高 / 小控件 / 行高</td></tr>
+<tr><td><code>--h-header</code> / <code>--h-field</code> / <code>--h-footer</code> / <code>--h-tile</code> / <code>--nav-w</code> / <code>--nav-item</code></td><td>40 / 30 / 24 / 32 / 40 / 26</td><td>页头 / 输入位 / 底栏 / 图标块 / 导航 / 导航项</td></tr>
+<tr><td>层级</td><td><code>--z-dropdown</code> / <code>--z-tooltip</code> / <code>--z-modal</code> / <code>--z-toast</code></td><td>50 / 60 / 8000 / 9000</td><td>浮层 / 提示 / 弹窗 / 提示条</td></tr>
+<tr><td>阴影</td><td><code>--shadow-pop</code> / <code>--shadow-float</code></td><td>0 4 20 rgba(0,0,0,.4) / .45</td><td>浮层 / 弹窗</td></tr>
+<tr><td>动效</td><td><code>--dur-fast</code> / <code>--dur-base</code> / <code>--dur-slow</code> / <code>--ease</code></td><td>120 / 180 / 240 ms · cubic-bezier(.2,.8,.2,1)</td><td>图标反馈 / 浮层 / 弹窗</td></tr>
+</table>
+
+<h3 style="font-size:13px;margin:18px 0 4px">0.3 只学一种（Vue 里的重复实现与取舍）</h3>
+<table>
+<tr><th>功能</th><th>Vue 里的实现</th><th>取哪个</th><th>理由</th></tr>
+<tr><td>浮层壳</td><td><code>GDropdown</code>（业务 8 处）/ <code>GPopover</code>（只在 <code>_atoms</code> 展示页）</td><td><b>GDropdown</b></td><td>业务唯一在用，GPopover 无调用方</td></tr>
+<tr><td>菜单内容</td><td><code>.style-io-menu</code> / <code>.action-io-menu</code>（两页各一份，逐行相同）</td><td><b>GMenuItem</b></td><td>菜单项样式只一处</td></tr>
+<tr><td>折叠</td><td><code>BaseGroup</code>（22 高，4 页）/ <code>GCollapse</code>（28 高 + 黑底 body）</td><td><b><code>Collapse</code></b>（本仓，24 高）</td><td>三变体覆盖；本仓定 24 高，<b>不跟原版 28</b>，与 §7 行高一致</td></tr>
+<tr><td>设置折叠块</td><td><code>SettingsSection</code></td><td><b><code>Collapse</code></b> 薄包装</td><td>只做 variant 映射，不另写视觉</td></tr>
+<tr><td>转圈</td><td><code>NewSpin</code> / <code>GButton.__spin</code></td><td><b><code>Spin</code></b>（本仓）的 ring 参数</td><td>按钮内 loading 复用同一组（18 / 2px / 0.8s）</td></tr>
+<tr><td>弹窗</td><td><code>CepModal</code> / <code>ConfirmHost</code></td><td><b><code>Confirm</code> / <code>InputDialog</code></b>（本仓按用途分两件）</td><td>表面（边 / 底 / 影 / 遮罩）只写一份；ConfirmHost 只是调用方</td></tr>
+<tr><td>按钮网格</td><td><code>GButton[grid]</code> / <code>ActionGrid</code></td><td><b>GButton</b> 的 grid 模式</td><td>ActionGrid 只做 <code>v-for</code> 包装</td></tr>
+<tr><td>浮层定位</td><td><code>usePopover</code> / 页面自绘 <code>position:fixed</code>（9 处）</td><td><b><code>useFloatingPosition</code></b>（本仓）</td><td>翻转 / 夹取 / 点外关闭只有一处。<code>usePopover</code> 是 Vue 侧名，本仓不存在，别照抄</td></tr>
+<tr><td>抽屉</td><td>字体面板：图标行 + <b>全宽底 #222 面板</b>（<code>.fontset__panels</code> padding 0，面板自带 <code>15 10</code>）<br>常用页：整行 <code>padding 0 12</code> + 无底色<br>React 侧：<code>IconPanel</code> 公共件</td><td><b>字体面板那套</b></td><td>抽屉表面只有一处：全宽、底 #222、面板自带左右 10；常用页那套不再单独实现。本仓 <code>icon-panel.css</code> 已删，重建时按 <code>CONVENTIONS</code> §6 写</td></tr>
+<tr><td>选项下拉</td><td><code>SelectBox</code>（3 个参数）/ <code>FontSetSelect</code>（17 个参数，超集）</td><td><b><code>SelectBox</code></b>（本仓唯一入口）</td><td><code>FontSetSelect</code> 是 Vue 侧件，本仓不存在；参数多不等于要建新件</td></tr>
+<tr><td>下拉 vs 内容面板</td><td><code>FontSetSelect</code>（选项列表）/ <code>GDropdown</code>（任意内容）</td><td><b><code>SelectBox</code> / <code>.mm-popover</code></b></td><td>有「当前值 + 对勾」用前者，其余一律后者；不许再造第三个</td></tr>
+<tr><td>图标按钮</td><td><code>PageBottomBar.__icon</code>（26×26 圆角 0）/ <code>FontSetIcon</code>（26×26 圆角 0）/ <code>MainLayout .nav-item.is-sub</code>（26×26 圆角 4）</td><td><b><code>IconButton</code></b>（26×26，圆角 <code>--mm-radius-md</code>）</td><td>三份逐行相同；圆角按 §7 组件形状表取 4，<b>不取原版 0</b></td></tr>
+<tr><td>输入位表面</td><td><code>GInput</code>（底/边 #2c2c2c）/ 字体面板 <code>FontSetSelect.__trigger</code>、<code>FontSetNumber.__box</code>（底 #222、边 transparent）</td><td><b>一个类：<code>.mm-input</code> / <code>.mm-field-surface</code></b></td><td>底色取 <code>--mm-color-bg-input</code>、描边取暗线 <code>--mm-color-border</code>（§7 规则 8 / 规则 13），<b>不取原版 #2c2c2c</b>；这两条 token 当前不存在，需随色阶一起建</td></tr>
+<tr><td>行 hover</td><td><code>--c-surface-active</code> #424242（SelectBox 项）/ <code>--c-hover-2</code> hsla(0,0%,100%,.1)（GMenuItem、FontSetSelect 项）</td><td><b>叠 <code>--mm-color-bg-hover</code></b></td><td>同一语义两个值；叠白不随底色档位漂移（§7 状态表）</td></tr>
+<tr><td>弹窗</td><td><code>CepModal</code>（居中 / 260 / 圆角 4 / 遮罩 .45）/ <code>DistributedDialog</code>（top 30% + <code>50vw-90</code> / 180 / <b>无圆角</b> / 遮罩 .1）</td><td><b>两种用途，表面合 1</b></td><td>确认类居中、输入类偏上（原版如此，不是笔误）；但边框 / 底 / 阴影 / 输入框只写一份</td></tr>
+</table>
+
+<h3 style="font-size:13px;margin:18px 0 4px">0.4 与当前骨架的差异（重写要定的事）</h3>
+<p class="lead">「当前骨架」列写的是 <code>tokens.css</code> 里<b>存在的 token 值</b>，<b>不代表代码已经在用</b>——颜色 / 间距 / 圆角 / 阴影 / 动效五类声明全站为 0，见「十」。</p>
+<table>
+<tr><th>项</th><th>Vue 原版</th><th>当前骨架（token 有值 / 已用）</th></tr>
+<tr><td>控件高</td><td>28（<code>--h-control</code>）/ 24（small）</td><td>26（<code>--mm-control-h</code>），已用</td></tr>
+<tr><td>输入框高</td><td>28；搜索 / 预览文案 30</td><td>26，已用</td></tr>
+<tr><td>底栏高</td><td>24</td><td>26，已用</td></tr>
+<tr><td>圆角</td><td>输入 5 / 通用 4 / 小件 2</td><td>token 3 个（2 / 4 / 999），<b>声明 0 条</b></td></tr>
+<tr><td>字号</td><td>10 / 11 / 12 / 13 / 14 / 15 / 18</td><td>11 / 12 / 13，已用</td></tr>
+<tr><td>图标</td><td>默认 1em 跟随字号，预设 4~24 共 8 档</td><td>16 / 24 两档，已用</td></tr>
+<tr><td>间距</td><td>2 / 4 / 6 / 8 / 12 / 16 / 24 + 精确档</td><td>token 6 个，<b>零引用</b></td></tr>
+<tr><td>颜色</td><td>60+ 语义色（见 0.2）</td><td><b>0 个 token，0 条声明</b></td></tr>
+<tr><td>层级</td><td>1 / 50 / 60 / 8000 / 9000</td><td>token 7 个（10 / 200 / 999 / 1000 / 1001 / 1100 / 1200），已用</td></tr>
+<tr><td>阴影</td><td>浮层 <code>0 4 20 rgba(0,0,0,.4)</code>；弹窗 .45</td><td><b>0 个 token，0 条声明</b></td></tr>
+<tr><td>动效</td><td>120 / 180 / 240 + 统一 ease</td><td>token 2 个（120ms / 0.8s），<b>声明 0 条</b></td></tr>
+</table>
+
+<h2>一、UI 控件（唯一入口）</h2>
+<p class="lead">页面与 feature 只许 import 这些件；表面（底色 / 描边 / 圆角 / 字号）只在公共件里写。</p>
+<table>
+<tr><th>控件</th><th>入口</th><th>样式</th><th>职责 / 当前形态</th></tr>
+<tr><td>Button / Input / Field</td><td><code>components/ui</code></td><td><code>ui.css</code></td><td>基础控件表面；<code>Input</code> 是全仓唯一输入框渲染入口（<code>variant</code> 两档）</td></tr>
+<tr><td>TextField</td><td><code>components/TextField</code></td><td><code>text-field.css</code></td><td>定宽输入框（三档宽度 + 左图标 + Enter 提交），内部渲染 <code>ui.Input</code></td></tr>
+<tr><td>SelectBox</td><td><code>components/SelectBox</code></td><td><code>select-box.css</code></td><td>下拉选择；面板挂 <code>.mm-popover</code> + <code>Portal</code>，宽度 = 触发器宽</td></tr>
+<tr><td>CheckBox</td><td><code>components/CheckBox</code></td><td><code>check-box.css</code></td><td>12×12 / 圆角 3；根排列、隐藏 input、标签省略已上移 <code>global.css</code></td></tr>
+<tr><td>RadioButton</td><td><code>components/RadioButton</code></td><td><code>radio-button.css</code></td><td>12×12 正圆；与 CheckBox 共用 <code>global.css</code> 的根与标签规则</td></tr>
+<tr><td>IconButton</td><td><code>components/IconButton</code></td><td><code>icon-button.css</code></td><td>26×26 图标按钮，含选中态与角标</td></tr>
+<tr><td>IconPanel / Group</td><td><code>components/IconPanel</code></td><td><span class="tag">无 CSS</span></td><td>图标 + 展开抽屉；原 <code>icon-panel.css</code> 只有抽屉底色，去色后已删</td></tr>
+<tr><td>Collapse</td><td><code>components/Collapse</code></td><td><code>collapse.css</code></td><td>24 高折叠行；标题单行省略在 <code>global.css</code></td></tr>
+<tr><td>Chevron</td><td><code>components/Chevron</code></td><td><code>chevron.css</code></td><td>展开 / 折叠箭头，<code>rotate(-90deg)</code> 表示收起</td></tr>
+<tr><td>PageHeader</td><td><code>components/PageHeader</code></td><td><code>page-header.css</code></td><td>40 高页头 + 标题 + 右侧插槽</td></tr>
+<tr><td>BottomBar</td><td><code>components/BottomBar</code></td><td><code>bottom-bar.css</code></td><td>26 高底栏（按钮 30 宽 + 1×13 竖线；竖线形状在 <code>global.css</code>）</td></tr>
+<tr><td>ContextMenu</td><td><code>components/ContextMenu</code></td><td><code>menu.css</code></td><td>右键菜单；壳来自 <code>.mm-popover</code>，横线在 <code>global.css</code></td></tr>
+<tr><td>Confirm / useConfirm</td><td><code>components/Confirm</code></td><td><code>confirm.css</code></td><td>二次确认弹窗；按钮已挂 <code>.mm-btn</code></td></tr>
+<tr><td>InputDialog</td><td><code>components/InputDialog</code></td><td><code>input-dialog.css</code></td><td>输入弹窗（原版 <code>calc(50vw - 90px)</code> + <code>top:30%</code>，刻意不居中）</td></tr>
+<tr><td>InlineEdit</td><td><code>components/InlineEdit</code></td><td><code>inline-edit.css</code></td><td>就地重命名：Enter 确认 / Esc 取消 / 失焦确认</td></tr>
+<tr><td>Toast</td><td><code>components/Toast</code></td><td><code>Toast.css</code></td><td>提示条；状态走 <code>core/feedback/channel</code></td></tr>
+<tr><td>Loading</td><td><code>components/Loading</code></td><td><code>Loading.css</code></td><td>全屏加载唯一入口，文案栈</td></tr>
+<tr><td>Spin</td><td><code>components/Spin</code></td><td><code>spin.css</code></td><td>裸圈 / 带文案 / 局部遮罩三模式；<code>size</code> 入参已删，尺寸取 token</td></tr>
+<tr><td>StateHint</td><td><code>components/StateHint</code></td><td><code>state-hint.css</code></td><td>空态 / 失败态 / IO 重试唯一入口</td></tr>
+<tr><td>StateMask</td><td><code>components/StateMask</code></td><td><code>state-mask.css</code></td><td>区域不可用遮罩；内容照常渲染撑住高度</td></tr>
+<tr><td>Portal</td><td><code>components/Portal</code></td><td><span class="tag">无 CSS</span></td><td>唯一 <code>document.body</code> 挂载点，只管挂</td></tr>
+<tr><td>Icon</td><td><code>components/icons</code></td><td><span class="tag">无 CSS</span></td><td>SVG sprite 图标集，由 <code>tools/build-icons.mjs</code> 从 sprite 生成，不手改</td></tr>
+</table><h3 style="font-size:13px;margin:18px 0 4px">状态与变体（去色后还能看出什么）</h3>
+<p class="lead">状态类都还在，但颜色删掉后不少状态已无视觉差异——重写时这些要重新给视觉。</p>
+<table>
+<tr><th>控件</th><th>状态 / 变体</th><th>现在还能看出</th><th>已看不出（需重写）</th></tr>
+<tr><td>Button</td><td>默认 / <code>:disabled</code></td><td>禁用 <code>opacity .4</code> + <code>not-allowed</code></td><td>hover、<code>--primary</code> / <code>--ghost</code>（两档规则已随颜色删除）</td></tr>
+<tr><td>Input</td><td>默认 / <code>:focus</code> / <code>--invalid</code></td><td>焦点 1px 外描边</td><td>校验失败的红边（<code>border-color</code> 已删）</td></tr>
+<tr><td>CheckBox</td><td>未选 / 选中 / 禁用 / 焦点</td><td>选中态对勾（两条 border 拼出）、禁用 <code>opacity .5</code>、焦点外描边</td><td>选中底色</td></tr>
+<tr><td>RadioButton</td><td>未选 / 选中 / 禁用 / 焦点</td><td>禁用 <code>opacity .5</code>、焦点外描边</td><td>选中内点（原来靠底色）</td></tr>
+<tr><td>IconButton</td><td>默认 / 选中 / 禁用</td><td>禁用 <code>opacity .4</code></td><td>hover、选中底色</td></tr>
+<tr><td>SelectBox</td><td>收起 / 展开 / 项 / 当前项 / 禁用</td><td>展开后出面板、当前项有对勾位</td><td>项 hover、当前项底色</td></tr>
+<tr><td>Chevron</td><td>展开 / 收起（<code>--closed</code>）</td><td>收起 <code>rotate(-90deg)</code>，120ms</td><td>—（纯几何，未受影响）</td></tr>
+<tr><td>TextField</td><td><code>--wide</code> / <code>--half</code> / <code>--compact</code> / <code>--fill</code></td><td>四档宽度（80 / 50%-6 / 70 / 撑满）</td><td>—（纯尺寸）</td></tr>
+<tr><td>TileButton</td><td>默认 / hover / <code>--active</code> / <code>--filled</code> / <code>--disabled</code></td><td>角标位置、禁用态</td><td>hover 叠白、展开中凹底、已填充标记色</td></tr>
+<tr><td>Collapse</td><td>展开 / 收起</td><td>收起不渲染内容</td><td>—（纯结构）</td></tr>
+<tr><td>TagChip</td><td>默认 / <code>--on</code>（选中）</td><td>—</td><td>选中底色与描边（全部靠颜色）</td></tr>
+<tr><td>FontListItem</td><td>默认 / hover / <code>--active</code> / <code>--unavailable</code></td><td>不可用项的文字说明</td><td>hover 底、当前项底、不可用灰化</td></tr>
+<tr><td>ItemView</td><td>四库（<code>--color/--gradient/--font/--style</code>）/ <code>--editing</code></td><td>四档尺寸</td><td>hover 描边、编辑中高亮</td></tr>
+<tr><td>Toast / Loading / StateMask</td><td>显示 / 隐藏</td><td>布局与层级</td><td>遮罩底色（全部已删，现在盖不住）</td></tr>
+</table>
+<h3 style="font-size:13px;margin:18px 0 4px">状态线框（去色后的真实差异）</h3>
+<div class="wire">
+  <figure class="w"><figcaption>CheckBox 四态</figcaption>
+    <div class="wbox">
+      <span class="box12"></span><span class="fs11">未选</span>
+      <span class="box12" style="display:inline-flex;align-items:center;justify-content:center"><i class="tick"></i></span><span class="fs11">选中</span>
+      <span class="box12" style="opacity:.5"></span><span class="fs11" style="opacity:.5">禁用</span>
+      <span class="box12" style="outline:1px solid var(--ink);outline-offset:1px"></span><span class="fs11">焦点</span>
+    </div>
+    <p>选中 = 两条 border 拼的对勾（可见）· 禁用 <code>opacity .5</code> · 焦点外描边 1px</p></figure>
+  <figure class="w"><figcaption>RadioButton 四态</figcaption>
+    <div class="wbox">
+      <span class="dot12"></span><span class="fs11">未选</span>
+      <span class="dot12"></span><span class="fs11">选中（已无内点）</span>
+      <span class="dot12" style="opacity:.5"></span><span class="fs11" style="opacity:.5">禁用</span>
+      <span class="dot12" style="outline:1px solid var(--ink);outline-offset:1px"></span><span class="fs11">焦点</span>
+    </div>
+    <p>选中态原来靠底色，现已删 → 选中与未选外观相同（重写要补）</p></figure>
+  <figure class="w"><figcaption>Button 三态</figcaption>
+    <div class="wbox"><span class="btn">默认</span><span class="btn" style="opacity:.4">禁用</span><span class="btn">hover（无色差）</span></div>
+    <p>禁用 <code>opacity .4</code> + <code>not-allowed</code>；hover 与 <code>--primary/--ghost</code> 已无色</p></figure>
+  <figure class="w"><figcaption>Input 两态</figcaption>
+    <div class="wbox"><span class="field">默认</span><span class="field on">focus（外描边）</span></div>
+    <p>焦点 1px 外描边可见；<code>--invalid</code> 红边已删</p></figure>
+  <figure class="w"><figcaption>IconButton 三态</figcaption>
+    <div class="wbox"><span class="ibtn" style="border-radius:0">默认</span><span class="ibtn" style="border-radius:0;opacity:.4">禁用</span><span class="ibtn" style="border-radius:0">选中（无色差）</span></div>
+    <p>直角 + 1px 描边；选中态原来靠底色，现已无</p></figure>
+  <figure class="w"><figcaption>Chevron 四向</figcaption>
+    <div class="wbox"><span style="font-size:16px">▾</span><span style="font-size:16px">▸</span><span style="font-size:16px">▴</span><span style="font-size:16px">◂</span></div>
+    <p>展开向下；收起 <code>rotate(-90deg)</code> 向右；切换 120ms（纯几何，未受影响）</p></figure>
+  <figure class="w"><figcaption>字号三档</figcaption>
+    <div class="wbox" style="align-items:baseline"><span class="fs11">11 号 xs</span><span class="fs12">12 号 sm</span><span class="fs13">13 号 md</span></div>
+    <p><code>--mm-font-xs</code> 11 / <code>-sm</code> 12 / <code>-md</code> 13；行高 16 / 17</p></figure>
+  <figure class="w"><figcaption>图标两档</figcaption>
+    <div class="wbox"><span style="display:inline-block;width:16px;height:16px;border:1px solid var(--ink)"></span><span class="fs11">16 md</span><span style="display:inline-block;width:24px;height:24px;border:1px solid var(--ink)"></span><span class="fs11">24 lg</span></div>
+    <p><code>--mm-icon-md</code> 16 配 12 号字 · <code>--mm-icon-lg</code> 24 配 13 号字</p></figure>
+</div>
+<h3 style="font-size:13px;margin:18px 0 4px">间距档位（六档，现在全站为 0）</h3>
+<div class="wire">
+  <figure class="w"><figcaption>六档 token 对照</figcaption>
+    <div style="display:flex;flex-direction:column;gap:7px;font-size:11px">
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:2px"></span><span style="margin-left:8px">tight 2 · 贴合（徽标内边距）</span></div>
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:4px"></span><span style="margin-left:8px">space-1 · 4 · 组内</span></div>
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:6px"></span><span style="margin-left:8px">inline · 6 · 同行并列</span></div>
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:8px"></span><span style="margin-left:8px">space-2 · 8 · 组间</span></div>
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:12px"></span><span style="margin-left:8px">space-3 · 12 · 区块内</span></div>
+      <div style="display:flex;align-items:center"><span class="sq"></span><span class="sq" style="margin-left:16px"></span><span style="margin-left:8px">space-4 · 16 · 区块间</span></div>
+    </div>
+    <p>间距只用这六档；本仓不允许写 <code>margin</code> / <code>padding</code>（已全仓为 0）</p></figure>
+  <figure class="w"><figcaption>现状：全部贴死</figcaption>
+    <div style="display:flex;align-items:center;font-size:11px"><span class="sq"></span><span class="sq"></span><span class="sq"></span><span class="sq"></span><span style="margin-left:8px">gap 0</span></div>
+    <div style="display:flex;align-items:center;font-size:11px;margin-top:6px"><span class="sq"></span><span class="sq"></span><span style="margin-left:8px">margin 0 / padding 0</span></div>
+    <p><b>gap 声明 0 条</b>、<b>间距 token 6 个零引用</b>——元素之间没有任何间隙，重写时这六档是唯一间距来源</p></figure>
+  <figure class="w"><figcaption>间距 token 明细</figcaption>
+    <table style="font-size:11px;margin:0">
+      <tr><th>token</th><th>值</th><th>用途</th></tr>
+      <tr><td><code>--mm-space-tight</code></td><td>2</td><td>贴合（徽标内边距）</td></tr>
+      <tr><td><code>--mm-space-1</code></td><td>4</td><td>组内</td></tr>
+      <tr><td><code>--mm-space-inline</code></td><td>6</td><td>同行并列</td></tr>
+      <tr><td><code>--mm-space-2</code></td><td>8</td><td>组间</td></tr>
+      <tr><td><code>--mm-space-3</code></td><td>12</td><td>区块内</td></tr>
+      <tr><td><code>--mm-space-4</code></td><td>16</td><td>区块间</td></tr>
+    </table>
+    <p>页边另有 <code>--mm-page-pad-x</code>（已随 padding 删除一并移除）</p></figure>
+</div>
+<h3 style="font-size:13px;margin:18px 0 4px">组件 props（拼装接口，51 个）</h3>
+<p class="lead">拼装时按这些参数传值；带 <code>= 值</code> 的是默认值，可不传。页面与外壳组件无 props（只渲染子节点）。<b>本表含两类</b>：公共件（<code>components/</code>，页面只许 import）与页面私有件（<code>features/*/components/</code>，只服务一页，<b>不要</b>当公共件复用）。路径为仓内相对路径。</p>
+<table>
+<tr><th>组件</th><th>文件</th><th>props</th></tr>
+<tr><td><code>BottomBar</code></td><td><code>src/components/BottomBar/index.tsx</code></td><td>children, className = &#39;&#39;</td></tr>
+<tr><td><code>BottomBarButton</code></td><td><code>src/components/BottomBar/index.tsx</code></td><td>title, name, size = 18, disabled = false, onClick, children</td></tr>
+<tr><td><code>CheckBox</code></td><td><code>src/components/CheckBox/index.tsx</code></td><td>label, checked, title, disabled = false, onChange</td></tr>
+<tr><td><code>Chevron</code></td><td><code>src/components/Chevron/index.tsx</code></td><td>open, size = 14, className = &#39;&#39;</td></tr>
+<tr><td><code>Collapse</code></td><td><code>src/components/Collapse/index.tsx</code></td><td>title, open, onToggle, children, className = &#39;&#39;</td></tr>
+<tr><td><code>Confirm</code></td><td><code>src/components/Confirm/index.tsx</code></td><td>open, title, message, confirmText = &#39;删除&#39;, onConfirm, onCancel</td></tr>
+<tr><td><code>ContextMenu</code></td><td><code>src/components/ContextMenu/index.tsx</code></td><td>x, y, anchor, items, inside, onClose</td></tr>
+<tr><td><code>IconButton</code></td><td><code>src/components/IconButton/index.tsx</code></td><td>name, title, size = 20, active = false, badge = false, disabled = false, ariaExpanded, ariaControls, onClick, onContextMenu</td></tr>
+<tr><td><code>IconPanel</code></td><td><code>src/components/IconPanel/index.tsx</code></td><td>id, title, panel, onPrimary, icon, size = 20, badge = false, disabled = false, trigger</td></tr>
+<tr><td><code>IconPanelGroup</code></td><td><code>src/components/IconPanel/index.tsx</code></td><td>exclusive = true, openId, onOpenChange, className = &#39;&#39;, children</td></tr>
+<tr><td><code>Icon</code></td><td><code>src/components/icons/index.tsx</code></td><td>name, size = &#39;1em&#39;, ...rest</td></tr>
+<tr><td><code>InlineEdit</code></td><td><code>src/components/InlineEdit/index.tsx</code></td><td>value, onCommit, onCancel</td></tr>
+<tr><td><code>InputDialog</code></td><td><code>src/components/InputDialog/index.tsx</code></td><td>title, defaultValue = &#39;&#39;, extraHeader, extra, onSubmit, onClose</td></tr>
+<tr><td><code>LoadingProvider</code></td><td><code>src/components/Loading/index.tsx</code></td><td>children</td></tr>
+<tr><td><code>PageHeader</code></td><td><code>src/components/PageHeader/index.tsx</code></td><td>title, children, className = &#39;&#39;</td></tr>
+<tr><td><code>Portal</code></td><td><code>src/components/Portal/index.tsx</code></td><td>children</td></tr>
+<tr><td><code>RadioButton</code></td><td><code>src/components/RadioButton/index.tsx</code></td><td>label, name, checked, title, disabled = false, onChange</td></tr>
+<tr><td><code>SelectBox</code></td><td><code>src/components/SelectBox/index.tsx</code></td><td>options, value, onChange, icon, arrowIcon = &#39;iconxiala&#39;, arrowSize = 12, className = &#39;&#39;, disabled = false, footer, onRemove</td></tr>
+<tr><td><code>Spin</code></td><td><code>src/components/Spin/index.tsx</code></td><td>tip, mask = false</td></tr>
+<tr><td><code>StateMask</code></td><td><code>src/components/StateMask/index.tsx</code></td><td>overlay, children</td></tr>
+<tr><td><code>TextField</code></td><td><code>src/components/TextField/index.tsx</code></td><td>value, onChange, onSubmit, variant = &#39;wide&#39;, title, placeholder, icon, inputMode = &#39;text&#39;, disabled = false</td></tr>
+<tr><td><code>ToastProvider</code></td><td><code>src/components/Toast/index.tsx</code></td><td>children</td></tr>
+<tr><td><code>Button</code></td><td><code>src/components/ui/index.tsx</code></td><td>variant = &#39;ghost&#39;, className = &#39;&#39;, type = &#39;button&#39;, ...rest</td></tr>
+<tr><td><code>Field</code></td><td><code>src/components/ui/index.tsx</code></td><td>label, hint, children</td></tr>
+<tr><td><code>TileButton</code></td><td><code>src/features/common/components/TileButton.tsx</code></td><td>tile, index, disabled = false, active = false, onClick, onMouseDown, onContextMenu</td></tr>
+<tr><td><code>CountRow</code></td><td><code>src/features/font-manage/components/CountRow.tsx</code></td><td>text, activeTag, onClear</td></tr>
+<tr><td><code>FilterPanel</code></td><td><code>src/features/font-manage/components/FilterPanel.tsx</code></td><td>categories, state, onChange</td></tr>
+<tr><td><code>FontHeader</code></td><td><code>src/features/font-manage/components/FontHeader.tsx</code></td><td>previewMode, onMenuSelect</td></tr>
+<tr><td><code>FontWeight</code></td><td><code>src/features/font-manage/components/FontWeight.tsx</code></td><td>font, current, onSelect</td></tr>
+<tr><td><code>PageFooter</code></td><td><code>src/features/font-manage/components/PageFooter.tsx</code></td><td>mode, onMode, onToggleText</td></tr>
+<tr><td><code>PreviewSetting</code></td><td><code>src/features/font-manage/components/PreviewSetting.tsx</code></td><td>mode, onMode, onToggleText</td></tr>
+<tr><td><code>PreviewText</code></td><td><code>src/features/font-manage/components/PreviewText.tsx</code></td><td>current, onApply</td></tr>
+<tr><td><code>Rating</code></td><td><code>src/features/font-manage/components/Rating.tsx</code></td><td>selected, onRate</td></tr>
+<tr><td><code>SearchRow</code></td><td><code>src/features/font-manage/components/SearchRow.tsx</code></td><td>keyword, onKeyword, categories, filterState, onFilterChange</td></tr>
+<tr><td><code>TagChip</code></td><td><code>src/features/font-manage/components/TagChip.tsx</code></td><td>text, active = false, variant = &#39;filter&#39;, onClick, onContextMenu</td></tr>
+<tr><td><code>TagContextMenu</code></td><td><code>src/features/font-manage/components/TagContextMenu.tsx</code></td><td>x, y, onRename, onRemove, onClose</td></tr>
+<tr><td><code>TagCreator</code></td><td><code>src/features/font-manage/components/TagCreator.tsx</code></td><td>mode, initial = &#39;&#39;, onSubmit, onClose</td></tr>
+<tr><td><code>TagFilter</code></td><td><code>src/features/font-manage/components/TagFilter.tsx</code></td><td>tags, error, activeTag, onSelect, onContext, onCreate</td></tr>
+<tr><td><code>TagInput</code></td><td><code>src/features/font-manage/components/TagInput.tsx</code></td><td>value, onChange, onEnter, variant = &#39;menu&#39;, placeholder = &#39;标签名称不超过8个字&#39;, maxLength = 8, clearable = true, autoFocus = false</td></tr>
+<tr><td><code>TagMenu</code></td><td><code>src/features/font-manage/components/TagMenu.tsx</code></td><td>x, y, tags, active, onToggle, onCreate, onClose</td></tr>
+<tr><td><code>CreateButtonPanel</code></td><td><code>src/features/font-panel/components/CreateButtonPanel.tsx</code></td><td>config, onChange, onApply</td></tr>
+<tr><td><code>FontColor</code></td><td><code>src/features/font-panel/components/FontColor.tsx</code></td><td>info, fonts, fontsLoading, defaults, onFontName, onSize, onLeading, onTracking, onColor, onStyle, onAlign</td></tr>
+<tr><td><code>FontHierarchy</code></td><td><code>src/features/font-panel/components/FontHierarchy.tsx</code></td><td>levels, presets, presetIndex, onApplyLevel, onUpdateLevels, onSelectPreset, onSavePreset, onCreatePreset, onRenamePreset, onDeletePreset</td></tr>
+<tr><td><code>FontQuick</code></td><td><code>src/features/font-panel/components/FontQuick.tsx</code></td><td>fonts, index, onSelect, onApply, onAdd, onRemove</td></tr>
+<tr><td><code>NumberField</code></td><td><code>src/features/font-panel/components/NumberField.tsx</code></td><td>value, title, icon, suffix, min, max, presetOpen = false, onCommit, onPreset</td></tr>
+<tr><td><code>PasteFontPanel</code></td><td><code>src/features/font-panel/components/PasteFontPanel.tsx</code></td><td>keeps, onChange, onReset</td></tr>
+<tr><td><code>SplitPanel</code></td><td><code>src/features/font-panel/components/SplitPanel.tsx</code></td><td>onSplit</td></tr>
+<tr><td><code>ImgColorDialog</code></td><td><code>src/features/style/components/ImgColorDialog.tsx</code></td><td>colors: initialColors, onApplyColor, onApplyGradient, onSaveSwatch, onSaveColorGroup, onSaveGradientGroup, onClose</td></tr>
+<tr><td><code>ItemView</code></td><td><code>src/features/style/components/ItemView.tsx</code></td><td>kind, item, groupIndex, itemIndex, editing, onApply, onContextMenu, onMouseDown, onDescribe, onRename, onCancelRename</td></tr>
+<tr><td><code>NewGroupRow</code></td><td><code>src/features/style/components/NewGroupRow.tsx</code></td><td>onCommit, onCancel</td></tr>
+<tr><td><code>StyleBottomBar</code></td><td><code>src/features/style/components/StyleBottomBar.tsx</code></td><td>onAddGroup, onImport, onExport</td></tr>
+</table>
+
+<h2>二、页面公共组件（<code>features/*/components</code>）</h2>
+<p class="lead">只服务一个页面、但被该页多处复用的组件。壳与按钮一律复用基础控件，不自己画表面。</p><h3 style="font-size:13px;margin:18px 0 4px">常用页 · 结构线框</h3>
+<div class="page-wire">
+  <div class="pw-nav">
+    <div class="pw-navbar"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pw-main">
+      <div class="pw-body">
+        <div class="pw-part"><b>.mm-common__zoom</b>（缩放区）
+          <div class="pw-row" style="margin-top:4px">
+            <span class="pw-cell" style="flex:0 0 72px">mm-btn 触发器 72</span>
+            <span class="pw-cell">档位 26</span><span class="pw-cell">档位 26</span><span class="pw-cell">档位 26</span>
+          </div>
+        </div>
+        <div class="pw-part"><b>.mm-common__flips</b>（<code>.mm-row--wrap</code>）—— 6 个 26×26 图标按钮，窄面板换行</div>
+        <div class="pw-line"></div>
+        <div class="pw-part"><b>.mm-common__grid</b> → <code>TileButton</code>
+          <div class="pw-row" style="margin-top:4px">
+            <div class="pw-tile">50×50</div><div class="pw-tile">50×50</div><div class="pw-tile">50×50</div><div class="pw-tile">50×50</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="lead">组件：<code>TileButton</code>（格子 50×50 + 图标 32）、<code>ReferencePanel</code> / <code>SpacingPanel</code>（抽屉内容，点图标开）</p>
+
+<h3 style="font-size:13px;margin:18px 0 4px">字体管理页 · 结构线框</h3>
+<div class="page-wire">
+  <div class="pw-nav">
+    <div class="pw-navbar"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pw-main">
+      <div class="pw-head"><span><b>FontHeader</b>（PageHeader 40）</span><span>更多 ▾</span></div>
+      <div class="pw-body">
+        <div class="pw-row"><span class="pw-cell" style="flex:1">SearchRow：输入框 26 + 放大镜 + 漏斗</span><span class="pw-cell" style="flex:0 0 40px">26</span></div>
+        <div class="pw-part"><b>TagFilter</b>（我的标签：标题 + 新建 + 折叠，容器 max-height 94）
+          <div class="pw-row" style="margin-top:4px"><span class="pw-cell" style="flex:0 0 60px">TagChip</span><span class="pw-cell" style="flex:0 0 60px">TagChip</span><span class="pw-cell" style="flex:0 0 60px">TagChip</span></div>
+        </div>
+        <div class="pw-part"><b>CountRow</b>（全部(N) / 标签名(N)）</div>
+        <div class="pw-part" style="flex:1"><b>.mm-font__list</b>（滚动区）→ <code>FontListItem</code>
+          <div style="margin-top:4px;border:1px solid var(--line);padding:4px">
+            <div class="pw-row"><span style="flex:1">家族名</span><span class="pw-cell" style="flex:0 0 60px">Rating 3★</span><span class="pw-cell" style="flex:0 0 30px">18</span></div>
+            <div style="margin-top:4px">预览文字</div>
+            <div class="pw-row" style="margin-top:4px"><span class="pw-cell">字重 18</span><span class="pw-cell">字重 18</span><span class="pw-cell">字重 18</span><span class="pw-cell">+N</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pw-foot"><span><b>PageFooter</b></span><span style="margin-left:auto">预览档位 · 预览文案</span></div>
+    </div>
+  </div>
+</div>
+<p class="lead">组件：<code>SearchRow</code>、<code>FilterPanel</code>（浮层）、<code>TagFilter</code>、<code>TagChip</code>、<code>CountRow</code>、<code>FontListItem</code>、<code>FontWeight</code>、<code>Rating</code>、<code>PageFooter</code></p>
+<h3 style="font-size:13px;margin:18px 0 4px">字体面板页 · 结构线框</h3>
+<div class="page-wire">
+  <div class="pw-nav">
+    <div class="pw-navbar"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pw-main">
+      <div class="pw-body">
+        <div class="pw-part"><b>.mm-font-panel__icons</b> → <code>.mm-row--wrap .mm-font-panel__icon-row</code>
+          <div class="pw-row" style="margin-top:4px"><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span></div>
+        </div>
+        <div class="pw-part"><b>FontColor</b>（字体属性）
+          <div class="pw-row" style="margin-top:4px"><span class="pw-cell" style="flex:1">家族下拉 26</span></div>
+          <div class="pw-row" style="margin-top:4px"><span class="pw-cell" style="flex:1">字重</span><span class="pw-cell" style="flex:0 0 26px">■</span><span class="pw-cell">粗</span><span class="pw-cell">斜</span><span class="pw-cell">Aa</span></div>
+          <div class="pw-row" style="margin-top:4px"><span class="pw-cell" style="flex:1">字号</span><span class="pw-cell" style="flex:1">行距</span><span class="pw-cell" style="flex:1">字距</span></div>
+        </div>
+        <div class="pw-part"><b>FontQuick</b>（整宽下拉 + 7 字重）<div class="pw-row" style="margin-top:4px"><span class="pw-cell" style="flex:1">下拉 26</span><span class="pw-cell">18</span><span class="pw-cell">18</span><span class="pw-cell">18</span><span class="pw-cell">+</span></div></div>
+        <div class="pw-part"><b>FontHierarchy</b>（预设下拉 + 6 级字号按钮）<div class="pw-row" style="margin-top:4px"><span class="pw-cell">1</span><span class="pw-cell">2</span><span class="pw-cell">3</span><span class="pw-cell">4</span><span class="pw-cell">5</span><span class="pw-cell">6</span></div></div>
+        <div class="pw-part"><b>CreateButtonPanel</b> · <b>PasteFontPanel</b>（6 字段）· <b>SplitPanel</b>（2×2）· <b>NumberField</b> · <b>DistributionHelp</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="lead">组件：<code>FontColor</code>、<code>FontQuick</code>、<code>FontHierarchy</code>、<code>CreateButtonPanel</code>、<code>PasteFontPanel</code>、<code>SplitPanel</code>、<code>NumberField</code>、<code>DistributionHelp</code></p>
+
+<h3 style="font-size:13px;margin:18px 0 4px">样式页 · 结构线框</h3>
+<div class="page-wire">
+  <div class="pw-nav">
+    <div class="pw-navbar"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pw-main">
+      <div class="pw-body" style="gap:4px">
+        <div class="pw-part"><b>.mm-style__warehouse</b> 36 高（<code>SelectBox</code> 通栏触发器）</div>
+        <div class="pw-row"><span class="pw-cell" style="flex:1">颜色</span><span class="pw-cell" style="flex:1">渐变</span><span class="pw-cell" style="flex:1">字体</span><span class="pw-cell" style="flex:1">样式</span></div>
+        <div class="pw-line"></div>
+        <div class="pw-part" style="flex:1"><b>.mm-style__list</b>（滚动区）→ <code>.mm-style__group</code>
+          <div style="margin-top:4px"><b>.mm-style__group-head</b> 22 高（组名 + 计数 + Chevron）</div>
+          <div class="pw-row" style="margin-top:4px"><span class="pw-sq">25</span><span class="pw-sq" style="width:50px;height:26px">50×26</span><span class="pw-sq" style="width:70px;height:44px">70×44</span><span class="pw-sq" style="width:26px;height:26px">26</span><span class="pw-cell" style="flex:0 0 26px">+</span></div>
+          <div style="margin-top:4px">ItemView：四库各一档尺寸；<code>NewGroupRow</code> 为末行输入</div>
+        </div>
+        <div class="pw-part"><b>.mm-style__describe</b>（悬停浮层：名称 + 两行 meta）</div>
+      </div>
+      <div class="pw-foot"><span><b>StyleBottomBar</b></span><span style="margin-left:auto">4×添加 · 导入 · 导出</span></div>
+    </div>
+  </div>
+</div>
+<p class="lead">组件：<code>ItemView</code>、<code>NewGroupRow</code>、<code>StyleBottomBar</code>、<code>ImgColorDialog</code>（取色弹层，浮在最上）</p>
+<h3 style="font-size:13px;margin:14px 0 4px">常用页（3）</h3>
+<table>
+<tr><th>组件</th><th>职责</th></tr>
+<tr><td><code>TileButton</code></td><td>一个功能格（方块 50×50 + 图标 32 + 文字），常用页网格的基本单元</td></tr>
+<tr><td><code>ReferencePanel</code></td><td>参考线面板：输入宽度生成安全区 / 清除参考线 / 基于参考线切片</td></tr>
+<tr><td><code>SpacingPanel</code></td><td>按间距分布面板：间距输入 + 水平/垂直 + 两个单选</td></tr>
+</table>
+<h3 style="font-size:13px;margin:14px 0 4px">字体管理页（16）</h3>
+<table>
+<tr><th>组件</th><th>职责</th></tr>
+<tr><td><code>FontHeader</code></td><td>页头：标题 + 「更多」菜单，壳用 <code>PageHeader</code></td></tr>
+<tr><td><code>SearchRow</code></td><td>搜索行：输入框 + 框内放大镜 + 框外漏斗触发器（角标 = 已选条件数）</td></tr>
+<tr><td><code>FilterPanel</code></td><td>筛选面板：按分类顺序渲染，每组第一项「全部」清空该组</td></tr>
+<tr><td><code>TagFilter</code></td><td>我的标签：标题 + 新建 + 折叠（容器 max-height 94）</td></tr>
+<tr><td><code>TagChip</code></td><td>标签 chip：我的标签与标签弹层共用</td></tr>
+<tr><td><code>TagInput</code></td><td>标签名输入框：TagMenu 与 TagCreator 共用一份</td></tr>
+<tr><td><code>TagMenu</code></td><td>标签弹层：标题 / 输入框 / 已添加(N) / 全部(N)</td></tr>
+<tr><td><code>TagCreator</code></td><td>新建 / 重命名标签：居中弹窗 + 输入 + 取消/确定</td></tr>
+<tr><td><code>TagContextMenu</code></td><td>标签右键菜单：删除 / 重命名，走公共 <code>ContextMenu</code></td></tr>
+<tr><td><code>CountRow</code></td><td>计数行：全部(N) / 标签名(N)，位于标签与列表之间</td></tr>
+<tr><td><code>FontListItem</code></td><td>列表项：家族名 + 操作区 / 预览 / 字重行（<code>memo</code>）</td></tr>
+<tr><td><code>FontWeight</code></td><td>字重选择：最多 7 个字形 + 第 8 个数量 chip</td></tr>
+<tr><td><code>Rating</code></td><td>3 星收藏：hover 预览到第几星，点同一档取消</td></tr>
+<tr><td><code>PreviewText</code></td><td>自定义预览文案：字号图标 + 输入框 + 应用</td></tr>
+<tr><td><code>PreviewSetting</code></td><td>底栏预览设置：眼睛（5 档）+ Aa</td></tr>
+<tr><td><code>PageFooter</code></td><td>页底栏：两个图标，壳用 <code>BottomBar</code></td></tr>
+</table>
+<h3 style="font-size:13px;margin:14px 0 4px">字体面板页（8）</h3>
+<table>
+<tr><th>组件</th><th>职责</th></tr>
+<tr><td><code>FontColor</code></td><td>字体属性：家族 → 字重 + 颜色 → 样式行 → 字号/行距 → 字距</td></tr>
+<tr><td><code>FontQuick</code></td><td>字体快选：整宽下拉（项内带删除）+ 最多 7 个字重图标</td></tr>
+<tr><td><code>FontHierarchy</code></td><td>层级字号：预设下拉 → 6 级字号按钮 → 编辑器</td></tr>
+<tr><td><code>CreateButtonPanel</code></td><td>生成按钮面板：任一改动立即重新生成</td></tr>
+<tr><td><code>PasteFontPanel</code></td><td>粘贴文字属性：6 个字段决定粘贴时保留什么</td></tr>
+<tr><td><code>SplitPanel</code></td><td>拆分文本：2×2 四个按钮</td></tr>
+<tr><td><code>NumberField</code></td><td>数字输入：Enter / 失焦提交，输入法选词的 Enter 不算</td></tr>
+<tr><td><code>DistributionHelp</code></td><td>分布弹窗里的「高级用法」折叠块</td></tr>
+</table>
+<h3 style="font-size:13px;margin:14px 0 4px">样式页（4）</h3>
+<table>
+<tr><th>组件</th><th>职责</th></tr>
+<tr><td><code>ItemView</code></td><td>样式库单项：四库尺寸各一档（25×25 / 50×26 / 70×44 / 26×26）</td></tr>
+<tr><td><code>NewGroupRow</code></td><td>新建分组的占位行：只渲染输入框，提交后由父级写库</td></tr>
+<tr><td><code>StyleBottomBar</code></td><td>页底栏：四个「添加×分组」+ 导入 + 导出，壳用 <code>BottomBar</code></td></tr>
+<tr><td><code>ImgColorDialog</code></td><td>图片取色弹层：色圈列表 + 渐变条，左键应用右键删</td></tr>
+</table>
+<h3 style="font-size:13px;margin:18px 0 4px">浮层 / 弹窗线框（8 个，点开才出现）</h3>
+<div class="wire">
+  <figure class="w"><figcaption>TagMenu 标签弹层</figcaption>
+    <div class="pop" style="width:100%"><b>标签</b><span class="field" style="margin:4px 0">输入标签名</span><div style="font-size:11px;padding:2px 6px">已添加（2）</div><div class="pw-row" style="padding:0 6px 4px"><span class="chip">客户A</span><span class="chip">海报</span></div><div style="font-size:11px;padding:2px 6px">全部（5）</div><div class="pw-row" style="padding:0 6px 4px"><span class="chip">客户B</span><span class="chip">标题</span></div></div>
+    <p>壳 <code>.mm-popover</code> · chip 高 18 · 输入框复用 <code>Input</code></p></figure>
+  <figure class="w"><figcaption>TagCreator 新建标签</figcaption>
+    <div class="pop" style="width:100%"><b>新建标签</b><span class="field" style="margin:4px 0">标签名</span><div class="pw-row" style="justify-content:flex-end"><span class="btn">取消</span><span class="btn">确定</span></div></div>
+    <p>居中弹窗（<code>.mm-modal-mask</code>）· 空值拦截 · Enter 提交</p></figure>
+  <figure class="w"><figcaption>TagContextMenu 标签右键</figcaption>
+    <div class="pop" style="width:120px"><b>重命名</b><b>删除</b></div>
+    <p>走公共 <code>ContextMenu</code> · 项无定高</p></figure>
+  <figure class="w"><figcaption>FilterPanel 筛选面板</figcaption>
+    <div class="pop" style="width:100%"><div style="font-size:11px;padding:2px 6px">分类</div><div class="pw-row" style="padding:0 6px 4px"><span class="chip">全部</span><span class="chip">衬线</span><span class="chip">黑体</span></div><div class="pw-row" style="padding:0 6px 4px"><span class="chip">语言</span><span class="chip">中文</span><span class="chip">英文</span></div></div>
+    <p>每组第一项「全部」清空该组 · 角标 = 已选条件数</p></figure>
+  <figure class="w"><figcaption>PreviewSetting 预览设置</figcaption>
+    <div class="pw-row"><span class="pw-cell" style="flex:0 0 26px">◉</span><span class="pw-cell" style="flex:0 0 26px">Aa</span><span class="pw-cell" style="flex:1">预览文案</span></div>
+    <p>底栏内的两个图标（眼睛 5 档 + Aa 输入）· 26×26</p></figure>
+  <figure class="w"><figcaption>PreviewText 预览文案</figcaption>
+    <div class="pw-row"><span class="pw-cell" style="flex:0 0 26px">A</span><span class="pw-cell" style="flex:1">输入预览文字</span><span class="pw-cell" style="flex:0 0 40px">应用</span></div>
+    <p>空值按钮置灰 · 输入框复用 <code>Input</code></p></figure>
+  <figure class="w"><figcaption>ImgColorDialog 取色弹层</figcaption>
+    <div class="pop" style="width:100%"><b>提取的颜色</b><div class="pw-row" style="padding:2px 6px"><span class="circle"></span><span class="circle"></span><span class="circle"></span><span class="circle"></span></div><div class="pw-row" style="padding:2px 6px"><span class="btn" style="flex:1">保存到颜色</span><span class="btn" style="flex:1">保存到色板</span></div><div class="hr"></div><b>提取的渐变色</b><div class="pw-row" style="padding:2px 6px"><span class="gradbar"></span><span class="gradbar"></span></div></div>
+    <p>色圈 18 · 渐变条 42×22 · 左键应用右键删</p></figure>
+  <figure class="w"><figcaption>DistributionHelp 高级用法</figcaption>
+    <div class="rowline"><span>高级用法</span><span>▾</span></div>
+    <div class="pw-part" style="margin-top:4px">展开后的说明文字</div>
+    <p>折叠行复用 <code>Collapse</code> 的交互（点整行开合）</p></figure>
+</div>
+<h2>三、应用外壳（<code>app/</code>）</h2>
+<table>
+<tr><th>文件</th><th>样式</th><th>职责</th></tr>
+<tr><td><code>layout.tsx</code></td><td><code>layout.css</code></td><td>面板外壳：导航 + 头部 + 内容区；<code>.mm-layout</code> 撑 100vh</td></tr>
+<tr><td><code>nav-bar.tsx</code></td><td><code>nav-bar.css</code></td><td>侧边导航 40 宽：只读 <code>nav-config</code>，未实现项点击提示</td></tr>
+<tr><td><code>providers.tsx</code></td><td><span class="tag">无 CSS</span></td><td>全局 Provider（Toast / Loading / Confirm）</td></tr>
+<tr><td><code>router.tsx</code></td><td><span class="tag">无 CSS</span></td><td>路由注册，页面一律 <code>React.lazy</code></td></tr>
+<tr><td><code>layer-watcher.tsx</code></td><td><span class="tag">无 CSS</span></td><td>唯一常驻图层订阅者：800ms 轮询 + 事件快路径</td></tr>
+</table>
+<h2>四、交互原语（<code>hooks/</code>）</h2>
+<p class="lead">控件的行为都从这里取，不在组件里各写一份监听。带【范本】的是唯一写法。</p>
+<table>
+<tr><th>hook</th><th>作用</th><th>关键约束</th></tr>
+<tr><td><code>useDismiss</code></td><td>点外部 / Esc 关闭浮层</td><td>全项目唯一 <code>document</code> mousedown + keydown 监听；<code>IconPanel</code> 刻意不挂（点外不关）</td></tr>
+<tr><td><code>useFloatingPosition</code></td><td>浮层定位：算位置、夹取、可选翻转</td><td>唯一锚点矩形入口；<code>update()</code> 返回锚点矩形，对齐宽度也用它</td></tr>
+<tr><td><code>floating-position</code></td><td>定位纯函数</td><td>零 DOM 依赖，可单测</td></tr>
+<tr><td><code>useFocusTrap</code></td><td>模态弹窗 Tab 循环 + 关闭还原焦点</td><td>只给模态用（InputDialog / Confirm）</td></tr>
+<tr><td><code>useDraft</code></td><td>输入框里的本地值（受控草稿）</td><td>外部值变了才回填，渲染期收敛</td></tr>
+<tr><td><code>usePersisted</code></td><td>会记住的 state（界面偏好）</td><td>走 <code>core/prefs</code>，key 强类型</td></tr>
+<tr><td><code>useShortcut</code></td><td>全局字母快捷键（导航切页）</td><td>与 <code>useDismiss</code> 分工：它管常驻字母键，排除打字中与修饰键</td></tr>
+<tr><td><code>useLongPressDrag</code></td><td>300ms 长按拖拽 + 克隆占位 + 浮层跟手</td><td>拖拽期间挂 <code>.mm-drag-float</code> 层级</td></tr>
+<tr><td><code>usePagedList</code></td><td>列表分片：每页 30 + 触底追加</td><td>筛选变化回第一屏</td></tr>
+<tr><td><code>useInfiniteScroll</code></td><td>触底加载</td><td>全项目唯一 <code>IntersectionObserver</code></td></tr>
+<tr><td><code>useRunCommand</code></td><td>执行一条命令：包 loading + 失败提示 + 原因留痕</td><td>code / detail 进日志，人话进 toast；页面不再各写一份</td></tr>
+<tr><td><code>useToast</code></td><td>提示条口</td><td>模块级单例，不读 context</td></tr>
+<tr><td><code>useLoading</code></td><td>全屏加载口</td><td>模块级单例；文案栈</td></tr>
+<tr><td><code>input-method-enter</code></td><td>输入法选词时的 Enter 判定（<code>enterSubmit</code>）</td><td>判据 + <code>preventDefault</code> + 执行三件事一处</td></tr>
+</table>
+<h2>五、公共布局原语（<code>styles/global.css</code>）</h2>
+<p class="lead">跨组件 / 跨页面复用的布局规则只有这一处；页面与组件只写自己的差异。</p>
+<table>
+<tr><th>#</th><th>选择器</th><th>作用</th><th>合并掉的重复</th></tr>
+<tr><td>1</td><td><code>*</code></td><td>全局 <code>box-sizing: border-box</code></td><td>各页不再写</td></tr>
+<tr><td>2</td><td><code>html, body, #root</code></td><td>撑满视口高度</td><td>—</td></tr>
+<tr><td>3</td><td><code>body</code></td><td>字体、字号、禁止选中</td><td>—</td></tr>
+<tr><td>4</td><td><code>button</code></td><td>字体继承</td><td>—</td></tr>
+<tr><td>5</td><td><code>.mm-popover</code></td><td>浮层壳：定位变量 + 描边 + 圆角 + 层级</td><td>下拉 / 右键菜单 / 标签弹层 / 筛选面板</td></tr>
+<tr><td>6</td><td><code>.mm-modal-mask</code></td><td>居中弹窗遮罩</td><td>Confirm、图片取色弹层</td></tr>
+<tr><td>7</td><td><code>.mm-drag-float</code></td><td>拖拽期间层级</td><td>hook 内联写死 z-index</td></tr>
+<tr><td>8</td><td><code>.mm-check, .mm-radio</code></td><td>勾选 / 单选根：行内排列 + 点击态 + 收缩</td><td>原 2 份</td></tr>
+<tr><td>9</td><td><code>.mm-check__input, .mm-radio__input</code></td><td>隐藏原生 input（只留语义与焦点）</td><td>原 2 份</td></tr>
+<tr><td>10</td><td><code>.mm-check__label, .mm-radio__label</code></td><td>标签单行省略</td><td>原 2 份</td></tr>
+<tr><td>11</td><td><code>.mm-collapse__title, .mm-select-box__label</code></td><td>吃掉剩余宽度的单行省略</td><td>原 2 份</td></tr>
+<tr><td>12</td><td><code>.mm-common / .mm-font / .mm-font-panel / .mm-settings / .mm-style</code></td><td>页面根容器：撑满 + 纵向排列</td><td>原 5 份</td></tr>
+<tr><td>13</td><td><code>.mm-font__list, .mm-style__list</code></td><td>长列表滚动区</td><td>原 2 份</td></tr>
+<tr><td>14</td><td><code>.mm-bottom-bar__divider, .mm-font-panel__divider</code></td><td>竖向分隔线 1px × 13</td><td>原 2 份</td></tr>
+<tr><td>15</td><td><code>.mm-imgcolor__hr, .mm-menu__hr</code></td><td>横向分隔线（只留底边）</td><td>原 2 份</td></tr>
+<tr><td>16</td><td><code>.mm-row</code> / <code>.mm-row--wrap</code></td><td>一行两端对齐 / 可换行</td><td>原 7 份</td></tr>
+<tr><td>17</td><td><code>::-webkit-scrollbar*</code></td><td>滚动条（Chromium 103 只有 webkit 伪元素可用）</td><td>各页不再写</td></tr>
+</table>
+
+<h2>六、页面</h2>
+<table>
+<tr><th>页面</th><th>根类</th><th>样式文件</th><th>说明</th></tr>
+<tr><td>首页</td><td><code>.mm-home</code></td><td><code>HomePage.css</code></td><td>诊断与日志（开发用），按钮已挂 <code>.mm-btn</code></td></tr>
+<tr><td>常用页</td><td><code>.mm-common</code></td><td><code>CommonPage.css</code> + <code>components/panel.css</code> + <code>components/tile-button.css</code></td><td>格子 50×50；翻转行用 <code>.mm-row--wrap</code></td></tr>
+<tr><td>样式页</td><td><code>.mm-style</code></td><td><code>StylePage.css</code> + <code>components/img-color-dialog.css</code></td><td>仓库条 36 / tab 线 20 / 组标题 22；四库格子尺寸各一档</td></tr>
+<tr><td>字体管理页</td><td><code>.mm-font</code></td><td><code>FontManagePage.css</code> + <code>FontList.css</code> + <code>FontPopovers.css</code></td><td>搜索行 / 筛选 / 标签 / 列表头</td></tr>
+<tr><td>字体面板页</td><td><code>.mm-font-panel</code></td><td><code>FontPanelPage.css</code></td><td>图标行 / 抽屉 / 字体快选 / 层级字号 / 拆分 / 生成 / 粘贴 / 数字输入</td></tr>
+<tr><td>设置页</td><td><code>.mm-settings</code></td><td><code>SettingsPage.css</code></td><td>—</td></tr>
+</table>
+
+<h2>七、图标与 token</h2>
+<h3 style="font-size:13px;margin:14px 0 4px">图标（<code>components/icons</code>）</h3>
+<ul>
+  <li>sprite 共 <b>189</b> 个 symbol（<code>src/assets/icons-sprite.svg</code>），由 <code>tools/build-icons.mjs</code> 生成，不手改</li>
+  <li>用法：<code>&lt;Icon name="icon-nav_yangshiku" size={16} /&gt;</code>；尺寸取 <code>--mm-icon-md</code>(16) / <code>--mm-icon-lg</code>(24)</li>
+  <li>命名：导航类 <code>icon-nav_*</code>（如 <code>icon-nav_yangshiku</code>、<code>icon-nav_zitimianban</code>），其余按功能命名</li>
+</ul>
+<h3 style="font-size:13px;margin:14px 0 4px">结构 token（<code>styles/tokens.css</code>，102 个）</h3>
+<table>
+<tr><th>类别</th><th>数量</th><th>代表值</th></tr>
+<tr><td>尺寸</td><td>74</td><td><code>--mm-control-h</code> 26 · <code>--mm-icon-md</code> 16 · <code>--mm-header-h</code> 40 · <code>--mm-check-size</code> 12</td></tr>
+<tr><td>字号 / 行高</td><td>8</td><td><code>--mm-font-xs</code> 11 · <code>--mm-font-sm</code> 12 · <code>--mm-font-md</code> 13</td></tr>
+<tr><td>层级</td><td>7</td><td><code>--mm-z-dropdown</code> 1000 · <code>--mm-z-tooltip</code> 1100 · <code>--mm-z-toast-top</code> 1200</td></tr>
+<tr><td>间距</td><td>6</td><td><code>--mm-space-1</code> 4 · <code>-2</code> 8 · <code>-3</code> 12 · <code>-4</code> 16 · <code>tight</code> 2 · <code>inline</code> 6</td></tr>
+<tr><td>圆角</td><td>5</td><td><code>--mm-radius-sm</code> 2 · <code>-md</code> 4 · <code>-pill</code> 999</td></tr>
+<tr><td>动效</td><td>2</td><td><code>--mm-dur-fast</code> 120ms · <code>--mm-spin-duration</code> 0.8s</td></tr>
+</table>
+
+<h2>八、数据与命令层</h2>
+<p class="lead">控件只读 store 的投影，写操作一律走 commands；控件不直连 repo，也不自己发请求。</p>
+<table>
+<tr><th>层</th><th>模块</th><th>职责</th></tr>
+<tr><td rowspan="6">store（6 切片）</td><td><code>app</code></td><td>切片写法范本（导航/图层状态）</td></tr>
+<tr><td><code>common-use</code></td><td>常用页只读投影：读 repo + prefs，不 import commands</td></tr>
+<tr><td><code>font-set</code></td><td>字面板切片：设置 / 快捷字体 / 层级 / 最近字体只读投影</td></tr>
+<tr><td><code>font</code></td><td>字体切片：读 repo、存界面偏好</td></tr>
+<tr><td><code>style-library</code></td><td>样式库：四类库各自保留三态结果</td></tr>
+<tr><td><code>text</code></td><td>文字属性快照：唯一真相是 PS 文档，这里存最近一次读数</td></tr>
+<tr><td rowspan="4">commands（4 个）</td><td><code>common-use</code></td><td>常用页命令 19 条（父子重叠一律走这里）</td></tr>
+<tr><td><code>font-set</code></td><td>字面板命令 20 条（不建注册表，直接 import）</td></tr>
+<tr><td><code>font</code></td><td>字体：系统字体列表 / 应用字面 / 评分 / 标签 CRUD</td></tr>
+<tr><td><code>style</code></td><td>样式命令：组合原子能力，只返回 <code>Result</code></td></tr>
+</table>
+<h3 style="font-size:13px;margin:14px 0 4px">定高清单（约 83 行，按用途分组）</h3>
+<table>
+<tr><th>分组</th><th>条数</th><th>说明</th></tr>
+<tr><td>控件高 <code>--mm-control-h</code></td><td><b>16</b></td><td>按钮 / 输入框 / 下拉触发器与选项 / 预设按钮 / 数字框 —— 最集中的一档（26）</td></tr>
+<tr><td>分隔线 <code>--mm-border-w</code></td><td>4</td><td>1px 竖线 / 横线</td></tr>
+<tr><td>缩略图与色块</td><td>10</td><td><code>--mm-gradient-h</code> 3 · <code>--mm-font-card-h</code> 3 · <code>--mm-swatch-h</code> 2 · <code>--mm-style-thumb</code> 2</td></tr>
+<tr><td>小方块</td><td>6</td><td><code>--mm-icon-btn-size</code> 2 · <code>--mm-check-size</code> 2 · <code>--mm-tag-chip-w</code> 2</td></tr>
+<tr><td>横条类（页头 / 底栏 / 列表头 / 组标题 / tab 线 / 折叠行 / 导航 / 仓库条）</td><td>约 20</td><td><code>header-h</code> · <code>bottom-bar-h</code> 2 · <code>list-head-h</code> 2 · <code>group-head-h</code> · <code>tab-line-h</code> · <code>collapse-h</code> · <code>warehouse-h</code> · <code>row-head-h</code> · <code>nav-w</code> · <code>nav-item-sub</code> · <code>verline-h</code> · <code>tag-strip-h</code> · <code>tag-collapse-h</code> 等</td></tr>
+<tr><td>字形 / 计数 / 角标 / 图标 / 滚动条 / 间距微调</td><td>约 13</td><td><code>weight-glyph</code> · <code>weight-count</code> · <code>filter-badge</code> · <code>icon-md/lg</code> · <code>scrollbar-w</code> · <code>space-*</code> 4 · <code>common-tile</code> · <code>common-mark</code> · <code>spin-size</code> · <code>imgcolor-grad-h</code> · <code>collapse-arrow-h</code></td></tr>
+<tr><td>面板上限（max-height）</td><td>3</td><td><code>filter-panel-max-h</code> · <code>select-panel-max-h</code> · <code>log-max-h</code></td></tr>
+<tr><td>撑满：<code>100%</code> / <code>100vh</code></td><td>7</td><td><code>.mm-layout</code> 100vh · 页面根 / 列表 / 内容区 100%（不删，撑满靠它）</td></tr>
+<tr><td><code>min-height: 0</code></td><td>3</td><td>flex 子项允许收缩（公共原语里，不删）</td></tr>
+<tr><td><code>height: auto</code></td><td>1</td><td><code>.mm-inline-edit</code> 覆盖 <code>.mm-input</code> 定高（不删）</td></tr>
+</table>
+<p class="lead">判定权在你：<b>「横条类」那 20 条</b>是「一排一行、影响布局」的候选；<code>100%</code> / <code>min-height:0</code> / <code>auto</code> 这 11 条删了会塌版，不建议动。</p>
+<h2>九、当前形态（可复核的事实）</h2>
+<p class="lead">这节是<b>缺口清单</b>，不是成绩单：每一条「0」都代表一类视觉待补。</p>
+<ul>
+  <li>颜色声明 <b>0</b> 条；CSS 里色值字面量仅 <b>5</b> 处，全在注释</li>
+  <li><code>margin</code> / <code>padding</code> 声明 <b>0</b> 条</li>
+  <li><code>gap</code> 声明 <b>0</b> 条（gap 初始值即 0，原 60 条冗余已删）</li>
+  <li><code>border-radius</code> / <code>box-shadow</code> / <code>transition</code> / <code>animation</code> 声明 <b>0</b> 条</li>
+  <li>TSX 内联样式 <b>0</b> 处（原 11 处已删，连带删掉 3 个零引用模块）</li>
+  <li>空规则块 <b>0</b> 个（原 76 个）</li>
+  <li>跨文件重复声明组 <b>0</b> 组（原 13 组）</li>
+  <li>token <b>102</b> 个，全部为结构（间距 / 尺寸 / 字号 / 圆角 / 层级 / 动效）</li>
+  <li><code>state-hint.css</code> 只剩 1 行注释、<b>0 条声明</b>；<code>IconPanel</code> 已无 CSS 文件</li>
+</ul>
+
+<h2>十、改造清单（逐文件缺口，按装配顺序）</h2>
+<p class="lead">缺口列 <code>色/距/角/影/动</code> = 颜色 / 间距 / 圆角 / 阴影 / 动效 的声明条数，顺序固定。<b>34 个文件这五项全是 0</b>，改法一律是「按 <code>src/styles/tokens.css</code> 取变量补回来」。<b>效果参照</b>指向「零」节对应图；行 = 文件行数，声明 = 现存声明条数（只剩结构与尺寸）。</p>
+<table>
+<tr><th>文件</th><th>行</th><th>声明</th><th>色/距/角/影/动</th><th>效果参照</th></tr>
+<tr><td colspan="5" style="background:#fafafa"><b>Token · 唯一允许写原始值与 px</b></td></tr>
+<tr><td><code>src/styles/tokens.css</code></td><td>159</td><td>102</td><td>0/0/0/0/0</td><td>本次要新建色阶与语义色（现只有结构 token）</td></tr>
+<tr><td colspan="5" style="background:#fafafa"><b>公共原语 · styles/global.css</b></td></tr>
+<tr><td><code>src/styles/global.css</code></td><td>90</td><td>35</td><td>0/0/0/0/0</td><td>浮层壳 <code>.mm-popover</code> / 遮罩 <code>.mm-modal-mask</code> / 分隔线（「五」节 17 条）</td></tr>
+<tr><td colspan="5" style="background:#fafafa"><b>基础控件 · components（19 个有 CSS）</b></td></tr>
+<tr><td><code>src/components/ui/ui.css</code></td><td>6</td><td>2</td><td>0/0/0/0/0</td><td>Button / Input（「零」0.1）</td></tr>
+<tr><td><code>src/components/CheckBox/check-box.css</code></td><td>14</td><td>9</td><td>0/0/0/0/0</td><td>CheckBox 四态</td></tr>
+<tr><td><code>src/components/RadioButton/radio-button.css</code></td><td>6</td><td>2</td><td>0/0/0/0/0</td><td>RadioButton 四态</td></tr>
+<tr><td><code>src/components/SelectBox/select-box.css</code></td><td>47</td><td>22</td><td>0/0/0/0/0</td><td>下拉（唯一实现：选项列表）</td></tr>
+<tr><td><code>src/components/TextField/text-field.css</code></td><td>21</td><td>8</td><td>0/0/0/0/0</td><td>Input 的定宽外壳</td></tr>
+<tr><td><code>src/components/IconButton/icon-button.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>IconButton</td></tr>
+<tr><td><code>src/components/Chevron/chevron.css</code></td><td>5</td><td>1</td><td>0/0/0/0/0</td><td>Chevron</td></tr>
+<tr><td><code>src/components/Collapse/collapse.css</code></td><td>22</td><td>9</td><td>0/0/0/0/0</td><td>Collapse</td></tr>
+<tr><td><code>src/components/PageHeader/page-header.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>PageHeader</td></tr>
+<tr><td><code>src/components/BottomBar/bottom-bar.css</code></td><td>8</td><td>4</td><td>0/0/0/0/0</td><td>BottomBar</td></tr>
+<tr><td><code>src/components/ContextMenu/menu.css</code></td><td>10</td><td>3</td><td>0/0/0/0/0</td><td>ContextMenu</td></tr>
+<tr><td><code>src/components/Confirm/confirm.css</code></td><td>6</td><td>2</td><td>0/0/0/0/0</td><td>Modal（确认类）</td></tr>
+<tr><td><code>src/components/InputDialog/input-dialog.css</code></td><td>31</td><td>12</td><td>0/0/0/0/0</td><td>Modal（输入类）</td></tr>
+<tr><td><code>src/components/InlineEdit/inline-edit.css</code></td><td>7</td><td>3</td><td>0/0/0/0/0</td><td>就地重命名</td></tr>
+<tr><td><code>src/components/Toast/Toast.css</code></td><td>17</td><td>10</td><td>0/0/0/0/0</td><td>Toast 四种</td></tr>
+<tr><td><code>src/components/Loading/Loading.css</code></td><td>10</td><td>6</td><td>0/0/0/0/0</td><td>Spin / Loading</td></tr>
+<tr><td><code>src/components/Spin/spin.css</code></td><td>21</td><td>8</td><td>0/0/0/0/0</td><td>Spin / Loading</td></tr>
+<tr><td><code>src/components/StateHint/state-hint.css</code></td><td>1</td><td><b>0</b></td><td>0/0/0/0/0</td><td>EmptyState（文件只剩 1 行注释）</td></tr>
+<tr><td><code>src/components/StateMask/state-mask.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>区域遮罩</td></tr>
+<tr><td colspan="5" style="background:#fafafa"><b>应用外壳 · app</b></td></tr>
+<tr><td><code>src/app/layout.css</code></td><td>31</td><td>15</td><td>0/0/0/0/0</td><td>整页骨架（导航 + 内容区）</td></tr>
+<tr><td><code>src/app/nav-bar.css</code></td><td>36</td><td>22</td><td>0/0/0/0/0</td><td>侧边导航</td></tr>
+<tr><td colspan="5" style="background:#fafafa"><b>页面公共组件 · features</b></td></tr>
+<tr><td><code>src/features/common/CommonPage.css</code></td><td>76</td><td>30</td><td>0/0/0/0/0</td><td>常用页</td></tr>
+<tr><td><code>src/features/common/components/tile-button.css</code></td><td>41</td><td>19</td><td>0/0/0/0/0</td><td>常用页格子 50×50</td></tr>
+<tr><td><code>src/features/common/components/panel.css</code></td><td>24</td><td>8</td><td>0/0/0/0/0</td><td>抽屉内容</td></tr>
+<tr><td><code>src/features/font-manage/FontManagePage.css</code></td><td>125</td><td>55</td><td>0/0/0/0/0</td><td>字体管理页</td></tr>
+<tr><td><code>src/features/font-manage/FontList.css</code></td><td>95</td><td>46</td><td>0/0/0/0/0</td><td>字体列表</td></tr>
+<tr><td><code>src/features/font-manage/FontPopovers.css</code></td><td>43</td><td>18</td><td>0/0/0/0/0</td><td>浮层 / 弹窗线框（8 个）</td></tr>
+<tr><td><code>src/features/font-panel/FontPanelPage.css</code></td><td>202</td><td>76</td><td>0/0/0/0/0</td><td>字体面板页</td></tr>
+<tr><td><code>src/features/style/StylePage.css</code></td><td>117</td><td>51</td><td>0/0/0/0/0</td><td>样式页</td></tr>
+<tr><td><code>src/features/style/components/img-color-dialog.css</code></td><td>14</td><td>4</td><td>0/0/0/0/0</td><td>取色弹层</td></tr>
+<tr><td><code>src/features/settings/SettingsPage.css</code></td><td>24</td><td>8</td><td>0/0/0/0/0</td><td>设置页</td></tr>
+<tr><td><code>src/features/home/HomePage.css</code></td><td>27</td><td>8</td><td>0/0/0/0/0</td><td>首页（诊断）</td></tr>
+</table>
+
+<h3 style="font-size:13px;margin:18px 0 4px">原版有、我方无公共件（5 个，加之前先决定要不要建）</h3>
+<table>
+<tr><th>组件</th><th>原版形态</th><th>我方现状</th></tr>
+<tr><td>Segment / Tabs</td><td>30 高分段控件 + 等分 tab（0.1 图）</td><td>无公共件，页面各自写</td></tr>
+<tr><td>AnchorGrid</td><td>18×18 序号格，两行各 6 个</td><td>无</td></tr>
+<tr><td>TaskHud</td><td>260 宽长任务浮层 + 进度条</td><td>无（长任务只有 Spin）</td></tr>
+<tr><td>BackTop</td><td>26×26 常显回到顶部</td><td>无</td></tr>
+<tr><td>SettingsRow</td><td>设置行，唯一间距出口 <code>--set-gap</code></td><td>无（页面各写 <code>u-row</code>）</td></tr>
+</table>
+<p class="lead">按 <code>CONVENTIONS</code> §7「表里只列仓里真有的公共件」，这 5 个要建就必须同时登记 <code>GOVERNANCE</code> §4.1；不建则页面继续自写，但要在评审里说明。</p>
+
+<h3 style="font-size:13px;margin:22px 0 4px">箭头：已收敛为 1 套（2026-10-29）</h3>
+<p class="lead">改动前：4 套调用、2 个图标（<code>iconzhankaizhedie</code> 的 <code>&gt;</code> 形 + <code>iconxiala</code> 的实心三角）、4 种尺寸、<b>0 套有旋转</b>——CSS 里 <code>rotate(</code> 一处都没有，收起和展开长得一样。</p>
+<p class="lead">现在：<b>全仓只有 <code>&lt;Chevron&gt;</code> 一个箭头件</b>，图标统一 <code>iconzhankaizhedie</code>（<code>&gt;</code> 形）。</p>
+<table>
+<tr><th>#</th><th>场景</th><th>写法</th><th>尺寸</th></tr>
+<tr><td>1</td><td>有开合状态：折叠行 / 组头 / 新建分组 / 高级用法 / 数字框预设 / 标签展开</td><td><code>&lt;Chevron open={open} /&gt;</code>，收起转 <code>rotate(-90deg)</code></td><td>8 / 9 / 12</td></tr>
+<tr><td>2</td><td>弹层指示：下拉触发器 / 常用页缩放区</td><td><code>&lt;Chevron /&gt;</code>（不传 <code>open</code>），恒朝下、不旋转</td><td>12</td></tr>
+</table>
+<p class="lead"><b>已删净</b>：<code>SelectBox</code> 的 <code>arrowIcon</code> / <code>arrowSize</code> 参数、<code>mm-select-box__arrow</code>、<code>mm-font-panel__caret</code>、<code>mm-font-panel__number-caret--open</code>、<code>mm-common__zoom-arrow</code>。<code>iconxiala</code> 不再有调用（图标定义留在 sprite 里）。</p>
+<p class="lead"><b>复核</b>：<code>rg "rotate\(" src</code> 只剩 <code>chevron.css</code> 一处；<code>rg "arrowIcon|arrowSize" src</code> 为 0；<code>npm run check</code> 全绿（37 文件 / 313 测试）。</p>
+<p class="lead"><b>遗留（下一步）</b>：尺寸还有 8 / 9 / 12 三档，与 §7 规则 9「同页同类唯一」不符，需要定一档；<code>mm-collapse__arrow</code> 保留为 20×13 的箭头槽位（token <code>--mm-collapse-arrow-w/h</code>）。</p>
+
+<footer>
+  生成于 2026-10-29 · 缺口统计口径：按属性名逐文件统计 <code>color|background|border-color</code> / <code>margin|padding|gap</code> / <code>border-radius</code> / <code>box-shadow</code> / <code>transition|animation</code> 的声明条数 · 本页只读，不参与构建
+</footer>
+</body>
+</html>

@@ -78,7 +78,7 @@ export function InputDialog({
         onClick={stopClickPropagation}
         onKeyDown={onKeyDown}
       >
-        <div className="mm-input-dialog__head">
+        <div className="mm-row mm-input-dialog__head">
           <span className="mm-input-dialog__title">{title}</span>
           <span className="mm-input-dialog__grow" />
           {extraHeader}
@@ -100,7 +100,7 @@ export function InputDialog({
         {error ? <div className="mm-input-dialog__error">{error}</div> : null}
         {extra}
 
-        <div className="mm-input-dialog__footer">
+        <div className="mm-row mm-input-dialog__footer">
           <Button className="mm-input-dialog__ok" onClick={submit}>
             确定
           </Button>

@@ -1,4 +1,4 @@
-/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+/* 【范本】下拉样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
 
 .mm-select-box__trigger{
   display: flex;
@@ -10,10 +10,6 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-}
-
-.mm-select-box__arrow{
-  flex: 0 0 auto;
 }
 
 .mm-select-box__panel{

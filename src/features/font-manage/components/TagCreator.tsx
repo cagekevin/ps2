@@ -53,7 +53,7 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
           clearable={false}
           autoFocus
         />
-        <div className="mm-font__modal-actions">
+        <div className="mm-row mm-font__modal-actions">
           <Button disabled={submitting} onClick={onClose}>
             取消
           </Button>

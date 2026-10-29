@@ -1,4 +1,10 @@
-/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+/* 【范本】图片取色弹层样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+
+/* 弹层卡片：纵向排列（标题 / 色圈行 / 按钮行 / 分隔线 / 渐变行）；外层遮罩已负责居中 */
+.mm-imgcolor{
+  display: flex;
+  flex-direction: column;
+}
 
 .mm-imgcolor__row{
   display: flex;

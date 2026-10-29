@@ -42,7 +42,7 @@ export function Confirm({ open, title, message, confirmText = '删除', onConfir
       >
         <div className="mm-confirm__title">{title}</div>
         {message ? <div className="mm-confirm__message">{message}</div> : null}
-        <div className="mm-confirm__actions">
+        <div className="mm-row mm-confirm__actions">
           <button type="button" className="mm-btn mm-confirm__btn" onClick={onCancel}>
             取消
           </button>

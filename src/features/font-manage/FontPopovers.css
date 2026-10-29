@@ -1,5 +1,11 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
+/* 标签弹窗卡片：纵向排列（标题 / 输入框 / 按钮行）；外层遮罩负责居中 */
+.mm-font__modal{
+  display: flex;
+  flex-direction: column;
+}
+
 .mm-font__preview-card{
   position: fixed;
   z-index: var(--mm-z-dropdown);
@@ -37,7 +43,4 @@
   top: 50%;
 }
 
-.mm-font__modal-actions{
-  display: flex;
-  justify-content: flex-end;
-}
+

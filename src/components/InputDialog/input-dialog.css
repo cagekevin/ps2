@@ -1,4 +1,4 @@
-/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+/* 【范本】输入弹窗样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
 
 .mm-input-dialog{
   position: fixed;
@@ -12,10 +12,7 @@
   left: calc(50vw - var(--mm-dialog-offset-x));
 }
 
-.mm-input-dialog__head{
-  display: flex;
-  align-items: center;
-}
+
 
 .mm-input-dialog__grow{
   flex: 1;
@@ -25,7 +22,4 @@
   width: 100%;
 }
 
-.mm-input-dialog__footer{
-  display: flex;
-  justify-content: flex-end;
-}
+

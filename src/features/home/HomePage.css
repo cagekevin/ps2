@@ -1,22 +1,12 @@
-/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+/* 【范本】首页样式 —— 新增页面样式照此结构：只用 token，不写原始色值与 px。 */
 
-.mm-home__actions{
-  display: flex;
-}
 
-.mm-home__log-actions{
-  display: flex;
-}
 
 .mm-home__log-body{
   overflow: auto;
 }
 
-.mm-home__diag-row{
-  display: flex;
-  justify-content: space-between;
-}
-
+/* 诊断行两端对齐走公共 `.mm-row`，这里只留自己的差异（无） */
 .mm-home__diag-key{
   flex: 0 0 auto;
 }

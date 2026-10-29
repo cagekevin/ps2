@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { Icon } from '../../../components/icons';
+import { Chevron } from '../../../components/Chevron';
 
 export function DistributionHelp() {
   const [open, setOpen] = useState(false);
@@ -15,16 +15,12 @@ export function DistributionHelp() {
     <>
       <button
         type="button"
-        className="mm-font-panel__advanced"
+        className="mm-row mm-font-panel__advanced"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
         高级用法
-        <Icon
-          name="iconzhankaizhedie"
-          size={8}
-          className={`mm-font-panel__caret${open ? ' mm-font-panel__caret--open' : ''}`}
-        />
+        <Chevron open={open} size={8} />
       </button>
 
       {open ? (

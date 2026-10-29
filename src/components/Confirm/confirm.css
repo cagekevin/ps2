@@ -1,6 +1,7 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
-.mm-confirm__actions{
+/* 弹窗内纵向排列（标题 / 内容 / 按钮行）；按钮行横排走公共 `.mm-row` */
+.mm-confirm{
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
 }

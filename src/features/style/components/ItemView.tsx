@@ -93,7 +93,7 @@ export function ItemView({
           <>
             {/* 四件套（原版 render `:50956-50971`，对照清单 #24）：
                 字体数 + N点 + 5×5 色点 一行，「中文字」预览一行 */}
-            <span className="mm-style__font-head">
+            <span className="mm-row mm-style__font-head">
               <span className="mm-style__font-count">{preview.count}</span>
               <span className="mm-style__font-size">{preview.size}</span>
               {preview.color ? (

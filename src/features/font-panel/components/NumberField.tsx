@@ -7,6 +7,7 @@
  *   - 不在组件里挂 document 监听（拖动改值那套要全局 mousemove，§4.8 不允许写进 feature）
  */
 
+import { Chevron } from '../../../components/Chevron';
 import { Icon, type IconName } from '../../../components/icons';
 import { Input } from '../../../components/ui';
 import { useDraft } from '../../../hooks/useDraft';
@@ -83,15 +84,13 @@ export function NumberField({
         {onPreset ? (
           <button
             type="button"
-            className={`mm-font-panel__number-caret${
-              presetOpen ? ' mm-font-panel__number-caret--open' : ''
-            }`}
+            className="mm-font-panel__number-caret"
             title="预设"
             aria-label="预设"
             aria-expanded={presetOpen}
             onClick={onPreset}
           >
-            <Icon name="iconxiala" size={8} />
+            <Chevron open={presetOpen} size={8} />
           </button>
         ) : null}
       </span>

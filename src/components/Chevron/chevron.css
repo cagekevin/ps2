@@ -1,5 +1,11 @@
-/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+/* 【范本】展开 / 折叠箭头 —— 新增同类代码照此结构：开合状态一律用 <Chevron>，页面不许自己写箭头。 */
 
 .mm-chevron{
   flex: 0 0 auto;
+  transition: transform var(--mm-dur-fast) ease;
+}
+
+/* 收起 = 转成朝右；旋转角度全仓只在这里给，别处不许再写 rotate */
+.mm-chevron--closed{
+  transform: rotate(-90deg);
 }

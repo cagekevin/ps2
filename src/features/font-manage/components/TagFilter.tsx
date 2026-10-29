@@ -3,7 +3,7 @@
  * 标签读不到时说一句，不让标签区静默变空。
  */
 import { useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
-import { Icon } from '../../../components/icons';
+import { Chevron } from '../../../components/Chevron';
 import type { FontTag } from '../../../domain/font-meta';
 import { TagChip } from './TagChip';
 
@@ -49,7 +49,7 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
               aria-expanded={open}
               onClick={() => setOpen((value) => !value)}
             >
-              <Icon name="iconxiala" size={12} />
+              <Chevron open={open} size={12} />
             </button>
           ) : null}
         </div>

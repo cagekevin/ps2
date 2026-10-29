@@ -55,12 +55,7 @@
   position: relative;
 }
 
-.mm-font__weight-wrap{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
+
 
 .mm-font__weight-list{
   display: flex;

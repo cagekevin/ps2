@@ -9,21 +9,11 @@
   flex-direction: column;
 }
 
-.mm-font-panel__icon-row{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
+
 
 .mm-font-panel__panel{
   display: flex;
   flex-direction: column;
-}
-
-.mm-font-panel__row--pad,
-.mm-font-panel__row--tight{
-  justify-content: flex-start;
 }
 
 .mm-font-panel__label{
@@ -43,11 +33,6 @@
   width: 100%;
 }
 
-.mm-font-panel__quick-row{
-  display: flex;
-  align-items: center;
-}
-
 .mm-font-panel__quick-select{
   flex: 1;
   min-width: 0;
@@ -60,11 +45,6 @@
 
 .mm-font-panel__quick-add{
   width: 100%;
-}
-
-.mm-font-panel__color-row{
-  display: flex;
-  align-items: center;
 }
 
 .mm-font-panel__family,
@@ -109,11 +89,6 @@
   width: 100%;
 }
 
-.mm-font-panel__hierarchy-row{
-  display: flex;
-  align-items: center;
-}
-
 .mm-font-panel__hierarchy-select{
   flex: 1;
   min-width: 0;
@@ -131,11 +106,6 @@
 .mm-font-panel__editor-row{
   display: flex;
   justify-content: space-between;
-}
-
-.mm-font-panel__editor-actions{
-  display: flex;
-  align-items: center;
 }
 
 .mm-font-panel__preset-btn--half{
@@ -194,9 +164,4 @@
 
 .mm-font-panel__pin{
   display: inline-flex;
-}
-
-.mm-font-panel__advanced{
-  display: flex;
-  align-items: center;
 }

@@ -150,7 +150,7 @@ export function FontHierarchy({
             ))}
           </div>
 
-          <div className="mm-font-panel__editor-actions">
+          <div className="mm-row mm-font-panel__editor-actions">
             <button
               type="button"
               className="mm-btn mm-font-panel__preset-btn mm-font-panel__preset-btn--half"

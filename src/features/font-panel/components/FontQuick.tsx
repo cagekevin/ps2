@@ -35,11 +35,9 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
   return (
     <div className="mm-font-panel__quick">
       {fonts.length ? (
-        <div className="mm-font-panel__quick-row">
+        <div className="mm-row mm-font-panel__quick-row">
           <SelectBox
             className="mm-font-panel__quick-select"
-            arrowIcon="iconzhankaizhedie"
-            arrowSize={10}
             options={options}
             value={String(index)}
             onChange={(value) => onSelect(Number(value))}

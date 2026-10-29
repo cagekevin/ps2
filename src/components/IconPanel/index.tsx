@@ -38,6 +38,7 @@ import {
   type ReactNode
 } from 'react';
 import { createPortal } from 'react-dom';
+import './icon-panel.css';
 import { log } from '../../core/logger';
 import { IconButton } from '../IconButton';
 import type { IconName } from '../icons';

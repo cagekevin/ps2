@@ -118,7 +118,7 @@ export function FontColor({
 
   return (
     <div className="mm-font-panel__color">
-      <div className="mm-font-panel__color-row">
+      <div className="mm-row mm-font-panel__color-row">
         <SelectBox
           className="mm-font-panel__family"
           options={familyOptions}
@@ -128,7 +128,7 @@ export function FontColor({
         />
       </div>
 
-      <div className="mm-font-panel__color-row">
+      <div className="mm-row mm-font-panel__color-row">
         <SelectBox
           className="mm-font-panel__weight"
           options={weightOptions}

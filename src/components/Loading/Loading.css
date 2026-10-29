@@ -8,3 +8,11 @@
   justify-content: center;
   z-index: var(--mm-z-loading);
 }
+
+/* 路由懒加载占位（`router.tsx` 的 Suspense fallback）：单个文案居中 */
+.mm-loading{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
