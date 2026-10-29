@@ -1,32 +1,19 @@
-/* 【范本】导航样式：参数对齐原版 #nav / .nav-item / .sub-nav-item */
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
+
 .mm-nav{
   flex: 0 0 var(--mm-nav-w);
-  width: var(--mm-nav-w);
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* 原版 .nav-item：40×40、无圆角、cursor:default */
 .mm-nav__item{
   position: relative;
-  width: var(--mm-nav-w);
-  height: var(--mm-nav-w);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  text-decoration: none;
-  cursor: default;
 }
 
-.mm-nav__item svg{
-  width: var(--mm-icon-lg);
-  height: var(--mm-icon-lg);
-}
-
-/* hover 气泡：原版 .tips：left:40px、右侧圆角，hover 滑出页面名。
-   左右内边距按六档并到 16（20 不在档内；气泡宽度随文字自适应，-4 只影响留白） */
 .mm-nav__item::after{
   content: attr(data-label);
   position: absolute;
@@ -36,37 +23,12 @@
   height: 100%;
   display: flex;
   align-items: center;
-  border-radius: 0 var(--mm-radius-md) var(--mm-radius-md) 0;
-  font-size: var(--mm-font-md);
-  line-height: 1;
-  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
 }
 
-.mm-nav__item:hover::after{
-  opacity: 1;
-}
-
-/* 原版底部 .sub-nav-item：26×26、图标 16、hover 换底加边 */
-.mm-nav__item--sub{
-  width: var(--mm-nav-item-sub);
-  height: var(--mm-nav-item-sub);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-}
-
-.mm-nav__item--sub svg{
-  width: var(--mm-icon-md);
-  height: var(--mm-icon-md);
-}
-
 .mm-nav__item--sub::after{
   content: none;
-}
-
-.mm-nav__item--disabled{
-  opacity: 0.45;
 }
 
 .mm-nav__spacer{

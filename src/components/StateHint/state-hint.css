@@ -1,10 +1,1 @@
-/* 空态 / 失败提示：样式跟组件走，页面不再各自定义 */
-.mm-state-hint{
-  font-size: var(--mm-font-sm);
-}
-
-.mm-state-hint__retry{
-  border: none;
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
+/* 骨架：只留结构与定位，视觉待重写 */

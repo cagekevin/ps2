@@ -1,24 +1,10 @@
-/* 右键菜单：定位与表面来自 `.mm-popover`（`global.css`）。
-   层级比其它下拉高一档——菜单可能从下拉里再弹出来 */
-.mm-menu{
+/* 骨架：只留结构与定位，视觉待重写 */
 
+.mm-menu{
   z-index: var(--mm-z-tooltip);
-  min-width: var(--mm-menu-min-w);
 }
 
 .mm-menu__item{
   display: block;
   width: 100%;
-  border: none;
-  border-radius: var(--mm-radius-sm);
-  font-size: var(--mm-font-sm);
-  text-align: left;
-  cursor: pointer;
-}
-
-/* 横向分隔线的形状在 `global.css` 的公共布局原语里 */
-
-/* 未实现的命令：看得见但点不动 */
-.mm-menu__item:disabled{
-  cursor: not-allowed;
 }

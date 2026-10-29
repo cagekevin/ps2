@@ -1,19 +1,12 @@
-/* 【范本】转圈指示器：照原版 NewSpin（18px 圆环、顶边 accent 高亮、0.8s 线性旋转） */
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
 .mm-spin{
-  /* 外圈留白不由自己给：遮罩态由 inset 铺满，裸态由放进来的容器决定。
-  /* 外圈留白不由自己给：遮罩态由 inset 铺满，裸态由放进来的容器决定 */
-
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: var(--mm-font-sm);
 }
 
-/* 局部遮罩：盖住最近的定位父级。
-   底色与全屏加载同档（半透明黑），不用 `--mm-color-bg-base`——那是页面底色，
-   铺上去等于「内容消失」，用户看不出这是「正在处理」而不是「这块空了」 */
 .mm-spin--mask{
   position: absolute;
   inset: 0;
@@ -21,22 +14,8 @@
 
 .mm-spin__ring{
   display: block;
-  width: var(--mm-spin-size);
-  height: var(--mm-spin-size);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: 50%;
-  animation: mm-spin-rotate var(--mm-spin-duration, 0.8s) linear infinite;
-}
-
-@keyframes mm-spin-rotate{
-  to{
-    transform: rotate(360deg);
-  }
 }
 
 .mm-spin__tip{
   overflow: hidden;
-  max-width: var(--mm-describe-max-w);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }

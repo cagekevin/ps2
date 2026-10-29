@@ -1,5 +1,6 @@
-  .mm-layout{
+/* 骨架：只留结构与定位，视觉待重写 */
 
+.mm-layout{
   display: flex;
   height: 100vh;
 }
@@ -16,11 +17,6 @@
   align-items: center;
   justify-content: space-between;
   flex: 0 0 auto;
-  border-bottom-width: var(--mm-border-w); border-bottom-style: solid;
-}
-
-.mm-layout__title{
-  font-size: var(--mm-font-md);
 }
 
 .mm-layout__actions{
@@ -28,27 +24,8 @@
   align-items: center;
 }
 
-.mm-layout__debug{
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-sm);
-  font-size: var(--mm-font-xs);
-  text-decoration: none;
-}
-
-.mm-layout__version{
-  font-size: var(--mm-font-xs);
-}
-
-/*
- * 不能 overflow: auto：页面自己管滚动（样式页的列表滚动、底栏贴底都靠 height:100%）。
- * 这里一旦出现滚动容器，子页面的 flex 高度就被内容撑开，底栏会跑到内容后面去。
- */
 .mm-layout__body{
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-}
-
-.mm-loading{
-  font-size: var(--mm-font-sm);
 }

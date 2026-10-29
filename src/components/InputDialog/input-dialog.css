@@ -1,9 +1,4 @@
-/**
- * 【范本】输入弹窗样式（原版 `.input-box` / `.input-box-main`）
- *
- * 位置是原版值：`left: calc(50vw - 90px)` + `top: 30%`，不是居中。
- * 想「看起来更居中」要先改原版依据，别就地调。
- */
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
 .mm-input-dialog{
   position: fixed;
@@ -11,15 +6,10 @@
   z-index: var(--mm-z-input-box);
 }
 
-  /* 上下 16 / 左右 16：原版这里左右是 20，不在六档内，且和上下不成对 */
 .mm-input-dialog__main{
-
   position: fixed;
   top: 30%;
   left: calc(50vw - var(--mm-dialog-offset-x));
-  width: var(--mm-dialog-w);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
 }
 
 .mm-input-dialog__head{
@@ -27,28 +17,15 @@
   align-items: center;
 }
 
-.mm-input-dialog__title{
-  font-size: var(--mm-font-md);
-}
-
 .mm-input-dialog__grow{
   flex: 1;
 }
 
-/* 表面（高度 / 边框 / 圆角 / 底色）来自 `ui.css` 的 `.mm-input--page`，这里只给布局 */
 .mm-input-dialog__input{
   width: 100%;
-}
-
-.mm-input-dialog__error{
-  font-size: var(--mm-font-sm);
-  line-height: 1em;
 }
 
 .mm-input-dialog__footer{
   display: flex;
   justify-content: flex-end;
 }
-
-/* 按钮表面由 `ui.Button` 给；这里只放宽内边距（弹窗里就一颗，宽一点好点） */
-

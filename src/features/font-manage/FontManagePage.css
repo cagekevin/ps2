@@ -1,24 +1,12 @@
-/* 字体管理页：原版 app.bf68b505.css 实测值 → token。 */
-/* 根容器的布局在 `global.css` 的公共布局原语里，本文件不再写 */
+/* 骨架：只留结构与定位，视觉待重写 */
 
-/* ---------- 页头 ---------- */
-/* 「更多」菜单的按钮走公共 `components/IconButton`（与字体面板、常用页同一实现），
-   这里不再自绘一份 26×26 */
-
-/* ---------- 搜索行 ---------- */
-/*
- * 原先各块自己撑，档位是 8 / 8 / 4 / 12 四种，相邻两处还会叠成两档——
- * 整页节奏与常用页（全 12）、设置页（12 / 16）都对不上。
- */
 .mm-font__toolbar{
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
 }
 
-  /* 筛选按钮是 absolute 定位、不占高度，这里的行高就是搜索框的高度 */
 .mm-font__search-row{
-
   position: relative;
 }
 
@@ -34,59 +22,27 @@
   position: absolute;
   right: var(--mm-space-2);
   top: 50%;
-  transform: translateY(-50%);
   pointer-events: none;
 }
 
-  /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
 .mm-font__filter-btn{
-
   position: absolute;
   right: 0;
   top: 50%;
-  transform: translateY(-50%);
-  width: var(--mm-icon-btn-size);
-  height: var(--mm-icon-btn-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: var(--mm-radius-md);
-  cursor: pointer;
-}
-
-.mm-font__filter-btn:disabled{
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .mm-font__filter-badge{
   position: absolute;
   top: var(--mm-space-1);
   right: var(--mm-space-tight);
-  min-width: var(--mm-filter-badge);
-  height: var(--mm-filter-badge);
-  border-radius: var(--mm-radius-pill);
-  font-size: var(--mm-font-xs);
-  line-height: var(--mm-filter-badge);
-  text-align: center;
 }
 
-/* 筛选面板外壳：定位与表面来自 `.mm-popover`（`global.css`），
-   外壳不需要自己的声明——宽度与内边距在里面的 `.mm-font__filter-panel` 上 */
-
-  /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
 .mm-font__filter-panel{
-
-  width: var(--mm-filter-panel-w);
   max-width: calc(100vw - var(--mm-filter-panel-max-w-gap));
-  max-height: var(--mm-filter-panel-max-h);
   overflow-y: auto;
-}
-
-.mm-font__filter-title{
-  font-size: var(--mm-font-sm);
-  line-height: 1.4;
 }
 
 .mm-font__filter-chips{
@@ -94,18 +50,6 @@
   flex-wrap: wrap;
 }
 
-  /* 与标签 chip 同一套内边距（同类同尺寸） */
-.mm-font__filter-chip{
-
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-  line-height: var(--mm-line-16);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* ---------- 预览文案面板 ---------- */
 .mm-font__preview-text{
   display: flex;
   flex-direction: row;
@@ -117,46 +61,19 @@
   position: absolute;
   left: var(--mm-space-3);
   top: 50%;
-  transform: translateY(-50%);
 }
 
-/* 只给布局与文字色；表面（底色 / 描边 / 圆角 / 字号）继承 `.mm-input`，
-   全仓输入框一套表面，别在这里再描一遍 */
-  /* 左 30 是图标位；右 10 与搜索框同一档 */
 .mm-font__preview-text-field.mm-input{
-
   flex: 1;
 }
 
-  .mm-font__preview-text-btn{
-
-  height: var(--mm-control-h);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-.mm-font__preview-text-btn:disabled{
-  cursor: default;
-}
-
-  /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
-/* ---------- 我的标签 ---------- */
 .mm-font__tags-head{
-
   display: flex;
   align-items: center;
-  height: var(--mm-tag-strip-h);
-  font-size: var(--mm-font-sm);
 }
 
-  /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
 .mm-font__tags-head > span{
-
   flex: 1;
-  font-size: var(--mm-font-xs);
-  font-weight: 500;
 }
 
 .mm-font__tags-tools{
@@ -165,28 +82,15 @@
 }
 
 .mm-font__tags-add{
-  width: var(--mm-tag-chip-w);
-  height: var(--mm-tag-chip-w);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: var(--mm-radius-sm);
-  font-size: var(--mm-font-md);
-  line-height: 1;
-  cursor: pointer;
 }
 
 .mm-font__tags-toggle{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  cursor: pointer;
-}
-
-.mm-font__tags-toggle--open{
-  transform: rotate(180deg);
 }
 
 .mm-font__tag-list{
@@ -195,81 +99,27 @@
 }
 
 .mm-font__tag-list--collapsed{
-  max-height: var(--mm-tag-collapse-h);
   overflow: hidden;
 }
 
-.mm-font__tags-error{
-  font-size: var(--mm-font-sm);
-  line-height: 1.5;
-}
-
-  .mm-font__tag{
-
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-  line-height: var(--mm-line-16);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* ---------- 计数行 ---------- */
 .mm-font__list-head{
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  height: var(--mm-list-head-h);
-  border-top-width: var(--mm-border-w); border-top-style: solid;
-  font-size: var(--mm-font-sm);
 }
 
-  /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
 .mm-font__list-count{
-
   flex: 1;
-  font-size: var(--mm-font-xs);
-  font-weight: 500;
 }
 
-  /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
-.mm-font__clear-tag{
-  
-  height: var(--mm-list-head-h);
-  border: 0;
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-/* ---------- 提示与状态 ---------- */
 .mm-font__warnings{
   flex: 0 0 auto;
 }
 
-.mm-font__warning{
-  font-size: var(--mm-font-sm);
-}
-
-  /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
 .mm-font__state{
-
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: var(--mm-font-sm);
-  text-align: center;
 }
-
-.mm-font__retry{
-  height: var(--mm-control-h);
-  white-space: nowrap;
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-/* 底栏壳（26 高 / 深底 / 30 宽按钮 / 内容靠右）全在 `components/BottomBar`，
-   本页不再各写一份对齐——原先只有这里给 flex-end，样式页没给，两页一左一右 */

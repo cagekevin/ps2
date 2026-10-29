@@ -1,43 +1,10 @@
-/* 【范本】图片取色弹层：原版 imgColor 的弹层样式（色圈 28px / 渐变条 42×22 / 双按钮） */
-
-/* 遮罩用 `ui.css` 的 `.mm-modal-mask`（与确认框共用），本文件只画面板本体 */
-
-.mm-imgcolor{
-  width: var(--mm-imgcolor-w);
-  border-radius: var(--mm-radius-md);
-}
-
-.mm-imgcolor__title{
-  font-size: var(--mm-font-sm);
-  font-weight: 700;
-}
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
 .mm-imgcolor__row{
   display: flex;
   flex-wrap: wrap;
 }
 
-/* 原版 `.color-item`：28px 圆、蓝边。蓝边不是状态（它不表示选中 / 进行中），
-   按 §7 规则 12 改成亮线那一档——色值本身才是内容，边框只负责把它框出来 */
-  /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
-.mm-imgcolor__swatch{
-
-  width: var(--mm-gradient-h);
-  height: var(--mm-gradient-h);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-/* 原版 `.grad-item`：42×22、蓝边（同上，边框不表状态，走亮线档） */
-.mm-imgcolor__grad{
-  width: var(--mm-imgcolor-grad-w);
-  height: var(--mm-imgcolor-grad-h);
-  border-width: var(--mm-border-w); border-style: solid;
-  cursor: pointer;
-}
-
-/* 按钮表面一律由 `ui.Button` 给（`primary` / `ghost` 两档），这里只给布局：两颗等分 */
 .mm-imgcolor__btn{
   flex: 1 1 0;
 }
@@ -45,5 +12,3 @@
 .mm-imgcolor__btn--wide{
   flex: 1 1 100%;
 }
-
-/* 横向分隔线的形状在 `global.css` 的公共布局原语里 */

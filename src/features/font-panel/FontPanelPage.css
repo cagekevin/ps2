@@ -1,79 +1,35 @@
-/**
- * 字体面板页样式（类名前缀统一 `mm-font-panel__`）
- *
- * 尺寸与颜色只取 token：面板底 `--mm-color-bg-sunken`、按钮底 `--mm-color-bg-panel`、
- * 分隔线 `--mm-color-border`（整页只有这一种线色）。原版值写在 tokens.css 的注释里，这里不复制。
- */
+/* 骨架：只留结构与定位，视觉待重写 */
 
-/* 根容器的布局在 `global.css` 的公共布局原语里，本文件只保留自己滚这条差异 */
 .mm-font-panel{
   overflow-y: auto;
 }
 
-/* ---------------- 图标行 ---------------- */
-
 .mm-font-panel__icons{
-  /* 两行图标之间的间距同样只由 gap 给 */
-  /* 两行图标之间的间距同样只由 gap 给。
-     左右留白**不在这里**：这一层还装着抽屉宿主（组末尾的 host），
-     在这里留白会把抽屉背景掐窄；留白下移到 `.mm-font-panel__icon-row` */
   display: flex;
   flex-direction: column;
 }
 
-  /* 面板拉到最窄（200）时一排放不下 6 个 26px 按钮，换行而不是把它们顶到面板外 */
 .mm-font-panel__icon-row{
-  /* 间距由父容器 gap 给，自己不给 */
-
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
 }
 
-/* 竖线的形状在 `global.css` 的公共布局原语里 */
-
-  /* 只留左右：上下由根容器 gap 给 */
-.mm-font-panel__line{
-
-  height: var(--mm-border-w);
-  border: 0;
-}
-
-/* 整页只留一种线色（`--mm-color-border`），区块靠间距区分，不再给某一块单独开一档线色 */
-
-/* ---------------- 展开面板 ---------------- */
-
-/*
- * 展开面板：与上面的预设块**同一个表面**——无边框、无圆角、底色 sunken、铺满整宽。
- * 它的宿主挂在图标行里（那层有左右 10 的内边距），所以左右各外扩 10 才能铺满，
- * 否则背景比预设块窄 20px、左边缘也对不齐。
- */
 .mm-font-panel__panel{
   display: flex;
   flex-direction: column;
 }
-
-/* 行容器的排列在 `global.css` 的 `.mm-row`；本文件只留 `--pad / --tight` 的对齐差异 */
 
 .mm-font-panel__row--pad,
 .mm-font-panel__row--tight{
   justify-content: flex-start;
 }
 
-  /* 与同一行的下拉、选项同字号：原来这里是 13，选项 12 */
 .mm-font-panel__label{
-
   flex: 0 0 auto;
-  font-size: var(--mm-font-sm);
 }
 
-/* 勾选 / 单选已上移到 components/CheckBox 与 components/RadioButton（CONVENTIONS §6），
-   本页只保留布局类 `.mm-font-panel__row`；不要在这里再写一遍方框样式 */
-
-/* ---------------- 通用按钮 / 输入 ---------------- */
-
-/* 输入框表面（高度 / 边框 / 圆角 / 底色）来自 `ui.css` 的 `.mm-input--page`，这里只给布局 */
 .mm-font-panel__input-grow{
   flex: 1;
   min-width: 0;
@@ -81,61 +37,31 @@
 
 .mm-font-panel__wide-btn{
   width: 100%;
-  height: var(--mm-control-h);
-  border: 0;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-md);
-  cursor: pointer;
 }
-
-/* ---------------- 字体快选 ---------------- */
 
 .mm-font-panel__quick{
   width: 100%;
 }
 
-/* 原版 `.selectFont` 是整宽、无左右缩进（缩进只在下拉面板上，见 SelectBox inset） */
-/* 原版 `.selectFont` 是整宽、无左右缩进；本仓下拉面板一律与触发器同宽，没有内缩变体 */
 .mm-font-panel__quick-row{
   display: flex;
   align-items: center;
 }
 
-/* 字体快选触发器：一行文字 + 「>」，**不是输入框**。
-   原版 `dropDowncom` 就是纯文本；这里把 `.mm-field-surface` 的底色 / 描边 / 圆角全部去掉，
-   只留一行名字与右侧箭头 */
 .mm-font-panel__quick-select{
   flex: 1;
   min-width: 0;
   justify-content: center;
-  border: 0;
-  border-radius: 0;
-  font-size: var(--mm-font-md);
 }
 
 .mm-font-panel__quick-select .mm-select-box__label{
   flex: 0 1 auto;
-  text-align: left;
 }
 
-/* `iconzhankaizhedie` 默认朝下：转 90° 成 `>` */
-.mm-font-panel__quick-select .mm-select-box__arrow{
-  transform: rotate(-90deg);
-}
-
-  /* 与下拉项同一套：同高、同左内边距、同字号，只有文字色不同（它是动作，不是选项） */
 .mm-font-panel__quick-add{
-
   width: 100%;
-  height: var(--mm-control-h);
-  border: 0;
-  border-top-width: var(--mm-border-w); border-top-style: solid;
-  font-size: var(--mm-font-sm);
-  text-align: left;
-  cursor: pointer;
 }
 
-/* ---------------- 字体属性 ---------------- */
 .mm-font-panel__color-row{
   display: flex;
   align-items: center;
@@ -149,18 +75,11 @@
 
 .mm-font-panel__color-label{
   flex: 0 0 auto;
-  font-size: var(--mm-font-md);
 }
 
 .mm-font-panel__swatch{
   flex: 0 0 auto;
-  width: var(--mm-font-panel-swatch-w);
-  height: var(--mm-control-h);
-  border-width: var(--mm-border-w); border-style: solid;
-  cursor: pointer;
 }
-
-  /* 与工具条同一条：最窄 200 时六颗按钮铺不开，换行而不是顶出面板 */
 
 .mm-font-panel__metric{
   display: flex;
@@ -174,38 +93,19 @@
 
 .mm-font-panel__half--center{
   display: flex;
-  height: var(--mm-control-h);
   align-items: center;
 }
 
-/* 原版两栏之间的固定空档 .setNbsp（30px） */
 .mm-font-panel__gutter{
   flex: 0 0 var(--mm-control-reserve);
-  width: var(--mm-control-reserve);
 }
 
 .mm-font-panel__presets{
-  /* 用 grid 定列数，不用 flex-wrap + 宽度 calc：
-     后者每格宽度是小数，6 格相加会超出 1px 以内，最后一个就被挤到下一行（只剩 5 个一行） */
-    display: grid;
+  display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
-  /* 宽度交给 grid 的列宽，自己不再算 */
-.mm-font-panel__preset{
-
-  height: var(--mm-control-h);
-  border: 0;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-md);
-  cursor: pointer;
-}
-
-/* ---------------- 层级字号 ---------------- */
-
-  /* 上间距由根容器 gap 给，自己不再加 */
 .mm-font-panel__hierarchy{
-
   width: 100%;
 }
 
@@ -226,22 +126,11 @@
 
 .mm-font-panel__level{
   width: calc((100% - 5 * var(--mm-space-inline)) / 6);
-  height: var(--mm-control-h);
-  border: 0;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-md);
-  cursor: pointer;
 }
 
 .mm-font-panel__editor-row{
   display: flex;
   justify-content: space-between;
-}
-
-/* 表面对齐 `.mm-input--page`；这里只收窄宽度、去掉边框（原版这格没有描边） */
-.mm-font-panel__editor-input{
-  width: var(--mm-control-reserve);
-  text-align: center;
 }
 
 .mm-font-panel__editor-actions{
@@ -253,11 +142,7 @@
   width: calc(50% - var(--mm-space-1));
 }
 
-/* ---------------- 拆分 ---------------- */
-
 .mm-font-panel__split{
-  /* 必须显式行方向：`.mm-font-panel__panel` 是 column，只覆盖 display 会让 4 个 50% 按钮
-     竖排成 4 行、右边空一整块 */
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -265,31 +150,16 @@
 
 .mm-font-panel__split-btn{
   width: calc(50% - var(--mm-space-3));
-  height: var(--mm-control-h);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-md);
-  cursor: pointer;
 }
 
-/* ---------------- 生成按钮 ---------------- */
-
-/* 8 个一行用 grid 定列，不用 flex + 宽度 calc（小数累积会把最后一个挤下去） */
 .mm-font-panel__quick-grid{
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
 }
 
-/* 与预设按钮同一套：同高、同字号、同圆角、同底色、同横向内边距 */
-
-/* ---------------- 粘贴 ---------------- */
-
-/* ---------------- 数字输入 ---------------- */
-
 .mm-font-panel__number{
   display: flex;
   min-width: 0;
-  height: var(--mm-control-h);
   align-items: center;
 }
 
@@ -298,8 +168,7 @@
   flex: 0 0 auto;
 }
 
-  .mm-font-panel__number-box{
-
+.mm-font-panel__number-box{
   display: flex;
   flex: 1;
   min-width: 0;
@@ -307,61 +176,27 @@
   align-items: center;
 }
 
-/* 复合数字框的内层 input：表面由外层 `.mm-font-panel__number-box` 画，这里退成无框 */
 .mm-font-panel__number-input{
   flex: 1;
   width: 100%;
   min-width: 0;
   height: 100%;
-  border: 0;
-  font-size: var(--mm-font-md);
-  text-align: center;
 }
 
 .mm-font-panel__number-suffix{
   flex: 0 0 auto;
-  font-size: var(--mm-font-xs);
 }
 
 .mm-font-panel__number-caret{
   display: inline-flex;
   flex: 0 0 auto;
-  border: 0;
-  cursor: pointer;
 }
 
-.mm-font-panel__number-caret--open{
-  transform: rotate(180deg);
-}
-
-/* ---------------- 分布弹窗 ---------------- */
-
-/* 弹窗本体走公共 `components/InputDialog`（原版就是同一个 $inputBox），这里只剩它的附加按钮 */
 .mm-font-panel__pin{
   display: inline-flex;
-  border: 0;
-  border-radius: var(--mm-radius-sm);
-  cursor: pointer;
 }
 
 .mm-font-panel__advanced{
   display: flex;
   align-items: center;
-  border: 0;
-  font-size: var(--mm-font-md);
-  cursor: pointer;
 }
-
-.mm-font-panel__caret{
-  transform: rotate(-90deg);
-}
-
-.mm-font-panel__caret--open{
-  transform: rotate(0deg);
-}
-
-.mm-font-panel__help{
-  font-size: var(--mm-font-md);
-  line-height: var(--mm-line-16);
-}
-

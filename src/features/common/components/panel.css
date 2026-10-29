@@ -1,14 +1,11 @@
-/*
- * 常用页两个抽屉（参考线 / 间距分布）的内部布局。
- * 表面（sunken 底 + 4 圆角 + 12 内边距）已由 `components/IconPanel` 的 `__box` 统一给，
- */
+/* 骨架：只留结构与定位，视觉待重写 */
+
 .mm-common__panel{
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-/* 一行：输入框（占满）+ 按钮；或两颗半宽按钮 */
 .mm-common__panel-row{
   display: flex;
   align-items: center;
@@ -16,7 +13,6 @@
 
 .mm-common__panel-rule{
   width: 100%;
-  height: var(--mm-border-w);
 }
 
 .mm-common__panel-btn{

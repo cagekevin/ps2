@@ -1,45 +1,14 @@
-/* 勾选框：12×12 / 圆角 3 / 1px `--mm-color-border-control`（尺寸与圆角照官方 `.base-check`；
-   描边已并入亮线档，选中态换 accent 底） */
-/* 根容器的排列与收缩规则在 `global.css`（与单选框共用一份） */
-
-/* 原生 input 的隐藏与标签省略在 `global.css`（与单选框共用一份） */
+/* 骨架：只留结构与定位，视觉待重写 */
 
 .mm-check__box{
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
-  width: var(--mm-check-size);
-  height: var(--mm-check-size);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-check-radius);
 }
 
-/* 对勾用两条边框拼出：不用 svg，省一个图标也不用随尺寸改 viewBox */
 .mm-check__input:checked + .mm-check__box::after{
   position: absolute;
   top: var(--mm-space-tight);
   left: var(--mm-space-tight);
-  width: var(--mm-space-tight);
-  height: var(--mm-space-inline);
-  border-style: solid;
-  border-width: 0 var(--mm-space-tight) var(--mm-space-tight) 0;
   content: '';
-  transform: rotate(45deg);
 }
-
-/* 原生控件是 1px 透明，焦点环画在可见方框上；不补这一条键盘用户看不到自己在哪 */
-.mm-check__input:focus-visible + .mm-check__box{
-  outline-width: var(--mm-border-w); outline-style: solid;
-}
-
-/* 灰掉是 0.5 透明（03 计划 §4.3 第 2 条），不是换色 */
-.mm-check__input:disabled + .mm-check__box,
-.mm-check__input:disabled ~ .mm-check__label{
-  opacity: 0.5;
-}
-
-/* 不用 `:has()`：Chromium 103 不支持，靠组件给的修饰类 */
-.mm-check--disabled{
-  cursor: not-allowed;
-}
-

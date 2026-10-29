@@ -1,48 +1,23 @@
-/**
- * 设置页样式（类名前缀 `mm-settings__`）
- */
-/* 根容器的布局在 `global.css` 的公共布局原语里，本文件只保留自己滚这条差异 */
+/* 骨架：只留结构与定位，视觉待重写 */
+
 .mm-settings{
   overflow-y: auto;
 }
-
-
 
 .mm-settings__row{
   display: flex;
   align-items: center;
 }
 
-
-
-/*
- * 标题只有下边距、没有上边距，三个区块会贴成一整片，
- * 看不出「单位」属于「使用设置」还是「常用功能面板」。
- * 区块前一律 16（区块间那档），标题与它自己那块仍留 12 的一半关系。
- */
-
-
 .mm-settings__label{
   flex: 0 0 auto;
-  font-size: var(--mm-font-md);
 }
 
-/*
- * 下拉撑满标签右边的剩余宽度，右边缘与其它所有行一致（48 / 352）。
- * 原来这里限了 220 宽，而 220 是字体面板输入弹窗的宽度（借来的 token），
- * 结果这一行右边短 33px，整页只有它收不到头。
- */
 .mm-settings__select{
   flex: 1;
   min-width: 0;
 }
 
-.mm-settings__section{
-  font-size: var(--mm-font-sm);
-  font-weight: normal;
-}
-
-/* 14 个功能项的显隐：两列排布，标签与常用页网格同名（取自文件里的 name） */
 .mm-settings__tiles{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

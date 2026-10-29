@@ -1,64 +1,6 @@
-  /*
-/* 【范本】基础组件样式：只用 Token
- */
-.mm-btn{
-  height: var(--mm-control-h);
-  border: none;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-.mm-btn:disabled{
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/*
- * 输入位表面：**全仓只有这一处写底色 / 描边 / 圆角 / 文字色 / 字号**。
- *
- * - `.mm-input`：真输入框。`components/ui` 的 `Input` 渲染，`TextField` /
- *   `InputDialog` / `InlineEdit` / 标签与搜索框都渲染它。
- * - `.mm-field-surface`：不是 input、但视觉上是「输入位」的壳——下拉触发器（`SelectBox`）、
- *   复合数字框外壳（字体面板 `NumberField`）。它们加这个类即可，**不许再抄一份表面**。
- *
- * 底色 `--mm-color-bg-input`（纯黑）不参与浮起阶梯；要改输入框颜色，只改 tokens 那一行。
- */
-.mm-input,
-.mm-field-surface{
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-}
-
-/* 只有真输入框才有这些：壳的高度 / 内边距由各自布局决定 */
-.mm-input{  /*
-   * 表面与下拉触发器（`select-box.css`）同一套：sunken 底 + 亮描边。
-   * 原来这里是 overlay（比页面底亮一档，那是浮层色）+ 暗描边，于是全仓输入框有三种底色
-   * （overlay / sunken / 透明）——输入框是「凹进去」的，不该用浮层的色。
-   * sunken 落在 base 上反差只有 11，没有描边就看不出边界，所以描边是必需品。
-   */
-
-  height: var(--mm-control-h);
-  outline: none;
-}
-
-/* 页内宽输入框（原版 `.inputcom*` / `.switch-input` 那一类）：只多给左右 12。
-   变体不再重复声明 `.mm-input` 的表面。 */
-
-.mm-input:focus{
-  outline-width: var(--mm-border-w); outline-style: solid;
-}
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
 .mm-field{
   display: flex;
   flex-direction: column;
-}
-
-.mm-field__label{
-  font-size: var(--mm-font-xs);
-}
-
-.mm-field__hint{
-  font-size: var(--mm-font-xs);
 }

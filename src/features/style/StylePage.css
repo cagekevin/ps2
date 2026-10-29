@@ -1,35 +1,10 @@
-  /**
-   * 样式面板。
-   *
-   * 规格照 `app/src/pages/style/index.css`（它已对齐原版 scoped 段）：
-   *   仓库条 36px → tabs 四等分带竖线 → 滚动列表 → 底栏 26px 图标条。
-   *
-   * 四库格子尺寸**不共用一套**（原版就是四段独立 scoped）：
-   *   颜色 25×25 无圆角 / 渐变 50×26 r4 / 字体 70×44 r4 / 样式 26×26 无圆角。
-   */
-  /* 根容器的布局在 `global.css` 的公共布局原语里，本文件不再写 */
+/* 骨架：只留结构与定位，视觉待重写 */
 
-
-/* ---------- 仓库条 ---------- */
-/* ---------- 仓库条 ----------
-   通栏触发器：尺寸与底色在这里，表面（描边 / 圆角）来自 `.mm-field-surface`，
-   这里把描边与圆角去掉——通栏顶栏带描边圆角会在面板顶部画出一个圆角方框 */
 .mm-style__warehouse{
-  /* 高度用 height 表达，不要写成 flex-basis：这个类同时挂在触发器上，
-     flex-basis 会把它锁成 36 宽，图标与仓库名挤在一起 */
-
   flex: 0 0 auto;
   width: 100%;
-  height: var(--mm-warehouse-h);
-  border: none;
-  border-radius: 0;
 }
 
-.mm-style__warehouse .mm-select-box__label{
-  font-size: var(--mm-font-md);
-}
-
-/* ---------- tabs：四等分 + 1px 竖线 ---------- */
 .mm-style__tabs{
   display: flex;
   flex: 0 0 auto;
@@ -43,127 +18,64 @@
   align-items: center;
 }
 
-.mm-style__tab{  /*
-   * 原版 `.w95` 是 95% 宽（对照清单 #8），但四个 tab 加起来右边会留 5% 的空，
-   * 面板拉窄拉宽时最后一颗始终收不到头（实测右内边距比左多 2~4px，四个宽度都有）。
-   * 改成 100%：文字仍是居中的，两侧的空间由文字宽度自然让出，不会贴到竖线。
-   */
-
+.mm-style__tab{
   width: 100%;
   min-width: 0;
-  border: none;
-  font-size: var(--mm-font-md);
-  text-align: center;
-  cursor: pointer;
 }
-
-/* 原版 `.switch-context-wrap:hover p{color:#fff}
 
 .mm-style__tab-line{
   flex: 0 0 auto;
-  width: var(--mm-border-w);
-  height: var(--mm-tab-line-h);
 }
 
-/* ---------- 悬停浮层（照 app `.style-describe`：fixed 定位 + 三行内容） ---------- */
-/* ---------- 悬停浮层（照 app `.style-describe`：fixed 定位 + 三行内容） ---------- */
 .mm-style__describe{
   position: fixed;
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
   width: max-content;
-  max-width: var(--mm-describe-max-w);
-  border-radius: var(--mm-radius-md);
   pointer-events: none;
 }
 
 .mm-style__describe-name{
   overflow: hidden;
-  font-size: var(--mm-font-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .mm-style__describe-meta{
   overflow: hidden;
-  font-size: var(--mm-font-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* ---------- 滚动区 ---------- */
-/* 滚动容器的布局在 `global.css` 的公共布局原语里 */
-
-/* ---------- 组 ---------- */
-/* 颜色库与渐变 / 样式库用同一档左右内边距：
-   原先颜色组只给左 12 右边不留、渐变组才左右都给，同页两种边 */
 .mm-style__group,
 
 .mm-style__group-head{
   display: flex;
   align-items: center;
   width: 100%;
-  height: var(--mm-group-head-h);
-  border: none;
-  font-size: var(--mm-font-sm);
-  text-align: left;
-  cursor: pointer;
 }
 
 .mm-style__group-name{
-
   flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .mm-style__count{
   flex: 0 0 auto;
-  font-size: var(--mm-font-xs);
 }
 
-/* ---------- 项容器 ---------- */
 .mm-style__items{
   display: flex;
   flex-wrap: wrap;
 }
 
-/* ---------- 项 ---------- */
 .mm-style__item{
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-width: var(--mm-border-w); border-style: solid;
-  cursor: pointer;
-}
-
-.mm-style__item--color{
-  width: var(--mm-swatch-w);
-  height: var(--mm-swatch-h);
-}
-
-/* 渐变块原版无默认边框，hover 才加 */
-.mm-style__item--gradient{
-  width: var(--mm-gradient-w);
-  height: var(--mm-gradient-h);
-  border: none;
-  border-radius: var(--mm-radius-md);
 }
 
 .mm-style__item--font{
-  width: var(--mm-font-card-w);
-  height: var(--mm-font-card-h);
   flex-direction: column;
   justify-content: flex-start;
-  border-radius: var(--mm-radius-md);
-}
-
-.mm-style__item--style{
-  width: var(--mm-style-thumb);
-  height: var(--mm-style-thumb);
 }
 
 .mm-style__swatch{
@@ -176,92 +88,30 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: fill;
-  image-rendering: pixelated;
 }
 
-/* 重命名项时占一个格子。宽度按字体卡片给，颜色/渐变也能放下输入框 */
-.mm-style__item--editing{
-  width: var(--mm-font-card-w);
-  height: var(--mm-font-card-h);
-  cursor: default;
-}
-
-/* ---------- 字体卡片四件套（原版 render `:50956-50971`，对照清单 #24） ---------- */
-
-/* 原版 `.f-alignNone.w100`：数量 / N点 / 色点三件 space-between 一行 */
 .mm-style__font-head{
   display: flex;
   width: 100%;
   justify-content: space-between;
 }
 
-/* 原版继承全局 `p{color:#c3c3c3;font-size:12px}` */
-.mm-style__font-count,
-.mm-style__font-size{
-  font-size: var(--mm-font-sm);
-}
-
 .mm-style__font-dot{
   flex: 0 0 auto;
-  width: var(--mm-space-1);
-  height: var(--mm-space-1);
-  border-radius: 50%;
 }
 
-/* 原版 `.block-context`：中文字预览，14px / 700 / 白 / 居中 */
 .mm-style__font-sample{
   width: 100%;
   overflow: hidden;
-  font-size: var(--mm-font-md);
-  font-weight: 700;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* 无 fontPreview 的兜底：只显名字 */
 .mm-style__font-family{
   width: 100%;
   overflow: hidden;
-  font-size: var(--mm-font-md);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* ---------- 各组末尾的「+」 ---------- */
 .mm-style__add{
   display: flex;
   align-items: center;
   justify-content: center;
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-  cursor: pointer;
 }
-
-.mm-style__add--color{
-  width: var(--mm-swatch-w);
-  height: var(--mm-swatch-h);
-}
-
-.mm-style__add--gradient{
-  width: var(--mm-gradient-w);
-  height: var(--mm-gradient-h);
-}
-
-.mm-style__add--font{
-  width: var(--mm-font-card-w);
-  height: var(--mm-font-card-h);
-}
-
-.mm-style__add--style{
-  width: var(--mm-style-thumb);
-  height: var(--mm-style-thumb);
-}
-
-/* ---------- 底栏：26px 图标条 ---------- */
-
-/* ---------- 三态 ----------
- * 空态 / 失败提示已上移到 `components/StateHint`，页面不再自定义。
- */

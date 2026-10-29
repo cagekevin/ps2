@@ -1,30 +1,9 @@
-  /*
-/*
- * 【范本】下拉选择器
- *
- * 触发器表面来自 `.mm-field-surface`（与输入框同一处）；
- * 面板的定位与表面（描边 / 圆角 / 底色 / 阴影）来自 `global.css` 的 `.mm-popover`。
- * 本文件只写触发器布局、选项与滚动——**不写 position / border / background / box-shadow**。
- */
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
-.mm-select-box__trigger{  /*
-   * 表面与输入框（`ui.css` 的 `.mm-input`）同一套：sunken 底 + 亮边框。
-   * 原来是 overlay（比页面亮）+ 无边框，靠反差区分；而字体面板又按「面板语义」
-   * 覆盖成 sunken，于是两页的下拉一个亮一个暗。
-   * 统一成 sunken 之后**必须**给边框：#2b2b2b 落在 #363636 的页面上几乎没有反差。
-   */
-
+.mm-select-box__trigger{
   display: flex;
   width: 100%;
-  height: var(--mm-control-h);
   align-items: center;
-  text-align: left;
-  cursor: pointer;
-}
-
-.mm-select-box__trigger:disabled{
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .mm-select-box__icon{
@@ -33,52 +12,31 @@
   align-items: center;
 }
 
-/* 标签的单行省略在 `global.css`（与折叠标题共用一份） */
-
 .mm-select-box__arrow{
   flex: 0 0 auto;
 }
 
-/* 面板：宽度由组件按触发器宽写成 inline；这里只管滚动（字体下拉有几百项） */
-  /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
 .mm-select-box__panel{
-  /* 深色底上黑边看不见：浮层边缘用 10% 白，和标签弹层、预览卡同一档 */
-
-  max-height: var(--mm-select-panel-max-h);
   overflow-x: hidden;
   overflow-y: auto;
 }
 
-/* 选项：与控件同高，左侧留出勾选位（对号是当前值标记，文字不变色） */
-  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
 .mm-select-box__item{
-
   position: relative;
   display: flex;
   width: 100%;
-  height: var(--mm-control-h);
   align-items: center;
-  border: none;
-  font-size: var(--mm-font-sm);
-  text-align: left;
-  cursor: pointer;
 }
 
-  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
 .mm-select-box__check{
-
   position: absolute;
   left: var(--mm-space-1);
   top: 50%;
-  transform: translateY(-50%);
 }
 
 .mm-select-box__item-label{
   flex: 1 1 auto;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
 }
 
 .mm-select-box__remove{
@@ -86,9 +44,4 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: var(--mm-space-4);
-  height: var(--mm-space-4);
-  border: 0;
-  border-radius: var(--mm-radius-sm);
-  cursor: pointer;
 }

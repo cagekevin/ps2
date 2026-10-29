@@ -1,3 +1,5 @@
+/* 骨架：只留结构与定位，视觉待重写 */
+
 *{
   box-sizing: border-box;
 }
@@ -7,8 +9,6 @@
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
 }
 
 html,
@@ -17,27 +17,10 @@ body,
   height: 100%;
 }
 
-  /* 原版 --c-surface / --c-bg 都是 #363636；#535353 只用于底栏 */
-body{
-  font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
-  font-size: var(--mm-font-md);
-  -webkit-user-select: none;
-}
-
-button{
-  font-family: inherit;
-}
-
-/* 拖拽浮层：`hooks/useLongPressDrag` 在拖拽期间挂这个类。
-   z-index 走 token——hook 里内联写 999 会让层级绕过 tokens.css，改档位时漏掉它 */
 .mm-drag-float{
   z-index: var(--mm-z-drag);
 }
 
-/* 居中弹窗的遮罩：`Confirm` 与图片取色弹层共用（原先两份逐行相同的规则，
-   连遮罩色都是同一个颜色的两种写法）。放全局而不是某个组件目录，
-   因为它跨组件复用、且必须在任何弹窗渲染前就已加载。
-   `InputDialog` 不在此列——原版它是 `calc(50vw - 90px)` + `top:30%`，刻意不居中 */
 .mm-modal-mask{
   position: fixed;
   inset: 0;
@@ -47,35 +30,14 @@ button{
   justify-content: center;
 }
 
-/* 「原生控件 + 文字」这一行的收缩规则：勾选 / 单选共用一处。
-   没有这两条，面板拉到 200 时长标签会按内容宽度把整行顶出容器。
-   放全局的理由与上面的遮罩相同——跨组件复用，而两个组件目录各写一份必漂（改一处漏一处），
-   且这两条与各自的视觉参数（方框 / 圆点）无关，属布局共性 */
-/* 勾选 / 单选根：行内排列、点击态、收缩规则 —— 两个组件共用这一份 */
 .mm-check,
 .mm-radio{
   display: inline-flex;
   align-items: center;
   min-width: 0;
   max-width: 100%;
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-  user-select: none;
 }
 
-/* 只样式化 webkit 伪元素——CEP 12 是 Chromium 103，`scrollbar-width` / `scrollbar-color`
-   要 121 才有，写了等于没写；默认滚动条是浅色 15px，在深色面板上白得刺眼 */
-::-webkit-scrollbar{
-  width: var(--mm-scrollbar-w);
-  height: var(--mm-scrollbar-w);
-}
-
-::-webkit-scrollbar-thumb{
-  border-radius: var(--mm-radius-pill);
-}
-
-/* ---------- 公共布局原语 ---------- */
-/* 页面根容器：撑满可用高度、纵向排列；子区块自己滚。五页根类都取这一份，页面不再各写一遍 */
 .mm-common,
 .mm-font,
 .mm-font-panel,
@@ -87,7 +49,6 @@ button{
   min-height: 0;
 }
 
-/* 长列表滚动区：吃掉剩余高度、自己滚 */
 .mm-font__list,
 .mm-style__list{
   flex: 1;
@@ -95,55 +56,35 @@ button{
   overflow-y: auto;
 }
 
-/* 竖向分隔线：1px 宽、固定短高 */
 .mm-bottom-bar__divider,
 .mm-font-panel__divider{
   flex: 0 0 auto;
-  width: var(--mm-border-w);
-  height: var(--mm-verline-h);
 }
 
-/* 横向分隔线：只留底边 */
-.mm-imgcolor__hr,
-.mm-menu__hr{
-  border: 0;
-  border-bottom-width: var(--mm-border-w);
-  border-bottom-style: solid;
-}
-/* 勾选 / 单选：原生 input 只留语义与焦点，不占布局位置 —— 两个组件共用一份 */
 .mm-check__input,
 .mm-radio__input{
   position: absolute;
-  width: var(--mm-space-tight);
-  height: var(--mm-space-tight);
   opacity: 0;
 }
 
-/* 标签单行省略（ellipsis 要生效必须有 min-width: 0，否则 flex 子项按内容撑开） */
 .mm-check__label,
 .mm-radio__label{
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* 吃掉剩余宽度的单行文字：折叠标题 / 下拉标签共用 */
 .mm-collapse__title,
 .mm-select-box__label{
   flex: 1 1 auto;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-/* 一行两端对齐：左侧标题 / 右侧操作。页面不再各写 display:flex + space-between */
+
 .mm-row{
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-/* 同行可换行：窄面板放不下时换行，不顶出容器 */
 .mm-row--wrap{
   flex-wrap: wrap;
 }

@@ -1,23 +1,6 @@
-/* 遮罩用 `ui.css` 的 `.mm-modal-mask`（与图片取色弹层共用），本文件只画面板本体 */
-
-.mm-confirm{
-  min-width: var(--mm-modal-min-w);
-  max-width: var(--mm-modal-max-w);
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-}
-
-.mm-confirm__title{
-  font-size: var(--mm-font-sm);
-}
-
-.mm-confirm__message{
-  font-size: var(--mm-font-xs);
-  line-height: 1.5;
-}
+/* 骨架：只留结构与定位，视觉待重写 */
 
 .mm-confirm__actions{
   display: flex;
   justify-content: flex-end;
 }
-

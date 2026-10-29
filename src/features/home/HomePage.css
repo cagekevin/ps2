@@ -1,25 +1,7 @@
-/* 【范本】feature 样式：只用 Token 变量，禁止色值与 px；通用控件样式在 components/ui */
-
-.mm-home__row{
-  font-size: var(--mm-font-sm);
-}
+/* 【范本】undefined —— 骨架：只留结构与定位，视觉待重写 */
 
 .mm-home__actions{
   display: flex;
-}
-
-.mm-home__diag{
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
-}
-
-.mm-home__diag-title{
-  font-size: var(--mm-font-xs);
-}
-
-.mm-home__log{
-  border-width: var(--mm-border-w); border-style: solid;
-  border-radius: var(--mm-radius-md);
 }
 
 .mm-home__log-actions{
@@ -27,18 +9,12 @@
 }
 
 .mm-home__log-body{
-  max-height: var(--mm-log-max-h);
   overflow: auto;
-  font-size: var(--mm-font-xs);
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-all;
 }
 
 .mm-home__diag-row{
   display: flex;
   justify-content: space-between;
-  font-size: var(--mm-font-xs);
 }
 
 .mm-home__diag-key{
@@ -48,6 +24,4 @@
 .mm-home__diag-value{
   flex: 0 1 auto;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
