@@ -156,4 +156,90 @@
   --mm-input-w-half: calc(50% - 6px);
   --mm-input-w-compact: 70px;
   --mm-btn-half: calc(50% - 6px);
+
+  /* ---------- 8. 颜色 ----------
+     值逐条取自 Vue 原版 src/styles/tokens.css；命名按 --mm-color-<角色>，
+     不再沿用原版 --c-* 前缀。色阶按亮度单调，同一角色只有一个值。 */
+
+  /* 表面 / 底 */
+  --mm-color-bg-base: #363636;                    /* 面板基色 */
+  --mm-color-bg-drawer: #222222;                  /* 凹陷层：输入框底、导航激活、折叠 body */
+  --mm-color-bg-hover: #3d3d3d;                   /* 表面 hover */
+  --mm-color-bg-active: #424242;                  /* 列表行 / 下拉项 hover */
+  --mm-color-bg-raised: #4b4b4b;                  /* 按钮底 */
+  --mm-color-bg-raised-hover: #575757;            /* 按钮 hover */
+  --mm-color-bg-input: #2c2c2c;                   /* 输入框底与边框 */
+  --mm-color-bg-overlay: rgba(64, 64, 64, 0.96);  /* 浮层 / 弹窗 / toast */
+  --mm-color-bg-nav: #535353;                     /* 侧边栏 */
+  --mm-color-bg-bar: #545454;                     /* 底部工具条 */
+  --mm-color-bg-header: #333333;                  /* 页头 */
+  --mm-color-bg-panel: #434343;                   /* 导航激活 / 深色块 */
+  --mm-color-bg-card: #404040;                    /* 浮层卡片 */
+  --mm-color-bg-tabsbar: #282828;                 /* 顶部分段条 / 仓库下拉 */
+  --mm-color-bg-editor: #111111;                  /* 字体面板编辑输入 */
+  --mm-color-bg-font-card: #535353;               /* 字体库卡片 */
+  --mm-color-bg-disabled: #3d3d3d;                /* 禁用按钮底 */
+
+  /* 描边 */
+  --mm-color-border: #2e2e2e;                          /* 暗线：页面 / 列表分隔 */
+  --mm-color-border-control: #4b4b4b;                  /* 亮线：控件 / 勾选框 / 浮层外缘 */
+  --mm-color-border-checked: #6e6e6e;                  /* 字重预览选中框 */
+  --mm-color-border-float: hsla(0, 0%, 100%, 0.1);     /* 浮层外边缘 */
+  --mm-color-border-float-strong: hsla(0, 0%, 100%, 0.2); /* 图标按钮 hover 边 */
+  --mm-color-border-icon-hover: #444444;
+  --mm-color-border-dialog: #dddddd;
+  --mm-color-border-swatch-hover: #d5d5d5;
+  --mm-color-border-warehouse: #c9c9c9;
+
+  /* 文字 */
+  --mm-color-text: #c3c3c3;                        /* 正文 */
+  --mm-color-text-strong: #f5f5f5;                 /* 标题 / 强调 */
+  --mm-color-text-dim: #9a9a9a;                    /* 次要 */
+  --mm-color-text-faint: #8e8e8e;                  /* placeholder / 空态 / 计数 */
+  --mm-color-text-inverse: #ffffff;                /* 蓝底反白 */
+  --mm-color-text-preview: #e0e0e0;                /* 字体预览 */
+  --mm-color-text-name: #eaeaea;                   /* 无预览模式家族名 */
+  --mm-color-text-chip: #c0c0c0;                   /* 字重芯片 */
+  --mm-color-text-muted: #b3b3b3;                  /* 计数 / 次要信息 */
+  --mm-color-text-on-chip: hsla(0, 0%, 100%, 0.95); /* 标签 chip 文字 */
+  --mm-color-text-disabled: #7b7b7b;               /* 禁用文字 */
+
+  /* 图标 */
+  --mm-color-icon: #cacaca;
+  --mm-color-icon-strong: #6f6f6f;
+  --mm-color-icon-muted: #666666;
+  --mm-color-icon-muted-hover: #dddddd;
+
+  /* 语义 */
+  --mm-color-accent: #006fff;                      /* 选中 / 焦点 / 主操作 */
+  --mm-color-accent-hover: #2a86ff;
+  --mm-color-accent-soft: #759fff;                 /* 输入框 focus 边 / 当前项字 */
+  --mm-color-accent-solid: #3565ff;                /* 下拉选中项底 */
+  --mm-color-create: #3968ff;                      /* 新建标签按钮 */
+  --mm-color-danger: #f14c4c;
+  --mm-color-ok: #4ec9b0;
+  --mm-color-warn: #dcdcaa;
+  --mm-color-accent-a16: rgba(14, 99, 156, 0.22);
+  --mm-color-danger-a16: rgba(241, 76, 76, 0.16);
+  --mm-color-ok-a18: rgba(78, 201, 176, 0.18);
+  --mm-color-warn-a18: rgba(220, 220, 170, 0.18);
+
+  /* 遮罩 / 半透明层 */
+  --mm-color-mask: rgba(0, 0, 0, 0.45);            /* 弹窗 / 全屏加载 */
+  --mm-color-mask-soft: rgba(0, 0, 0, 0.25);       /* 图标按钮 hover 底 */
+  --mm-color-mask-faint: rgba(0, 0, 0, 0.1);       /* 输入弹窗遮罩 */
+  --mm-color-btn-muted: rgba(0, 0, 0, 0.2);        /* 旧版快捷按钮底 */
+  --mm-color-icon-hover: rgba(0, 0, 0, 0.2);       /* 图标按钮 hover 底 */
+  --mm-color-nav-hover: rgba(0, 0, 0, 0.9);        /* 导航悬停 */
+  --mm-color-hover-1: hsla(0, 0%, 100%, 0.06);     /* 叠白一档 */
+  --mm-color-hover-2: hsla(0, 0%, 100%, 0.1);      /* 叠白二档：菜单项 hover */
+
+  /* 数据色：重命名页图层标记，是数据不是主题色 */
+  --mm-color-layer-1: #b0423f;
+  --mm-color-layer-2: #a5620a;
+  --mm-color-layer-3: #aa890a;
+  --mm-color-layer-4: #5f823c;
+  --mm-color-layer-5: #526f99;
+  --mm-color-layer-6: #7155a0;
+  --mm-color-layer-7: #6a6a6a;
 }

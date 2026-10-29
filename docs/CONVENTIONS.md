@@ -832,8 +832,9 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     判据一句话：**把这个元素换成灰，用户会不会少知道一件事？** 会 ⇒ 用蓝；不会 ⇒ 不许用
 13. **页面底色只有一个出处**：`app/layout.css` 的 `.mm-layout` 用 `--mm-color-bg-base`（`#363636`）铺满内容区，
     七个页面的根类**都不写 `background`**（写了就是第二层底，页与页之间会差一档）。
-    其余四档按角色取：输入位 `--mm-color-bg-input`(#000) / 抽屉 `--mm-color-bg-drawer`(#222) /
-    页头底栏等深色块 `--mm-color-bg-panel`(#434343) / 浮层 `--mm-color-bg-overlay`(#535353)
+    其余按角色取（值全部回到 Vue 原版）：输入位 `--mm-color-bg-input`(#2c2c2c) /
+    抽屉 `--mm-color-bg-drawer`(#222) / 页头 `--mm-color-bg-header`(#333) /
+    底栏 `--mm-color-bg-bar`(#545454) / 浮层 `--mm-color-bg-overlay`(rgba(64,64,64,.96))
 
 ---
 
