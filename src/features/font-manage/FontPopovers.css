@@ -7,7 +7,6 @@
   left: var(--mm-preview-card-left);
   bottom: var(--mm-preview-card-bottom);
   width: var(--mm-preview-card-w);
-  padding: var(--mm-space-3) 0;
   border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);
@@ -15,11 +14,11 @@
   color: var(--mm-color-text-strong);
 }
 
-.mm-font__preview-item {
+  /* 左 30 是勾选位；右 16 与字重选项同一档（原来右侧 30 是多余留白） */
+.mm-font__preview-item {  /* 左 30 是勾选位；右 16 与字重选项同一档（原来右侧 30 是多余留白） */
+
   position: relative;
   width: 100%;
-  /* 左 30 是勾选位；右 16 与字重选项同一档（原来右侧 30 是多余留白） */
-  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-control-reserve);
   border: 0;
   background: transparent;
   color: inherit;
@@ -41,23 +40,16 @@
 
 .mm-font__preview-check {
   position: absolute;
-  left: var(--mm-space-5);
+  left: var(--mm-check-slot);
   top: 50%;
   transform: translateY(-50%);
 }
 
 /* ---------- 标签弹层 ---------- */
+/* ---------- 标签弹层 ----------
+   定位与表面来自 `global.css` 的 `.mm-popover`，这里只给宽度与内边距 */
 .mm-font__tag-menu {
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
-  z-index: var(--mm-z-dropdown);
   width: var(--mm-tag-panel-w);
-  padding: var(--mm-space-3);
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-font__tag-menu-title {
@@ -67,7 +59,6 @@
 }
 
 .mm-font__tag-menu-section {
-  margin: var(--mm-space-3) 0 var(--mm-space-2);
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   line-height: 1.4;
@@ -76,7 +67,7 @@
 .mm-font__tag-menu-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-2);
+gap:0;
 }
 
 /* 标签输入框（两套视觉） */
@@ -98,15 +89,11 @@
   outline: none;
 }
 
-.mm-font__tag-input--menu {
-  margin: var(--mm-space-3) 0 var(--mm-space-2);
-}
+
 
 /* 标签输入框的表面由 `.mm-input` 给，两档只差左右内边距（右 30 给清除按钮留位） */
 .mm-font__tag-input--menu .mm-font__tag-field,
-.mm-font__tag-input--modal .mm-font__tag-field {
-  padding: 0 var(--mm-control-reserve) 0 var(--mm-space-3);
-}
+
 
 /* 焦点是状态，用蓝；但 `--mm-color-accent-hover` 是 hover 档，静态焦点态不许借它（§7 规则 12） */
 .mm-font__tag-input--modal .mm-font__tag-field:focus {
@@ -118,7 +105,6 @@
   right: var(--mm-space-2);
   top: 50%;
   transform: translateY(-50%);
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--mm-color-text-muted);
@@ -131,20 +117,12 @@
    这里不再有 `.mm-font__tag-ctx`：那一版是蓝底白字、无边框无圆角无阴影，
    与样式页 / 常用页的右键菜单不是同一种东西。 */
 
-/* 标签新建 / 重命名弹窗 */
-.mm-font__modal-mask {
-  position: fixed;
-  inset: 0;
-  z-index: var(--mm-z-dropdown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--mm-color-mask);
-}
+/* 标签新建 / 重命名弹窗：遮罩用 `global.css` 的 `.mm-modal-mask`（与确认框、图片取色同一套）。
+   这里原有一份逐行相同的自绘遮罩，层级还和右键菜单同为 dropdown——两个同级浮层谁盖谁
+   只能靠 Portal 挂载顺序，右键菜单里点「新建标签」时正是这个顺序在兜底 */
 
 .mm-font__modal {
   width: var(--mm-modal-w);
-  padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);
@@ -152,7 +130,6 @@
 }
 
 .mm-font__modal-title {
-  margin: 0 0 var(--mm-space-3);
   color: var(--mm-color-text-strong);
   font-size: var(--mm-font-sm);
   font-weight: 500;
@@ -161,8 +138,7 @@
 .mm-font__modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--mm-space-2);
-  margin-top: var(--mm-space-3);
+gap:0;
 }
 
 /* 弹窗按钮表面由 `ui.Button` 给（`primary` / `ghost` 两档），禁用态也在那里，这里不再画一份 */

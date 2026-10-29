@@ -13,7 +13,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 var(--mm-space-3);
   background: var(--mm-color-mask-strong);
   text-align: center;
 }

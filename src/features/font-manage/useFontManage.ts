@@ -64,7 +64,7 @@ export function useFontManage() {
   const [weightIndex, setWeightIndex] = useState<Record<string, number>>({});
   const [showTextPanel, setShowTextPanel] = useState(false);
 
-  const listRef = useRef<HTMLUListElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const aliveRef = useRef(true);
   const requestSeq = useRef(0);
   const applyingRef = useRef(false);

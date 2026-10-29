@@ -1,23 +1,14 @@
-/* 右键菜单：位置由 useFloatingPosition 写入的 CSS 变量决定 */
+/* 右键菜单：定位与表面来自 `.mm-popover`（`global.css`）。
+   层级比其它下拉高一档——菜单可能从下拉里再弹出来 */
 .mm-menu {
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
+
   z-index: var(--mm-z-tooltip);
   min-width: var(--mm-menu-min-w);
-  padding: var(--mm-space-1);
-  /* 与 `SelectBox` / 其它浮层同色：深色底上 rgba(0,0,0,.5) 那条看不见，
-     浮层边缘统一用亮线，否则两个浮层挨着出现时一条有一无 */
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-menu__item {
   display: block;
   width: 100%;
-  padding: var(--mm-space-1) var(--mm-space-2);
   border: none;
   border-radius: var(--mm-radius-sm);
   background: transparent;
@@ -35,9 +26,7 @@
   color: var(--mm-color-error);
 }
 
-/* 原版 `.menu-hr{margin:5px 0;border:0;border-bottom:1px solid rgba(0,0,0,.15)}` */
 .mm-menu__hr {
-  margin: var(--mm-space-1) 0;
   border: 0;
   border-bottom: var(--mm-border-w) solid var(--mm-color-border);
 }

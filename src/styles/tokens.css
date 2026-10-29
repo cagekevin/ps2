@@ -15,11 +15,49 @@
  * 禁止：在本文件之外写色值或 px；引用本文件没定义的变量（`var()` 引用未定义变量
  *       不会报错，会让整条声明静默失效，由 `npm run check:css-tokens` 拦截）。
  */
-:root {
   /* ---------- 1. 原始色阶 ---------- */
+:root {  /* ---------- 1. 原始色阶 ---------- */
   /* 中性灰：数字越大越暗（#171717 → #ececec，亮度严格单调） */
+  /* 强调与语义色（唯一写死的三类彩色） */
+  /* ---------- 2. 语义角色 ---------- */
+  /* 底：越浮起越亮（sunken 43 < base 54 < panel 67 < raised 76 < overlay 83）。
+  /* 交互态：叠一层白而不是换底色档位。换档会让 hover 在某些组件上变暗、
+  /* 文字：四级。strong 用于 hover / 选中，muted 用于弱信息与禁用。 */
+  /* 图标：与文字同级，不再单独给页面开一档 */
+  /* 线：两种。暗线用于页面 / 列表分隔（相对底色，换底不用改），
+  /* 强调：全仓只有一个蓝，不再分 solid / soft / tab-active */
+  /* 语义色 */
+  /* 遮罩：三档（弹窗 / 区域不可用 / 输入弹窗的淡遮罩） */
+  /* ---------- 3. 间距（六档 + 两贴合档） ---------- */
+  /* ---------- 4. 尺寸 ---------- */
+  /* 控件高度：全仓唯一一档。原先 24 / 26 / 26 / 30 四档并存，
+  /* 控件预留位：输入框给左侧图标（16）或右侧按钮留出的内边距 */
+  /* 结构高度 */
+  /* 字号：三档。10 / 14 / 15 原先各只用一两次，已并入相邻档。 */
+  /* 形状 */
+  /* 动效时长：全仓一档（箭头旋转、浮层淡入） */
+  /* 滚动条：Chromium 默认是浅色 15px，深色面板上刺眼。宽度按 8 档，
+  /* ---------- 5. 导航 ---------- */
+  /* ---------- 6. 层级 ---------- */
+  /* ---------- 7. 各页专有尺寸（按角色保留，不并档） ---------- */
+  /* 样式页格子：四库各自的格子尺寸，原版逐个实测，不共用一套 */
+  /* 字体管理页 */
+  /* 列表项的占位估算高度（content-visibility 用），随预览字号同步 */
+  /* 预览字号是「给用户看的字」，不是 UI 字号，不并入三档。
+  /* --mm-tag-ctx-w 已删：标签右键菜单改用公共 ContextMenu，不再需要固定宽度 */
+  /* 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%）。
+  /* 字体面板页 */
+  /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
+  /* 格子图标 32 的出处在 `TileButton.tsx` 的 `TILE_ICON_SIZE`（`Icon` 收数字 prop，
+  /* 弹层 / 浮层 */
+  /* 下拉面板最大高度：字体列表有几百项，超过就滚动，不往屏幕外铺 */
+  /* 定宽输入框（原版 .inputcom1 / .inputcom-2 / .switch-input）
+  /* 预设小按钮宽度 = (100% - (列数 - 1) × gap) / 列数。
+
+  --mm-gray-1100: #000000;
   --mm-gray-1000: #171717;
   --mm-gray-900: #1f1f1f;
+  --mm-gray-850: #222222;
   --mm-gray-800: #2b2b2b;
   --mm-gray-700: #363636;
   --mm-gray-600: #434343;
@@ -32,77 +70,73 @@
   --mm-gray-50: #d0d0d0;
   --mm-gray-0: #ececec;
 
-  /* 强调与语义色（唯一写死的三类彩色） */
   --mm-blue-500: #0f7df2;
   --mm-blue-400: #4da3ff;
   --mm-red-500: #e05252;
   --mm-green-500: #4caf50;
   --mm-yellow-500: #dcdcaa;
 
-  /* ---------- 2. 语义角色 ---------- */
-  /* 底：越浮起越亮（sunken 43 < base 54 < panel 67 < raised 76 < overlay 83）。
-     输入框比页面更暗才有「凹进去」的感觉；弹窗在最上层所以最亮。 */
+     弹窗在最上层所以最亮。 */
   --mm-color-bg-sunken: var(--mm-gray-800);
   --mm-color-bg-base: var(--mm-gray-700);
   --mm-color-bg-panel: var(--mm-gray-600);
   --mm-color-bg-raised: var(--mm-gray-550);
   --mm-color-bg-overlay: var(--mm-gray-500);
 
-  /* 交互态：叠一层白而不是换底色档位。换档会让 hover 在某些组件上变暗、
+  /* 输入位表面：两档，按「在不在抽屉里」分。
+     页面上是 #222；抽屉里是纯黑（抽屉底就是 #222，输入框必须再深一档才看得出框）。
+     三个消费者：`.mm-input`、下拉触发器（`select-box.css`）、复合数字框外壳（`FontPanelPage.css`）。 */
+  --mm-color-bg-input: var(--mm-gray-850);
+  --mm-color-bg-input-in-drawer: var(--mm-gray-1100);
+
+  /* 抽屉（展开面板）底色：**全仓所有抽屉都是这一个值**，官方 7 个面板底也都是 #222。
+     它与 `bg-sunken`(#2b2b2b) 差一档：sunken 是「凹进去的控件」（格子 active、图标选中），
+     抽屉是「压在内容上的一块面」，两者不是同一角色 */
+  --mm-color-bg-drawer: var(--mm-gray-850);
+
      某些上变亮——「叠白」保证 hover 永远比静态亮。 */
   --mm-color-bg-hover: rgba(255, 255, 255, 0.08);
   --mm-color-bg-active: rgba(255, 255, 255, 0.14);
 
-  /* 文字：四级。strong 用于 hover / 选中，muted 用于弱信息与禁用。 */
   --mm-color-text-strong: var(--mm-gray-0);
   --mm-color-text: var(--mm-gray-100);
   --mm-color-text-dim: var(--mm-gray-200);
   --mm-color-text-muted: var(--mm-gray-300);
   --mm-color-text-on-accent: #ffffff;
 
-  /* 图标：与文字同级，不再单独给页面开一档 */
   --mm-color-icon: var(--mm-gray-100);
 
-  /* 线：两种。暗线用于页面 / 列表分隔（相对底色，换底不用改），
      亮线用于控件描边与勾选框（必须看得见）。一页之内不许出现第三种。 */
   --mm-color-border: rgba(0, 0, 0, 0.5);
   --mm-color-border-control: var(--mm-gray-300);
 
-  /* 强调：全仓只有一个蓝，不再分 solid / soft / tab-active */
   --mm-color-accent: var(--mm-blue-500);
   --mm-color-accent-hover: var(--mm-blue-400);
 
-  /* 语义色 */
   --mm-color-error: var(--mm-red-500);
   --mm-color-ok: var(--mm-green-500);
   --mm-color-warn: var(--mm-yellow-500);
 
-  /* 遮罩：三档（弹窗 / 区域不可用 / 输入弹窗的淡遮罩） */
+     强档给区域不可用（要压住整块内容）；淡档给输入弹窗（原版刻意更淡） */
   --mm-color-mask: rgba(0, 0, 0, 0.4);
   --mm-color-mask-strong: rgba(0, 0, 0, 0.6);
   --mm-color-mask-faint: rgba(0, 0, 0, 0.1);
 
-  /* ---------- 3. 间距（六档 + 两贴合档） ---------- */
   --mm-space-1: 4px;          /* 组内 */
   --mm-space-2: 8px;          /* 组间 */
   --mm-space-3: 12px;         /* 区块内 */
   --mm-space-4: 16px;         /* 区块间 */
-  --mm-space-5: 20px;
   --mm-space-tight: 2px;      /* 贴合：徽标内边距这类 */
   --mm-space-inline: 6px;     /* 同行并列 */
   --mm-page-pad-x: 8px;       /* 页边 */
 
-  /* ---------- 4. 尺寸 ---------- */
-  /* 控件高度：全仓唯一一档。原先 24 / 26 / 26 / 30 四档并存，
      字体管理页用 30 导致它的工具栏比别页厚——这就是「不够紧凑」的实因。 */
   --mm-control-h: 26px;
   --mm-icon-btn-size: 26px;   /* 图标按钮是正方形，与控件同高 */
   --mm-icon-md: 16px;
   --mm-icon-lg: 24px;
-  /* 控件预留位：输入框给左侧图标（16）或右侧按钮留出的内边距 */
   --mm-control-reserve: 30px;
 
-  /* 结构高度 */
   --mm-header-h: 40px;
   --mm-bottom-bar-h: 26px;
   --mm-bottom-btn-w: 30px;
@@ -117,34 +151,29 @@
   --mm-collapse-arrow-h: 13px;
   --mm-check-size: 12px;
   --mm-check-radius: 3px;
+  --mm-check-slot: 20px;
 
-  /* 字号：三档。10 / 14 / 15 原先各只用一两次，已并入相邻档。 */
   --mm-font-xs: 11px;
   --mm-font-sm: 12px;
   --mm-font-md: 13px;
   --mm-line-16: 16px;
   --mm-line-17: 17px;
 
-  /* 形状 */
   --mm-radius-sm: 2px;
   --mm-radius-md: 4px;
   --mm-radius-pill: 999px;
   --mm-border-w: 1px;
   --mm-shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.4);
-  /* 动效时长：全仓一档（箭头旋转、浮层淡入） */
   --mm-dur-fast: 120ms;
 
-  /* 滚动条：Chromium 默认是浅色 15px，深色面板上刺眼。宽度按 8 档，
      滑块比控件描边暗一档、hover 才亮到描边色（滑块是背景元件，不该比控件抢眼） */
   --mm-scrollbar-w: 8px;
   --mm-scrollbar-thumb: var(--mm-gray-400);
   --mm-scrollbar-thumb-hover: var(--mm-color-border-control);
 
-  /* ---------- 5. 导航 ---------- */
   --mm-nav-w: 40px;
   --mm-nav-item-sub: 26px;
 
-  /* ---------- 6. 层级 ---------- */
   --mm-z-nav: 10;
   --mm-z-loading: 200;
   --mm-z-drag: 999;
@@ -153,8 +182,6 @@
   --mm-z-tooltip: 1100;
   --mm-z-toast-top: 1200;
 
-  /* ---------- 7. 各页专有尺寸（按角色保留，不并档） ---------- */
-  /* 样式页格子：四库各自的格子尺寸，原版逐个实测，不共用一套 */
   --mm-swatch-w: 25px;
   --mm-swatch-h: 25px;
   --mm-gradient-w: 50px;
@@ -163,15 +190,7 @@
   --mm-font-card-h: 44px;
   --mm-style-thumb: 26px;
 
-  /* 字体管理页 */
-  /* 列表项的占位估算高度（content-visibility 用），随预览字号同步 */
-  --mm-font-item-est: 96px;
-  --mm-font-item-est-none: 40px;
-  --mm-font-item-est-sm: 88px;
-  --mm-font-item-est-md: 96px;
-  --mm-font-item-est-lg: 116px;
-  --mm-font-item-est-xl: 148px;
-  /* 预览字号是「给用户看的字」，不是 UI 字号，不并入三档。
+  /* 字体管理页的预览字号 / 行高：五档各一对。
      行高统一取字号的 1.36~1.38 倍，保证五档的「字/空白」比例一致——
      原先 38/53、50/70、72/101 三档比例不同，换档时列表节奏会跳。 */
   --mm-name-size: 16px;
@@ -192,39 +211,34 @@
   --mm-tag-panel-w: 180px;
   --mm-tag-strip-h: 22px;
   --mm-tag-chip-w: 18px;
-  /* --mm-tag-ctx-w 已删：标签右键菜单改用公共 ContextMenu，不再需要固定宽度 */
   --mm-filter-panel-w: 220px;
   --mm-filter-panel-max-h: 420px;
   --mm-filter-panel-max-w-gap: 64px;
   --mm-filter-badge: 14px;
 
-  /* 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%）。
      名字不带 font-panel-：它是 `components/InputDialog` 在用，属于公共弹层尺寸 */
   --mm-dialog-w: 220px;
   --mm-dialog-offset-x: 90px;
 
-  /* 字体面板页 */
   --mm-font-panel-swatch-w: 60px;
   --mm-preview-card-w: 180px;
   --mm-preview-card-left: 43px;
   --mm-preview-card-bottom: 26px;
   --mm-weight-menu-min-w: 120px;
 
-  /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
-  /* 格子图标 32 的出处在 `TileButton.tsx` 的 `TILE_ICON_SIZE`（`Icon` 收数字 prop，
      拿不到 CSS 变量），这里不再留同名 token——留着就是两个出处 */
   --mm-common-tile: 50px;
   --mm-common-tile-radius: var(--mm-radius-md);
   --mm-common-mark: 3px;
   --mm-common-mark-offset-y: 30px;
   --mm-common-mark-offset-x: -3px;
+     缩到 72 是为了给右侧 4 个档位留出「最窄面板（200）也放得下」的空间 */
+  --mm-common-zoom-trigger-w: 72px;
 
-  /* 弹层 / 浮层 */
   --mm-modal-w: 260px;
   --mm-modal-min-w: 240px;
   --mm-modal-max-w: 320px;
   --mm-menu-min-w: 120px;
-  /* 下拉面板最大高度：字体列表有几百项，超过就滚动，不往屏幕外铺 */
   --mm-select-panel-max-h: 320px;
   --mm-log-max-h: 240px;
   --mm-describe-max-w: 240px;
@@ -240,10 +254,5 @@
   --mm-input-w-wide: 80px;
   --mm-input-w-half: calc(50% - 6px);
   --mm-input-w-compact: 70px;
-  /* 预设小按钮宽度 = (100% - (列数 - 1) × gap) / 列数。
-     原来的 25%-4.5px / 20%-4.8px 是按 6px 间距算的，实际 gap 是 4px，
-     结果四列的行右边缺 6、十列的缺 8——每行都收不到 border-box 的右边缘。 */
-  --mm-btn-quarter: calc(25% - 3px);
-  --mm-btn-tenth: calc(20% - 3.2px);
   --mm-btn-half: calc(50% - 6px);
 }

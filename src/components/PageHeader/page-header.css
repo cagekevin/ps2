@@ -4,8 +4,7 @@
   flex: 0 0 var(--mm-header-h);
   height: var(--mm-header-h);
   align-items: center;
-  gap: var(--mm-space-2);
-  padding: 0 var(--mm-page-pad-x);
+  gap:0;
   background: var(--mm-color-bg-panel);
   border-bottom: var(--mm-border-w) solid var(--mm-color-border);
 }
@@ -13,7 +12,6 @@
 .mm-page-header__title {
   flex: 1 1 auto;
   min-width: 0;
-  margin: 0;
   overflow: hidden;
   color: var(--mm-color-text-strong);
   font-size: var(--mm-font-md);

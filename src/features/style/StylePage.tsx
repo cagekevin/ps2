@@ -347,10 +347,10 @@ export default function StylePage() {
       {describeContent
         ? <Portal>
             <div ref={describeRef} className="mm-style__describe">
-              <p className="mm-style__describe-name">{describeContent.name}</p>
-              <p className="mm-style__describe-meta">{describeContent.subtitle}</p>
+              <div className="mm-style__describe-name">{describeContent.name}</div>
+              <div className="mm-style__describe-meta">{describeContent.subtitle}</div>
               {describeContent.detail ? (
-                <p className="mm-style__describe-meta">{describeContent.detail}</p>
+                <div className="mm-style__describe-meta">{describeContent.detail}</div>
               ) : null}
             </div>
           </Portal>

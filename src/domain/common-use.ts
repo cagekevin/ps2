@@ -272,12 +272,13 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
     if (decoded.status === 'error') continue;
 
     const item = decoded.value;
-    /* 没有 id 的项无法排序 / 无法定位显隐，宁可不上屏也不要用下标冒充 id */
-    const id = textOf(item.id);
 
     const svg = textOf(item.svg);
     const filled = typeof item.fillSvg === 'string' && item.fillSvg ? stripHash(item.fillSvg) : null;
     const comName = textOf(item.comName);
+    /* 缺 id 但有 comName 时用 comName 兜底：`comName` 是「这个按钮做什么」的稳定标识，
+       拿它当 id 既能上屏、也不会随下标变化（不能用下标冒充 id） */
+    const id = textOf(item.id) || comName;
 
     tiles.push({
       id,
@@ -305,8 +306,13 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
  */
 export function decodeCommonUseItem(value: unknown, path: string): Result<CommonUseItem> {
   if (!isRecord(value)) return failWithDetail('CORRUPT', '常用功能项不是对象', path);
-  if (typeof value.id !== 'string' || !value.id) {
-    return failWithDetail('CORRUPT', '常用功能项缺少 id', `${path}.id`);
-  }
-  return ok(value);
+  if (typeof value.id === 'string' && value.id) return ok(value);
+  /**
+   * 缺 `id` 但带 `comName` 的项**是能用的功能**，不是坏数据：
+   * 真机上 `sj_commonFunction.json` 第 13 项就是 `{ created: '按间距分布', comName: 'comspacing' }`，
+   * 一个键都不缺、只是没写 id。丢掉它等于把用户自己加的按钮吞掉。
+   * 这种情况用 `comName` 兜底当 id（见 `toTiles`），真正什么都没有的项才记账跳过。
+   */
+  if (typeof value.comName === 'string' && value.comName) return ok(value);
+  return failWithDetail('CORRUPT', '常用功能项既没有 id 也没有 comName', `${path}.id`);
 }

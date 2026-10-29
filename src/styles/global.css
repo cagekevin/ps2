@@ -8,10 +8,9 @@ body,
   height: 100%;
 }
 
-body {
-  margin: 0;
-  padding: 0;
   /* 原版 --c-surface / --c-bg 都是 #363636；#535353 只用于底栏 */
+body {  /* 原版 --c-surface / --c-bg 都是 #363636；#535353 只用于底栏 */
+
   background: var(--mm-color-bg-base);
   color: var(--mm-color-text);
   font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
@@ -41,6 +40,31 @@ button {
   align-items: center;
   justify-content: center;
   background: var(--mm-color-mask);
+}
+
+/* 下拉 / 浮层壳：**定位与表面全仓唯一一处**。
+   下拉、右键菜单、标签弹层、筛选面板都挂这个类，各自只写宽度 / 最大高 / 内边距 / 内容排布。
+   不许再在自己的类里写 position / top / left / border / border-radius / background / box-shadow——
+   写一份就是第二个浮层样本，改一次必漏一处（`CONVENTIONS` §6「下拉」行） */
+.mm-popover {
+  position: fixed;
+  top: var(--floating-y, 0);
+  left: var(--floating-x, 0);
+  z-index: var(--mm-z-dropdown);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-overlay);
+  box-shadow: var(--mm-shadow-pop);
+}
+
+/* 「原生控件 + 文字」这一行的收缩规则：勾选 / 单选共用一处。
+   没有这两条，面板拉到 200 时长标签会按内容宽度把整行顶出容器。
+   放全局的理由与上面的遮罩相同——跨组件复用，而两个组件目录各写一份必漂（改一处漏一处），
+   且这两条与各自的视觉参数（方框 / 圆点）无关，属布局共性 */
+.mm-check,
+.mm-radio {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* 滚动条：全仓一套，页面不再单独写。

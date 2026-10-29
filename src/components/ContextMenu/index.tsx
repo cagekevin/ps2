@@ -50,10 +50,10 @@ export function ContextMenu({ x, y, anchor, items, inside, onClose }: ContextMen
   }, [x, y, anchor, update]);
 
   return (
-    <div className="mm-menu" ref={floatingRef} role="menu">
+    <div className="mm-popover mm-menu" ref={floatingRef} role="menu">
       {items.map((item, index) =>
         item.separator ? (
-          <hr key={`sep-${index}`} className="mm-menu__hr" />
+          <div key={`sep-${index}`} className="mm-menu__hr" />
         ) : (
           <button
             key={`${item.label}-${index}`}

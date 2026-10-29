@@ -1,24 +1,24 @@
-/* 【范本】下拉选择器样式：对照 app/src/components/SelectBox.vue */
-
-/* 触发器：原版 `.select-box__content` —— 28px 高、圆角、flex 撑满 */
-.mm-select-box__trigger {
-  display: flex;
-  width: 100%;
-  height: var(--mm-control-h);
-  align-items: center;
-  gap: var(--mm-space-1);
-  padding: 0 var(--mm-space-2);
   /*
+/*
+ * 【范本】下拉选择器
+ *
+ * 触发器表面来自 `.mm-field-surface`（与输入框同一处）；
+ * 面板的定位与表面（描边 / 圆角 / 底色 / 阴影）来自 `global.css` 的 `.mm-popover`。
+ * 本文件只写触发器布局、选项与滚动——**不写 position / border / background / box-shadow**。
+ */
+
+.mm-select-box__trigger {  /*
    * 表面与输入框（`ui.css` 的 `.mm-input`）同一套：sunken 底 + 亮边框。
    * 原来是 overlay（比页面亮）+ 无边框，靠反差区分；而字体面板又按「面板语义」
    * 覆盖成 sunken，于是两页的下拉一个亮一个暗。
    * 统一成 sunken 之后**必须**给边框：#2b2b2b 落在 #363636 的页面上几乎没有反差。
    */
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-sunken);
-  color: var(--mm-color-text);
-  font-size: var(--mm-font-sm);
+
+  display: flex;
+  width: 100%;
+  height: var(--mm-control-h);
+  align-items: center;
+gap:0;
   text-align: left;
   cursor: pointer;
 }
@@ -38,7 +38,6 @@
 /* 名字吃掉剩余宽度，箭头固定在右边 */
 .mm-select-box__label {
   flex: 1 1 auto;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -49,41 +48,26 @@
   color: var(--mm-color-icon);
 }
 
-/* 面板：原版 `.select-box__dropdown` —— fixed 定位，宽度跟随触发器 */
-.mm-select-box__panel {
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
-  z-index: var(--mm-z-dropdown);
-  width: var(--floating-width, auto);
+/* 面板：宽度由组件按触发器宽写成 inline；这里只管滚动（字体下拉有几百项） */
   /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
+.mm-select-box__panel {  /* 长列表要能滚：字体列表有几百项，不设上限会一直往下铺到屏幕外 */
+  /* 深色底上黑边看不见：浮层边缘用 10% 白，和标签弹层、预览卡同一档 */
+
   max-height: var(--mm-select-panel-max-h);
   overflow-x: hidden;
   overflow-y: auto;
-  /* 深色底上黑边看不见：浮层边缘用 10% 白，和标签弹层、预览卡同一档 */
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
 }
 
-/* 原版 .selectFont-dropDown：宽度减 20、左缩 10、上间距 5 */
-.mm-select-box__panel--inset {
-  left: calc(var(--floating-x, 0) + var(--mm-space-3));
-  width: calc(var(--floating-width, 100%) - var(--mm-space-5));
-  margin-top: var(--mm-space-1);
-}
+/* 选项：与控件同高，左侧留出勾选位（对号是当前值标记，文字不变色） */
+  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
+.mm-select-box__item {  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
 
-/* 选项：原版 `.select-box__item` —— 28px 高、左侧留勾的位置 */
-.mm-select-box__item {
   position: relative;
   display: flex;
   width: 100%;
   height: var(--mm-control-h);
   align-items: center;
-  gap: var(--mm-space-1);
-  /* 左 20 = 勾选位（left 4 + 宽 12）+ 4 的间隔；右 6。勾选就是当前值标记，文字不用变色 */
-  padding: 0 var(--mm-space-inline) 0 var(--mm-space-5);
+gap:0;
   border: none;
   background: transparent;
   color: var(--mm-color-text);
@@ -92,16 +76,16 @@
   cursor: pointer;
 }
 
-/* 当前值靠左侧对号标记，不靠文字变色：hover 与当前项同一底色即可 */
 .mm-select-box__item:hover,
 .mm-select-box__item--active {
   background: var(--mm-color-bg-hover);
 }
 
-.mm-select-box__check {
+  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
+.mm-select-box__check {  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
+
   position: absolute;
   left: var(--mm-space-1);
-  /* 只写 left 会停在行的顶部（26 行里 12 的图标贴顶），看着像压着字 */
   top: 50%;
   transform: translateY(-50%);
   color: var(--mm-color-accent);
@@ -115,19 +99,21 @@
   text-align: left;
 }
 
-/* 行内删除（原版 dropDowncom 的 therrSvg） */
 .mm-select-box__remove {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  width: var(--mm-space-4);
+  height: var(--mm-space-4);
   border: 0;
+  border-radius: var(--mm-radius-sm);
   background: transparent;
   color: var(--mm-color-text-dim);
   cursor: pointer;
 }
 
 .mm-select-box__remove:hover {
+  background: var(--mm-color-bg-hover);
   color: var(--mm-color-text-strong);
 }

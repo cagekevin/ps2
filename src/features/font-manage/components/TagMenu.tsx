@@ -49,12 +49,12 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
   }
 
   return <Portal>
-    <div ref={floatingRef} className="mm-font__tag-menu" role="dialog" aria-label="字体标签">
+    <div ref={floatingRef} className="mm-popover mm-font__tag-menu" role="dialog" aria-label="字体标签">
       <div className="mm-font__tag-menu-title">标签</div>
 
       <TagInput value={keyword} onChange={setKeyword} onEnter={submit} autoFocus />
 
-      <p className="mm-font__tag-menu-section">已添加的标签({added.length})</p>
+      <div className="mm-font__tag-menu-section">已添加的标签({added.length})</div>
       {added.length ? (
         <div className="mm-font__tag-menu-chips">
           {added.map((tag) => (
@@ -69,7 +69,7 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
         </div>
       ) : null}
 
-      <p className="mm-font__tag-menu-section">全部({tags.length})</p>
+      <div className="mm-font__tag-menu-section">全部({tags.length})</div>
       <div className="mm-font__tag-menu-chips">
         {rest.map((tag) => (
           <TagChip

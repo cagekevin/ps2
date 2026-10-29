@@ -5,7 +5,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--mm-space-2) 0;
   background: var(--mm-color-bg-panel);
 }
 
@@ -17,7 +16,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--mm-color-icon);
@@ -37,7 +35,8 @@
   color: var(--mm-color-text);
 }
 
-/* 原版 .tips：left:40px、padding 0 20px、右侧圆角，hover 滑出页面名 */
+/* hover 气泡：原版 .tips：left:40px、右侧圆角，hover 滑出页面名。
+   左右内边距按六档并到 16（20 不在档内；气泡宽度随文字自适应，-4 只影响留白） */
 .mm-nav__item::after {
   content: attr(data-label);
   position: absolute;
@@ -47,7 +46,6 @@
   height: 100%;
   display: flex;
   align-items: center;
-  padding: 0 var(--mm-space-5);
   border-radius: 0 var(--mm-radius-md) var(--mm-radius-md) 0;
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);

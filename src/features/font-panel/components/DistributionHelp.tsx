@@ -29,11 +29,11 @@ export function DistributionHelp() {
 
       {open ? (
         <div className="mm-font-panel__help">
-          <p>固定间距：高度1，高度2，高度3</p>
-          <p>如：20,30,40</p>
-          <p>比例间距：高度=比例</p>
-          <p>如20=1:2:1</p>
-          <p>递增间距：高度+=比例，如20=5</p>
+          <div>固定间距：高度1，高度2，高度3</div>
+          <div>如：20,30,40</div>
+          <div>比例间距：高度=比例</div>
+          <div>如20=1:2:1</div>
+          <div>递增间距：高度+=比例，如20=5</div>
         </div>
       ) : null}
     </>

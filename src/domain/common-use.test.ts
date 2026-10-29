@@ -69,6 +69,17 @@ describe('decodeCommonUseItem', () => {
     /* 同一个对象引用：写回时未知键不能丢 */
     if (result.status === 'ok') expect(result.value).toBe(item);
   });
+
+  it('缺 id 但带 comName → 仍然可用（真机上就有这种项）', () => {
+    /* `sj_commonFunction.json` 第 13 项就是这个形状：{ created, comName }，一个 id 都没有 */
+    const result = decodeCommonUseItem({ created: '按间距分布', comName: 'comspacing' }, 'root[12]');
+    expect(result.status).toBe('ok');
+  });
+
+  it('既没有 id 也没有 comName → 才记坏项', () => {
+    const result = decodeCommonUseItem({ created: '按间距分布' }, 'root[12]');
+    expect(result.status).toBe('error');
+  });
 });
 
 describe('toTiles', () => {
@@ -94,6 +105,12 @@ describe('toTiles', () => {
   it('没有 id 的项不进视图（不拿下标冒充 id）', () => {
     const tiles = toTiles([{ id: 'a' }, { name: '无 id' }]);
     expect(tiles.map((tile) => tile.id)).toEqual(['a']);
+  });
+
+  it('缺 id 的项用 comName 当 id，仍进视图', () => {
+    const tiles = toTiles([{ id: 'a' }, { created: '按间距分布', comName: 'comspacing' }]);
+    expect(tiles.map((tile) => tile.id)).toEqual(['a', 'comspacing']);
+    expect(tiles[1]?.index).toBe(1);
   });
 
   it('comName 为空串按「不可展开」处理', () => {

@@ -1,8 +1,6 @@
 /**
  * 【范本】图标按钮（原版 `.base-icon`）
  *
- * 26×26、无 padding、无圆角、1px 透明边框：原版就是这四个值凑出的点击区，
- * 少写 padding:0 会落回浏览器默认内边距，和工具栏里其它按钮对不齐。
  */
 
 .mm-icon-btn {
@@ -13,7 +11,6 @@
   justify-content: center;
   width: var(--mm-icon-btn-size);
   height: var(--mm-icon-btn-size);
-  padding: 0;
   border: var(--mm-border-w) solid transparent;
   border-radius: 0;
   background: transparent;
@@ -41,7 +38,6 @@
 
 /* 原版角标是 baseIcon 的第二个 flex 子项（不是绝对定位），mt12 压到右下 */
 .mm-icon-btn__badge {
-  margin-top: var(--mm-space-3);
   color: inherit;
   pointer-events: none;
 }

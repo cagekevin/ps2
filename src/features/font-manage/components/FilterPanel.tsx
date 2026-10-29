@@ -31,7 +31,7 @@ export function FilterPanel({ categories, state, onChange }: Props) {
 
         return (
           <section key={group.key} className="mm-font__filter-group">
-            <p className="mm-font__filter-title">{group.name}</p>
+            <div className="mm-font__filter-title">{group.name}</div>
             <div className="mm-font__filter-chips">
               {group.extraTag ? (
                 <button

@@ -87,7 +87,7 @@ export default function SettingsPage() {
       <PageHeader title="设置" />
 
       <div className="mm-settings__body">
-        <h2 className="mm-settings__section">使用设置</h2>
+        <div className="mm-settings__section">使用设置</div>
 
         <div className="mm-settings__row">
           <span className="mm-settings__label">单位：</span>
@@ -100,7 +100,7 @@ export default function SettingsPage() {
           />
         </div>
 
-        <h2 className="mm-settings__section">常用功能面板</h2>
+        <div className="mm-settings__section">常用功能面板</div>
 
         <div className="mm-settings__row">
           <CheckBox
@@ -118,7 +118,7 @@ export default function SettingsPage() {
           />
         </div>
 
-        <h2 className="mm-settings__section">显示的功能项</h2>
+        <div className="mm-settings__section">显示的功能项</div>
 
         <div className="mm-settings__tiles">
           {tiles.map((tile) => (

@@ -66,10 +66,9 @@ export function useFontPanel() {
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
 
   const info = useTextStore((state) => state.info);
-  const textFailure = useTextStore((state) => state.failure);
+  /* 不再订阅 `failure`：属性区不盖遮罩，失败原因只走 toast（`runCommand` 已留痕） */
   const refreshText = useTextStore((state) => state.refresh);
   const patchText = useTextStore((state) => state.patch);
-  const clearTextFailure = useTextStore((state) => state.clearFailure);
 
   const layerKind = useAppStore((state) => state.layerKind);
   const layerName = useAppStore((state) => state.layerName);
@@ -110,10 +109,8 @@ export function useFontPanel() {
 
     return () => {
       aliveRef.current = false;
-      /* 离开页面清掉失败与过期标记：下次进来不该看到上一次的「读取失败」 */
-      clearTextFailure();
     };
-  }, [loadFontSet, clearTextFailure, runCommand, toast]);
+  }, [loadFontSet, runCommand, toast]);
 
   /**
    * 统一的失败出口：**实现委托给 `runCommand`**，这里只把 `Result` 折成 `boolean`。
@@ -430,7 +427,6 @@ export function useFontPanel() {
     fonts,
     fontsLoading,
     info,
-    textFailure,
     quickFonts,
     hierarchy,
     currentQuickFont,

@@ -4,36 +4,31 @@
  * 页头与字体管理页同高同底色（`--mm-color-header-bar`），保持切页时不跳。
  */
 
-.mm-settings {
+  /* 底色由外壳给；文字色 / 字号 / box-sizing 由 global.css 给。页面根都不写 */
+.mm-settings {  /* 底色由外壳给；文字色 / 字号 / box-sizing 由 global.css 给。页面根都不写 */
+
   display: flex;
   height: 100%;
   flex-direction: column;
   overflow-y: auto;
-  /* 底色由外壳给；文字色 / 字号 / box-sizing 由 global.css 给。页面根都不写 */
 }
 
-.mm-settings__body {
-  padding: var(--mm-space-3) var(--mm-page-pad-x);
-}
+
 
 .mm-settings__row {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-3);
+  gap:0;
 }
 
-.mm-settings__row + .mm-settings__row {
-  margin-top: var(--mm-space-2);
-}
+
 
 /*
  * 标题只有下边距、没有上边距，三个区块会贴成一整片，
  * 看不出「单位」属于「使用设置」还是「常用功能面板」。
  * 区块前一律 16（区块间那档），标题与它自己那块仍留 12 的一半关系。
  */
-.mm-settings__body > * + .mm-settings__section {
-  margin-top: var(--mm-space-4);
-}
+
 
 .mm-settings__label {
   flex: 0 0 auto;
@@ -52,7 +47,6 @@
 }
 
 .mm-settings__section {
-  margin: 0 0 var(--mm-space-3);
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
   font-weight: normal;
@@ -61,6 +55,6 @@
 /* 14 个功能项的显隐：两列排布，标签与常用页网格同名（取自文件里的 name） */
 .mm-settings__tiles {
   display: grid;
-  gap: var(--mm-space-2) var(--mm-space-3);
+  gap:0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

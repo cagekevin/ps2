@@ -97,7 +97,7 @@ export function InputDialog({
           onKeyDown={enterSubmit(submit)}
         />
 
-        {error ? <p className="mm-input-dialog__error">{error}</p> : null}
+        {error ? <div className="mm-input-dialog__error">{error}</div> : null}
         {extra}
 
         <div className="mm-input-dialog__footer">

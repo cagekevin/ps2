@@ -1,52 +1,115 @@
 /* 常用页：只用 token（尺寸见 03 计划 §4.1 的本页 scoped 值） */
-.mm-common {
+  /* 底色由外壳 `.mm-layout` 统一给，页面根不写 */
+.mm-common {  /* 底色由外壳 `.mm-layout` 统一给，页面根不写 */
+
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  /* 底色由外壳 `.mm-layout` 统一给，页面根不写 */
 }
 
 .mm-common__body {
   flex: 1 1 auto;
-  padding: 0 var(--mm-page-pad-x) var(--mm-space-4);
+  display: flex;
+  flex-direction: column;
+gap:0;
   overflow: auto;
 }
 
-/* 两个输入框并排，中间留 10（原版两栏之间那档） */
-.mm-common__row {
+/* 滚动容器是 flex column 时，子项默认允许收缩，内容一多就被压扁 */
+.mm-common__body > * {
+  flex: 0 0 auto;
+}
+
+/* 缩放区：两行，每行 = 下拉触发器 + 4 个常用档位；完整档位在抽屉里 */
+.mm-common__zoom {
   display: flex;
+  flex-direction: column;
+gap:0;
+}
+
+.mm-common__zoom-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--mm-space-3);
+gap:0;
+}
+
+/* 抽屉（`IconPanel` 的宿主）独占一行，落在本行内容之下——与格子那套同一种排法 */
+.mm-common__zoom-row > .mm-icon-panel__host {
+  flex: 0 0 100%;
+}
+
+/* 触发器是一档固定格宽：面板拉窄时 4 个档位换行，而不是被压成细条 */
+.mm-common__zoom-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+gap:0;
+  width: var(--mm-common-zoom-trigger-w);
+  height: var(--mm-control-h);
+  /* 左右 6：72 宽里要放下「图标 14 + 两字 24 + 箭头 12 + 两个 4 的间隙」，8 会挤掉箭头 */
+  border: 0;
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-sunken);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-common__zoom-trigger:hover {
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-common__zoom-label {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+/* 只有箭头翻过来：抽屉由 IconPanel 画，触发器这一侧只表达开合 */
+.mm-common__zoom-trigger[aria-expanded='true'] .mm-common__zoom-arrow {
+  transform: rotate(180deg);
+}
+
+/* 4 个常用档位**必须在一行**：宁可压窄，也不许折行（折行后第 4 个掉到下面，看着像两个区） */
+.mm-common__zoom-quick {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+gap:0;
+  min-width: 0;
+}
+
+/* basis 0 而不是最小宽：给多少分多少，靠 nowrap 保证 4 个一排 */
+.mm-common__zoom-quick > .mm-common__preset {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 缩放区的档位按钮（行内 4 个 / 抽屉里 5 列）：最窄一档只有 24–30 宽，
+   12 号的三位数会溢出，统一 11 号 + 左右 2 */
+.mm-common__zoom .mm-common__preset {
+  font-size: var(--mm-font-xs);
+}
+
+/* 抽屉里的完整档位：**永远 5 列**（10 档 = 2 行）。不许用 auto-fit —— 面板一宽它就会排成 6 列、
+   最后 3 个掉到第二行，看着像两组。窄面板靠压格宽 + 11 号字兜住 */
+.mm-common__zoom-all {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap:0;
 }
 
 /* 档位按钮：高 26 / 内空 6 / 圆角 4
-   组内 4、组间 8：原来组内 6、组间 8 只差 2px，
-   四组「放大 / 缩小 / 整体放大 / 整体缩小」糊成一整片，看不出哪几个是一组 */
-.mm-common__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-1);
-  margin-top: var(--mm-space-2);
-}
-
+/* 档位按钮：高 26 / 内空 6 / 圆角 4；宽度由父容器给（行内等分 / 抽屉里按列） */
 .mm-common__preset {
   height: var(--mm-control-h);
-  padding: 0 var(--mm-space-inline);
   border: 0;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   cursor: pointer;
-}
-
-.mm-common__preset--quarter {
-  flex: 0 0 var(--mm-btn-quarter);
-}
-
-.mm-common__preset--tenth {
-  flex: 0 0 var(--mm-btn-tenth);
 }
 
 .mm-common__preset:hover {
@@ -57,32 +120,29 @@
    不再自绘 `.mm-common__flip`：它是图标按钮，形状 / 悬停 / 选中都在 `components/IconButton` 一处，
    两页同一种东西就必须同一个实现（§6.1） */
 .mm-common__flips {
+  /* 与字体面板 `.mm-font-panel__icon-row` 同一写法：面板拉到 200 时一排 6 个放不下，
+     换行而不是把最后一颗顶出面板（实测 200 宽下原写法溢出 32px） */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--mm-space-1);
-  /* 与字体面板 `.mm-font-panel__icon-row` 同一写法：面板拉到 200 时一排 6 个放不下，
-     换行而不是把最后一颗顶出面板（实测 200 宽下原写法溢出 32px） */
   flex-wrap: wrap;
-  row-gap: var(--mm-space-1);
-  margin-top: var(--mm-space-2);
+  gap:0;
+  row-gap:0;
 }
 
 /* 分隔线：通栏，与其它所有行的左右边界一致。
-   原来是 inset 30 + margin auto，左右各缩 15，这一横线比上下所有内容都窄一截，
-   正好踩 CONVENTIONS §7 规则 10 点名禁止的「分隔线左右 15、内容左右 10」 */
+   正好踩 CONVENTIONS §7 规则 10 点名禁止的「分隔线左右 15、内容左右 10」。
+   上下间距由父级 gap 给，自己不带 margin */
 .mm-common__divider {
   width: 100%;
   height: var(--mm-border-w);
-  margin: var(--mm-space-2) 0;
   background: var(--mm-color-border);
 }
 
 /* 网格：每行 3 个（每格占宽 33%），行距 15；每行是一个 IconPanelGroup */
 /* 文件里认不出而跳过的项：告诉用户「少了几个」，不是「文件坏了」 */
+/* 左右内边距由 `__body` 给过一次；这里再给一份就是左右各 16，比别的行窄一截 */
 .mm-common__warning {
-  margin: 0;
-  padding: 0 var(--mm-page-pad-x);
   color: var(--mm-color-warn);
   font-size: var(--mm-font-sm);
 }
@@ -90,14 +150,14 @@
 .mm-common__grid {
   display: flex;
   flex-direction: column;
-  padding-top: var(--mm-space-tight);
 }
 
-.mm-common__tile-row {
-  display: grid;
   /* minmax(0,…) 而不是 1fr：格子里有长名字时会把列撑破，右边那格被挤出去 */
+.mm-common__tile-row {  /* minmax(0,…) 而不是 1fr：格子里有长名字时会把列撑破，右边那格被挤出去 */
+
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--mm-space-3);
+gap:0;
 }
 
 /* 面板的宿主：整行宽，落在本行之后（原版是「面板项 width:100% 靠 flex 换行」） */

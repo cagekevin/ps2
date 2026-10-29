@@ -707,22 +707,26 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 确认 | `useConfirm()` | `confirm()` |
 | 加载 | `useLoading()` | 各组件自己维护 loading 文案 |
 | 区域不可用 | `components/StateMask`（内部渲染 `StateHint`） | 页面自己写绝对定位 + 提示文案；也**不要**用「把内容换成一行提示」代替（会让下面的东西整体上移） |
-| 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>` | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关 |
+| 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0） | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面页头 | `components/PageHeader`（`title` + 右侧插槽） | 页面自写 `<header>` 与 `__title` 样式、各写一套高度与字号 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
-| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField` | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width` |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-field-surface` 一处给 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background` |
+| 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-field-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
+| 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
+| 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（描边 / 圆角 / 底色 / 阴影）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 （`hooks/input-method-enter` 里的 `enterSubmit`，判据 + `preventDefault` + 执行三件事一处）。
 
 三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层定宽容器与左图标。
 字体面板、输入弹窗、层级编辑、标签输入、就地编辑**全部渲染 `Input`**，各自的 css 只覆盖
-宽度 / 间距 / 边框色这类局部值——不要在组件里再画一套输入框表面。
+宽度 / 间距 / 文字色 / 焦点描边——**底色与圆角不许覆盖**，它们只在一个地方给
+（`ui.css` 的 `.mm-input, .mm-field-surface`）。改输入框颜色 = 改 `tokens.css` 的 `--mm-color-bg-input` 一行。
 
 尺寸是**全仓定案**（`03` 计划 §9 第 8 条）：勾选 / 单选 `12×12`，右侧距 `6`，
-边框 `1px` `--mm-color-border-check`，勾选圆角 `3`、单选 `50%`。
+边框 `1px` `--mm-color-border-control`（亮线档，§7 规则 8），勾选圆角 `3`、单选 `50%`。
 官方勾选选中态是换 svg 图标，我方用 accent 底色，属已登记换皮肤（D-51），本轮不改。
 
 `app/providers.tsx` 挂载前三项，页面内只调 hook；`IconPanel` 是普通组件，用在哪就在哪渲染。
@@ -755,56 +759,21 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 ## 7. 视觉规范（Design Token）
 
-```css
-/* src/styles/tokens.css —— 唯一允许写原始值的地方 */
-:root {
-  /* 原始值 */
-  --mm-gray-900: #2b2b2b;
-  --mm-gray-800: #3f3f3f;
-  --mm-gray-700: #535353;
-  --mm-blue-500: #0f7df2;
-
-  /* 语义色 */
-  --mm-color-bg-panel: var(--mm-gray-700);
-  --mm-color-bg-elevated: var(--mm-gray-800);
-  --mm-color-bg-hover: rgba(255, 255, 255, 0.08);
-  --mm-color-text: #d6d6d6;
-  --mm-color-text-dim: #9a9a9a;
-  --mm-color-border: rgba(0, 0, 0, 0.5);
-  --mm-color-accent: var(--mm-blue-500);
-
-  /* 形状 */
-  --mm-radius-sm: 2px;
-  --mm-radius-md: 4px;
-  --mm-radius-pill: 999px;
-  --mm-border-w: 1px;
-  --mm-shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.4);
-
-  /* 尺寸（4 的倍数） */
-  --mm-space-1: 4px;
-  --mm-space-2: 8px;
-  --mm-space-3: 12px;
-  --mm-space-4: 16px;
-  --mm-control-h: 24px;
-  --mm-control-h-sm: 20px;
-  --mm-icon-sm: 14px;
-  --mm-icon-md: 16px;
-  --mm-font-xs: 11px;
-  --mm-font-sm: 12px;
-  --mm-font-md: 13px;
-}
-```
+**本文件不复述 token 的值**：唯一出处是 `src/styles/tokens.css`（全仓唯一允许写原始值与 px 的文件）。
+复述过一次，结果 2026-10-29 重构后整块过期（色阶、控件高、字号线全对不上），成了第二套标准——
+照抄它写出来的东西，值和现行 token 不一致且不会报错。要值就打开那个文件。
 
 ### 组件形状
 
 | 组件 | 圆角 | 高度 | 内边距 | 边框 |
 |---|---|---|---|---|
-| Button | `--mm-radius-md` | 24 | `0 var(--mm-space-2)` | 无 |
-| IconButton | `--mm-radius-md` | 24 × 24 | 0 | 无 |
-| Input | `--mm-radius-md` | 24 | `0 6px` | `1px` |
-| Card | `--mm-radius-md` | 自适应 | `var(--mm-space-2)` | `1px` |
-| Tag | `--mm-radius-sm` | 18 | `0 6px` | `1px` |
-| 色块 | `--mm-radius-pill` | 20 × 20 | 0 | `1px` 透明 |
+| Button | `--mm-radius-md` | `--mm-control-h` | `0 var(--mm-space-2)` | 无 |
+| IconButton | `--mm-radius-md` | `--mm-icon-btn-size` | 0 | 无 |
+| Input（含 `.mm-field-surface` 的壳） | `--mm-radius-md` | `--mm-control-h` | `0 var(--mm-space-1)` | `1px` `--mm-color-border-control` |
+
+> 高度一律写 token 名，不写数字：数字会随档位调整而失真（本表原来的 `24` 在 2026-10-29 之后已经不对，
+> 控件高是 `--mm-control-h` = 26）。表里只列**仓里真有**的公共件；`Card` / `Tag` 目前没有公共实现，
+> 需要时先建、再登记 `GOVERNANCE` §4.1，不许先在页面里写一份等着以后上移。
 
 ### 状态
 
@@ -823,21 +792,23 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 2. 不出现色值，只能用语义变量；`hex` / `rgb()` / `rgba()` / `hsl()` **都算色值**
    （`color-no-hex` 只认 hex，其余由 `declaration-property-value-disallowed-list` 兜）
 3. 间距只用 `--mm-space-*`
-4. 面板宽度 280–360，控件高度 24，字号 12–13，圆角不超过 4
-5. **间距只有六档**：2 贴合 / 6 同行并列 / 4 组内 / 8 组间 / 12 区块内 / 16 区块间
-   （对应 `--mm-space-exact-2`、`--mm-space-exact-6`、`--mm-space-1`、`--mm-space-2`、`--mm-space-3`、`--mm-space-4`）；
-   页边用 `--mm-page-pad-x`(8)。**横向例外**：页内块的左右内边距统一 10（`--mm-space-exact-10` 的横向用法），
-   不并入 8——并了等于把内容左右挪位。阶梯与语义取自 Vue 版设计 token，命名沿用本仓现有的，不重命名。
-   `exact-*` 只保留 1 / 2 / 3 / 5 / 6 / 7 / 10 这几个像素级还原值（5、7 只许在「还没并档」的旧代码里出现）；
-   20 / 30 / 34 / 43 / 54 / 56 / 60 / 64 / 70 / 120 一律是**尺寸**（宽 / 高 / 列宽 / 行高），不许当间距
+4. 面板宽度 200–360（PS 可拉伸），控件高度只有 `--mm-control-h` 一档（26），字号 11–13 三档，圆角不超过 4
+5. **间距只有六档**：`--mm-space-tight`(2 贴合) / `--mm-space-1`(4 组内) / `--mm-space-inline`(6 同行并列) /
+   `--mm-space-2`(8 组间) / `--mm-space-3`(12 区块内) / `--mm-space-4`(16 区块间)；
+   页边一律 `--mm-page-pad-x`(8)，五页同值，**没有横向例外**。
+   （2026-10-29：旧的 `--mm-space-exact-*` 全套已删，20 也不再是间距档；原先「页内左右统一 10」的例外与实测不符，
+   按现状改成 8。20 / 30 这类固定格宽（勾选位 `--mm-check-slot`、控件预留位 `--mm-control-reserve`）
+   进尺寸段，**不许当 padding / gap 用**——把尺寸值当间距，就是本规则要防的那种漂移。）
 6. **同一组内**的元素间距不得大于该组图标的边长：14 图标旁最多 14。
    跨组、跨区块的分组留白不受此限——「留白比图标还大」只在同一组里判错
 7. **同排文字与图标视觉等大**：12 号字（行高 16）配 14 图标，13 号字（行高 18）配 16 图标。
    对不上时**缩图标**，不许放大字号（字号一页只有 12 / 13 两档）
-8. **同一页面只允许一种线条**：颜色、粗细、长度来源唯一。页面分隔与列表行分隔都用 `--mm-color-border`（暗线），
-   控件描边与勾选框用 `--mm-color-border-control`（亮线）；一页里不许再混白 10% 这类第三种线色。
+8. **线条只有两档，同一角色只许一种**：颜色、粗细、长度来源唯一。
+   页面分隔、列表行分隔、**输入位描边**（`.mm-input` / `.mm-field-surface`）用 `--mm-color-border`（暗线）；
+   控件描边、勾选框、浮层外边缘用 `--mm-color-border-control`（亮线）。不许自造第三种线色。
+   （输入框底是纯黑，暗线落在上面几乎不可见——这是刻意的：靠底色反差界定输入区，不靠边框。）
    （2026-10-29：旧的 `--mm-color-verline` / `--mm-color-row-border` / `-float` 三个名字已随 token 重构删除，
-   线只剩上述两种，照旧名写会引用到未定义变量。浮层外边缘也走 `border-control`。）
+   照旧名写会引用到未定义变量。）
 9. **同类同尺寸**：同一页面内，**同一角色**的元素尺寸必须唯一——工具栏图标按钮、行内操作按钮、
    图标、输入框、chip、行高各算一类。不同角色可以不同，跨页也可以不同，但同页同类出现两种尺寸就是错
 10. **两端对齐**：一行的左右内边距相等；同一区块内所有行（标题、内容、分隔线、列表项）的左右边界
@@ -857,6 +828,10 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     **用蓝表示「展开 / 悬停」这类临时态**（展开靠底色凹下去 + 内容本身表达，图标不变色）、
     装饰描边与色块边框、标题与正文用蓝、静态用 `--mm-color-accent-hover`（hover 档只能出现在 `:hover` 里）。
     判据一句话：**把这个元素换成灰，用户会不会少知道一件事？** 会 ⇒ 用蓝；不会 ⇒ 不许用
+13. **页面底色只有一个出处**：`app/layout.css` 的 `.mm-layout` 用 `--mm-color-bg-base`（`#363636`）铺满内容区，
+    七个页面的根类**都不写 `background`**（写了就是第二层底，页与页之间会差一档）。
+    其余四档按角色取：输入位 `--mm-color-bg-input`(#000) / 抽屉 `--mm-color-bg-drawer`(#222) /
+    页头底栏等深色块 `--mm-color-bg-panel`(#434343) / 浮层 `--mm-color-bg-overlay`(#535353)
 
 ---
 

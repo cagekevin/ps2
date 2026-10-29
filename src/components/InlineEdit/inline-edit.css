@@ -1,12 +1,12 @@
 /* 就地编辑：高度跟随父级（不套 `.mm-input` 的 24），边框用强调色表示「正在编辑」 */
-.mm-inline-edit {
+  /* 不写 background：表面由 `.mm-input` 给，这里只覆盖「正在编辑」的边框（见 CONVENTIONS §6） */
+.mm-inline-edit {  /* 不写 background：表面由 `.mm-input` 给，这里只覆盖「正在编辑」的边框（见 CONVENTIONS §6） */
+
   flex: 1 1 auto;
   min-width: 0;
   height: auto;
-  padding: 0 var(--mm-space-1);
   border: var(--mm-border-w) solid var(--mm-color-accent);
   border-radius: var(--mm-radius-sm);
-  /* 不写 background：表面由 `.mm-input` 给，这里只覆盖「正在编辑」的边框（见 CONVENTIONS §6） */
   color: var(--mm-color-text);
   font-size: inherit;
   outline: none;

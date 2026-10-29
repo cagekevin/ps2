@@ -3,7 +3,6 @@
 .mm-confirm {
   min-width: var(--mm-modal-min-w);
   max-width: var(--mm-modal-max-w);
-  padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);
@@ -11,13 +10,11 @@
 }
 
 .mm-confirm__title {
-  margin: 0;
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
 }
 
 .mm-confirm__message {
-  margin: var(--mm-space-2) 0 0;
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-xs);
   line-height: 1.5;
@@ -26,12 +23,10 @@
 .mm-confirm__actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--mm-space-2);
-  margin-top: var(--mm-space-3);
+  gap:0;
 }
 
 .mm-confirm__btn {
-  padding: var(--mm-space-1) var(--mm-space-2);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-sm);
   background: transparent;

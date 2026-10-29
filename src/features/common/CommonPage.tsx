@@ -11,12 +11,11 @@
  */
 
 import type { ReactNode } from 'react';
-import { Collapse } from '../../components/Collapse';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { PageHeader } from '../../components/PageHeader';
 import { StateHint } from '../../components/StateHint';
-import { TextField } from '../../components/TextField';
+import { Icon, type IconName } from '../../components/icons';
 import type { CommonUseTile } from '../../domain/common-use';
 import { FLIP_ITEMS, TILE_COMMANDS, ZOOM_LEVELS } from './common-constants';
 import { ReferencePanel } from './components/ReferencePanel';
@@ -44,25 +43,84 @@ function toRows(tiles: CommonUseTile[]): CommonUseTile[][] {
   return rows;
 }
 
-/** 一个缩放档位按钮（四颗 / 十颗两种宽度） */
-function ZoomPreset({
-  value,
-  wide,
-  onClick
-}: {
-  value: number;
-  wide: boolean;
-  onClick: () => void;
-}) {
+/** 一个缩放档位按钮：宽度由容器决定（行内 4 等分 / 抽屉里 5 列），自己不写宽 */
+function ZoomPreset({ value, onClick }: { value: number; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      className={`mm-common__preset${wide ? ' mm-common__preset--tenth' : ' mm-common__preset--quarter'}`}
-      title={String(value)}
-      onClick={onClick}
-    >
+    <button type="button" className="mm-common__preset" title={String(value)} onClick={onClick}>
       {value}
     </button>
+  );
+}
+
+/**
+ * 一行缩放：「放大 / 缩小」下拉 + 4 个常用档位。
+ *
+ * 下拉是 `IconPanel` 的抽屉（公共件，整宽推开后续内容），不是自绘浮层；
+ * 点档位后由 `close()` 收起，否则用户得再点一次触发器才能继续操作。
+ * 两行共用页面级的 `expandedId`，所以它与功能格的抽屉也互斥——同一时刻只开一个。
+ */
+function ZoomRow({
+  id,
+  icon,
+  label,
+  quick,
+  all,
+  openId,
+  onOpenChange,
+  onPick
+}: {
+  id: string;
+  icon: IconName;
+  label: string;
+  quick: readonly number[];
+  all: readonly number[];
+  openId: string;
+  onOpenChange: (openId: string) => void;
+  onPick: (value: number) => void;
+}) {
+  return (
+    <IconPanelGroup
+      className="mm-common__zoom-row"
+      openId={openId}
+      onOpenChange={onOpenChange}
+    >
+      <IconPanel
+        id={id}
+        title={label}
+        trigger={(handlers) => (
+          <button
+            type="button"
+            className="mm-common__zoom-trigger"
+            aria-expanded={handlers['aria-expanded']}
+            aria-controls={handlers['aria-controls']}
+            onClick={handlers.toggle}
+          >
+            <Icon name={icon} size={14} />
+            <span className="mm-common__zoom-label">{label}</span>
+            <Icon name="iconxiala" size={12} className="mm-common__zoom-arrow" />
+          </button>
+        )}
+        panel={(close) => (
+          <div className="mm-common__zoom-all">
+            {all.map((value) => (
+              <ZoomPreset
+                key={value}
+                value={value}
+                onClick={() => {
+                  onPick(value);
+                  close();
+                }}
+              />
+            ))}
+          </div>
+        )}
+      />
+      <div className="mm-common__zoom-quick">
+        {quick.map((value) => (
+          <ZoomPreset key={value} value={value} onClick={() => onPick(value)} />
+        ))}
+      </div>
+    </IconPanelGroup>
   );
 }
 
@@ -89,95 +147,53 @@ export default function CommonPage() {
           <StateHint result={page.reasons.options} onRetry={page.reload} />
         ) : null}
         {page.dropped.length ? (
-          <p className="mm-common__warning">{page.dropped.length} 项无法识别，已跳过</p>
+          <div className="mm-common__warning">{page.dropped.length} 项无法识别，已跳过</div>
         ) : null}
 
+        {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
-          <Collapse
-            title="缩放"
-            open={!page.collapsed.zoom}
-            onToggle={() => page.toggleSection('zoom')}
-          >
-            <div className="mm-common__row">
-              <TextField
-                variant="half"
-                icon="iconfangda"
-                title="放大倍数"
-                placeholder="105"
-                inputMode="decimal"
-                value={page.enlarge}
-                onChange={page.setEnlarge}
-                onSubmit={(text) => page.submitScale(text)}
-              />
-              <TextField
-                variant="half"
-                icon="iconsuoxiao"
-                title="缩小倍数"
-                placeholder="95"
-                inputMode="decimal"
-                value={page.narrow}
-                onChange={page.setNarrow}
-                onSubmit={(text) => page.submitScale(text)}
-              />
-            </div>
-
-            {/* 「放大」与「缩小」是两个语义组，各自一个 flex 行：
-                混在一行里只靠 flex-wrap 换行，换行处与组边界对不上，读不出哪四个是一组 */}
-            <div className="mm-common__presets">
-              {ZOOM_LEVELS.enlargePart.map((value) => (
-                <ZoomPreset key={`enlarge-${value}`} value={value} wide={false} onClick={() => page.zoomTo(value)} />
-              ))}
-            </div>
-
-            <div className="mm-common__presets">
-              {ZOOM_LEVELS.narrowPart.map((value) => (
-                <ZoomPreset key={`narrow-${value}`} value={value} wide={false} onClick={() => page.zoomTo(value)} />
-              ))}
-            </div>
-
-            <div className="mm-common__presets">
-              {ZOOM_LEVELS.enlargeAll.map((value) => (
-                <ZoomPreset key={`enlarge-all-${value}`} value={value} wide onClick={() => page.zoomTo(value)} />
-              ))}
-            </div>
-
-            <div className="mm-common__presets">
-              {ZOOM_LEVELS.narrowAll.map((value) => (
-                <ZoomPreset key={`narrow-all-${value}`} value={value} wide onClick={() => page.zoomTo(value)} />
-              ))}
-            </div>
-          </Collapse>
+          <div className="mm-common__zoom">
+            <ZoomRow
+              id="zoom-enlarge"
+              icon="iconfangda"
+              label="放大"
+              quick={ZOOM_LEVELS.enlargePart}
+              all={ZOOM_LEVELS.enlargeAll}
+              openId={page.expandedId}
+              onOpenChange={page.setExpandedId}
+              onPick={page.zoomTo}
+            />
+            <ZoomRow
+              id="zoom-narrow"
+              icon="iconshousuo"
+              label="缩小"
+              quick={ZOOM_LEVELS.narrowPart}
+              all={ZOOM_LEVELS.narrowAll}
+              openId={page.expandedId}
+              onOpenChange={page.setExpandedId}
+              onPick={page.zoomTo}
+            />
+          </div>
         ) : null}
 
         {page.showTransformation ? (
-          <Collapse
-            title="变换"
-            open={!page.collapsed.transformation}
-            onToggle={() => page.toggleSection('transformation')}
-          >
-            <div className="mm-common__flips">
-              {FLIP_ITEMS.map((item) => (
-                <IconButton
-                  key={item.direction}
-                  name={item.icon}
-                  title={item.title}
-                  onClick={() => page.flipTo(item.direction)}
-                />
-              ))}
-            </div>
-          </Collapse>
+          <div className="mm-common__flips">
+            {FLIP_ITEMS.map((item) => (
+              <IconButton
+                key={item.direction}
+                name={item.icon}
+                title={item.title}
+                onClick={() => page.flipTo(item.direction)}
+              />
+            ))}
+          </div>
         ) : null}
 
         <div className="mm-common__divider" />
 
-        <Collapse
-          title="常用功能"
-          open={!page.collapsed.grid}
-          onToggle={() => page.toggleSection('grid')}
-        >
-          {visibleTiles.length ? (
-            <div className="mm-common__grid" ref={page.gridRef}>
-              {toRows(visibleTiles).map((row, rowIndex) => (
+        {visibleTiles.length ? (
+          <div className="mm-common__grid" ref={page.gridRef}>
+            {toRows(visibleTiles).map((row, rowIndex) => (
                 <IconPanelGroup
                   /* key 用行首项的 id：顺序会变，用行号会让面板挂到错的组上 */
                   key={row[0]?.id ?? `row-${rowIndex}`}
@@ -220,7 +236,6 @@ export default function CommonPage() {
           ) : (
             <StateHint empty="没有可显示的常用功能" />
           )}
-        </Collapse>
       </div>
     </div>
   );

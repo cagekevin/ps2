@@ -4,14 +4,12 @@
 
 .mm-imgcolor {
   width: var(--mm-imgcolor-w);
-  padding: var(--mm-space-3) var(--mm-space-4);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);
   box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-imgcolor__title {
-  margin: 0 0 var(--mm-space-1);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   font-weight: 700;
@@ -20,18 +18,18 @@
 .mm-imgcolor__row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-inline);
-  margin-bottom: var(--mm-space-2);
+  gap:0;
 }
 
 /* 原版 `.color-item`：28px 圆、蓝边。蓝边不是状态（它不表示选中 / 进行中），
    按 §7 规则 12 改成亮线那一档——色值本身才是内容，边框只负责把它框出来 */
-.mm-imgcolor__swatch {
+  /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
+.mm-imgcolor__swatch {  /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
+
   width: var(--mm-gradient-h);
   height: var(--mm-gradient-h);
   border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: 50%;
-  /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
   background: var(--mm-imgcolor-color);
   cursor: pointer;
 }
@@ -55,7 +53,6 @@
 }
 
 .mm-imgcolor__hr {
-  margin: var(--mm-space-2) 0;
   border: 0;
   border-bottom: var(--mm-border-w) solid var(--mm-color-border);
 }

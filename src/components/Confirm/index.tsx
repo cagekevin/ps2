@@ -40,8 +40,8 @@ export function Confirm({ open, title, message, confirmText = '删除', onConfir
         aria-label={title}
         onKeyDown={onKeyDown}
       >
-        <p className="mm-confirm__title">{title}</p>
-        {message ? <p className="mm-confirm__message">{message}</p> : null}
+        <div className="mm-confirm__title">{title}</div>
+        {message ? <div className="mm-confirm__message">{message}</div> : null}
         <div className="mm-confirm__actions">
           <button type="button" className="mm-confirm__btn" onClick={onCancel}>
             取消

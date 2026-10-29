@@ -14,7 +14,6 @@ import { Icon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
-import { StateMask } from '../../components/StateMask';
 import { DEFAULT_TEXT_INFO } from '../../domain/text-info';
 import { useFontPanel } from './useFontPanel';
 import { CreateButtonPanel } from './components/CreateButtonPanel';
@@ -59,36 +58,26 @@ export default function FontPanelPage() {
       ) : null}
 
       {/*
-        属性区**始终渲染**：内容负责撑住高度，读不到时盖一层黑底半透明遮罩。
-        换成「一行提示」会让下面的图标整体上移（选字 / 不选字跳版）。
+        属性区**始终渲染**，不盖遮罩：是不是文字图层用户自己看得见，
+        不需要再压一层「当前图层是智能对象，需要文字图层」。读不到时用默认值撑住高度。
       */}
-      <StateMask
-        overlay={
-          page.textFailure
-            ? { result: page.textFailure }
-            : page.info
-              ? null
-              : { empty: '正在读取文字属性…' }
-        }
-      >
-        <FontColor
-          info={page.info ?? DEFAULT_TEXT_INFO}
-          fonts={page.fonts}
-          fontsLoading={page.fontsLoading}
-          defaults={{
-            size: page.settings.ztDefaultSize,
-            leading: page.settings.ztDefaultLeading,
-            tracking: page.settings.ztDefaultTracking
-          }}
-          onFontName={page.onFontName}
-          onSize={page.onSize}
-          onLeading={page.onLeading}
-          onTracking={page.onTracking}
-          onColor={page.onColor}
-          onStyle={page.onStyle}
-          onAlign={page.onTextAlign}
-        />
-      </StateMask>
+      <FontColor
+        info={page.info ?? DEFAULT_TEXT_INFO}
+        fonts={page.fonts}
+        fontsLoading={page.fontsLoading}
+        defaults={{
+          size: page.settings.ztDefaultSize,
+          leading: page.settings.ztDefaultLeading,
+          tracking: page.settings.ztDefaultTracking
+        }}
+        onFontName={page.onFontName}
+        onSize={page.onSize}
+        onLeading={page.onLeading}
+        onTracking={page.onTracking}
+        onColor={page.onColor}
+        onStyle={page.onStyle}
+        onAlign={page.onTextAlign}
+      />
 
       <div className="mm-font-panel__icons">
         <IconPanelGroup exclusive>
@@ -149,7 +138,7 @@ export default function FontPanelPage() {
         </IconPanelGroup>
       </div>
 
-      <hr className="mm-font-panel__line mm-font-panel__line--set" />
+      <div className="mm-font-panel__line mm-font-panel__line--set" />
 
       <div className="mm-font-panel__icons">
         <div className="mm-font-panel__icon-row">
@@ -203,7 +192,7 @@ export default function FontPanelPage() {
 
       {page.settings.ztShowCustom ? (
         <>
-          <hr className="mm-font-panel__line" />
+          <div className="mm-font-panel__line" />
           <FontHierarchy
             levels={page.settings.ztHierarych}
             presets={page.hierarchy.list}

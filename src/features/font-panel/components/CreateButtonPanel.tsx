@@ -67,9 +67,9 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
       </div>
 
       <div className="mm-font-panel__row mm-font-panel__row--pad">
-        <p className="mm-font-panel__label" title="形状内边距，10,5 表示 宽=10 高=5">
+        <div className="mm-font-panel__label" title="形状内边距，10,5 表示 宽=10 高=5">
           自定义边距
-        </p>
+        </div>
         <Input
           variant="page"
           className="mm-font-panel__input-grow"
@@ -83,7 +83,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
       </div>
 
       <div className="mm-font-panel__row mm-font-panel__row--tight">
-        <p className="mm-font-panel__label">预设</p>
+        <div className="mm-font-panel__label">预设</div>
         {CREATE_BUTTON_PADDINGS.map((value) => (
           <button
             key={value}

@@ -48,6 +48,8 @@ export interface FloatingOptions {
   offset?: number;
   /** 距视口边缘的最小留白 */
   padding?: number;
+  /** 空间不够时是否翻到另一侧；下拉面板传 `false`（见 `FloatingPositionOptions.flip`） */
+  flip?: boolean;
 }
 
 export function useFloatingPosition(options: FloatingOptions = {}) {
@@ -57,7 +59,7 @@ export function useFloatingPosition(options: FloatingOptions = {}) {
     options.placement ?? 'bottom-start'
   );
 
-  const { placement: preferred, offset = 4, padding = 4 } = options;
+  const { placement: preferred, offset = 4, padding = 4, flip = true } = options;
 
   /**
    * 定位，并**返回锚点矩形**（`null` = 没定位，元素还没挂上）。
@@ -76,7 +78,7 @@ export function useFloatingPosition(options: FloatingOptions = {}) {
         anchor,
         { width: box.width, height: box.height },
         { width: window.innerWidth, height: window.innerHeight },
-        { placement: preferred ?? 'bottom-start', offset, padding }
+        { placement: preferred ?? 'bottom-start', offset, padding, flip }
       );
 
       setPlacement(position.placement);
@@ -84,7 +86,7 @@ export function useFloatingPosition(options: FloatingOptions = {}) {
       floating.style.setProperty('--floating-y', `${position.top}px`);
       return anchor;
     },
-    [preferred, offset, padding]
+    [preferred, offset, padding, flip]
   );
 
   return { floatingRef, placement, update };

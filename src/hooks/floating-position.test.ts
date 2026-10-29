@@ -37,6 +37,41 @@ describe('computeFloatingPosition', () => {
     expect(result.left).toBe(740);
   });
 
+  it('flip=false 时不翻到另一侧，且不留视口边距（下拉面板必须与触发器左对齐）', () => {
+    /* 与上一条同参数，只关掉 flip：仍按 start 起算，然后夹到视口内——但不再留 padding，
+       否则通栏触发器（右边缘贴视口）的面板会被整体往左推 */
+    const result = computeFloatingPosition(rect(900, 100), { width: 200, height: 100 }, VIEWPORT, {
+      placement: 'bottom-start',
+      offset: 4,
+      padding: 4,
+      flip: false
+    });
+    expect(result.placement).toBe('bottom-start');
+    expect(result.left).toBe(VIEWPORT.width - 200);
+  });
+
+  it('flip=false 时通栏触发器（右边缘贴视口）面板不平移', () => {
+    /* 触发器 0 宽 800、视口 800：面板与触发器同宽 800，左边必须是 0 */
+    const result = computeFloatingPosition(rect(0, 10, 800, 30), { width: 800, height: 100 }, VIEWPORT, {
+      placement: 'bottom-start',
+      offset: 4,
+      padding: 8,
+      flip: false
+    });
+    expect(result.left).toBe(0);
+  });
+
+  it('flip=false 时下方放不下也不翻到上方，只夹进视口', () => {
+    const result = computeFloatingPosition(rect(100, 740), { width: 200, height: 100 }, VIEWPORT, {
+      placement: 'bottom-start',
+      offset: 4,
+      padding: 4,
+      flip: false
+    });
+    expect(result.placement).toBe('bottom-start');
+    expect(result.top).toBe(VIEWPORT.height - 100);
+  });
+
   it('水平翻转后仍超出时夹取到边距内，垂直未超出则不动', () => {
     /* 右边缘 1030 超出视口 1000，翻到 end 后 left=730 仍超 696，被夹到 696 */
     const result = computeFloatingPosition(rect(990, 790), { width: 300, height: 200 }, VIEWPORT, {

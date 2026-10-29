@@ -56,7 +56,7 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
       </div>
 
       {error ? (
-        <p className="mm-font__tags-error">{error}（标签读取失败，字体列表不受影响）</p>
+        <div className="mm-font__tags-error">{error}（标签读取失败，字体列表不受影响）</div>
       ) : (
         <div
           ref={listRef}

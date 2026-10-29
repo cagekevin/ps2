@@ -99,10 +99,10 @@ export default function HomePage() {
 
   return (
     <section className="mm-home">
-      <p className="mm-home__row">
+      <div className="mm-home__row">
         当前图层：
         {layerKind ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}` : '—'}
-      </p>
+      </div>
 
       <div className="mm-home__actions">
         <Button onClick={handleDiag}>诊断官方能力</Button>
@@ -132,7 +132,7 @@ export default function HomePage() {
           <DiagRow label="ys_setForegroundColor" value={diag.setForegroundColor} />
           <DiagRow label="ys_useShapeFill" value={diag.useShapeFill} />
 
-          <p className="mm-home__diag-title">官方配置依赖</p>
+          <div className="mm-home__diag-title">官方配置依赖</div>
           <DiagRow label="sj_set.json" value={String(diag.configSet)} />
           <DiagRow label="sj_interfaceSet.ini" value={String(diag.configInterface)} />
           <DiagRow label="cyAutoFillColor" value={String(diag.autoFillColor)} />
@@ -155,7 +155,7 @@ export default function HomePage() {
               </button>
             </span>
           </div>
-          <pre className="mm-home__log-body">{logText}</pre>
+          <div className="mm-home__log-body">{logText}</div>
         </div>
       ) : null}
     </section>

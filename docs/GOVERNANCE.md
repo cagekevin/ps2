@@ -122,9 +122,9 @@
 | 字面板切片 | `src/store/font-set.ts` | 设置/快捷字体/层级/最近字体只读投影；设置本地先生效 | ⚠️ 待真机 |
 | 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源各自留失败原因 | ⚠️ 待真机 |
 | 状态 | `src/store/app.ts` | 切片写法 | ✅ 真机 |
-| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局） | ✅ 真机 |
+| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-field-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-field-surface` | ✅ 真机 |
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 | ⚠️ 待真机 |
-| 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头统一，面板宽度跟随触发器 | ✅ 真机 |
+| 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头统一；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） | ✅ 真机 |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox | ✅ 真机 |
 | 折叠箭头 | `src/components/Chevron/index.tsx` | 展开/折叠箭头（会旋转） | ✅ 真机 |
 | 折叠箭头样式 | `src/components/Chevron/chevron.css` | rotate(-90deg) 表示收起 | ✅ 真机 |
@@ -165,11 +165,11 @@
 | 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 | ⚠️ 待真机 |
 | 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` | ⚠️ 待真机 |
 | 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」 | ⚠️ 待真机 |
-| 展开面板样式 | `src/components/IconPanel/icon-panel.css` | 抽屉表面（sunken 底 + 4 圆角 + 12 内边距）由 `__box` 唯一一处给；内容类只管布局，不再各写 padding/底色/圆角 | ⚠️ 待真机 |
-| 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `#707070` / 右空 6；原生 input | ⚠️ 待真机 |
+| 展开面板样式 | `src/components/IconPanel/icon-panel.css` | 抽屉表面由 `__box` 唯一一处给：`--mm-color-bg-drawer`(#222) + **直角 + 通栏**（背景用 `--mm-icon-panel-bleed` 外扩到容器内边距之外，值由承载行声明）+ 12 内容内边距；内容类只管布局 | ⚠️ 待真机 |
+| 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input | ⚠️ 待真机 |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 | ⚠️ 待真机 |
 | 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` | ⚠️ 待真机 |
-| 折叠行 | `src/components/Collapse/index.tsx` | 整行 100%×24、箭头位 20×13、上下 12；收起不渲染内容 | ⚠️ 待真机 |
+| 折叠行 | `src/components/Collapse/index.tsx` | 整行 100%×24、箭头位 20×13；**自身不带上下 margin**，区块间距由容器 `gap` 给（`HANDOFF-2026-10-29` 债 4）；收起不渲染内容 | ⚠️ 待真机 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 | ✅ 真机 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 | ✅ 真机 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 | ✅ 真机 |

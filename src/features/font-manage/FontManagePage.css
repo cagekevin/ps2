@@ -1,14 +1,15 @@
-/* 字体管理页：原版 app.bf68b505.css 实测值 → token。 */
-.mm-font {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
   /*
+/* 字体管理页：原版 app.bf68b505.css 实测值 → token。 */
+.mm-font {  /*
    * 底色由外壳 `.mm-layout` 给；文字色 / 字号由 `global.css` 的 body 给；
    * box-sizing 由 `global.css` 的 `*` 给。页面根都不写，
    * 否则下一页照抄时就会跟着写一遍，写错一个就是一页不一致。
    */
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 /* ---------- 页头 ---------- */
@@ -17,8 +18,6 @@
 
 /* ---------- 搜索行 ---------- */
 /*
- * 三块（搜索 / 预览文案 / 标签）的垂直间距**只由这里的 padding + gap 给**，
- * 子块一律不给垂直 padding / margin。
  * 原先各块自己撑，档位是 8 / 8 / 4 / 12 四种，相邻两处还会叠成两档——
  * 整页节奏与常用页（全 12）、设置页（12 / 16）都对不上。
  */
@@ -26,23 +25,21 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--mm-space-3);
-  padding: var(--mm-space-3) var(--mm-page-pad-x);
+gap:0;
 }
 
-.mm-font__search-row {
   /* 筛选按钮是 absolute 定位、不占高度，这里的行高就是搜索框的高度 */
+.mm-font__search-row {  /* 筛选按钮是 absolute 定位、不占高度，这里的行高就是搜索框的高度 */
+
   position: relative;
 }
 
 .mm-font__search-box {
   position: relative;
-  margin-right: var(--mm-search-filter-gap);
 }
 
 .mm-font__search-input.mm-input {
   width: 100%;
-  padding: 0 var(--mm-control-reserve) 0 var(--mm-space-3);
 }
 
 .mm-font__search-icon {
@@ -54,10 +51,11 @@
   pointer-events: none;
 }
 
-.mm-font__filter-btn {
+  /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
+.mm-font__filter-btn {  /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
+
   position: absolute;
   right: 0;
-  /* 与搜索框垂直居中：输入框 30、按钮 26，写死 top 会底部差 4 */
   top: 50%;
   transform: translateY(-50%);
   width: var(--mm-icon-btn-size);
@@ -65,7 +63,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   border-radius: var(--mm-radius-md);
   background: transparent;
@@ -93,7 +90,6 @@
   right: var(--mm-space-tight);
   min-width: var(--mm-filter-badge);
   height: var(--mm-filter-badge);
-  padding: 0 var(--mm-space-tight);
   border-radius: var(--mm-radius-pill);
   background: var(--mm-color-accent);
   color: var(--mm-color-text-strong);
@@ -102,33 +98,21 @@
   text-align: center;
 }
 
-/* 筛选面板（fixed + 定位变量） */
-.mm-font__filter-float {
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
-  z-index: var(--mm-z-dropdown);
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-overlay);
-  box-shadow: var(--mm-shadow-pop);
-}
+/* 筛选面板外壳：定位与表面来自 `.mm-popover`（`global.css`），
+   外壳不需要自己的声明——宽度与内边距在里面的 `.mm-font__filter-panel` 上 */
 
-.mm-font__filter-panel {
+  /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
+.mm-font__filter-panel {  /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
+
   width: var(--mm-filter-panel-w);
   max-width: calc(100vw - var(--mm-filter-panel-max-w-gap));
   max-height: var(--mm-filter-panel-max-h);
   overflow-y: auto;
-  /* 弹层内边距全页一个值：筛选面板 / 标签弹层 / 预览卡 / 字重菜单 / 模态框都是 12 */
-  padding: var(--mm-space-3);
 }
 
-.mm-font__filter-group + .mm-font__filter-group {
-  margin-top: var(--mm-space-4);
-}
+
 
 .mm-font__filter-title {
-  margin: 0 0 var(--mm-space-3);
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   line-height: 1.4;
@@ -137,12 +121,12 @@
 .mm-font__filter-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-2);
+gap:0;
 }
 
-.mm-font__filter-chip {
   /* 与标签 chip 同一套内边距（同类同尺寸） */
-  padding: var(--mm-space-1) var(--mm-space-2);
+.mm-font__filter-chip {  /* 与标签 chip 同一套内边距（同类同尺寸） */
+
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);
@@ -163,9 +147,9 @@
 }
 
 /* ---------- 预览文案面板 ---------- */
-.mm-font__text-panel {
   /* 与上一块、下一块的距离都由 toolbar 的 gap 给，这里不再补一份 */
-  padding: 0;
+.mm-font__text-panel {  /* 与上一块、下一块的距离都由 toolbar 的 gap 给，这里不再补一份 */
+
 }
 
 .mm-font__preview-text {
@@ -173,7 +157,6 @@
   flex-direction: row;
   flex-wrap: nowrap;
   position: relative;
-  margin-bottom: var(--mm-space-1);
 }
 
 .mm-font__preview-text-icon {
@@ -186,15 +169,16 @@
 
 /* 只给布局与文字色；表面（底色 / 描边 / 圆角 / 字号）继承 `.mm-input`，
    全仓输入框一套表面，别在这里再描一遍 */
-.mm-font__preview-text-field.mm-input {
-  flex: 1;
   /* 左 30 是图标位；右 10 与搜索框同一档 */
-  padding: 0 var(--mm-space-3) 0 var(--mm-control-reserve);
+.mm-font__preview-text-field.mm-input {  /* 左 30 是图标位；右 10 与搜索框同一档 */
+
+  flex: 1;
   color: var(--mm-color-text-strong);
 }
 
-.mm-font__preview-text-field.mm-input::placeholder {
   /* 占位符是弱文，不要借星级的 star-on */
+.mm-font__preview-text-field.mm-input::placeholder {  /* 占位符是弱文，不要借星级的 star-on */
+
   color: var(--mm-color-text-dim);
 }
 
@@ -205,11 +189,10 @@
   outline: none;
 }
 
-.mm-font__preview-text-btn {
-  margin-left: var(--mm-space-1);
-  height: var(--mm-control-h);
-  padding: 0 var(--mm-space-4);
   /* 填充型按钮的描边与底色同值（看不见的 1px），统一成透明，状态才上色 */
+.mm-font__preview-text-btn {  /* 填充型按钮的描边与底色同值（看不见的 1px），统一成透明，状态才上色 */
+
+  height: var(--mm-control-h);
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);
@@ -225,25 +208,25 @@
 }
 
 /* ---------- 我的标签 ---------- */
-.mm-font__tags {
   /* 到计数行的距离由 toolbar 的 padding-bottom 给 */
-  padding: 0;
+.mm-font__tags {  /* 到计数行的距离由 toolbar 的 padding-bottom 给 */
+
 }
 
-.mm-font__tags-head {
+  /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
+.mm-font__tags-head {  /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
+
   display: flex;
   align-items: center;
   height: var(--mm-tag-strip-h);
-  /* 只留组内那一档（标题 → 标签列表）；与上一块的距离由 toolbar 的 gap 给 */
-  margin-top: 0;
-  margin-bottom: var(--mm-space-1);
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
 }
 
-.mm-font__tags-head > span {
-  flex: 1;
   /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
+.mm-font__tags-head > span {  /* 要 11 号就直接给 11 号：transform 缩放不参与布局，宽度与省略号都按 12 算 */
+
+  flex: 1;
   font-size: var(--mm-font-xs);
   font-weight: 500;
 }
@@ -251,8 +234,7 @@
 .mm-font__tags-tools {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-2);
-  margin-left: auto;
+gap:0;
 }
 
 .mm-font__tags-add {
@@ -261,7 +243,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   border-radius: var(--mm-radius-sm);
   background: transparent;
@@ -279,7 +260,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--mm-color-icon);
@@ -293,7 +273,7 @@
 .mm-font__tag-list {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-2);
+gap:0;
 }
 
 .mm-font__tag-list--collapsed {
@@ -302,15 +282,14 @@
 }
 
 .mm-font__tags-error {
-  margin: 0;
   color: var(--mm-color-error);
   font-size: var(--mm-font-sm);
   line-height: 1.5;
 }
 
-.mm-font__tag {
-  padding: var(--mm-space-1) var(--mm-space-2);
   /* 与底色同值的描边看不见，去掉；hover / 选中时才有 accent 描边 */
+.mm-font__tag {  /* 与底色同值的描边看不见，去掉；hover / 选中时才有 accent 描边 */
+
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);
@@ -332,9 +311,7 @@
   color: var(--mm-color-text-strong);
 }
 
-.mm-font__tag--menu {
-  padding: var(--mm-space-1) var(--mm-space-2);
-}
+
 
 /* ---------- 计数行 ---------- */
 .mm-font__list-head {
@@ -342,27 +319,27 @@
   flex: 0 0 auto;
   align-items: center;
   height: var(--mm-list-head-h);
-  padding: 0 var(--mm-page-pad-x);
   border-top: var(--mm-border-w) solid var(--mm-color-border);
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
 }
 
-.mm-font__list-count {
-  flex: 1;
   /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
+.mm-font__list-count {  /* 计数是次要信息：次文色 + 11 号字，不借星级的 star-on，也不用 transform 缩放 */
+
+  flex: 1;
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-xs);
   font-weight: 500;
 }
 
-.mm-font__clear-tag {
   /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
+.mm-font__clear-tag {  /* 与计数行同高，别让 12px 的字浮在 22 高的行里 */
+  /* 可点动作用蓝（§7 规则 12 第 4 类），但用正档：hover 档只在 :hover 里出现 */
+
   height: var(--mm-list-head-h);
-  padding: 0 var(--mm-space-2);
   border: 0;
   background: transparent;
-  /* 可点动作用蓝（§7 规则 12 第 4 类），但用正档：hover 档只在 :hover 里出现 */
   color: var(--mm-color-accent);
   font-size: var(--mm-font-sm);
   cursor: pointer;
@@ -374,21 +351,19 @@
 }
 
 .mm-font__warning {
-  margin: 0;
-  padding: var(--mm-space-2) var(--mm-page-pad-x) 0;
   color: var(--mm-color-warn);
   font-size: var(--mm-font-sm);
 }
 
-.mm-font__state {
+  /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
+.mm-font__state {  /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
+
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--mm-space-4);
-  /* 内容由 flex 居中，34 的四周内边距不产生分组关系 */
-  padding: var(--mm-space-4);
+gap:0;
   color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   text-align: center;
@@ -396,7 +371,6 @@
 
 .mm-font__retry {
   height: var(--mm-control-h);
-  padding: 0 var(--mm-space-4);
   white-space: nowrap;
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);

@@ -9,17 +9,11 @@
  * 几种，同一个角色的 8 个抽屉长得不一样。抽屉是同一个角色，表面就该只有一处定义。
  *
  * `__host` 是组末尾的空容器，面板通过 portal 落到这里——它的宽度就是面板宽度。
+ * `__host` 是组末尾的空容器，面板通过 portal 落到这里——它的宽度就是面板内容的宽度。
+ *
+ * 还债，属于第二套尺寸规则，不要再加回来。
  */
 
-.mm-icon-panel-group,
-.mm-icon-panel__host,
 .mm-icon-panel__box {
-  width: 100%;
-}
-
-/* 抽屉表面：全仓唯一一处。各页的 panel 类不要再写 padding / 底色 / 圆角 */
-.mm-icon-panel__box {
-  padding: var(--mm-space-3);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-sunken);
+  background: var(--mm-color-bg-drawer);
 }

@@ -1,13 +1,14 @@
 /* 单选框：12×12 / 50% 正圆 / 1px #707070（官方 .base-radio 本页实测值） */
-.mm-radio {
-  display: inline-flex;
+/* 单选框：12×12 / 50% 正圆 / 1px `--mm-color-border-control`（尺寸照官方 `.base-radio`；
+   描边已并入亮线档，选中态换 accent 底） */
   /* 与 CheckBox 同一套收缩规则 */
-  min-width: 0;
-  max-width: 100%;
-  align-items: center;
-  gap: var(--mm-space-inline);
-  color: var(--mm-color-text);
+.mm-radio {  /* 与 CheckBox 同一套收缩规则 */
   /* 与 CheckBox / 按钮 / 输入框同字号（原来这三个各不相同） */
+
+  display: inline-flex;
+  align-items: center;
+gap:0;
+  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   cursor: pointer;
   user-select: none;

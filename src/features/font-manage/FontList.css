@@ -1,50 +1,27 @@
 /* 字体列表：列表项 / 字重 / 星级 / 授权 / 预览文字 */
 /* ---------- 字体列表 ---------- */
+/* 列表就是一列：**不要用 grid**。
+   grid 容器的隐式行会被 `align-content: stretch` 拉伸填满高度，
+   筛选后项数变少时每行被拉长——内容顶在上面、下方多出空白，同时 scrollHeight
+   恰好等于 clientHeight，于是既看出空白又滑不动。block 流里 li 自然占满宽度 */
 .mm-font__list {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
   overflow-y: auto;
 }
 
-.mm-font__item {
   /* 上下 6：项内已有「名字—预览—字重」三段节奏，再给 8 会显得每项都在喘气 */
-  padding: var(--mm-space-inline) var(--mm-page-pad-x);
+.mm-font__item {  /* 上下 6：项内已有「名字—预览—字重」三段节奏，再给 8 会显得每项都在喘气 */
+
   background: var(--mm-color-bg-base);
   border-bottom: var(--mm-border-w) solid var(--mm-color-border);
   cursor: pointer;
-  content-visibility: auto;
-  contain-intrinsic-size: var(--mm-font-item-est);
 }
 
 /* 没有 PostScript 名：列表仍显示，标灰提示「点不了」 */
 .mm-font__item--unavailable {
   opacity: 0.55;
   cursor: default;
-}
-
-.mm-font__item--none {
-  --mm-font-item-est: var(--mm-font-item-est-none);
-}
-
-.mm-font__item--small {
-  --mm-font-item-est: var(--mm-font-item-est-sm);
-}
-
-.mm-font__item--medium {
-  --mm-font-item-est: var(--mm-font-item-est-md);
-}
-
-.mm-font__item--large {
-  --mm-font-item-est: var(--mm-font-item-est-lg);
-}
-
-.mm-font__item--extra-large {
-  --mm-font-item-est: var(--mm-font-item-est-xl);
 }
 
 .mm-font__item:hover,
@@ -56,19 +33,21 @@
   min-width: 0;
 }
 
-.mm-font__name-row {
-  position: relative;
   /* flex 居中：12px 的名字放进 18 高的行里靠顶会偏上，和右侧操作按钮对不齐 */
+.mm-font__name-row {  /* flex 居中：12px 的名字放进 18 高的行里靠顶会偏上，和右侧操作按钮对不齐 */
+  /* 最小高度而不是写死：无预览模式的名字是 16px/22，写死 15 会把字压到下一行上 */
+
+  position: relative;
   display: flex;
   align-items: center;
-  /* 最小高度而不是写死：无预览模式的名字是 16px/22，写死 15 会把字压到下一行上 */
   min-height: var(--mm-row-head-h);
   line-height: 1;
 }
 
-.mm-font__family {
-  display: inline-block;
   /* 默认不预留操作区宽度：操作区只在 hover / 选中时出现，平时不出现就别占位 */
+.mm-font__family {  /* 默认不预留操作区宽度：操作区只在 hover / 选中时出现，平时不出现就别占位 */
+
+  display: inline-block;
   max-width: 100%;
   overflow: hidden;
   font-size: var(--mm-font-sm);
@@ -88,19 +67,18 @@
   font-size: var(--mm-name-size);
   line-height: var(--mm-name-lh);
   font-weight: 400;
-  padding-bottom: var(--mm-space-3);
 }
 
-.mm-font__actions {
+  /* 与名字行垂直居中：按钮 18、行高 18，贴顶会在无预览模式下偏上 */
+.mm-font__actions {  /* 与名字行垂直居中：按钮 18、行高 18，贴顶会在无预览模式下偏上 */
+
   position: absolute;
   right: 0;
-  /* 与名字行垂直居中：按钮 18、行高 18，贴顶会在无预览模式下偏上 */
   top: 50%;
   transform: translateY(-50%);
   display: none;
   align-items: center;
-  gap: var(--mm-space-1);
-  padding: 0 var(--mm-space-2);
+gap:0;
 }
 
 .mm-font__item:hover .mm-font__actions,
@@ -114,7 +92,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   border-radius: var(--mm-radius-sm);
   background: transparent;
@@ -135,7 +112,6 @@
 }
 
 .mm-font__star {
-  padding: 0 0 0 var(--mm-space-1);
   border: 0;
   background: transparent;
   color: var(--mm-color-text-muted);
@@ -149,10 +125,9 @@
 }
 
 /* 预览文字 */
-.mm-font__preview {
-  margin: 0;
   /* 名字是预览的标签：贴近预览（上 2），与下面的字重行留 6 */
-  padding: var(--mm-space-tight) 0 var(--mm-space-inline);
+.mm-font__preview {  /* 名字是预览的标签：贴近预览（上 2），与下面的字重行留 6 */
+
   color: var(--mm-color-text);
   font-family: var(--mm-preview-family, inherit);
   white-space: nowrap;
@@ -192,7 +167,6 @@
   justify-content: space-between;
   /* 上下都不给：上间距由预览行的下内边距提供，下间距由列表项的内边距提供。
      自己再给一段就会变成「上紧下松」——行底部净留白比顶部多一倍 */
-  padding: 0;
 }
 
 .mm-font__weight-list {
@@ -203,10 +177,11 @@
   min-width: 0;
 }
 
+/* 字重字形：未选中只有字形，**不做底色**；选中项才给底 + 亮描边。
+   底色只表达「当前字重」，因此未选中一律 transparent——三个像按钮的块会读成三个并列状态 */
 .mm-font__glyph {
   width: var(--mm-weight-glyph);
   height: var(--mm-weight-glyph);
-  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,6 +197,7 @@
 
 .mm-font__glyph--current {
   border-color: var(--mm-color-border-control);
+  background: var(--mm-color-bg-raised);
 }
 
 .mm-font__weight-count {
@@ -231,7 +207,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);
@@ -241,24 +216,16 @@
   cursor: pointer;
 }
 
-.mm-font__weight-menu {
-  position: absolute;
-  right: 0;
-  bottom: 100%;
-  z-index: var(--mm-z-dropdown);
-  min-width: var(--mm-weight-menu-min-w);
+/* 字重下拉：定位与表面来自 `.mm-popover`（`global.css`），这里只给宽度与内边距 */
   /* 与其它弹层一致：上下同档，不再上 12 下 8 */
-  padding: var(--mm-space-3) 0;
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-sunken);
-  box-shadow: var(--mm-shadow-pop);
+.mm-font__weight-menu {  /* 与其它弹层一致：上下同档，不再上 12 下 8 */
+
+  min-width: var(--mm-weight-menu-min-w);
 }
 
 .mm-font__weight-option {
   position: relative;
   width: 100%;
-  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-control-reserve);
   border: 0;
   background: transparent;
   color: var(--mm-color-text-strong);
@@ -271,12 +238,11 @@
 
 .mm-font__weight-check {
   position: absolute;
-  left: var(--mm-space-5);
+  left: var(--mm-check-slot);
   top: var(--mm-space-1);
 }
 
 /* 哨兵与底栏 */
 .mm-font__sentinel {
   height: var(--mm-border-w);
-  list-style: none;
 }

@@ -1,18 +1,18 @@
-/* 底栏：26 高、深色底、图标按钮 30 宽。原版 `.button-nav-wrap` / `.bottom-hover` */
-.mm-bottom-bar {
-  display: flex;
-  flex: 0 0 var(--mm-bottom-bar-h);
-  height: var(--mm-bottom-bar-h);
-  align-items: center;
   /*
+/* 底栏：26 高、深色底、图标按钮 30 宽。原版 `.button-nav-wrap` / `.bottom-hover` */
+.mm-bottom-bar {  /*
    * 内容靠右：这一条原本由页面自己给（字体管理页 `justify-content: flex-end`、
    * 样式页没给于是默认靠左），结果一页的按钮在右、一页在左，
    * 窄面板下右边空出 115px。对齐属于壳的形状，收进组件里定死。
    */
-  justify-content: flex-end;
   /* 左右留 8：原来底栏没有内边距，按钮直接贴到面板边缘，
+
+  display: flex;
+  flex: 0 0 var(--mm-bottom-bar-h);
+  height: var(--mm-bottom-bar-h);
+  align-items: center;
+  justify-content: flex-end;
      比上方所有内容（都留 8）更靠外，右边缘对不齐 */
-  padding: 0 var(--mm-page-pad-x);
   background: var(--mm-color-bg-panel);
 }
 
@@ -23,7 +23,6 @@
   height: var(--mm-bottom-bar-h);
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--mm-color-text);
@@ -45,6 +44,5 @@
   flex: 0 0 auto;
   width: var(--mm-border-w);
   height: var(--mm-verline-h);
-  margin: 0 var(--mm-space-2);
   background: var(--mm-color-border);
 }

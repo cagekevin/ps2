@@ -1,16 +1,16 @@
 /* 折叠行：整行高 24 / 箭头位 20×13 / 上下间距 12（官方 .opencom / .open-wrap） */
+/* 折叠行：整行高 24 / 箭头位 20×13（官方 .opencom / .open-wrap）。
+   上下间距归容器给，本组件自己不带 margin */
 .mm-collapse {
   width: 100%;
-  margin: var(--mm-space-3) 0;
 }
 
 .mm-collapse__head {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-1);
+gap:0;
   width: 100%;
   height: var(--mm-collapse-h);
-  padding: 0;
   border: none;
   background: transparent;
   color: var(--mm-color-text);

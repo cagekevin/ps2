@@ -1,3 +1,4 @@
+  /*
 /**
  * 样式面板。
  *
@@ -7,44 +8,33 @@
  * 四库格子尺寸**不共用一套**（原版就是四段独立 scoped）：
  *   颜色 25×25 无圆角 / 渐变 50×26 r4 / 字体 70×44 r4 / 样式 26×26 无圆角。
  */
-.mm-style {
+  /* box-sizing 由 `global.css` 的 `*` 统一给，底色由外壳给，这里都不写 */
+.mm-style {  /* box-sizing 由 `global.css` 的 `*` 统一给，底色由外壳给，这里都不写 */
+
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  /* box-sizing 由 `global.css` 的 `*` 统一给，底色由外壳给，这里都不写 */
 }
 
 /* ---------- 仓库条 ---------- */
+/* ---------- 仓库条 ----------
+   通栏触发器：尺寸与底色在这里，表面（描边 / 圆角）来自 `.mm-field-surface`，
+   这里把描边与圆角去掉——通栏顶栏带描边圆角会在面板顶部画出一个圆角方框 */
 .mm-style__warehouse {
-  display: flex;
   /* 高度用 height 表达，不要写成 flex-basis：这个类同时挂在触发器上，
      flex-basis 会把它锁成 36 宽，图标与仓库名挤在一起 */
+
   flex: 0 0 auto;
   width: 100%;
   height: var(--mm-warehouse-h);
-  align-items: center;
-  /* 页内块的左右内边距全页一个值 8（与常用页 / 设置页 / 字体管理同档）。
-     原本这里是 12，同一页里仓库条 12、tabs 0、颜色组只给左 12、渐变组左右 12——四种边 */
-  padding: 0 var(--mm-page-pad-x);
-  background: var(--mm-color-bg-sunken);
-}
-
-/* 触发器通栏：原版 `.style-warehouse__row` 是 width:100% 的 flex 行。
-   `select-box.css` 的触发器有控件描边（sunken 底缺反差，描边是必需品），
-   但这里是通栏顶栏：描边 + 圆角会在面板顶部画出一个带圆角的方框，且描边色与页内线不是同一档。
-   分区靠 sunken 底色（原版 `#282828`，比页面底暗一档），不靠边框。
-   背景不许再写 transparent —— 那会盖掉上面的底色，整条带子消失（实测 bg 透明、与页面同色） */
-.mm-style__warehouse.mm-select-box__trigger {
-  width: 100%;
   border: none;
   border-radius: 0;
+  background: var(--mm-color-bg-input);
 }
 
 /* 仓库名是标题性文字，不是选中态：颜色与 `PageHeader__title` 同档（`--mm-color-text-strong`）。
-   原版这里给的是 `--c-accent`（蓝），但蓝在本仓只表示「选中 / 主操作 / 需凸显」，
-   仓库名只是当前仓库的名字，不需要凸显；同页的蓝留给 tab 选中态。
-   字号 13 与左侧 16 图标配对（§7 规则 7），不跟下拉默认的 12 */
+/* 仓库名是标题性文字，不是选中态：13 号与左侧 16 图标配对（§7 规则 7） */
 .mm-style__warehouse .mm-select-box__label {
   color: var(--mm-color-text-strong);
   font-size: var(--mm-font-md);
@@ -55,7 +45,6 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  padding: var(--mm-space-3) var(--mm-page-pad-x);
 }
 
 .mm-style__tab-cell {
@@ -65,16 +54,14 @@
   align-items: center;
 }
 
-.mm-style__tab {
-  /*
+.mm-style__tab {  /*
    * 原版 `.w95` 是 95% 宽（对照清单 #8），但四个 tab 加起来右边会留 5% 的空，
    * 面板拉窄拉宽时最后一颗始终收不到头（实测右内边距比左多 2~4px，四个宽度都有）。
    * 改成 100%：文字仍是居中的，两侧的空间由文字宽度自然让出，不会贴到竖线。
    */
+
   width: 100%;
   min-width: 0;
-  margin: 0;
-  padding: 0;
   border: none;
   background: transparent;
   color: var(--mm-color-text);
@@ -108,7 +95,6 @@
   z-index: var(--mm-z-dropdown);
   width: max-content;
   max-width: var(--mm-describe-max-w);
-  padding: var(--mm-space-1) var(--mm-space-3);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-sunken);
   box-shadow: var(--mm-shadow-pop);
@@ -116,7 +102,6 @@
 }
 
 .mm-style__describe-name {
-  margin: 0;
   overflow: hidden;
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
@@ -125,7 +110,6 @@
 }
 
 .mm-style__describe-meta {
-  margin: 0;
   overflow: hidden;
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
@@ -144,18 +128,14 @@
 /* 颜色库与渐变 / 样式库用同一档左右内边距：
    原先颜色组只给左 12 右边不留、渐变组才左右都给，同页两种边 */
 .mm-style__group,
-.mm-style__group--wide {
-  margin-bottom: var(--mm-space-1);
-  padding: 0 var(--mm-page-pad-x);
-}
+
 
 .mm-style__group-head {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-1);
+gap:0;
   width: 100%;
   height: var(--mm-group-head-h);
-  padding: 0;
   border: none;
   background: transparent;
   color: var(--mm-color-text);
@@ -170,10 +150,10 @@
   color: var(--mm-color-text-strong);
 }
 
-.mm-style__group-name {
-  flex: 1;
   /* 原版 `p.ml8`：名称离箭头 8px（对照清单 #64） */
-  margin-left: var(--mm-space-2);
+.mm-style__group-name {  /* 原版 `p.ml8`：名称离箭头 8px（对照清单 #64） */
+
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -189,21 +169,18 @@
 .mm-style__items {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-1);
-  padding-top: var(--mm-space-1);
+gap:0;
 }
 
 /* 颜色：行距 6 */
 .mm-style__items--color {
-  row-gap: var(--mm-space-inline);
-  padding-top: var(--mm-space-inline);
+gap:0;
 }
 
 /* 样式：横向 6 / 行距 7 */
 .mm-style__items--style {
-  column-gap: var(--mm-space-inline);
-  row-gap: var(--mm-space-2);
-  padding-top: var(--mm-space-2);
+  column-gap:0;
+  row-gap:0;
 }
 
 /* ---------- 项 ---------- */
@@ -212,7 +189,6 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 0;
   border: var(--mm-border-w) solid transparent;
   background: transparent;
   color: var(--mm-color-icon);
@@ -237,7 +213,6 @@
   height: var(--mm-font-card-h);
   flex-direction: column;
   justify-content: flex-start;
-  padding: var(--mm-space-tight) var(--mm-space-1);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);
 }
@@ -282,7 +257,6 @@
 .mm-style__item--editing {
   width: var(--mm-font-card-w);
   height: var(--mm-font-card-h);
-  padding: 0 var(--mm-space-tight);
   border-color: var(--mm-color-accent);
   background: var(--mm-color-bg-overlay);
   cursor: default;
@@ -300,22 +274,17 @@
 /* 原版继承全局 `p{color:#c3c3c3;font-size:12px}` */
 .mm-style__font-count,
 .mm-style__font-size {
-  margin: 0;
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
 }
 
-/* 原版 `.block-size`：只比 count 多 margin-top:1px */
-.mm-style__font-size {
-  margin-top: var(--mm-space-tight);
-}
+
 
 /* 原版 `.block-color`：5×5 圆点，颜色由项数据给 */
 .mm-style__font-dot {
   flex: 0 0 auto;
   width: var(--mm-space-1);
   height: var(--mm-space-1);
-  margin-top: var(--mm-space-tight);
   border-radius: 50%;
   background: var(--mm-dot-color, transparent);
 }
@@ -323,7 +292,6 @@
 /* 原版 `.block-context`：中文字预览，14px / 700 / 白 / 居中 */
 .mm-style__font-sample {
   width: 100%;
-  margin: var(--mm-space-tight) 0 0;
   overflow: hidden;
   color: var(--mm-color-text-strong);
   font-family: var(--mm-sample-font, inherit);
@@ -337,7 +305,6 @@
 /* 无 fontPreview 的兜底：只显名字 */
 .mm-style__font-family {
   width: 100%;
-  margin: 0;
   overflow: hidden;
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
@@ -351,7 +318,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-raised);

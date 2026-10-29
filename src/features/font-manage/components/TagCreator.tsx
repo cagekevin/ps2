@@ -32,7 +32,7 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
   }
 
   return <Portal>
-    <div className="mm-font__modal-mask" onClick={onClose}>
+    <div className="mm-modal-mask" onClick={onClose}>
       <div
         ref={containerRef}
         className="mm-font__modal"
@@ -42,7 +42,7 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
         onKeyDown={onKeyDown}
         onClick={stopClickPropagation}
       >
-        <p className="mm-font__modal-title">{mode === 'create' ? '新建标签' : '重命名标签'}</p>
+        <div className="mm-font__modal-title">{mode === 'create' ? '新建标签' : '重命名标签'}</div>
         <TagInput
           value={text}
           onChange={setText}

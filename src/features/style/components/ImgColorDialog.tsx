@@ -74,7 +74,7 @@ export function ImgColorDialog({
         onClick={stopClickPropagation}
         onKeyDown={onKeyDown}
       >
-        <p className="mm-imgcolor__title">提取的颜色</p>
+        <div className="mm-imgcolor__title">提取的颜色</div>
         <div className="mm-imgcolor__row">
           {hexes.map((hex, index) => (
             <button
@@ -97,9 +97,9 @@ export function ImgColorDialog({
           </Button>
         </div>
 
-        <hr className="mm-imgcolor__hr" />
+        <div className="mm-imgcolor__hr" />
 
-        <p className="mm-imgcolor__title">提取的渐变色</p>
+        <div className="mm-imgcolor__title">提取的渐变色</div>
         <div className="mm-imgcolor__row">
           {pairs.map(({ pair, css }) => (
             <button

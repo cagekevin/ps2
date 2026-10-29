@@ -18,7 +18,9 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) walk(path, out);
-    else if (/\.(ts|tsx)$/.test(entry.name)) out.push(path);
+    /* 收集时统一成正斜杠：Windows 的 join 产出 `src\core\ps\...`，与 ALLOWED_PREFIXES 的
+       正斜杠前缀永远不相等，会把 core/ps 自己的文件全判成越界（macOS 上则一直是绿的） */
+    else if (/\.(ts|tsx)$/.test(entry.name)) out.push(path.replace(/\\/g, '/'));
   }
   return out;
 }

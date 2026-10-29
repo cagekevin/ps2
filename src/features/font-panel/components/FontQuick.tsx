@@ -38,9 +38,10 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
         <div className="mm-font-panel__quick-row">
           <SelectBox
             className="mm-font-panel__quick-select"
+            arrowIcon="iconzhankaizhedie"
+            arrowSize={10}
             options={options}
             value={String(index)}
-            inset
             onChange={(value) => onSelect(Number(value))}
             onRemove={(value) => onRemove(Number(value))}
             footer={(close) => (

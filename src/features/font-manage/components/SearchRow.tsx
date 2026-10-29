@@ -69,7 +69,7 @@ export function SearchRow({
       </button>
 
       {open ? (
-        <div ref={floatingRef} className="mm-font__filter-float" role="dialog" aria-label="筛选">
+        <div ref={floatingRef} className="mm-popover mm-font__filter-float" role="dialog" aria-label="筛选">
           <FilterPanel categories={categories} state={filterState} onChange={onFilterChange} />
         </div>
       ) : null}

@@ -21,13 +21,13 @@ type EmptyProps = { empty: string };
 type Props = FailureProps | EmptyProps;
 
 export function StateHint(props: Props) {
-  if ('empty' in props) return <p className="mm-state-hint">{props.empty}</p>;
+  if ('empty' in props) return <div className="mm-state-hint">{props.empty}</div>;
 
   const { result, onRetry } = props;
   if (result.status === 'ok') return null;
 
   if (result.code === 'NOT_FOUND') {
-    return <p className="mm-state-hint">文件不存在</p>;
+    return <div className="mm-state-hint">文件不存在</div>;
   }
 
   /*
@@ -36,29 +36,29 @@ export function StateHint(props: Props) {
    * 本来就说得清当前是什么、需要什么。
    */
   if (result.code === 'PS_NO_DOC' || result.code === 'PS_WRONG_LAYER') {
-    return <p className="mm-state-hint">{result.reason}</p>;
+    return <div className="mm-state-hint">{result.reason}</div>;
   }
 
   if (result.code === 'CORRUPT') {
     /* detail 是机器现场（哪个字段、期望什么）：不进正文，挂 title 让它可查 */
     return (
-      <p className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
+      <div className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
         数据异常：{result.reason}
-      </p>
+      </div>
     );
   }
 
   if (result.code === 'IO_ERROR') {
     return (
-      <p className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
+      <div className="mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
         读取失败：{result.reason}
         <button type="button" className="mm-state-hint__retry" onClick={onRetry}>
           重试
         </button>
-      </p>
+      </div>
     );
   }
 
   /* 其余码不该出现在读取链路；如实显示原因，不给重试 */
-  return <p className="mm-state-hint mm-state-hint--error">{result.reason}</p>;
+  return <div className="mm-state-hint mm-state-hint--error">{result.reason}</div>;
 }

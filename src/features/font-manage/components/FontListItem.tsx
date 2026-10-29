@@ -40,7 +40,7 @@ function FontListItemInner({
   const familyStyle = { '--mm-preview-family': previewFamily } as CSSProperties;
   const unavailable = unavailableReason.length > 0;
 
-  function onKeyDown(event: KeyboardEvent<HTMLLIElement>): void {
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
     if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -49,7 +49,7 @@ function FontListItemInner({
   }
 
   return (
-    <li
+    <div
       className={`mm-font__item mm-font__item--${previewMode}${active ? ' mm-font__item--active' : ''}${
         unavailable ? ' mm-font__item--unavailable' : ''
       }`}
@@ -84,9 +84,11 @@ function FontListItemInner({
         </div>
 
         {previewMode !== 'none' ? (
-          <pre className={`mm-font__preview mm-font__preview--${previewMode}`} style={familyStyle}>
+          /* 用 div 而不是 pre：pre 带 UA 默认的 margin，页面上不许有 margin 声明。
+             换行保留靠 CSS 的 `white-space: pre-wrap` */
+          <div className={`mm-font__preview mm-font__preview--${previewMode}`} style={familyStyle}>
             {sample}
-          </pre>
+          </div>
         ) : null}
 
         <FontWeight
@@ -95,7 +97,7 @@ function FontListItemInner({
           onSelect={(index) => onApply(font, index)}
         />
       </div>
-    </li>
+    </div>
   );
 }
 

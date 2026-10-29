@@ -1,11 +1,12 @@
-/* 功能格：50×50 / 圆角 10 / 默认 #494949 / 悬停与展开 #222（原版 .context-svg-wrap） */
+/* 功能格：宽由所在列等分 / 高 50 / 圆角 10 / 默认 `--mm-color-bg-raised` / hover 叠白
+   （原版 `.context-svg-wrap` 是 50×50、`#494949`、hover 与展开同为 `#222`；
+   本项目「展开」改用 sunken 凹下去，见下方 `--active` 一节） */
 .mm-common__tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--mm-space-tight);
+gap:0;
   width: 100%;
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--mm-color-text);
@@ -66,7 +67,6 @@
   left: 50%;
   width: var(--mm-common-mark);
   height: var(--mm-common-mark);
-  margin-left: var(--mm-common-mark-offset-x);
   border-radius: var(--mm-radius-pill);
   background: var(--mm-color-accent);
 }

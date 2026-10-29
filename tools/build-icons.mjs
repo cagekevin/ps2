@@ -111,9 +111,10 @@ const WHITELIST = [
   'iconyuansutihuan',
   'iconweizhiduihuan',
   'icontucengyansehuhuan',
-  /* 常用页：放大 / 缩小输入框的左插槽图标（原版 baseInput 的 slot=left） */
+  /* 常用页缩放区的两个触发器：放大镜 + / 放大镜 −，必须是同一套。
+     原版缩小用的是 `iconsuoxiao`（一条横杠），与放大镜不成对，已换成成对的 `iconshousuo` */
   'iconfangda',
-  'iconsuoxiao',
+  'iconshousuo',
   /* 常用页页头两个基础按钮：打开所在目录 / 重置常用项
      （`iconshuaxin` 前面已登记过，这里只补目录图标） */
   'iconwenjianjiamulu',

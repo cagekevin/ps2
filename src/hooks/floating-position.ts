@@ -42,6 +42,14 @@ export interface FloatingPositionOptions {
   placement: FloatingPlacement;
   offset: number;
   padding: number;
+  /**
+   * 空间不够时是否翻到另一侧。
+   *
+   * - `true`（默认）：右键菜单这类「跟着指针走」的浮层，翻过去才不会出界。
+   * - `false`：下拉面板。它必须贴着触发器左边、向下展开——翻了就会出现
+   *   「面板左边比触发器多一截、右边却对齐」的错位。放不下只做夹取，不翻转。
+   */
+  flip?: boolean;
 }
 
 export interface FloatingPosition {
@@ -60,33 +68,46 @@ export function computeFloatingPosition(
   viewport: FloatingViewport,
   options: FloatingPositionOptions
 ): FloatingPosition {
-  const { offset, padding } = options;
+  const { offset, padding, flip = true } = options;
   const [preferredVertical, preferredHorizontal] = PLACEMENT_PARTS[options.placement];
 
   let vertical = preferredVertical;
-  if (preferredVertical === 'bottom') {
-    const below = viewport.height - padding - (reference.bottom + offset);
-    const above = reference.top - offset - padding;
-    if (floating.height > below && above > below) vertical = 'top';
-  } else {
-    const above = reference.top - offset - padding;
-    const below = viewport.height - padding - (reference.bottom + offset);
-    if (floating.height > above && below > above) vertical = 'bottom';
-  }
-
   let horizontal = preferredHorizontal;
-  if (preferredHorizontal === 'start') {
-    if (reference.left + floating.width > viewport.width - padding) horizontal = 'end';
-  } else if (reference.right - floating.width < padding) {
-    horizontal = 'start';
+
+  if (flip) {
+    if (preferredVertical === 'bottom') {
+      const below = viewport.height - padding - (reference.bottom + offset);
+      const above = reference.top - offset - padding;
+      if (floating.height > below && above > below) vertical = 'top';
+    } else {
+      const above = reference.top - offset - padding;
+      const below = viewport.height - padding - (reference.bottom + offset);
+      if (floating.height > above && below > above) vertical = 'bottom';
+    }
+
+    if (preferredHorizontal === 'start') {
+      if (reference.left + floating.width > viewport.width - padding) horizontal = 'end';
+    } else if (reference.right - floating.width < padding) {
+      horizontal = 'start';
+    }
   }
 
   let left = horizontal === 'start' ? reference.left : reference.right - floating.width;
   let top =
     vertical === 'bottom' ? reference.bottom + offset : reference.top - floating.height - offset;
 
-  left = clamp(left, padding, viewport.width - padding - floating.width);
-  top = clamp(top, padding, viewport.height - padding - floating.height);
+  /**
+   * 夹取时留多少边。
+   *
+   * `flip: true`（跟着指针走的菜单）要留 `padding`，否则贴边太丑。
+   * `flip: false`（下拉面板）**必须留 0**：它的宽度等于触发器宽，而触发器常常就是通栏的
+   * （左边缘贴容器、右边缘贴视口）。再要求「离视口边 8」就等于把面板整体往左推——
+   * 这就是「面板左边多出一截、右边却对齐」的真正来源，与翻转无关。
+   */
+  const edge = flip ? padding : 0;
+
+  left = clamp(left, edge, viewport.width - edge - floating.width);
+  top = clamp(top, edge, viewport.height - edge - floating.height);
 
   return {
     left: Math.round(left),

@@ -1,13 +1,13 @@
 /* 勾选框：12×12 / 圆角 3 / 1px #707070（官方 .base-check 本页实测值） */
+/* 勾选框：12×12 / 圆角 3 / 1px `--mm-color-border-control`（尺寸与圆角照官方 `.base-check`；
+   描边已并入亮线档，选中态换 accent 底） */
 .mm-check {
   display: inline-flex;
-  /* 面板拉窄到 200 时不撑破父容器：没有这两条，长标签会按内容宽度顶出去 */
-  min-width: 0;
-  max-width: 100%;
+  /* 收缩规则（`min-width: 0` + `max-width: 100%`）在 `styles/global.css` 的 `.mm-check, .mm-radio`
+     一处，与单选框共用；不要在本文件补一份，两份必漂 */
   align-items: center;
-  gap: var(--mm-space-inline);
+  gap:0;
   color: var(--mm-color-text);
-  /* 与 `ui.css` 的按钮 / 输入框同字号：表单控件是同一类，不能这一页 13 那一页 12 */
   font-size: var(--mm-font-sm);
   cursor: pointer;
   user-select: none;
@@ -68,6 +68,7 @@
 
 .mm-check__label {
   /* ellipsis 要真的生效必须有 min-width: 0，否则 flex 子项按内容宽度撑开 */
+
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

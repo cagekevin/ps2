@@ -1,7 +1,8 @@
-.mm-layout {
+  /* 原版内容区底色 #363636；#535353 只用于底栏 */
+.mm-layout {  /* 原版内容区底色 #363636；#535353 只用于底栏 */
+
   display: flex;
   height: 100vh;
-  /* 原版内容区底色 #363636；#535353 只用于底栏 */
   background: var(--mm-color-bg-base);
   color: var(--mm-color-text);
 }
@@ -18,7 +19,6 @@
   align-items: center;
   justify-content: space-between;
   flex: 0 0 auto;
-  padding: var(--mm-space-2) var(--mm-space-3);
   border-bottom: var(--mm-border-w) solid var(--mm-color-border);
 }
 
@@ -29,11 +29,10 @@
 .mm-layout__actions {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-2);
+  gap:0;
 }
 
 .mm-layout__debug {
-  padding: 0 var(--mm-space-1);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-sm);
   color: var(--mm-color-text-dim);
@@ -68,7 +67,6 @@
 }
 
 .mm-loading {
-  padding: var(--mm-space-3);
   font-size: var(--mm-font-sm);
   color: var(--mm-color-text-dim);
 }

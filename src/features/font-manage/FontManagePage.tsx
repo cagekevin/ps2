@@ -65,23 +65,23 @@ export default function FontManagePage() {
 
       <div className="mm-font__warnings">
         {page.dropped.length > 0 ? (
-          <p className="mm-font__warning">{page.dropped.length} 个字体项无法识别</p>
+          <div className="mm-font__warning">{page.dropped.length} 个字体项无法识别</div>
         ) : null}
         {page.tagsDropped.length > 0 ? (
-          <p className="mm-font__warning">{page.tagsDropped.length} 个标签无法识别</p>
+          <div className="mm-font__warning">{page.tagsDropped.length} 个标签无法识别</div>
         ) : null}
         {page.starsDropped.length > 0 ? (
-          <p className="mm-font__warning">{page.starsDropped.length} 个评分无法识别</p>
+          <div className="mm-font__warning">{page.starsDropped.length} 个评分无法识别</div>
         ) : null}
         {page.classificationError ? (
-          <p className="mm-font__warning">{page.classificationError}（分类筛选已禁用）</p>
+          <div className="mm-font__warning">{page.classificationError}（分类筛选已禁用）</div>
         ) : page.classificationEmpty ? (
-          <p className="mm-font__warning">没有分类数据（分类筛选已禁用）</p>
+          <div className="mm-font__warning">没有分类数据（分类筛选已禁用）</div>
         ) : null}
         {page.starsError ? (
-          <p className="mm-font__warning">
+          <div className="mm-font__warning">
             {page.starsError}：列表里的评分先按「未收藏」显示，不是你的评分丢了
-          </p>
+          </div>
         ) : null}
       </div>
 
@@ -103,7 +103,7 @@ export default function FontManagePage() {
           ) : null}
         </div>
       ) : (
-        <ul ref={page.listRef} className="mm-font__list">
+        <div ref={page.listRef} className="mm-font__list">
           {page.visible.map((font) => (
             <FontListItem
               key={`${font.family}::${font.postScriptNames[0] ?? ''}`}
@@ -120,8 +120,8 @@ export default function FontManagePage() {
               onOpenTags={page.openTagMenu}
             />
           ))}
-          <li ref={page.sentinelRef} className="mm-font__sentinel" aria-hidden="true" />
-        </ul>
+          <div ref={page.sentinelRef} className="mm-font__sentinel" aria-hidden="true" />
+        </div>
       )}
 
       <PageFooter
