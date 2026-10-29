@@ -14,7 +14,6 @@ import { IconButton } from '../../../components/IconButton';
 import { RadioButton } from '../../../components/RadioButton';
 import { TextField } from '../../../components/TextField';
 import { distribute } from '../../../commands/common-use';
-import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import './panel.css';
 
@@ -36,7 +35,7 @@ export function SpacingPanel() {
       <div className="mm-u-row mm-common__panel-row">
         <TextField
           variant="fill"
-          title={MSG.common.spacing}
+          title={'间距'}
           placeholder="10"
           inputMode="decimal"
           value={gap}
@@ -45,7 +44,7 @@ export function SpacingPanel() {
         <span className="mm-common__panel-btn">
           <IconButton
             name="iconshuipingjuzhongfenbu"
-            title={MSG.common.distributeH}
+            title={'按间距水平分布'}
             size={16}
             onClick={() => distributeTo(1)}
           />
@@ -53,7 +52,7 @@ export function SpacingPanel() {
         <span className="mm-common__panel-btn">
           <IconButton
             name="iconchuizhijuzhongfenbu"
-            title={MSG.common.distributeV}
+            title={'按间距垂直分布'}
             size={16}
             onClick={() => distributeTo(2)}
           />
@@ -64,13 +63,13 @@ export function SpacingPanel() {
 
       <div className="mm-u-row mm-common__panel-row">
         <RadioButton
-          label={MSG.common.sortByLayer}
+          label={'按图层排序'}
           name="mm-common-spacing-sort"
           checked={sortMode === 1}
           onChange={() => setSortMode(1)}
         />
         <RadioButton
-          label={MSG.common.sortByCoord}
+          label={'按坐标排序'}
           name="mm-common-spacing-sort"
           checked={sortMode === 2}
           onChange={() => setSortMode(2)}

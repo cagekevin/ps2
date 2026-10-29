@@ -154,7 +154,7 @@ export default function CommonPage() {
        *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
        * 两个入口都不是页头的，别再加回来。
        */}
-      <PageHeader title={MSG.common.pageTitle} />
+      <PageHeader title={'常用功能页'} />
 
       <div className="mm-common__body">
         {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}
@@ -179,7 +179,7 @@ export default function CommonPage() {
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
-              label={MSG.common.zoomEnlarge}
+              label={'放大'}
               quick={ZOOM_LEVELS.enlargePart}
               all={ZOOM_LEVELS.enlargeAll}
               openId={page.expandedId}
@@ -189,7 +189,7 @@ export default function CommonPage() {
             <ZoomRow
               id="zoom-narrow"
               icon="iconshousuo"
-              label={MSG.common.zoomShrink}
+              label={'缩小'}
               quick={ZOOM_LEVELS.narrowPart}
               all={ZOOM_LEVELS.narrowAll}
               openId={page.expandedId}

@@ -1,0 +1,1326 @@
+--- a/src/commands/style.ts
++++ b/src/commands/style.ts
+@@ -161,7 +161,7 @@
+   if (gradient.status === 'error') return gradient;
+ 
+   return addKuItem(warehouse, kind, groupIndex, {
+-    name: MSG.style.untitledName,
++    name: '未命名',
+     gradient: gradient.value
+   });
+ }
+@@ -349,28 +349,28 @@
+ 
+ /** 导入预设仓库（覆盖）：旧文件先进回收目录，索引整份替换 */
+ export function importKuReplace(): Promise<Result<KuImportResult>> {
+-  const path = openFile(MSG.style.dialogImport, ['kux']);
++  const path = openFile('导入样式仓库', ['kux']);
+   if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
+   return importKuArchive(false, path);
+ }
+ 
+ /** 追加预设仓库：只往索引 push 仓库，本地已有文件不动 */
+ export function importKuAppend(): Promise<Result<KuImportResult>> {
+-  const path = openFile(MSG.style.dialogAppend, ['kux']);
++  const path = openFile('追加样式仓库', ['kux']);
+   if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
+   return importKuArchive(true, path);
+ }
+ 
+ /** 导出所有仓库 */
+ export function exportKuAll(): Promise<Result<void>> {
+-  const path = saveFile(MSG.style.dialogExportAll, ['kux'], kuArchiveDefaultName(false));
++  const path = saveFile('导出所有仓库', ['kux'], kuArchiveDefaultName(false));
+   if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
+   return Promise.resolve(exportKuArchive(false, path));
+ }
+ 
+ /** 导出当前仓库 */
+ export function exportKuCurrent(): Promise<Result<void>> {
+-  const path = saveFile(MSG.style.dialogExportCurrent, ['kux'], kuArchiveDefaultName(true));
++  const path = saveFile('导出当前仓库', ['kux'], kuArchiveDefaultName(true));
+   if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
+   return Promise.resolve(exportKuArchive(true, path));
+ }
+@@ -382,12 +382,12 @@
+  * CMYK 分流在 jsx 内部做——前端只发库项形状，CMYK 字段由库里已有项自带。
+  */
+ export function applyColorByHex(hex: string): Promise<Result<void>> {
+-  return applyStyleColor({ name: MSG.style.untitledName, color: { hex } });
++  return applyStyleColor({ name: '未命名', color: { hex } });
+ }
+ 
+ /** 应用提取的渐变对（原版 `setGrad` `:52905-52908`：createGradientItem → ys_useGradient） */
+ export function applyGradientPair(pair: [string, string]): Promise<Result<void>> {
+-  const item: GradientLibraryItem = createGradientItem(MSG.style.untitledName, pair);
++  const item: GradientLibraryItem = createGradientItem('未命名', pair);
+   return applyGradient(item.gradient);
+ }
+ 
+@@ -397,7 +397,7 @@
+  */
+ export async function saveExtractedToSwatch(hexes: string[]): Promise<Result<void>> {
+   const items = hexes.map((hex) => ({
+-    name: MSG.style.untitledName,
++    name: '未命名',
+     color: { hex: hex.replace('#', '') }
+   }));
+   return persistSwatch(items);
+@@ -409,10 +409,10 @@
+   hexes: string[]
+ ): Promise<Result<void>> {
+   const items = hexes.map((hex) => ({
+-    name: MSG.style.untitledName,
++    name: '未命名',
+     color: { hex: hex.replace('#', '') }
+   }));
+-  return addKuGroupWithItems(warehouse, 'color', MSG.style.groupFromColors, items);
++  return addKuGroupWithItems(warehouse, 'color', '提取颜色组', items);
+ }
+ 
+ /** 提取色两两成渐变，新建「提取渐变组」分组（原版 `saveGrad` `:52882-52901`） */
+@@ -421,6 +421,6 @@
+   hexes: string[]
+ ): Promise<Result<void>> {
+   const pairs = buildColorPairGradients(hexes).slice(0, 30);
+-  const items = pairs.map(({ pair }) => createGradientItem(MSG.style.untitledName, pair));
+-  return addKuGroupWithItems(warehouse, 'gradient', MSG.style.groupFromGradients, items);
++  const items = pairs.map(({ pair }) => createGradientItem('未命名', pair));
++  return addKuGroupWithItems(warehouse, 'gradient', '提取渐变组', items);
+ }
+--- a/src/domain/font-meta.ts
++++ b/src/domain/font-meta.ts
+@@ -136,7 +136,7 @@
+  *   `{ tags: [...], stars?: [...] }`            可同时覆盖评分
+  */
+ export function parseTagArchive(text: string): Result<FontTagArchive> {
+-  const parsed = parseJson(text, MSG.font.fileTagsImport);
++  const parsed = parseJson(text, '标签导入文件');
+   if (parsed.status === 'error') return parsed;
+ 
+   const root = parsed.value;
+--- a/src/domain/ku-format.ts
++++ b/src/domain/ku-format.ts
+@@ -100,7 +100,7 @@
+ function decodeArrayText(content: Result<string>): Result<Record<string, unknown>[]> {
+   if (content.status === 'error') return content;
+ 
+-  const parsed = parseJson(content.value, MSG.style.kuItemInner);
++  const parsed = parseJson(content.value, '库条目内层');
+   if (parsed.status === 'error') return parsed;
+ 
+   if (!Array.isArray(parsed.value)) {
+--- a/src/features/action/ActionPage.tsx
++++ b/src/features/action/ActionPage.tsx
+@@ -28,7 +28,7 @@
+ const DIALOG_TITLE = {
+   addGroup: MSG.action.needGroupName,
+   renameGroup: MSG.action.needNewGroupName,
+-  alias: MSG.action.aliasTitle
++  alias: '请输入别名'
+ } as const;
+ 
+ export default function ActionPage() {
+@@ -36,7 +36,7 @@
+ 
+   return (
+     <div className="mm-action">
+-      <PageHeader title={MSG.action.pageTitle} />
++      <PageHeader title={'动作管理页'} />
+ 
+       <div className="mm-action__body">
+         {page.reasons.index ? (
+@@ -82,7 +82,7 @@
+                 trailing={
+                   <IconButton
+                     name={ACTION_ICONS.addGroup}
+-                    title={MSG.action.addAction}
++                    title={'添加动作'}
+                     size={14}
+                     onClick={() => void page.openAddAction(groupIndex)}
+                   />
+@@ -126,37 +126,37 @@
+                     ))}
+                   </div>
+                 ) : (
+-                  <StateHint empty={MSG.action.emptyGrid} />
++                  <StateHint empty={'该动作组空空如也'} />
+                 )
+               ) : null}
+             </div>
+           ))}
+ 
+-          {page.groups.length === 0 ? <StateHint empty={MSG.action.emptyGrid} /> : null}
++          {page.groups.length === 0 ? <StateHint empty={'该动作组空空如也'} /> : null}
+         </div>
+       </div>
+ 
+       <BottomBar>
+         <BottomBarButton
+-          title={MSG.action.addGroup}
++          title={'添加分组'}
+           name={ACTION_ICONS.addGroup}
+           size={14}
+           onClick={page.openAddGroup}
+         />
+         <BottomBarButton
+-          title={MSG.action.displayMode}
++          title={'显示方式'}
+           name={ACTION_ICONS.columns}
+           size={14}
+           onClick={page.openColumnMenu}
+         />
+         <BottomBarButton
+-          title={MSG.action.importPreset}
++          title={'导入预设'}
+           name={ACTION_ICONS.importPreset}
+           size={14}
+           onClick={page.openImportMenu}
+         />
+         <BottomBarButton
+-          title={MSG.action.exportPreset}
++          title={'导出预设'}
+           name={ACTION_ICONS.exportPreset}
+           size={14}
+           onClick={page.openExportMenu}
+@@ -182,7 +182,7 @@
+       {page.dialog ? (
+         <InputDialog
+           title={DIALOG_TITLE[page.dialog.kind]}
+-          defaultValue={page.dialog.kind === 'addGroup' ? MSG.action.defaultGroupName : page.dialog.value}
++          defaultValue={page.dialog.kind === 'addGroup' ? '未命名分组' : page.dialog.value}
+           onSubmit={page.submitDialog}
+           onClose={page.closeDialog}
+         />
+--- a/src/features/action/action-constants.ts
++++ b/src/features/action/action-constants.ts
+@@ -29,9 +29,9 @@
+   onPick: (columns: ActionColumns) => void
+ ): MenuItem[] {
+   const labels: Record<ActionColumns, string> = {
+-    1: MSG.action.columnOne,
+-    2: MSG.action.columnTwo,
+-    3: MSG.action.columnThree
++    1: '单列',
++    2: '双列',
++    3: '三列'
+   };
+   return ([1, 2, 3] as const).map((columns) => ({
+     label: labels[columns],
+--- a/src/features/action/components/AddActionDialog.tsx
++++ b/src/features/action/components/AddActionDialog.tsx
+@@ -82,7 +82,7 @@
+   return (
+     <div className="mm-modal-mask" role="dialog" aria-modal="true">
+       <div className="mm-action-dialog">
+-        <div className="mm-action-dialog__title">{MSG.action.addAction}</div>
++        <div className="mm-action-dialog__title">{'添加动作'}</div>
+ 
+         <SelectBox
+           options={groups.map((name, at) => ({ value: String(at), label: name }))}
+@@ -90,7 +90,7 @@
+           onChange={setCurrent}
+         />
+ 
+-        <CheckBox label={MSG.action.selectAll} checked={allChecked} indeterminate={halfChecked} onChange={toggleAll} />
++        <CheckBox label={'全选'} checked={allChecked} indeterminate={halfChecked} onChange={toggleAll} />
+ 
+         <div className="mm-action-dialog__list">
+           {items.length ? (
+--- a/src/features/action/components/WarehouseBar.tsx
++++ b/src/features/action/components/WarehouseBar.tsx
+@@ -65,22 +65,22 @@
+             ) : (
+               <Button
+                 className="mm-action__warehouse-action"
+-                title={MSG.action.renameWarehouse}
++                title={'重命名当前仓库'}
+                 onClick={() => setRenaming(true)}
+               >
+-                {MSG.action.renameWarehouse}
++                {'重命名当前仓库'}
+               </Button>
+             )}
+ 
+             <Button
+               className="mm-action__warehouse-action"
+-              title={MSG.action.newWarehouse}
++              title={'新建仓库'}
+               onClick={() => {
+                 close();
+                 onAdd();
+               }}
+             >
+-              {MSG.action.newWarehouse}
++              {'新建仓库'}
+             </Button>
+           </div>
+         )}
+--- a/src/features/action/useActionPage.ts
++++ b/src/features/action/useActionPage.ts
+@@ -129,13 +129,13 @@
+       x: event.clientX,
+       y: event.clientY,
+       items: [
+-        { label: MSG.action.menuNewGroup, onSelect: () => setDialog({ kind: 'addGroup', afterIndex: groupIndex }) },
++        { label: '新建分组', onSelect: () => setDialog({ kind: 'addGroup', afterIndex: groupIndex }) },
+         {
+-          label: MSG.action.menuRename,
++          label: '重命名',
+           onSelect: () => setDialog({ kind: 'renameGroup', index: groupIndex, value: groupName })
+         },
+         {
+-          label: MSG.action.menuDelete,
++          label: '删除',
+           danger: true,
+           onSelect: () => void deleteGroup(groupIndex, groupName)
+         }
+@@ -164,7 +164,7 @@
+       y: event.clientY,
+       items: [
+         {
+-          label: item.alias ? MSG.action.menuEditAlias : MSG.action.menuAddAlias,
++          label: item.alias ? '修改别名' : '添加别名',
+           onSelect: () =>
+             setDialog({
+               kind: 'alias',
+@@ -174,13 +174,13 @@
+             })
+         },
+         {
+-          label: MSG.action.menuDeleteAlias,
++          label: '删除别名',
+           /* 没有别名时不可点：原版也是灰的（官方 `$menu` 没有禁用态，我们照 `MenuItem.disabled`） */
+           disabled: !item.alias,
+           onSelect: () => void run(() => deleteAliasCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete })
+         },
+         {
+-          label: MSG.action.menuDelete,
++          label: '删除',
+           danger: true,
+           onSelect: () => void deleteItem(groupIndex, itemIndex, item.alias ?? item.name)
+         }
+@@ -218,14 +218,14 @@
+       kind: 'anchor',
+       anchor,
+       items: [
+-        { label: MSG.action.menuExportAll, onSelect: () => void doExport(false) },
+-        { label: MSG.action.menuExportCurrent, onSelect: () => void doExport(true) }
++        { label: '导出所有仓库', onSelect: () => void doExport(false) },
++        { label: '导出当前仓库', onSelect: () => void doExport(true) }
+       ]
+     });
+   }
+ 
+   async function doExport(current: boolean): Promise<void> {
+-    const path = saveFile(MSG.action.exportPreset, ['dzx'], MSG.action.defaultFileName);
++    const path = saveFile('导出预设', ['dzx'], '设计助理所有预设.dzx');
+     if (!path) {
+       toast.error(MSG.common.cancel);
+       return;
+@@ -239,15 +239,15 @@
+       kind: 'anchor',
+       anchor,
+       items: [
+-        { label: MSG.action.menuImport, onSelect: () => void doImport(false) },
+-        { label: MSG.action.menuAppend, onSelect: () => void doImport(true) },
+-        { label: MSG.action.menuAppendPreset, onSelect: () => void run(importPreset, { success: MSG.action.doneAppend }) }
++        { label: '导入动作仓库', onSelect: () => void doImport(false) },
++        { label: '追加动作仓库', onSelect: () => void doImport(true) },
++        { label: '追加插件自带预设', onSelect: () => void run(importPreset, { success: MSG.action.doneAppend }) }
+       ]
+     });
+   }
+ 
+   async function doImport(append: boolean): Promise<void> {
+-    const path = openFile(MSG.action.menuImport, ['dzx']);
++    const path = openFile('导入动作仓库', ['dzx']);
+     if (!path) {
+       toast.error(MSG.common.cancel);
+       return;
+--- a/src/features/common/CommonPage.tsx
++++ b/src/features/common/CommonPage.tsx
+@@ -154,7 +154,7 @@
+        *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
+        * 两个入口都不是页头的，别再加回来。
+        */}
+-      <PageHeader title={MSG.common.pageTitle} />
++      <PageHeader title={'常用功能页'} />
+ 
+       <div className="mm-common__body">
+         {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}
+@@ -179,7 +179,7 @@
+             <ZoomRow
+               id="zoom-enlarge"
+               icon="iconfangda"
+-              label={MSG.common.zoomEnlarge}
++              label={'放大'}
+               quick={ZOOM_LEVELS.enlargePart}
+               all={ZOOM_LEVELS.enlargeAll}
+               openId={page.expandedId}
+@@ -189,7 +189,7 @@
+             <ZoomRow
+               id="zoom-narrow"
+               icon="iconshousuo"
+-              label={MSG.common.zoomShrink}
++              label={'缩小'}
+               quick={ZOOM_LEVELS.narrowPart}
+               all={ZOOM_LEVELS.narrowAll}
+               openId={page.expandedId}
+--- a/src/features/common/common-constants.ts
++++ b/src/features/common/common-constants.ts
+@@ -43,12 +43,12 @@
+   direction: FlipDirection;
+   title: string;
+ }> = [
+-  { icon: 'iconzuoyoufanzhuan', direction: '左右', title: MSG.common.flipTitleLr },
+-  { icon: 'iconshangxiafanzhuan', direction: '上下', title: MSG.common.flipTitleTb },
+-  { icon: 'iconxiangzuofanzhuan', direction: '左', title: MSG.common.flipTitleLeft },
+-  { icon: 'iconxiangyoufanzhuan', direction: '右', title: MSG.common.flipTitleRight },
+-  { icon: 'iconxiangxiafanzhuan', direction: '下', title: MSG.common.flipTitleBottom },
+-  { icon: 'iconxiangshangfanzhuan', direction: '上', title: MSG.common.flipTitleTop }
++  { icon: 'iconzuoyoufanzhuan', direction: '左右', title: '左右翻转' },
++  { icon: 'iconshangxiafanzhuan', direction: '上下', title: '上下翻转' },
++  { icon: 'iconxiangzuofanzhuan', direction: '左', title: '向左翻转' },
++  { icon: 'iconxiangyoufanzhuan', direction: '右', title: '向右翻转' },
++  { icon: 'iconxiangxiafanzhuan', direction: '下', title: '向下翻转' },
++  { icon: 'iconxiangshangfanzhuan', direction: '上', title: '向上翻转' }
+ ];
+ 
+ /**
+--- a/src/features/common/components/AnchorGrid.tsx
++++ b/src/features/common/components/AnchorGrid.tsx
+@@ -31,7 +31,7 @@
+ 
+ export function AnchorGrid({ value, onChange }: Props) {
+   return (
+-    <div className="mm-common__anchors" role="radiogroup" aria-label={MSG.common.anchorPosition}>
++    <div className="mm-common__anchors" role="radiogroup" aria-label={'锚点位置'}>
+       {Array.from({ length: ANCHOR_COUNT }, (_, index) => {
+         const selected = index === value;
+         return (
+--- a/src/features/common/components/CustomTransformPanel.tsx
++++ b/src/features/common/components/CustomTransformPanel.tsx
+@@ -26,12 +26,12 @@
+ 
+ /** 一个输入位的静态配置：字段 / 图标 / 提示（顺序即官方 6 个输入的顺序） */
+ const FIELDS: ReadonlyArray<{ key: FieldKey; icon: IconName; title: string; digits: boolean }> = [
+-  { key: 'number', icon: 'iconfuzhishuliang', title: MSG.common.fieldCount, digits: true },
+-  { key: 'scale', icon: 'iconsuofangbili', title: MSG.common.fieldScale, digits: true },
+-  { key: 'leftRigth', icon: 'iconzuoyoujuli-1', title: MSG.common.fieldLeftRight, digits: false },
+-  { key: 'topBottom', icon: 'iconzuoyoujuli', title: MSG.common.fieldTopBottom, digits: false },
+-  { key: 'angle', icon: 'iconxuanzhuanjiaodu', title: MSG.common.fieldAngle, digits: true },
+-  { key: 'opacity', icon: 'icontoumingdudijian', title: MSG.common.fieldOpacity, digits: true }
++  { key: 'number', icon: 'iconfuzhishuliang', title: '复制数量', digits: true },
++  { key: 'scale', icon: 'iconsuofangbili', title: '缩放比例', digits: true },
++  { key: 'leftRigth', icon: 'iconzuoyoujuli-1', title: '左右距离', digits: false },
++  { key: 'topBottom', icon: 'iconzuoyoujuli', title: '上下距离', digits: false },
++  { key: 'angle', icon: 'iconxuanzhuanjiaodu', title: '旋转角度', digits: true },
++  { key: 'opacity', icon: 'icontoumingdudijian', title: '透明度递减', digits: true }
+ ];
+ 
+ type FieldKey = 'number' | 'scale' | 'leftRigth' | 'topBottom' | 'angle' | 'opacity';
+--- a/src/features/common/components/EmbedPanel.tsx
++++ b/src/features/common/components/EmbedPanel.tsx
+@@ -31,9 +31,9 @@
+ 
+ /** `cyLinkObject` 三档的逐字文案，顺序与官方一致（-1 / 1 / 2） */
+ const LINK_OBJECT_LABELS: Record<LinkObjectValue, string> = {
+-  '-1': MSG.common.linkNone,
+-  '1': MSG.common.linkRaw,
+-  '2': MSG.common.linkSameDir
++  '-1': '嵌入时不存链接对象',
++  '1': '嵌入时存链接对象(图片原始路径)',
++  '2': '嵌入时存链接对象(与PSD同一目录)'
+ };
+ 
+ export function EmbedPanel() {
+@@ -52,17 +52,17 @@
+   return (
+     <div className="mm-common__panel">
+       <CheckBox
+-        label={MSG.common.autoEmbedDrop}
++        label={'拖入图片自动嵌入图片'}
+         checked={booleanOptionOf(options, 'cyDragInAutoEmbed')}
+         onChange={(value) => setBoolean('cyDragInAutoEmbed', value)}
+       />
+       <CheckBox
+-        label={MSG.common.autoEmbedPaste}
++        label={'粘贴图片自动嵌入图片'}
+         checked={booleanOptionOf(options, 'cyPasetImageAutoEmbed')}
+         onChange={(value) => setBoolean('cyPasetImageAutoEmbed', value)}
+       />
+       <CheckBox
+-        label={MSG.common.autoEmbedClip}
++        label={'使用剪贴蒙版时自动嵌入图片'}
+         checked={booleanOptionOf(options, 'cyClipMaskAutoEmbed')}
+         onChange={(value) => setBoolean('cyClipMaskAutoEmbed', value)}
+       />
+@@ -80,7 +80,7 @@
+       ))}
+ 
+       <CheckBox
+-        label={MSG.common.deleteNextLayer}
++        label={'删除下一图层'}
+         checked={booleanOptionOf(options, 'cyDeleteNext')}
+         onChange={(value) => setBoolean('cyDeleteNext', value)}
+       />
+@@ -88,7 +88,7 @@
+       <div className="mm-common__panel-rule" />
+ 
+       <CheckBox
+-        label={MSG.common.relinkOnDrop}
++        label={'拖入图片转成链接智能对象'}
+         checked={booleanOptionOf(options, 'cyOpenDranInToLinkObject')}
+         onChange={(value) => setBoolean('cyOpenDranInToLinkObject', value)}
+       />
+--- a/src/features/common/components/ExportPanel.tsx
++++ b/src/features/common/components/ExportPanel.tsx
+@@ -103,7 +103,7 @@
+   }
+ 
+   function pickFolder(): void {
+-    const picked = chooseFolder(MSG.common.exSaveTo);
++    const picked = chooseFolder('保存到');
+     if (!picked) {
+       toast.error(MSG.common.cancel);
+       return;
+@@ -113,7 +113,7 @@
+   }
+ 
+   function pickWatermark(): void {
+-    const picked = openFile(MSG.common.exPickWatermark, ['png', 'jpg', 'jpeg', 'psd']);
++    const picked = openFile('选择水印文件', ['png', 'jpg', 'jpeg', 'psd']);
+     if (!picked) {
+       toast.error(MSG.common.cancelPick);
+       setField('watermark', '');
+@@ -153,7 +153,7 @@
+       {/* 第一行：格式 + 品质 */}
+       <div className="mm-u-row mm-common__panel-row">
+         <Segment
+-          ariaLabel={MSG.common.exFormat}
++          ariaLabel={'导出格式'}
+           value={text(config.ext) === 'PNG' ? 'PNG' : 'JPG'}
+           options={[
+             { value: 'JPG', label: 'JPG' },
+@@ -163,7 +163,7 @@
+         />
+         {text(config.ext) === 'PNG' ? (
+           <Segment
+-            ariaLabel={MSG.common.exPngDepth}
++            ariaLabel={'PNG 位深'}
+             value={flag(config.png8) ? 'PNG-8' : 'PNG-24'}
+             options={[
+               { value: 'PNG-24', label: 'PNG-24' },
+@@ -174,7 +174,7 @@
+         ) : (
+           <TextField
+             /** 官方 title 是「品质1-100」（可见前缀「品质」在官方是独立文字，本仓输入框无可见前缀） */
+-            title={MSG.common.qualityTitle}
++            title={'品质1-100'}
+             variant="wide"
+             inputMode="decimal"
+             value={draft.quality}
+@@ -188,8 +188,8 @@
+       <div className="mm-u-row mm-common__panel-row">
+         <TextField
+           /** 官方：可见前缀「保存到」+ title「选择自定义目录」；本仓输入框无可见前缀，故 title 走官方、前缀进 placeholder */
+-          title={MSG.common.pickFolderTitle}
+-          placeholder={MSG.common.exSaveTo}
++          title={'选择自定义目录'}
++          placeholder={'保存到'}
+           variant="fill"
+           value={draft.path}
+           onChange={(next) => setField('path', next)}
+@@ -199,19 +199,19 @@
+             setField('path', next);
+             write('path', next);
+           }}
+-          rightSlot={<IconButton name="iconwenjianjiaguanli" title={MSG.common.exPickFolder} size={14} onClick={pickFolder} />}
++          rightSlot={<IconButton name="iconwenjianjiaguanli" title={'选择目录'} size={14} onClick={pickFolder} />}
+         />
+         <RadioButton
+           name="mm-common-path-type"
+-          label={MSG.common.exDesktop}
+-          title={MSG.common.exSaveToDesktop}
++          label={'桌面'}
++          title={'保存到桌面'}
+           checked={num(config.pathType) === 1}
+           onChange={() => write('pathType', 1)}
+         />
+         <RadioButton
+           name="mm-common-path-type"
+-          label={MSG.common.exFileDir}
+-          title={MSG.common.exSaveToFileDir}
++          label={'文件所在目录'}
++          title={'保存到文件所在目录'}
+           checked={num(config.pathType) === 2}
+           onChange={() => write('pathType', 2)}
+         />
+@@ -220,21 +220,21 @@
+       {/* 第三行：命名 */}
+       <div className="mm-u-row mm-common__panel-row">
+         <TextField
+-          title={MSG.common.exNaming}
++          title={'命名'}
+           variant="fill"
+           value={flag(config.layerName) ? layerName : draft.name}
+           onChange={(next) => setField('name', next)}
+           onSubmit={(value) => write('name', value.trim())}
+         />
+         <CheckBox
+-          label={MSG.common.exLayerName}
+-          title={MSG.common.layerNameTitle}
++          label={'图层名'}
++          title={'使用当前图层名字'}
+           checked={flag(config.layerName)}
+           onChange={(value) => write('layerName', value)}
+         />
+         <CheckBox
+-          label={MSG.common.exAutoNumber}
+-          title={MSG.common.exAutoNumberTip}
++          label={'自动编号'}
++          title={'不覆盖原图，使用数字编号命名。不支持多个切片哦'}
+           checked={flag(config.isNumber)}
+           onChange={(value) => write('isNumber', value)}
+         />
+@@ -244,14 +244,14 @@
+ 
+       <RadioButton
+         name="mm-common-save-type"
+-        label={MSG.common.exWebMode}
++        label={'使用导出Web方式(可以切片)'}
+         checked={num(config.saveType) === 1}
+         onChange={() => write('saveType', 1)}
+       />
+       <RadioButton
+         name="mm-common-save-type"
+-        title={MSG.common.saveAsTitle}
+-        label={MSG.common.exSaveAsMode}
++        title={'与ctrl+shift+s保存一样'}
++        label={'使用另存为方式(不压缩)'}
+         checked={num(config.saveType) === 2}
+         onChange={() => write('saveType', 2)}
+       />
+@@ -265,17 +265,17 @@
+           void run(() => setOption('cyShowCompress', next === 'compress'), { spin: false })
+         }
+       >
+-        <IconPanel id="compress" title={MSG.common.exCompress} trigger={sectionTrigger(MSG.common.exCompress)} panel={<>
++        <IconPanel id="compress" title={'压缩尺寸 & 加水印'} trigger={sectionTrigger('压缩尺寸 & 加水印')} panel={<>
+         <div className="mm-u-row mm-common__panel-row">
+           <TextField
+-            title={MSG.common.exWidth}
++            title={'导出宽度'}
+             variant="half"
+             value={draft.width}
+             onChange={(next) => setField('width', next)}
+             onSubmit={(value) => writeCompress('width', value.trim())}
+           />
+           <TextField
+-            title={MSG.common.exHeight}
++            title={'导出高度'}
+             variant="half"
+             value={draft.height}
+             onChange={(next) => setField('height', next)}
+@@ -283,7 +283,7 @@
+           />
+         </div>
+         <TextField
+-          title={MSG.common.exWatermark}
++          title={'水印文件'}
+           variant="fill"
+           value={draft.watermark}
+           onChange={(next) => setField('watermark', next)}
+@@ -293,11 +293,11 @@
+             writeCompress('watermark', next);
+           }}
+           rightSlot={
+-            <IconButton name="iconwenjianjiaguanli" title={MSG.common.exPickWatermark} size={14} onClick={pickWatermark} />
++            <IconButton name="iconwenjianjiaguanli" title={'选择水印文件'} size={14} onClick={pickWatermark} />
+           }
+         />
+         <CheckBox
+-          label={MSG.common.exExportOriginal}
++          label={'同时导出原图'}
+           checked={flag(compress.exportOriginalGraph)}
+           onChange={(value) => writeCompress('exportOriginalGraph', value)}
+         />
+@@ -312,14 +312,14 @@
+           void run(() => setOption('cyShowSetFolder', next === 'setFolder'), { spin: false })
+         }
+       >
+-        <IconPanel id="setFolder" title={MSG.common.exFolderPanel} trigger={sectionTrigger(MSG.common.exFolderPanel)} panel={<>
++        <IconPanel id="setFolder" title={'所在目录设置'} trigger={sectionTrigger('所在目录设置')} panel={<>
+         <div className="mm-u-row mm-common__panel-row">
+           <Button className="mm-common__panel-btn" onClick={() => void run(openDirectory)}>
+             打开所在目录
+           </Button>
+         </div>
+         <CheckBox
+-          label={MSG.common.exOpenFolderAfter}
++          label={'保存后自动打开所在目录'}
+           checked={flag(config.autoOpenFolder)}
+           onChange={(value) => write('autoOpenFolder', value)}
+         />
+@@ -334,7 +334,7 @@
+           void run(() => setOption('cyShowBatch', next === 'batch'), { spin: false })
+         }
+       >
+-        <IconPanel id="batch" title={MSG.common.exBatchPanel} trigger={sectionTrigger(MSG.common.exBatchPanel)} panel={<>
++        <IconPanel id="batch" title={'批量导出功能'} trigger={sectionTrigger('批量导出功能')} panel={<>
+         <div className="mm-u-row mm-common__panel-row">
+           <Button
+             className="mm-common__panel-btn mm-common__panel-btn--half"
+--- a/src/features/common/components/ImportPanel.tsx
++++ b/src/features/common/components/ImportPanel.tsx
+@@ -23,7 +23,7 @@
+   return (
+     <div className="mm-common__panel">
+       <CheckBox
+-        label={MSG.common.toLinkObject}
++        label={'转成链接智能对象'}
+         checked={booleanOptionOf(options, 'cyImportToLinkObject')}
+         onChange={(value) =>
+           void run(() => setOption('cyImportToLinkObject', value), { spin: false })
+--- a/src/features/common/components/OptimizePanel.tsx
++++ b/src/features/common/components/OptimizePanel.tsx
+@@ -30,27 +30,27 @@
+   return (
+     <div className="mm-common__panel">
+       <CheckBox
+-        label={MSG.common.optimizeAll}
++        label={'优化所有智能对象图层'}
+         checked={booleanOptionOf(options, 'cyOptimizeAll')}
+         onChange={(value) => setBoolean('cyOptimizeAll', value)}
+       />
+       <CheckBox
+-        label={MSG.common.deleteEmpty}
++        label={'删除所有空图层'}
+         checked={booleanOptionOf(options, 'cyOptimizeDeleteAllEmpty')}
+         onChange={(value) => setBoolean('cyOptimizeDeleteAllEmpty', value)}
+       />
+       <CheckBox
+-        label={MSG.common.deleteHidden}
++        label={'删除所有隐藏图层'}
+         checked={booleanOptionOf(options, 'cyOptimizeDeleteAllHide')}
+         onChange={(value) => setBoolean('cyOptimizeDeleteAllHide', value)}
+       />
+ 
+       <Button
+         className="mm-common__panel-btn"
+-        title={MSG.common.batchOptimize}
++        title={'批量优化文档'}
+         onClick={() => void run(optimizeFolder, { spin: false })}
+       >
+-        {MSG.common.batchOptimize}
++        {'批量优化文档'}
+       </Button>
+     </div>
+   );
+--- a/src/features/common/components/ReferencePanel.tsx
++++ b/src/features/common/components/ReferencePanel.tsx
+@@ -37,8 +37,8 @@
+   return (
+     <div className="mm-common__panel">
+       <CheckBox
+-        label={MSG.common.guideOn}
+-        title={MSG.common.guideOnTip}
++        label={'开启智能参考线(使用后请关闭)'}
++        title={'开启后，点击即可生成参考线'}
+         checked={guideOn}
+         onChange={(value) => void run(() => toggleSmartGuide(value))}
+       />
+@@ -48,7 +48,7 @@
+       <div className="mm-u-row mm-common__panel-row">
+         <TextField
+           variant="fill"
+-          title={MSG.common.guideWidth}
++          title={'参考线宽度'}
+           placeholder="20"
+           inputMode="decimal"
+           value={width}
+@@ -56,7 +56,7 @@
+         />
+         <Button
+           className="mm-common__panel-btn"
+-          title={MSG.common.safeAreaTitle}
++          title={'在文档中间安全区域生成2条参考线'}
+           onClick={() => void run(() => referenceWidth(width))}
+         >
+           应用
+--- a/src/features/common/components/SpacingPanel.tsx
++++ b/src/features/common/components/SpacingPanel.tsx
+@@ -36,7 +36,7 @@
+       <div className="mm-u-row mm-common__panel-row">
+         <TextField
+           variant="fill"
+-          title={MSG.common.spacing}
++          title={'间距'}
+           placeholder="10"
+           inputMode="decimal"
+           value={gap}
+@@ -45,7 +45,7 @@
+         <span className="mm-common__panel-btn">
+           <IconButton
+             name="iconshuipingjuzhongfenbu"
+-            title={MSG.common.distributeH}
++            title={'按间距水平分布'}
+             size={16}
+             onClick={() => distributeTo(1)}
+           />
+@@ -53,7 +53,7 @@
+         <span className="mm-common__panel-btn">
+           <IconButton
+             name="iconchuizhijuzhongfenbu"
+-            title={MSG.common.distributeV}
++            title={'按间距垂直分布'}
+             size={16}
+             onClick={() => distributeTo(2)}
+           />
+@@ -64,13 +64,13 @@
+ 
+       <div className="mm-u-row mm-common__panel-row">
+         <RadioButton
+-          label={MSG.common.sortByLayer}
++          label={'按图层排序'}
+           name="mm-common-spacing-sort"
+           checked={sortMode === 1}
+           onChange={() => setSortMode(1)}
+         />
+         <RadioButton
+-          label={MSG.common.sortByCoord}
++          label={'按坐标排序'}
+           name="mm-common-spacing-sort"
+           checked={sortMode === 2}
+           onChange={() => setSortMode(2)}
+--- a/src/features/home/HomePage.tsx
++++ b/src/features/home/HomePage.tsx
+@@ -24,7 +24,7 @@
+ 
+ function formatDiag(diag: VendorDiag): string {
+   return [
+-    MSG.home.sectionJsx,
++    '官方 jsx 函数',
+     `ps_onJsx（调度入口）    ${diag.dispatch}`,
+     `ys_useStyleColor       ${diag.useStyleColor}`,
+     `ys_useGradient         ${diag.useGradient}`,
+@@ -34,7 +34,7 @@
+     `dz_callAction          ${diag.callAction}`,
+     `dz_getActionList       ${diag.getActionList}`,
+     '',
+-    MSG.home.sectionConfig,
++    '官方配置依赖',
+     `sj_set.json            ${diag.configSet}`,
+     `sj_interfaceSet.ini    ${diag.configInterface}`,
+     `cyAutoFillColor        ${String(diag.autoFillColor)}`
+@@ -108,8 +108,8 @@
+       </div>
+ 
+       <div className="mm-u-row mm-home__actions">
+-        <Button onClick={handleDiag}>{MSG.home.diagButton}</Button>
+-        <Button onClick={handleLog}>{MSG.home.logButton}</Button>
++        <Button onClick={handleDiag}>{'诊断官方能力'}</Button>
++        <Button onClick={handleLog}>{'查看日志'}</Button>
+         <Button variant="primary" onClick={handlePing}>
+           测试接口
+         </Button>
+@@ -119,11 +119,11 @@
+       {diag ? (
+         <div className="mm-home__diag">
+           <div className="mm-u-row mm-home__diag-head">
+-            <span className="mm-home__diag-title">{MSG.home.sectionJsx}</span>
++            <span className="mm-home__diag-title">{'官方 jsx 函数'}</span>
+             <button
+               type="button"
+               className="mm-btn mm-home__copy"
+-              onClick={() => void handleCopy(MSG.home.copyDiag, formatDiag(diag))}
++              onClick={() => void handleCopy('诊断结果', formatDiag(diag))}
+             >
+               复制
+             </button>
+@@ -137,7 +137,7 @@
+           <DiagRow label="dz_callAction（动作页）" value={diag.callAction} />
+           <DiagRow label="dz_getActionList（动作页）" value={diag.getActionList} />
+ 
+-          <div className="mm-home__diag-title">{MSG.home.sectionConfig}</div>
++          <div className="mm-home__diag-title">{'官方配置依赖'}</div>
+           <DiagRow label="sj_set.json" value={String(diag.configSet)} />
+           <DiagRow label="sj_interfaceSet.ini" value={String(diag.configInterface)} />
+           <DiagRow label="cyAutoFillColor" value={String(diag.autoFillColor)} />
+@@ -147,12 +147,12 @@
+       {logText ? (
+         <div className="mm-home__log">
+           <div className="mm-u-row mm-home__diag-head">
+-            <span className="mm-home__diag-title">{MSG.home.sectionLog}</span>
++            <span className="mm-home__diag-title">{'日志（%TEMP%\\maomao.log）'}</span>
+             <span className="mm-u-row mm-home__log-actions">
+               <button
+               type="button"
+               className="mm-btn mm-home__copy"
+-              onClick={() => void handleCopy(MSG.home.copyLog, logText)}
++              onClick={() => void handleCopy('日志', logText)}
+             >
+                 复制
+               </button>
+--- a/src/features/style/useStyleActions.ts
++++ b/src/features/style/useStyleActions.ts
+@@ -72,10 +72,10 @@
+  * - 样式「添加样式」`:51378`
+  */
+ export const ADD_TITLE: Record<KuKind, string> = {
+-  color: MSG.style.addColor,
+-  gradient: MSG.style.addGradient,
+-  font: MSG.style.addFont,
+-  style: MSG.style.addStyle
++  color: '添加当前前景色',
++  gradient: '添加渐变色，仅支持形状图层',
++  font: '添加字体，支持多图层',
++  style: '添加样式'
+ };
+ 
+ export function useStyleActions() {
+@@ -286,9 +286,9 @@
+   function buildMenuItems(target: MenuTarget): MenuItem[] {
+     if (target.type === 'item') {
+       const shared: MenuItem[] = [
+-        { label: MSG.action.menuDelete, danger: true, onSelect: () => void handleDelete(target) },
++        { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
+         {
+-          label: MSG.action.menuRename,
++          label: '重命名',
+           onSelect: () =>
+             setEditing({ type: 'item', groupIndex: target.groupIndex, itemIndex: target.itemIndex })
+         }
+@@ -299,30 +299,30 @@
+         ...shared,
+         { label: '', separator: true },
+         {
+-          label: MSG.style.menuToSwatch,
++          label: '发送到色板',
+           onSelect: () => void handleSendItemToSwatch(target.groupIndex, target.itemIndex)
+         },
+         {
+-          label: MSG.style.menuAppendToSwatch,
++          label: '追加到色板',
+           onSelect: () => void handleAppendItemToSwatch(target.groupIndex, target.itemIndex)
+         }
+       ];
+     }
+ 
+     const head: MenuItem[] = [
+-      { label: MSG.style.menuNewGroup, onSelect: () => setNewGroup({ afterIndex: target.groupIndex }) },
++      { label: '创建新组', onSelect: () => setNewGroup({ afterIndex: target.groupIndex }) },
+       { label: '', separator: true },
+-      { label: MSG.action.menuDelete, danger: true, onSelect: () => void handleDelete(target) },
++      { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
+       {
+-        label: MSG.action.menuRename,
++        label: '重命名',
+         onSelect: () => setEditing({ type: 'group', groupIndex: target.groupIndex })
+       },
+       { label: '', separator: true }
+     ];
+ 
+     const warehouse: MenuItem[] = [
+-      { label: MSG.style.menuToWarehouse, disabled: true },
+-      { label: MSG.style.menuMoveWarehouse, disabled: true }
++      { label: '发送到仓库…', disabled: true },
++      { label: '移动到仓库…', disabled: true }
+     ];
+ 
+     if (activeKind !== 'color') return [...head, ...warehouse];
+@@ -330,16 +330,16 @@
+     return [
+       ...head,
+       {
+-        label: MSG.style.menuToSwatch,
++        label: '发送到色板',
+         onSelect: () => void handleSendGroupToSwatch(target.groupIndex)
+       },
+       {
+-        label: MSG.style.menuAppendToSwatch,
++        label: '追加到色板',
+         onSelect: () => void handleAppendGroupToSwatch(target.groupIndex)
+       },
+       { label: '', separator: true },
+       {
+-        label: MSG.style.menuPickToGroup,
++        label: '快速吸色到组',
+         onSelect: () => void handlePickColorToGroup(target.groupIndex)
+       },
+       { label: '', separator: true },
+--- a/src/repo/font-set-repo.ts
++++ b/src/repo/font-set-repo.ts
+@@ -66,7 +66,7 @@
+ /** 设置投影：缺失 = 全部默认值（首次使用不是故障），坏文件仍报错 */
+ export function readFontSetSettings(): Result<FontSetSettings> {
+   return readOrEmpty(
+-    readJsonFile(SETTINGS_FILE, ROOT, MSG.font.fileSettings, decodeFontSetSettings),
++    readJsonFile(SETTINGS_FILE, ROOT, '字体面板设置', decodeFontSetSettings),
+     () => ok(normalizeFontSetSettings({}))
+   );
+ }
+@@ -76,7 +76,7 @@
+   return updateOrCreateJsonFile(
+     SETTINGS_FILE,
+     ROOT,
+-    MSG.font.fileSettings,
++    '字体面板设置',
+     decodeSettingsObject,
+     (raw) => ok(mergeFontSetSettings(raw, patch)),
+     { missing: () => ({}) }
+@@ -87,7 +87,7 @@
+ 
+ export function readQuickFonts(): Result<QuickFontFile> {
+   return readOrEmpty(
+-    readJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile),
++    readJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile),
+     () => ok({ index: 0, list: [] })
+   );
+ }
+@@ -96,7 +96,7 @@
+ export function updateQuickFonts(
+   mutator: JsonMutator<QuickFontFile>
+ ): Promise<Result<void>> {
+-  return updateOrCreateJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile, mutator, {
++  return updateOrCreateJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile, mutator, {
+     missing: () => ({ index: 0, list: [] })
+   });
+ }
+@@ -141,18 +141,18 @@
+ 
+ export function readHierarchy(): Result<HierarchyFile> {
+   return readOrEmpty(
+-    readJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy),
+-    () => ok({ index: 0, list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
++    readJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy),
++    () => ok({ index: 0, list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
+   );
+ }
+ 
+ export function updateHierarchy(
+   mutator: JsonMutator<HierarchyFile>
+ ): Promise<Result<void>> {
+-  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy, mutator, {
++  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy, mutator, {
+     missing: () => ({
+       index: 0,
+-      list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }]
++      list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }]
+     })
+   });
+ }
+@@ -178,7 +178,7 @@
+  */
+ export function readTranslateCounter(): Result<TranslateCounter> {
+   return readOrEmpty(
+-    readJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter),
++    readJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter),
+     () => ok({ num: 0, max: DAILY_LIMIT, time: '' })
+   );
+ }
+@@ -186,7 +186,7 @@
+ export function updateTranslateCounter(
+   mutator: JsonMutator<TranslateCounter>
+ ): Promise<Result<void>> {
+-  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter, mutator, {
++  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter, mutator, {
+     missing: () => ({ num: 0, max: 380, time: '' })
+   });
+ }
+@@ -236,11 +236,11 @@
+ }
+ 
+ export function readFontHistory(): Result<string[]> {
+-  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryForRead), () => ok([]));
++  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryForRead), () => ok([]));
+ }
+ 
+ export function updateFontHistory(mutator: JsonMutator<string[]>): Promise<Result<void>> {
+-  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryStrict, mutator, {
++  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryStrict, mutator, {
+     missing: () => []
+   });
+ }
+--- a/src/repo/style-repo.ts
++++ b/src/repo/style-repo.ts
+@@ -37,7 +37,7 @@
+   const text = readTextResult(INDEX_FILE, ROOT);
+   if (text.status === 'error') return text;
+ 
+-  const parsed = parseJson(text.value, MSG.style.fileIndex);
++  const parsed = parseJson(text.value, '仓库索引');
+   if (parsed.status === 'error') return parsed;
+ 
+   return decodeStyleIndex(parsed.value);
+@@ -73,7 +73,7 @@
+   const name = libraryFileName(warehouse, kind);
+   if (name.status === 'error') return name;
+ 
+-  return readJsonFile(name.value, ROOT, MSG.style.fileLibrary, (raw) => resolveKuGroups(raw, decodeBase64));
++  return readJsonFile(name.value, ROOT, '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
+ }
+ 
+ /** 读某个仓库的某一类库（归一化后的视图模型） */
+@@ -102,7 +102,7 @@
+   const text = readLibraryText(warehouse, kind);
+   if (text.status === 'error') return text;
+ 
+-  const parsed = parseJson(text.value, MSG.style.fileLibrary);
++  const parsed = parseJson(text.value, '库文件');
+   if (parsed.status === 'error') return parsed;
+ 
+   const groups = parsed.value;
+@@ -172,7 +172,7 @@
+   return mutateJsonFile(
+     name.value,
+     ROOT,
+-    MSG.style.fileLibrary,
++    '库文件',
+     (raw) => resolveKuGroups(raw, decodeBase64),
+     mutator
+   );
+@@ -213,7 +213,7 @@
+   return mutateRawGroups(warehouse, kind, (groups) => {
+     const group: Record<string, unknown> = {
+       id: kuGuid(),
+-      name: name || MSG.style.untitledGroup,
++      name: name || '未命名分组',
+       show: true,
+       list: []
+     };
+@@ -233,7 +233,7 @@
+   return mutateRawGroups(warehouse, kind, (groups) => {
+     const group: Record<string, unknown> = {
+       id: kuGuid(),
+-      name: name || MSG.style.untitledGroup,
++      name: name || '未命名分组',
+       show: true,
+       list: items
+     };
+--- a/src/types/messages.ts
++++ b/src/types/messages.ts
+@@ -66,41 +66,14 @@
+     /* 官方逐字：三个输入框的空值提示 */
+     needGroupName: '请输入组名',
+     needNewGroupName: '请输入新组名',
+-    /** 别名弹窗标题（同一个话说给另一个入口听；空串提交 = 删别名，见 `05` §3.10 F1） */
+-    aliasTitle: '请输入别名',
+     /** 官方逐字：删到只剩一个仓库 */
+     keepOneWarehouse: '最少保留一个分组哦',
+     /** 官方逐字：带星号，与页面空态那句不是同一件事 */
+     emptyGroup: '*该分组没有动作',
+ 
+     /* 页面与控件 */
+-    pageTitle: '动作管理页',
+-    addAction: '添加动作',
+-    selectAll: '全选',
+-    emptyGrid: '该动作组空空如也',
+-    addGroup: '添加分组',
+-    displayMode: '显示方式',
+-    importPreset: '导入预设',
+-    exportPreset: '导出预设',
+-    defaultGroupName: '未命名分组',
+-    renameWarehouse: '重命名当前仓库',
+-    newWarehouse: '新建仓库',
+-    columnOne: '单列',
+-    columnTwo: '双列',
+-    columnThree: '三列',
+ 
+     /* 右键菜单 */
+-    menuNewGroup: '新建分组',
+-    menuRename: '重命名',
+-    menuDelete: '删除',
+-    menuEditAlias: '修改别名',
+-    menuAddAlias: '添加别名',
+-    menuDeleteAlias: '删除别名',
+-    menuExportAll: '导出所有仓库',
+-    menuExportCurrent: '导出当前仓库',
+-    menuImport: '导入动作仓库',
+-    menuAppend: '追加动作仓库',
+-    menuAppendPreset: '追加插件自带预设',
+ 
+     /* 成功提示 */
+     doneDelete: '删除成功',
+@@ -115,7 +88,6 @@
+     importReplaceAsk: '将替换动作库索引，是否继续？',
+     importContinue: '继续',
+     readingActions: '正在读取 PS 动作...',
+-    defaultFileName: '设计助理所有预设.dzx',
+     guideTitle: '欢迎首次使用',
+     guideAsk: '是否导入自带动作预设？含有修图 / 新建文档等功能',
+     guideImport: '导入'
+@@ -150,13 +122,6 @@
+     ratioMin: '输入的比例不能小于等于0',
+     ratioMax: '输入的比例不能大于9999比例不能小于0或等于0',
+     opacityMax: '透明度不能大于99',
+-    /** 官方逐字的**控件 title**（`:1236511` 一带品质框、`:1246340` 保存到、`:1229875` 图层名、`:1245235` 另存为单选） */
+-    qualityTitle: '品质1-100',
+-    pickFolderTitle: '选择自定义目录',
+-    layerNameTitle: '使用当前图层名字',
+-    saveAsTitle: '与ctrl+shift+s保存一样',
+-    /** 官方逐字：参考线「生成」按钮 title（`:1258609` 一带的 `useGuide` 按钮） */
+-    safeAreaTitle: '在文档中间安全区域生成2条参考线',
+ 
+     /** 官方逐字：转智能对象的两句进度（`:1219201` / `:1218508`） */
+     progressLinkSmart: '正在转链接智能对象...',
+@@ -184,82 +149,22 @@
+     fillOff: '已关闭',
+ 
+     /* ---- 常用页界面文字（与失败文案同表：用户可见文字只有这一处） ---- */
+-    pageTitle: '常用功能页',
+-    zoomEnlarge: '放大',
+-    zoomShrink: '缩小',
+-    anchorPosition: '锚点位置',
+ 
+     /* 嵌入面板 */
+-    linkNone: '嵌入时不存链接对象',
+-    linkRaw: '嵌入时存链接对象(图片原始路径)',
+-    linkSameDir: '嵌入时存链接对象(与PSD同一目录)',
+-    autoEmbedDrop: '拖入图片自动嵌入图片',
+-    autoEmbedPaste: '粘贴图片自动嵌入图片',
+-    autoEmbedClip: '使用剪贴蒙版时自动嵌入图片',
+-    deleteNextLayer: '删除下一图层',
+-    relinkOnDrop: '拖入图片转成链接智能对象',
+ 
+     /* 导入面板 */
+-    toLinkObject: '转成链接智能对象',
+ 
+     /* 优化面板 */
+-    optimizeAll: '优化所有智能对象图层',
+-    deleteEmpty: '删除所有空图层',
+-    deleteHidden: '删除所有隐藏图层',
+-    batchOptimize: '批量优化文档',
+ 
+     /* 参考线面板 */
+-    guideOn: '开启智能参考线(使用后请关闭)',
+-    guideOnTip: '开启后，点击即可生成参考线',
+-    guideWidth: '参考线宽度',
+ 
+     /* 间距面板 */
+-    spacing: '间距',
+-    distributeH: '按间距水平分布',
+-    distributeV: '按间距垂直分布',
+-    sortByLayer: '按图层排序',
+-    sortByCoord: '按坐标排序',
+ 
+     /* 自定义变换面板 */
+-    fieldCount: '复制数量',
+-    fieldScale: '缩放比例',
+-    fieldLeftRight: '左右距离',
+-    fieldTopBottom: '上下距离',
+-    fieldAngle: '旋转角度',
+-    fieldOpacity: '透明度递减',
+ 
+     /* 翻转 6 向的悬停文案（`direction` 是传给 jsx 的参数值，**不进本表**） */
+-    flipTitleLr: '左右翻转',
+-    flipTitleTb: '上下翻转',
+-    flipTitleLeft: '向左翻转',
+-    flipTitleRight: '向右翻转',
+-    flipTitleBottom: '向下翻转',
+-    flipTitleTop: '向上翻转',
+ 
+     /* 导出面板（标签 / 标题 / 单选文案；全部官方逐字，M 组已核） */
+-    exFormat: '导出格式',
+-    exPngDepth: 'PNG 位深',
+-    exSaveTo: '保存到',
+-    exPickFolder: '选择目录',
+-    exDesktop: '桌面',
+-    exSaveToDesktop: '保存到桌面',
+-    exFileDir: '文件所在目录',
+-    exSaveToFileDir: '保存到文件所在目录',
+-    exNaming: '命名',
+-    exLayerName: '图层名',
+-    exAutoNumber: '自动编号',
+-    exAutoNumberTip: '不覆盖原图，使用数字编号命名。不支持多个切片哦',
+-    exWebMode: '使用导出Web方式(可以切片)',
+-    exSaveAsMode: '使用另存为方式(不压缩)',
+-    exCompress: '压缩尺寸 & 加水印',
+-    exWidth: '导出宽度',
+-    exHeight: '导出高度',
+-    exWatermark: '水印文件',
+-    exPickWatermark: '选择水印文件',
+-    exExportOriginal: '同时导出原图',
+-    exFolderPanel: '所在目录设置',
+-    exOpenFolderAfter: '保存后自动打开所在目录',
+-    exBatchPanel: '批量导出功能'
+   },
+ 
+   /**
+@@ -271,10 +176,6 @@
+    */
+   /** 样式页（`features/style`）的界面文字：按钮 title、右键菜单、成功提示、确认正文 */
+   style: {
+-    addColor: '添加当前前景色',
+-    addGradient: '添加渐变色，仅支持形状图层',
+-    addFont: '添加字体，支持多图层',
+-    addStyle: '添加样式',
+ 
+     noWarehouse: '没有选中仓库',
+     gradientNoData: '这个渐变项缺少数据',
+@@ -293,12 +194,6 @@
+     doneAppendSwatch: '已追加到色板',
+     donePickToGroup: '已吸取颜色到组',
+ 
+-    menuNewGroup: '创建新组',
+-    menuToSwatch: '发送到色板',
+-    menuAppendToSwatch: '追加到色板',
+-    menuPickToGroup: '快速吸色到组',
+-    menuToWarehouse: '发送到仓库…',
+-    menuMoveWarehouse: '移动到仓库…',
+ 
+     /* 吸色 / 解析图片 */
+     dropOneImage: '请拖入1张图片',
+@@ -308,35 +203,14 @@
+       '会直接改写库文件，原文件已备份为同目录下的 .bak（回滚：把 .bak 复制回同名文件）',
+ 
+     /* repo 层：文件名（进 `${label}不是合法 JSON`）、索引缺登记的提示、新建分组默认名 */
+-    fileIndex: '仓库索引',
+-    fileLibrary: '库文件',
+     noLibraryFile: '索引里没有登记这个库的文件名',
+-    untitledGroup: '未命名分组',
+-    /** 库条目内层 JSON 的标签（进 `${label}不是合法 JSON`） */
+-    kuItemInner: '库条目内层',
+-    /** 色板文件 */
+-    fileSwatch: '色板文件',
+ 
+     /* 命令层：默认名、新建组名、吸色结果、文件对话框标题 */
+-    untitledName: '未命名',
+-    groupFromColors: '提取颜色组',
+-    groupFromGradients: '提取渐变组',
+     pickTimeout: '吸色超时（60 秒内没有取色）',
+-    dialogImport: '导入样式仓库',
+-    dialogAppend: '追加样式仓库',
+-    dialogExportAll: '导出所有仓库',
+-    dialogExportCurrent: '导出当前仓库'
+   },
+ 
+   /** 诊断页（`features/home`）：页头、分区标题、确认句、成功提示 */
+   home: {
+-    diagButton: '诊断官方能力',
+-    logButton: '查看日志',
+-    sectionJsx: '官方 jsx 函数',
+-    sectionConfig: '官方配置依赖',
+-    sectionLog: '日志（%TEMP%\\maomao.log）',
+-    copyDiag: '诊断结果',
+-    copyLog: '日志',
+     reachable: '接口可达',
+     emptyLog: '（日志为空）',
+     cleared: '日志已清空',
+@@ -371,15 +245,6 @@
+     fontNotInSystem: '系统字体里找不到该字体，无法加入快捷字体',
+ 
+     /* 文件名（进 JSON 解析失败的句子里：`${label}不是合法 JSON`） */
+-    fileSettings: '字体面板设置',
+-    fileQuickFonts: '快捷字体',
+-    fileHierarchy: '层级预设',
+-    fileTranslateCounter: '翻译计数',
+-    fileRecentFonts: '最近字体',
+-    /** 层级预设里自动补的那条名字（用户可见） */
+-    defaultPreset: '默认',
+-    /** 标签/评分导入文件的文件名（进 `${label}不是合法 JSON`） */
+-    fileTagsImport: '标签导入文件'
+   },
+ 
+   /**

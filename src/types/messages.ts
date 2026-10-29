@@ -1,35 +1,34 @@
 /**
- * 【唯一入口】【范本】面向用户的**全部界面文字**（失败提示 + 标签 / 标题 / 菜单 / 空态 / 进度）
- * —— 全仓只许这一处；`commands` / `domain` / `repo` / `features` 一律 import 这里。
+ * 【范本】**消息表**：只收「一条完整的、给用户看的话」——失败提示、toast、确认框、成功提示、
+ * 进度、空态句、输入校验。**不收界面文字**（按钮 label、字段 title、placeholder、选项名、
+ * 数据文件名、枚举值）——那些就近写在组件或调用点。
  *
- * 替代了什么：以前每个 `fail(...)` 就地写中文（动作页 33 处 / 常用页 14 处），
- * 同一个概念在不同文件里长出不同说法（「文件无法识别」与「XX 项不是对象」并存），
- * 下一次写码的人不知道抄哪一句。
+ * 为什么要有这张表：这些消息**跨层产生**（`core` / `domain` / `repo` / `commands` 都可能失败，
+ * 由 UI 显示），散在各层写中文就会同一个概念长出好几种说法（「文件无法识别」与「XX 项不是对象」并存）。
+ * 表放在 `types/`，是因为 `core` 不许 import `domain`，而 `types` 是最底层、所有层都能 import。
  *
- * **谁在用**：`core/*`、`domain/*`、`repo/*`、`commands/*`、`features/*` —— 全仓所有层。
- * 本表放在 `types/` 正是为了让 **`core` 也能 import**（`core` 不许 import `domain`，而 `types` 是最底层）。
+ * **判据（一条）**：这句话是「系统告诉用户发生了什么」吗？
+ *   - 是（失败 / 确认 / 成功 / 进度 / 空态 / 校验）⇒ 进本表；
+ *   - 不是（按钮叫「保存到」、字段叫「图层名」、文件叫「常用页设置」）⇒ 留在原处。
  *
- * 现状（2026-10-29 收口完成，可复算）：
- *   `grep -rnE "fail(WithDetail)?\('[A-Z_]+', *'[^']*[一-龥]" src` 在**生产代码 = 0 处**（只剩注释里的历史说明）；
- *   `grep -rnE "toast\.(error|info)\('[^']*[一-龥]" src` = 0 处。
- *
- * **唯一例外（不是文案，别搬进来）**：
- *   1. 传给 jsx 的**参数值**（翻转方向 `'左右'`/`'上下'`、`fn: 'cy_xxx'`）；
- *   2. **官方数据表**（语言下拉 `自动检测/中文/…`、`font-panel-constants` 的官方按钮名）；
- *   3. PS 历史记录名 `CapabilitySpec.label`（`批量导出一级图片` 等，按官方逐字传给 PS）。
- *   这三类改的是「数据/协议」，不是「界面话术」；搬进来会把数据表变成文案表。
+ * **不许进本表**：
+ *   1. 界面文字：label / title / placeholder / 菜单项 / 单选与下拉选项；
+ *   2. 名字：文件名、默认分组名、未命名、提取颜色组；
+ *   3. 协议值：`fn: 'cy_xxx'`、翻转方向 `'左右'`、PS 历史名 `CapabilitySpec.label`；
+ *   4. 官方数据表：语言下拉、`font-panel-constants` 的按钮名。
+ *   （历史上有一批 label 键被搬进来，属遗留；**不要再照抄新增**，改到哪页顺手退回该页。）
  *
  * 分层：顶层 = 跨页通用（`corrupt` / `badPayload` / `stale` / `badArgument` / `freePanelOffline` / `droppedSummary`…）；
- * `codeReason` = 错误码 → 话（生产者自己取，消费者不查表补字）；
+ * `codeReason` = 错误码 → 话（**生产者**自己取，消费者不查表补字）；
  * `common` / `action` / `style` / `font` / `home` / `coreOps` = 分域。
  *
  * 禁止：
  *   1. 在 `fail` / `failWithDetail` / `toast.*` 里**再写中文**；
  *   2. 为**每个字段**各造一句（「XX 项缺少 YY」）——统一用 `corrupt`，现场（字段路径 / 下标）进 `detail`；
  *   3. 消费者替生产者改口径：`StateHint` / `run` 只展示 `result.reason`，**不查表补字、不加前缀**；
- *   4. 把 log 用的技术描述写进来——这里是**用户能看到的**话。
+ *   4. 把 log 用的技术描述写进来——这里只放**用户能看到的**话。
  *
- * 判据：一段中文的读者是谁？用户 ⇒ 必须来自本表；写代码的人 ⇒ 断言（`throw`），不要放这里。
+ * 判据的反面：一段中文的读者是写代码的人 ⇒ 断言（`throw`）；是排障的人 ⇒ log；都不是 ⇒ 不属于本表。
  */
 
 import type { ErrorCode } from './result';
@@ -67,41 +66,14 @@ export const MSG = {
     /* 官方逐字：三个输入框的空值提示 */
     needGroupName: '请输入组名',
     needNewGroupName: '请输入新组名',
-    /** 别名弹窗标题（同一个话说给另一个入口听；空串提交 = 删别名，见 `05` §3.10 F1） */
-    aliasTitle: '请输入别名',
     /** 官方逐字：删到只剩一个仓库 */
     keepOneWarehouse: '最少保留一个分组哦',
     /** 官方逐字：带星号，与页面空态那句不是同一件事 */
     emptyGroup: '*该分组没有动作',
 
     /* 页面与控件 */
-    pageTitle: '动作管理页',
-    addAction: '添加动作',
-    selectAll: '全选',
-    emptyGrid: '该动作组空空如也',
-    addGroup: '添加分组',
-    displayMode: '显示方式',
-    importPreset: '导入预设',
-    exportPreset: '导出预设',
-    defaultGroupName: '未命名分组',
-    renameWarehouse: '重命名当前仓库',
-    newWarehouse: '新建仓库',
-    columnOne: '单列',
-    columnTwo: '双列',
-    columnThree: '三列',
 
     /* 右键菜单 */
-    menuNewGroup: '新建分组',
-    menuRename: '重命名',
-    menuDelete: '删除',
-    menuEditAlias: '修改别名',
-    menuAddAlias: '添加别名',
-    menuDeleteAlias: '删除别名',
-    menuExportAll: '导出所有仓库',
-    menuExportCurrent: '导出当前仓库',
-    menuImport: '导入动作仓库',
-    menuAppend: '追加动作仓库',
-    menuAppendPreset: '追加插件自带预设',
 
     /* 成功提示 */
     doneDelete: '删除成功',
@@ -116,7 +88,6 @@ export const MSG = {
     importReplaceAsk: '将替换动作库索引，是否继续？',
     importContinue: '继续',
     readingActions: '正在读取 PS 动作...',
-    defaultFileName: '设计助理所有预设.dzx',
     guideTitle: '欢迎首次使用',
     guideAsk: '是否导入自带动作预设？含有修图 / 新建文档等功能',
     guideImport: '导入'
@@ -151,13 +122,6 @@ export const MSG = {
     ratioMin: '输入的比例不能小于等于0',
     ratioMax: '输入的比例不能大于9999比例不能小于0或等于0',
     opacityMax: '透明度不能大于99',
-    /** 官方逐字的**控件 title**（`:1236511` 一带品质框、`:1246340` 保存到、`:1229875` 图层名、`:1245235` 另存为单选） */
-    qualityTitle: '品质1-100',
-    pickFolderTitle: '选择自定义目录',
-    layerNameTitle: '使用当前图层名字',
-    saveAsTitle: '与ctrl+shift+s保存一样',
-    /** 官方逐字：参考线「生成」按钮 title（`:1258609` 一带的 `useGuide` 按钮） */
-    safeAreaTitle: '在文档中间安全区域生成2条参考线',
 
     /** 官方逐字：转智能对象的两句进度（`:1219201` / `:1218508`） */
     progressLinkSmart: '正在转链接智能对象...',
@@ -185,82 +149,22 @@ export const MSG = {
     fillOff: '已关闭',
 
     /* ---- 常用页界面文字（与失败文案同表：用户可见文字只有这一处） ---- */
-    pageTitle: '常用功能页',
-    zoomEnlarge: '放大',
-    zoomShrink: '缩小',
-    anchorPosition: '锚点位置',
 
     /* 嵌入面板 */
-    linkNone: '嵌入时不存链接对象',
-    linkRaw: '嵌入时存链接对象(图片原始路径)',
-    linkSameDir: '嵌入时存链接对象(与PSD同一目录)',
-    autoEmbedDrop: '拖入图片自动嵌入图片',
-    autoEmbedPaste: '粘贴图片自动嵌入图片',
-    autoEmbedClip: '使用剪贴蒙版时自动嵌入图片',
-    deleteNextLayer: '删除下一图层',
-    relinkOnDrop: '拖入图片转成链接智能对象',
 
     /* 导入面板 */
-    toLinkObject: '转成链接智能对象',
 
     /* 优化面板 */
-    optimizeAll: '优化所有智能对象图层',
-    deleteEmpty: '删除所有空图层',
-    deleteHidden: '删除所有隐藏图层',
-    batchOptimize: '批量优化文档',
 
     /* 参考线面板 */
-    guideOn: '开启智能参考线(使用后请关闭)',
-    guideOnTip: '开启后，点击即可生成参考线',
-    guideWidth: '参考线宽度',
 
     /* 间距面板 */
-    spacing: '间距',
-    distributeH: '按间距水平分布',
-    distributeV: '按间距垂直分布',
-    sortByLayer: '按图层排序',
-    sortByCoord: '按坐标排序',
 
     /* 自定义变换面板 */
-    fieldCount: '复制数量',
-    fieldScale: '缩放比例',
-    fieldLeftRight: '左右距离',
-    fieldTopBottom: '上下距离',
-    fieldAngle: '旋转角度',
-    fieldOpacity: '透明度递减',
 
     /* 翻转 6 向的悬停文案（`direction` 是传给 jsx 的参数值，**不进本表**） */
-    flipTitleLr: '左右翻转',
-    flipTitleTb: '上下翻转',
-    flipTitleLeft: '向左翻转',
-    flipTitleRight: '向右翻转',
-    flipTitleBottom: '向下翻转',
-    flipTitleTop: '向上翻转',
 
     /* 导出面板（标签 / 标题 / 单选文案；全部官方逐字，M 组已核） */
-    exFormat: '导出格式',
-    exPngDepth: 'PNG 位深',
-    exSaveTo: '保存到',
-    exPickFolder: '选择目录',
-    exDesktop: '桌面',
-    exSaveToDesktop: '保存到桌面',
-    exFileDir: '文件所在目录',
-    exSaveToFileDir: '保存到文件所在目录',
-    exNaming: '命名',
-    exLayerName: '图层名',
-    exAutoNumber: '自动编号',
-    exAutoNumberTip: '不覆盖原图，使用数字编号命名。不支持多个切片哦',
-    exWebMode: '使用导出Web方式(可以切片)',
-    exSaveAsMode: '使用另存为方式(不压缩)',
-    exCompress: '压缩尺寸 & 加水印',
-    exWidth: '导出宽度',
-    exHeight: '导出高度',
-    exWatermark: '水印文件',
-    exPickWatermark: '选择水印文件',
-    exExportOriginal: '同时导出原图',
-    exFolderPanel: '所在目录设置',
-    exOpenFolderAfter: '保存后自动打开所在目录',
-    exBatchPanel: '批量导出功能'
   },
 
   /**
@@ -272,10 +176,6 @@ export const MSG = {
    */
   /** 样式页（`features/style`）的界面文字：按钮 title、右键菜单、成功提示、确认正文 */
   style: {
-    addColor: '添加当前前景色',
-    addGradient: '添加渐变色，仅支持形状图层',
-    addFont: '添加字体，支持多图层',
-    addStyle: '添加样式',
 
     noWarehouse: '没有选中仓库',
     gradientNoData: '这个渐变项缺少数据',
@@ -294,12 +194,6 @@ export const MSG = {
     doneAppendSwatch: '已追加到色板',
     donePickToGroup: '已吸取颜色到组',
 
-    menuNewGroup: '创建新组',
-    menuToSwatch: '发送到色板',
-    menuAppendToSwatch: '追加到色板',
-    menuPickToGroup: '快速吸色到组',
-    menuToWarehouse: '发送到仓库…',
-    menuMoveWarehouse: '移动到仓库…',
 
     /* 吸色 / 解析图片 */
     dropOneImage: '请拖入1张图片',
@@ -309,35 +203,14 @@ export const MSG = {
       '会直接改写库文件，原文件已备份为同目录下的 .bak（回滚：把 .bak 复制回同名文件）',
 
     /* repo 层：文件名（进 `${label}不是合法 JSON`）、索引缺登记的提示、新建分组默认名 */
-    fileIndex: '仓库索引',
-    fileLibrary: '库文件',
     noLibraryFile: '索引里没有登记这个库的文件名',
-    untitledGroup: '未命名分组',
-    /** 库条目内层 JSON 的标签（进 `${label}不是合法 JSON`） */
-    kuItemInner: '库条目内层',
-    /** 色板文件 */
-    fileSwatch: '色板文件',
 
     /* 命令层：默认名、新建组名、吸色结果、文件对话框标题 */
-    untitledName: '未命名',
-    groupFromColors: '提取颜色组',
-    groupFromGradients: '提取渐变组',
     pickTimeout: '吸色超时（60 秒内没有取色）',
-    dialogImport: '导入样式仓库',
-    dialogAppend: '追加样式仓库',
-    dialogExportAll: '导出所有仓库',
-    dialogExportCurrent: '导出当前仓库'
   },
 
   /** 诊断页（`features/home`）：页头、分区标题、确认句、成功提示 */
   home: {
-    diagButton: '诊断官方能力',
-    logButton: '查看日志',
-    sectionJsx: '官方 jsx 函数',
-    sectionConfig: '官方配置依赖',
-    sectionLog: '日志（%TEMP%\\maomao.log）',
-    copyDiag: '诊断结果',
-    copyLog: '日志',
     reachable: '接口可达',
     emptyLog: '（日志为空）',
     cleared: '日志已清空',
@@ -372,15 +245,6 @@ export const MSG = {
     fontNotInSystem: '系统字体里找不到该字体，无法加入快捷字体',
 
     /* 文件名（进 JSON 解析失败的句子里：`${label}不是合法 JSON`） */
-    fileSettings: '字体面板设置',
-    fileQuickFonts: '快捷字体',
-    fileHierarchy: '层级预设',
-    fileTranslateCounter: '翻译计数',
-    fileRecentFonts: '最近字体',
-    /** 层级预设里自动补的那条名字（用户可见） */
-    defaultPreset: '默认',
-    /** 标签/评分导入文件的文件名（进 `${label}不是合法 JSON`） */
-    fileTagsImport: '标签导入文件'
   },
 
   /**

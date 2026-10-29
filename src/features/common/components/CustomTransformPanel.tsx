@@ -26,12 +26,12 @@ import './panel.css';
 
 /** 一个输入位的静态配置：字段 / 图标 / 提示（顺序即官方 6 个输入的顺序） */
 const FIELDS: ReadonlyArray<{ key: FieldKey; icon: IconName; title: string; digits: boolean }> = [
-  { key: 'number', icon: 'iconfuzhishuliang', title: MSG.common.fieldCount, digits: true },
-  { key: 'scale', icon: 'iconsuofangbili', title: MSG.common.fieldScale, digits: true },
-  { key: 'leftRigth', icon: 'iconzuoyoujuli-1', title: MSG.common.fieldLeftRight, digits: false },
-  { key: 'topBottom', icon: 'iconzuoyoujuli', title: MSG.common.fieldTopBottom, digits: false },
-  { key: 'angle', icon: 'iconxuanzhuanjiaodu', title: MSG.common.fieldAngle, digits: true },
-  { key: 'opacity', icon: 'icontoumingdudijian', title: MSG.common.fieldOpacity, digits: true }
+  { key: 'number', icon: 'iconfuzhishuliang', title: '复制数量', digits: true },
+  { key: 'scale', icon: 'iconsuofangbili', title: '缩放比例', digits: true },
+  { key: 'leftRigth', icon: 'iconzuoyoujuli-1', title: '左右距离', digits: false },
+  { key: 'topBottom', icon: 'iconzuoyoujuli', title: '上下距离', digits: false },
+  { key: 'angle', icon: 'iconxuanzhuanjiaodu', title: '旋转角度', digits: true },
+  { key: 'opacity', icon: 'icontoumingdudijian', title: '透明度递减', digits: true }
 ];
 
 type FieldKey = 'number' | 'scale' | 'leftRigth' | 'topBottom' | 'angle' | 'opacity';

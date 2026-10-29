@@ -11,7 +11,6 @@
  */
 
 import { CheckBox } from '../../../components/CheckBox';
-import { MSG } from '../../../types/messages';
 import { Button } from '../../../components/ui';
 import { optimizeFolder, setOption } from '../../../commands/common-use';
 import { booleanOptionOf, type CommonUseBooleanKey } from '../../../domain/common-use-options';
@@ -30,27 +29,27 @@ export function OptimizePanel() {
   return (
     <div className="mm-common__panel">
       <CheckBox
-        label={MSG.common.optimizeAll}
+        label={'优化所有智能对象图层'}
         checked={booleanOptionOf(options, 'cyOptimizeAll')}
         onChange={(value) => setBoolean('cyOptimizeAll', value)}
       />
       <CheckBox
-        label={MSG.common.deleteEmpty}
+        label={'删除所有空图层'}
         checked={booleanOptionOf(options, 'cyOptimizeDeleteAllEmpty')}
         onChange={(value) => setBoolean('cyOptimizeDeleteAllEmpty', value)}
       />
       <CheckBox
-        label={MSG.common.deleteHidden}
+        label={'删除所有隐藏图层'}
         checked={booleanOptionOf(options, 'cyOptimizeDeleteAllHide')}
         onChange={(value) => setBoolean('cyOptimizeDeleteAllHide', value)}
       />
 
       <Button
         className="mm-common__panel-btn"
-        title={MSG.common.batchOptimize}
+        title={'批量优化文档'}
         onClick={() => void run(optimizeFolder, { spin: false })}
       >
-        {MSG.common.batchOptimize}
+        {'批量优化文档'}
       </Button>
     </div>
   );

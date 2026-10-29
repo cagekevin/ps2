@@ -136,7 +136,7 @@ function starRecord(value: unknown, path: string): Result<RawFontRecord> {
  *   `{ tags: [...], stars?: [...] }`            可同时覆盖评分
  */
 export function parseTagArchive(text: string): Result<FontTagArchive> {
-  const parsed = parseJson(text, MSG.font.fileTagsImport);
+  const parsed = parseJson(text, '标签导入文件');
   if (parsed.status === 'error') return parsed;
 
   const root = parsed.value;

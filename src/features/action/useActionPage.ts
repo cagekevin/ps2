@@ -129,13 +129,13 @@ export function useActionPage() {
       x: event.clientX,
       y: event.clientY,
       items: [
-        { label: MSG.action.menuNewGroup, onSelect: () => setDialog({ kind: 'addGroup', afterIndex: groupIndex }) },
+        { label: '新建分组', onSelect: () => setDialog({ kind: 'addGroup', afterIndex: groupIndex }) },
         {
-          label: MSG.action.menuRename,
+          label: '重命名',
           onSelect: () => setDialog({ kind: 'renameGroup', index: groupIndex, value: groupName })
         },
         {
-          label: MSG.action.menuDelete,
+          label: '删除',
           danger: true,
           onSelect: () => void deleteGroup(groupIndex, groupName)
         }
@@ -164,7 +164,7 @@ export function useActionPage() {
       y: event.clientY,
       items: [
         {
-          label: item.alias ? MSG.action.menuEditAlias : MSG.action.menuAddAlias,
+          label: item.alias ? '修改别名' : '添加别名',
           onSelect: () =>
             setDialog({
               kind: 'alias',
@@ -174,13 +174,13 @@ export function useActionPage() {
             })
         },
         {
-          label: MSG.action.menuDeleteAlias,
+          label: '删除别名',
           /* 没有别名时不可点：原版也是灰的（官方 `$menu` 没有禁用态，我们照 `MenuItem.disabled`） */
           disabled: !item.alias,
           onSelect: () => void run(() => deleteAliasCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete })
         },
         {
-          label: MSG.action.menuDelete,
+          label: '删除',
           danger: true,
           onSelect: () => void deleteItem(groupIndex, itemIndex, item.alias ?? item.name)
         }
@@ -218,14 +218,14 @@ export function useActionPage() {
       kind: 'anchor',
       anchor,
       items: [
-        { label: MSG.action.menuExportAll, onSelect: () => void doExport(false) },
-        { label: MSG.action.menuExportCurrent, onSelect: () => void doExport(true) }
+        { label: '导出所有仓库', onSelect: () => void doExport(false) },
+        { label: '导出当前仓库', onSelect: () => void doExport(true) }
       ]
     });
   }
 
   async function doExport(current: boolean): Promise<void> {
-    const path = saveFile(MSG.action.exportPreset, ['dzx'], MSG.action.defaultFileName);
+    const path = saveFile('导出预设', ['dzx'], '设计助理所有预设.dzx');
     if (!path) {
       toast.error(MSG.common.cancel);
       return;
@@ -239,15 +239,15 @@ export function useActionPage() {
       kind: 'anchor',
       anchor,
       items: [
-        { label: MSG.action.menuImport, onSelect: () => void doImport(false) },
-        { label: MSG.action.menuAppend, onSelect: () => void doImport(true) },
-        { label: MSG.action.menuAppendPreset, onSelect: () => void run(importPreset, { success: MSG.action.doneAppend }) }
+        { label: '导入动作仓库', onSelect: () => void doImport(false) },
+        { label: '追加动作仓库', onSelect: () => void doImport(true) },
+        { label: '追加插件自带预设', onSelect: () => void run(importPreset, { success: MSG.action.doneAppend }) }
       ]
     });
   }
 
   async function doImport(append: boolean): Promise<void> {
-    const path = openFile(MSG.action.menuImport, ['dzx']);
+    const path = openFile('导入动作仓库', ['dzx']);
     if (!path) {
       toast.error(MSG.common.cancel);
       return;

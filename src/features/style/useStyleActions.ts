@@ -72,10 +72,10 @@ export type RenameTarget =
  * - 样式「添加样式」`:51378`
  */
 export const ADD_TITLE: Record<KuKind, string> = {
-  color: MSG.style.addColor,
-  gradient: MSG.style.addGradient,
-  font: MSG.style.addFont,
-  style: MSG.style.addStyle
+  color: '添加当前前景色',
+  gradient: '添加渐变色，仅支持形状图层',
+  font: '添加字体，支持多图层',
+  style: '添加样式'
 };
 
 export function useStyleActions() {
@@ -286,9 +286,9 @@ export function useStyleActions() {
   function buildMenuItems(target: MenuTarget): MenuItem[] {
     if (target.type === 'item') {
       const shared: MenuItem[] = [
-        { label: MSG.action.menuDelete, danger: true, onSelect: () => void handleDelete(target) },
+        { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
         {
-          label: MSG.action.menuRename,
+          label: '重命名',
           onSelect: () =>
             setEditing({ type: 'item', groupIndex: target.groupIndex, itemIndex: target.itemIndex })
         }
@@ -299,30 +299,30 @@ export function useStyleActions() {
         ...shared,
         { label: '', separator: true },
         {
-          label: MSG.style.menuToSwatch,
+          label: '发送到色板',
           onSelect: () => void handleSendItemToSwatch(target.groupIndex, target.itemIndex)
         },
         {
-          label: MSG.style.menuAppendToSwatch,
+          label: '追加到色板',
           onSelect: () => void handleAppendItemToSwatch(target.groupIndex, target.itemIndex)
         }
       ];
     }
 
     const head: MenuItem[] = [
-      { label: MSG.style.menuNewGroup, onSelect: () => setNewGroup({ afterIndex: target.groupIndex }) },
+      { label: '创建新组', onSelect: () => setNewGroup({ afterIndex: target.groupIndex }) },
       { label: '', separator: true },
-      { label: MSG.action.menuDelete, danger: true, onSelect: () => void handleDelete(target) },
+      { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
       {
-        label: MSG.action.menuRename,
+        label: '重命名',
         onSelect: () => setEditing({ type: 'group', groupIndex: target.groupIndex })
       },
       { label: '', separator: true }
     ];
 
     const warehouse: MenuItem[] = [
-      { label: MSG.style.menuToWarehouse, disabled: true },
-      { label: MSG.style.menuMoveWarehouse, disabled: true }
+      { label: '发送到仓库…', disabled: true },
+      { label: '移动到仓库…', disabled: true }
     ];
 
     if (activeKind !== 'color') return [...head, ...warehouse];
@@ -330,16 +330,16 @@ export function useStyleActions() {
     return [
       ...head,
       {
-        label: MSG.style.menuToSwatch,
+        label: '发送到色板',
         onSelect: () => void handleSendGroupToSwatch(target.groupIndex)
       },
       {
-        label: MSG.style.menuAppendToSwatch,
+        label: '追加到色板',
         onSelect: () => void handleAppendGroupToSwatch(target.groupIndex)
       },
       { label: '', separator: true },
       {
-        label: MSG.style.menuPickToGroup,
+        label: '快速吸色到组',
         onSelect: () => void handlePickColorToGroup(target.groupIndex)
       },
       { label: '', separator: true },

@@ -20,7 +20,6 @@ import {
   type FlipDirection
 } from '../../commands/common-use';
 import type { IconName } from '../../components/icons';
-import { MSG } from '../../types/messages';
 import type { Result } from '../../types/result';
 
 /** 缩放四组档位（按钮上只显示数字，原版就是 `105` 不带百分号） */
@@ -43,12 +42,12 @@ export const FLIP_ITEMS: ReadonlyArray<{
   direction: FlipDirection;
   title: string;
 }> = [
-  { icon: 'iconzuoyoufanzhuan', direction: '左右', title: MSG.common.flipTitleLr },
-  { icon: 'iconshangxiafanzhuan', direction: '上下', title: MSG.common.flipTitleTb },
-  { icon: 'iconxiangzuofanzhuan', direction: '左', title: MSG.common.flipTitleLeft },
-  { icon: 'iconxiangyoufanzhuan', direction: '右', title: MSG.common.flipTitleRight },
-  { icon: 'iconxiangxiafanzhuan', direction: '下', title: MSG.common.flipTitleBottom },
-  { icon: 'iconxiangshangfanzhuan', direction: '上', title: MSG.common.flipTitleTop }
+  { icon: 'iconzuoyoufanzhuan', direction: '左右', title: '左右翻转' },
+  { icon: 'iconshangxiafanzhuan', direction: '上下', title: '上下翻转' },
+  { icon: 'iconxiangzuofanzhuan', direction: '左', title: '向左翻转' },
+  { icon: 'iconxiangyoufanzhuan', direction: '右', title: '向右翻转' },
+  { icon: 'iconxiangxiafanzhuan', direction: '下', title: '向下翻转' },
+  { icon: 'iconxiangshangfanzhuan', direction: '上', title: '向上翻转' }
 ];
 
 /**

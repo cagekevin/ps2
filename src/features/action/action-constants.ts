@@ -6,7 +6,6 @@
  */
 
 import type { MenuItem } from '../../components/ContextMenu';
-import { MSG } from '../../types/messages';
 import type { IconName } from '../../components/icons';
 import type { ActionColumns } from '../../store/action';
 
@@ -29,9 +28,9 @@ export function columnMenuItems(
   onPick: (columns: ActionColumns) => void
 ): MenuItem[] {
   const labels: Record<ActionColumns, string> = {
-    1: MSG.action.columnOne,
-    2: MSG.action.columnTwo,
-    3: MSG.action.columnThree
+    1: '单列',
+    2: '双列',
+    3: '三列'
   };
   return ([1, 2, 3] as const).map((columns) => ({
     label: labels[columns],

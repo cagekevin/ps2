@@ -24,7 +24,7 @@ import './HomePage.css';
 
 function formatDiag(diag: VendorDiag): string {
   return [
-    MSG.home.sectionJsx,
+    '官方 jsx 函数',
     `ps_onJsx（调度入口）    ${diag.dispatch}`,
     `ys_useStyleColor       ${diag.useStyleColor}`,
     `ys_useGradient         ${diag.useGradient}`,
@@ -34,7 +34,7 @@ function formatDiag(diag: VendorDiag): string {
     `dz_callAction          ${diag.callAction}`,
     `dz_getActionList       ${diag.getActionList}`,
     '',
-    MSG.home.sectionConfig,
+    '官方配置依赖',
     `sj_set.json            ${diag.configSet}`,
     `sj_interfaceSet.ini    ${diag.configInterface}`,
     `cyAutoFillColor        ${String(diag.autoFillColor)}`
@@ -108,8 +108,8 @@ export default function HomePage() {
       </div>
 
       <div className="mm-u-row mm-home__actions">
-        <Button onClick={handleDiag}>{MSG.home.diagButton}</Button>
-        <Button onClick={handleLog}>{MSG.home.logButton}</Button>
+        <Button onClick={handleDiag}>{'诊断官方能力'}</Button>
+        <Button onClick={handleLog}>{'查看日志'}</Button>
         <Button variant="primary" onClick={handlePing}>
           测试接口
         </Button>
@@ -119,11 +119,11 @@ export default function HomePage() {
       {diag ? (
         <div className="mm-home__diag">
           <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">{MSG.home.sectionJsx}</span>
+            <span className="mm-home__diag-title">{'官方 jsx 函数'}</span>
             <button
               type="button"
               className="mm-btn mm-home__copy"
-              onClick={() => void handleCopy(MSG.home.copyDiag, formatDiag(diag))}
+              onClick={() => void handleCopy('诊断结果', formatDiag(diag))}
             >
               复制
             </button>
@@ -137,7 +137,7 @@ export default function HomePage() {
           <DiagRow label="dz_callAction（动作页）" value={diag.callAction} />
           <DiagRow label="dz_getActionList（动作页）" value={diag.getActionList} />
 
-          <div className="mm-home__diag-title">{MSG.home.sectionConfig}</div>
+          <div className="mm-home__diag-title">{'官方配置依赖'}</div>
           <DiagRow label="sj_set.json" value={String(diag.configSet)} />
           <DiagRow label="sj_interfaceSet.ini" value={String(diag.configInterface)} />
           <DiagRow label="cyAutoFillColor" value={String(diag.autoFillColor)} />
@@ -147,12 +147,12 @@ export default function HomePage() {
       {logText ? (
         <div className="mm-home__log">
           <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">{MSG.home.sectionLog}</span>
+            <span className="mm-home__diag-title">{'日志（%TEMP%\\maomao.log）'}</span>
             <span className="mm-u-row mm-home__log-actions">
               <button
               type="button"
               className="mm-btn mm-home__copy"
-              onClick={() => void handleCopy(MSG.home.copyLog, logText)}
+              onClick={() => void handleCopy('日志', logText)}
             >
                 复制
               </button>

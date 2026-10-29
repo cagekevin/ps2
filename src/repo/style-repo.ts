@@ -37,7 +37,7 @@ export function readIndex(): Result<StyleWarehouseIndex> {
   const text = readTextResult(INDEX_FILE, ROOT);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value, MSG.style.fileIndex);
+  const parsed = parseJson(text.value, '仓库索引');
   if (parsed.status === 'error') return parsed;
 
   return decodeStyleIndex(parsed.value);
@@ -73,7 +73,7 @@ export function readRawGroups(
   const name = libraryFileName(warehouse, kind);
   if (name.status === 'error') return name;
 
-  return readJsonFile(name.value, ROOT, MSG.style.fileLibrary, (raw) => resolveKuGroups(raw, decodeBase64));
+  return readJsonFile(name.value, ROOT, '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
 }
 
 /** 读某个仓库的某一类库（归一化后的视图模型） */
@@ -102,7 +102,7 @@ export function readKuGroupItems(
   const text = readLibraryText(warehouse, kind);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value, MSG.style.fileLibrary);
+  const parsed = parseJson(text.value, '库文件');
   if (parsed.status === 'error') return parsed;
 
   const groups = parsed.value;
@@ -172,7 +172,7 @@ export async function mutateRawGroups(
   return mutateJsonFile(
     name.value,
     ROOT,
-    MSG.style.fileLibrary,
+    '库文件',
     (raw) => resolveKuGroups(raw, decodeBase64),
     mutator
   );
@@ -213,7 +213,7 @@ export function addKuGroup(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group: Record<string, unknown> = {
       id: kuGuid(),
-      name: name || MSG.style.untitledGroup,
+      name: name || '未命名分组',
       show: true,
       list: []
     };
@@ -233,7 +233,7 @@ export function addKuGroupWithItems(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group: Record<string, unknown> = {
       id: kuGuid(),
-      name: name || MSG.style.untitledGroup,
+      name: name || '未命名分组',
       show: true,
       list: items
     };

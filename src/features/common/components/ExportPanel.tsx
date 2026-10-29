@@ -103,7 +103,7 @@ export function ExportPanel() {
   }
 
   function pickFolder(): void {
-    const picked = chooseFolder(MSG.common.exSaveTo);
+    const picked = chooseFolder('保存到');
     if (!picked) {
       toast.error(MSG.common.cancel);
       return;
@@ -113,7 +113,7 @@ export function ExportPanel() {
   }
 
   function pickWatermark(): void {
-    const picked = openFile(MSG.common.exPickWatermark, ['png', 'jpg', 'jpeg', 'psd']);
+    const picked = openFile('选择水印文件', ['png', 'jpg', 'jpeg', 'psd']);
     if (!picked) {
       toast.error(MSG.common.cancelPick);
       setField('watermark', '');
@@ -153,7 +153,7 @@ export function ExportPanel() {
       {/* 第一行：格式 + 品质 */}
       <div className="mm-u-row mm-common__panel-row">
         <Segment
-          ariaLabel={MSG.common.exFormat}
+          ariaLabel={'导出格式'}
           value={text(config.ext) === 'PNG' ? 'PNG' : 'JPG'}
           options={[
             { value: 'JPG', label: 'JPG' },
@@ -163,7 +163,7 @@ export function ExportPanel() {
         />
         {text(config.ext) === 'PNG' ? (
           <Segment
-            ariaLabel={MSG.common.exPngDepth}
+            ariaLabel={'PNG 位深'}
             value={flag(config.png8) ? 'PNG-8' : 'PNG-24'}
             options={[
               { value: 'PNG-24', label: 'PNG-24' },
@@ -174,7 +174,7 @@ export function ExportPanel() {
         ) : (
           <TextField
             /** 官方 title 是「品质1-100」（可见前缀「品质」在官方是独立文字，本仓输入框无可见前缀） */
-            title={MSG.common.qualityTitle}
+            title={'品质1-100'}
             variant="wide"
             inputMode="decimal"
             value={draft.quality}
@@ -188,8 +188,8 @@ export function ExportPanel() {
       <div className="mm-u-row mm-common__panel-row">
         <TextField
           /** 官方：可见前缀「保存到」+ title「选择自定义目录」；本仓输入框无可见前缀，故 title 走官方、前缀进 placeholder */
-          title={MSG.common.pickFolderTitle}
-          placeholder={MSG.common.exSaveTo}
+          title={'选择自定义目录'}
+          placeholder={'保存到'}
           variant="fill"
           value={draft.path}
           onChange={(next) => setField('path', next)}
@@ -199,19 +199,19 @@ export function ExportPanel() {
             setField('path', next);
             write('path', next);
           }}
-          rightSlot={<IconButton name="iconwenjianjiaguanli" title={MSG.common.exPickFolder} size={14} onClick={pickFolder} />}
+          rightSlot={<IconButton name="iconwenjianjiaguanli" title={'选择目录'} size={14} onClick={pickFolder} />}
         />
         <RadioButton
           name="mm-common-path-type"
-          label={MSG.common.exDesktop}
-          title={MSG.common.exSaveToDesktop}
+          label={'桌面'}
+          title={'保存到桌面'}
           checked={num(config.pathType) === 1}
           onChange={() => write('pathType', 1)}
         />
         <RadioButton
           name="mm-common-path-type"
-          label={MSG.common.exFileDir}
-          title={MSG.common.exSaveToFileDir}
+          label={'文件所在目录'}
+          title={'保存到文件所在目录'}
           checked={num(config.pathType) === 2}
           onChange={() => write('pathType', 2)}
         />
@@ -220,21 +220,21 @@ export function ExportPanel() {
       {/* 第三行：命名 */}
       <div className="mm-u-row mm-common__panel-row">
         <TextField
-          title={MSG.common.exNaming}
+          title={'命名'}
           variant="fill"
           value={flag(config.layerName) ? layerName : draft.name}
           onChange={(next) => setField('name', next)}
           onSubmit={(value) => write('name', value.trim())}
         />
         <CheckBox
-          label={MSG.common.exLayerName}
-          title={MSG.common.layerNameTitle}
+          label={'图层名'}
+          title={'使用当前图层名字'}
           checked={flag(config.layerName)}
           onChange={(value) => write('layerName', value)}
         />
         <CheckBox
-          label={MSG.common.exAutoNumber}
-          title={MSG.common.exAutoNumberTip}
+          label={'自动编号'}
+          title={'不覆盖原图，使用数字编号命名。不支持多个切片哦'}
           checked={flag(config.isNumber)}
           onChange={(value) => write('isNumber', value)}
         />
@@ -244,14 +244,14 @@ export function ExportPanel() {
 
       <RadioButton
         name="mm-common-save-type"
-        label={MSG.common.exWebMode}
+        label={'使用导出Web方式(可以切片)'}
         checked={num(config.saveType) === 1}
         onChange={() => write('saveType', 1)}
       />
       <RadioButton
         name="mm-common-save-type"
-        title={MSG.common.saveAsTitle}
-        label={MSG.common.exSaveAsMode}
+        title={'与ctrl+shift+s保存一样'}
+        label={'使用另存为方式(不压缩)'}
         checked={num(config.saveType) === 2}
         onChange={() => write('saveType', 2)}
       />
@@ -265,17 +265,17 @@ export function ExportPanel() {
           void run(() => setOption('cyShowCompress', next === 'compress'), { spin: false })
         }
       >
-        <IconPanel id="compress" title={MSG.common.exCompress} trigger={sectionTrigger(MSG.common.exCompress)} panel={<>
+        <IconPanel id="compress" title={'压缩尺寸 & 加水印'} trigger={sectionTrigger('压缩尺寸 & 加水印')} panel={<>
         <div className="mm-u-row mm-common__panel-row">
           <TextField
-            title={MSG.common.exWidth}
+            title={'导出宽度'}
             variant="half"
             value={draft.width}
             onChange={(next) => setField('width', next)}
             onSubmit={(value) => writeCompress('width', value.trim())}
           />
           <TextField
-            title={MSG.common.exHeight}
+            title={'导出高度'}
             variant="half"
             value={draft.height}
             onChange={(next) => setField('height', next)}
@@ -283,7 +283,7 @@ export function ExportPanel() {
           />
         </div>
         <TextField
-          title={MSG.common.exWatermark}
+          title={'水印文件'}
           variant="fill"
           value={draft.watermark}
           onChange={(next) => setField('watermark', next)}
@@ -293,11 +293,11 @@ export function ExportPanel() {
             writeCompress('watermark', next);
           }}
           rightSlot={
-            <IconButton name="iconwenjianjiaguanli" title={MSG.common.exPickWatermark} size={14} onClick={pickWatermark} />
+            <IconButton name="iconwenjianjiaguanli" title={'选择水印文件'} size={14} onClick={pickWatermark} />
           }
         />
         <CheckBox
-          label={MSG.common.exExportOriginal}
+          label={'同时导出原图'}
           checked={flag(compress.exportOriginalGraph)}
           onChange={(value) => writeCompress('exportOriginalGraph', value)}
         />
@@ -312,14 +312,14 @@ export function ExportPanel() {
           void run(() => setOption('cyShowSetFolder', next === 'setFolder'), { spin: false })
         }
       >
-        <IconPanel id="setFolder" title={MSG.common.exFolderPanel} trigger={sectionTrigger(MSG.common.exFolderPanel)} panel={<>
+        <IconPanel id="setFolder" title={'所在目录设置'} trigger={sectionTrigger('所在目录设置')} panel={<>
         <div className="mm-u-row mm-common__panel-row">
           <Button className="mm-common__panel-btn" onClick={() => void run(openDirectory)}>
             打开所在目录
           </Button>
         </div>
         <CheckBox
-          label={MSG.common.exOpenFolderAfter}
+          label={'保存后自动打开所在目录'}
           checked={flag(config.autoOpenFolder)}
           onChange={(value) => write('autoOpenFolder', value)}
         />
@@ -334,7 +334,7 @@ export function ExportPanel() {
           void run(() => setOption('cyShowBatch', next === 'batch'), { spin: false })
         }
       >
-        <IconPanel id="batch" title={MSG.common.exBatchPanel} trigger={sectionTrigger(MSG.common.exBatchPanel)} panel={<>
+        <IconPanel id="batch" title={'批量导出功能'} trigger={sectionTrigger('批量导出功能')} panel={<>
         <div className="mm-u-row mm-common__panel-row">
           <Button
             className="mm-common__panel-btn mm-common__panel-btn--half"

@@ -22,7 +22,6 @@ import {
   sliceByGuide,
   toggleSmartGuide
 } from '../../../commands/common-use';
-import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import { useCommonUseStore } from '../../../store/common-use';
 import './panel.css';
@@ -37,8 +36,8 @@ export function ReferencePanel() {
   return (
     <div className="mm-common__panel">
       <CheckBox
-        label={MSG.common.guideOn}
-        title={MSG.common.guideOnTip}
+        label={'开启智能参考线(使用后请关闭)'}
+        title={'开启后，点击即可生成参考线'}
         checked={guideOn}
         onChange={(value) => void run(() => toggleSmartGuide(value))}
       />
@@ -48,7 +47,7 @@ export function ReferencePanel() {
       <div className="mm-u-row mm-common__panel-row">
         <TextField
           variant="fill"
-          title={MSG.common.guideWidth}
+          title={'参考线宽度'}
           placeholder="20"
           inputMode="decimal"
           value={width}
@@ -56,7 +55,7 @@ export function ReferencePanel() {
         />
         <Button
           className="mm-common__panel-btn"
-          title={MSG.common.safeAreaTitle}
+          title={'在文档中间安全区域生成2条参考线'}
           onClick={() => void run(() => referenceWidth(width))}
         >
           应用

@@ -15,7 +15,6 @@ import { SelectBox } from '../../../components/SelectBox';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/ui';
 import type { WarehouseEntry } from '../../../domain/action-library';
-import { MSG } from '../../../types/messages';
 import { ACTION_ICONS } from '../action-constants';
 import './warehouse-bar.css';
 
@@ -65,22 +64,22 @@ export function WarehouseBar({ warehouses, currentIndex, onChange, onAdd, onRemo
             ) : (
               <Button
                 className="mm-action__warehouse-action"
-                title={MSG.action.renameWarehouse}
+                title={'重命名当前仓库'}
                 onClick={() => setRenaming(true)}
               >
-                {MSG.action.renameWarehouse}
+                {'重命名当前仓库'}
               </Button>
             )}
 
             <Button
               className="mm-action__warehouse-action"
-              title={MSG.action.newWarehouse}
+              title={'新建仓库'}
               onClick={() => {
                 close();
                 onAdd();
               }}
             >
-              {MSG.action.newWarehouse}
+              {'新建仓库'}
             </Button>
           </div>
         )}

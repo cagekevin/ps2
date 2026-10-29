@@ -9,7 +9,6 @@
  */
 
 import { CheckBox } from '../../../components/CheckBox';
-import { MSG } from '../../../types/messages';
 import { setOption } from '../../../commands/common-use';
 import { booleanOptionOf } from '../../../domain/common-use-options';
 import { useRunCommand } from '../../../hooks/useRunCommand';
@@ -23,7 +22,7 @@ export function ImportPanel() {
   return (
     <div className="mm-common__panel">
       <CheckBox
-        label={MSG.common.toLinkObject}
+        label={'转成链接智能对象'}
         checked={booleanOptionOf(options, 'cyImportToLinkObject')}
         onChange={(value) =>
           void run(() => setOption('cyImportToLinkObject', value), { spin: false })

@@ -28,7 +28,7 @@ import './ActionPage.css';
 const DIALOG_TITLE = {
   addGroup: MSG.action.needGroupName,
   renameGroup: MSG.action.needNewGroupName,
-  alias: MSG.action.aliasTitle
+  alias: '请输入别名'
 } as const;
 
 export default function ActionPage() {
@@ -36,7 +36,7 @@ export default function ActionPage() {
 
   return (
     <div className="mm-action">
-      <PageHeader title={MSG.action.pageTitle} />
+      <PageHeader title={'动作管理页'} />
 
       <div className="mm-action__body">
         {page.reasons.index ? (
@@ -82,7 +82,7 @@ export default function ActionPage() {
                 trailing={
                   <IconButton
                     name={ACTION_ICONS.addGroup}
-                    title={MSG.action.addAction}
+                    title={'添加动作'}
                     size={14}
                     onClick={() => void page.openAddAction(groupIndex)}
                   />
@@ -126,37 +126,37 @@ export default function ActionPage() {
                     ))}
                   </div>
                 ) : (
-                  <StateHint empty={MSG.action.emptyGrid} />
+                  <StateHint empty={'该动作组空空如也'} />
                 )
               ) : null}
             </div>
           ))}
 
-          {page.groups.length === 0 ? <StateHint empty={MSG.action.emptyGrid} /> : null}
+          {page.groups.length === 0 ? <StateHint empty={'该动作组空空如也'} /> : null}
         </div>
       </div>
 
       <BottomBar>
         <BottomBarButton
-          title={MSG.action.addGroup}
+          title={'添加分组'}
           name={ACTION_ICONS.addGroup}
           size={14}
           onClick={page.openAddGroup}
         />
         <BottomBarButton
-          title={MSG.action.displayMode}
+          title={'显示方式'}
           name={ACTION_ICONS.columns}
           size={14}
           onClick={page.openColumnMenu}
         />
         <BottomBarButton
-          title={MSG.action.importPreset}
+          title={'导入预设'}
           name={ACTION_ICONS.importPreset}
           size={14}
           onClick={page.openImportMenu}
         />
         <BottomBarButton
-          title={MSG.action.exportPreset}
+          title={'导出预设'}
           name={ACTION_ICONS.exportPreset}
           size={14}
           onClick={page.openExportMenu}
@@ -182,7 +182,7 @@ export default function ActionPage() {
       {page.dialog ? (
         <InputDialog
           title={DIALOG_TITLE[page.dialog.kind]}
-          defaultValue={page.dialog.kind === 'addGroup' ? MSG.action.defaultGroupName : page.dialog.value}
+          defaultValue={page.dialog.kind === 'addGroup' ? '未命名分组' : page.dialog.value}
           onSubmit={page.submitDialog}
           onClose={page.closeDialog}
         />

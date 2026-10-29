@@ -100,7 +100,7 @@ export function decodeKuData(
 function decodeArrayText(content: Result<string>): Result<Record<string, unknown>[]> {
   if (content.status === 'error') return content;
 
-  const parsed = parseJson(content.value, MSG.style.kuItemInner);
+  const parsed = parseJson(content.value, '库条目内层');
   if (parsed.status === 'error') return parsed;
 
   if (!Array.isArray(parsed.value)) {

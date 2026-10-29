@@ -12,7 +12,6 @@
  */
 
 import { Icon, type IconName } from '../../../components/icons';
-import { MSG } from '../../../types/messages';
 import './anchor-grid.css';
 
 /** 锚点下标 → 图标名后缀（1-9 对应 pointIndex 0-8） */
@@ -31,7 +30,7 @@ interface Props {
 
 export function AnchorGrid({ value, onChange }: Props) {
   return (
-    <div className="mm-common__anchors" role="radiogroup" aria-label={MSG.common.anchorPosition}>
+    <div className="mm-common__anchors" role="radiogroup" aria-label={'锚点位置'}>
       {Array.from({ length: ANCHOR_COUNT }, (_, index) => {
         const selected = index === value;
         return (

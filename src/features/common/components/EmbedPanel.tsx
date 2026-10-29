@@ -31,9 +31,9 @@ import './panel.css';
 
 /** `cyLinkObject` 三档的逐字文案，顺序与官方一致（-1 / 1 / 2） */
 const LINK_OBJECT_LABELS: Record<LinkObjectValue, string> = {
-  '-1': MSG.common.linkNone,
-  '1': MSG.common.linkRaw,
-  '2': MSG.common.linkSameDir
+  '-1': '嵌入时不存链接对象',
+  '1': '嵌入时存链接对象(图片原始路径)',
+  '2': '嵌入时存链接对象(与PSD同一目录)'
 };
 
 export function EmbedPanel() {
@@ -52,17 +52,17 @@ export function EmbedPanel() {
   return (
     <div className="mm-common__panel">
       <CheckBox
-        label={MSG.common.autoEmbedDrop}
+        label={'拖入图片自动嵌入图片'}
         checked={booleanOptionOf(options, 'cyDragInAutoEmbed')}
         onChange={(value) => setBoolean('cyDragInAutoEmbed', value)}
       />
       <CheckBox
-        label={MSG.common.autoEmbedPaste}
+        label={'粘贴图片自动嵌入图片'}
         checked={booleanOptionOf(options, 'cyPasetImageAutoEmbed')}
         onChange={(value) => setBoolean('cyPasetImageAutoEmbed', value)}
       />
       <CheckBox
-        label={MSG.common.autoEmbedClip}
+        label={'使用剪贴蒙版时自动嵌入图片'}
         checked={booleanOptionOf(options, 'cyClipMaskAutoEmbed')}
         onChange={(value) => setBoolean('cyClipMaskAutoEmbed', value)}
       />
@@ -80,7 +80,7 @@ export function EmbedPanel() {
       ))}
 
       <CheckBox
-        label={MSG.common.deleteNextLayer}
+        label={'删除下一图层'}
         checked={booleanOptionOf(options, 'cyDeleteNext')}
         onChange={(value) => setBoolean('cyDeleteNext', value)}
       />
@@ -88,7 +88,7 @@ export function EmbedPanel() {
       <div className="mm-common__panel-rule" />
 
       <CheckBox
-        label={MSG.common.relinkOnDrop}
+        label={'拖入图片转成链接智能对象'}
         checked={booleanOptionOf(options, 'cyOpenDranInToLinkObject')}
         onChange={(value) => setBoolean('cyOpenDranInToLinkObject', value)}
       />

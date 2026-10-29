@@ -66,7 +66,7 @@ function decodeFontSetSettings(raw: unknown): Result<FontSetSettings> {
 /** 设置投影：缺失 = 全部默认值（首次使用不是故障），坏文件仍报错 */
 export function readFontSetSettings(): Result<FontSetSettings> {
   return readOrEmpty(
-    readJsonFile(SETTINGS_FILE, ROOT, MSG.font.fileSettings, decodeFontSetSettings),
+    readJsonFile(SETTINGS_FILE, ROOT, '字体面板设置', decodeFontSetSettings),
     () => ok(normalizeFontSetSettings({}))
   );
 }
@@ -76,7 +76,7 @@ export function updateFontSetSettings(patch: Partial<FontSetSettings>): Promise<
   return updateOrCreateJsonFile(
     SETTINGS_FILE,
     ROOT,
-    MSG.font.fileSettings,
+    '字体面板设置',
     decodeSettingsObject,
     (raw) => ok(mergeFontSetSettings(raw, patch)),
     { missing: () => ({}) }
@@ -87,7 +87,7 @@ export function updateFontSetSettings(patch: Partial<FontSetSettings>): Promise<
 
 export function readQuickFonts(): Result<QuickFontFile> {
   return readOrEmpty(
-    readJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile),
+    readJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile),
     () => ok({ index: 0, list: [] })
   );
 }
@@ -96,7 +96,7 @@ export function readQuickFonts(): Result<QuickFontFile> {
 export function updateQuickFonts(
   mutator: JsonMutator<QuickFontFile>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile, mutator, {
+  return updateOrCreateJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile, mutator, {
     missing: () => ({ index: 0, list: [] })
   });
 }
@@ -141,18 +141,18 @@ function decodeHierarchy(raw: unknown): Result<HierarchyFile> {
 
 export function readHierarchy(): Result<HierarchyFile> {
   return readOrEmpty(
-    readJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy),
-    () => ok({ index: 0, list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
+    readJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy),
+    () => ok({ index: 0, list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
   );
 }
 
 export function updateHierarchy(
   mutator: JsonMutator<HierarchyFile>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy, mutator, {
+  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy, mutator, {
     missing: () => ({
       index: 0,
-      list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }]
+      list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }]
     })
   });
 }
@@ -178,7 +178,7 @@ function decodeCounter(raw: unknown): Result<TranslateCounter> {
  */
 export function readTranslateCounter(): Result<TranslateCounter> {
   return readOrEmpty(
-    readJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter),
+    readJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter),
     () => ok({ num: 0, max: DAILY_LIMIT, time: '' })
   );
 }
@@ -186,7 +186,7 @@ export function readTranslateCounter(): Result<TranslateCounter> {
 export function updateTranslateCounter(
   mutator: JsonMutator<TranslateCounter>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter, mutator, {
+  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter, mutator, {
     missing: () => ({ num: 0, max: 380, time: '' })
   });
 }
@@ -236,11 +236,11 @@ function decodeHistoryForRead(raw: unknown): Result<string[]> {
 }
 
 export function readFontHistory(): Result<string[]> {
-  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryForRead), () => ok([]));
+  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryForRead), () => ok([]));
 }
 
 export function updateFontHistory(mutator: JsonMutator<string[]>): Promise<Result<void>> {
-  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryStrict, mutator, {
+  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryStrict, mutator, {
     missing: () => []
   });
 }

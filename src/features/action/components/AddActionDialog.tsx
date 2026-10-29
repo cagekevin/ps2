@@ -82,7 +82,7 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
   return (
     <div className="mm-modal-mask" role="dialog" aria-modal="true">
       <div className="mm-action-dialog">
-        <div className="mm-action-dialog__title">{MSG.action.addAction}</div>
+        <div className="mm-action-dialog__title">{'添加动作'}</div>
 
         <SelectBox
           options={groups.map((name, at) => ({ value: String(at), label: name }))}
@@ -90,7 +90,7 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
           onChange={setCurrent}
         />
 
-        <CheckBox label={MSG.action.selectAll} checked={allChecked} indeterminate={halfChecked} onChange={toggleAll} />
+        <CheckBox label={'全选'} checked={allChecked} indeterminate={halfChecked} onChange={toggleAll} />
 
         <div className="mm-action-dialog__list">
           {items.length ? (
