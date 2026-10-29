@@ -1,8 +1,10 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
+/* 页面底色只有一个出处（§7 规则 13）：七个页面根类都不写 background */
 .mm-layout{
   display: flex;
   height: 100vh;
+  background: var(--mm-color-bg-base);
 }
 
 .mm-layout__main{

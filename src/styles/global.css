@@ -17,10 +17,22 @@ body,
   height: 100%;
 }
 
-/* 基础字号：三档里的中档，行高配 12 号 */
+/* 基础字号与文字色：三档里的中档，行高配 12 号 */
 body{
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-16);
+  color: var(--mm-color-text);
+  background: var(--mm-color-bg-base);
+}
+
+/* 按钮重置：骨架化时删过，浏览器默认 ButtonFace 在深色主题下是深灰，
+   会把自绘表面整片盖住；背景 / 描边由组件自己给 */
+button{
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
 }
 
 .mm-drag-float{
