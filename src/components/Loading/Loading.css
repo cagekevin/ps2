@@ -1,6 +1,6 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
-.mm-loading-mask{
+.mm-loading__mask{
   position: fixed;
   inset: 0;
   display: flex;
@@ -10,7 +10,7 @@
 }
 
 /* 路由懒加载占位（`router.tsx` 的 Suspense fallback）：单个文案居中 */
-.mm-loading{
+.mm-route-loading{
   display: flex;
   align-items: center;
   justify-content: center;

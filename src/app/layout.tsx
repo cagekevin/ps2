@@ -23,9 +23,9 @@ export function Layout({ children }: LayoutProps) {
       <ConfirmHost />
       <NavBar />
       <div className="mm-layout__main">
-        <header className="mm-row mm-layout__header">
+        <header className="mm-u-row mm-layout__header">
           <span className="mm-layout__title">{APP_TITLE}</span>
-          <div className="mm-row mm-layout__actions">
+          <div className="mm-u-row mm-layout__actions">
             <NavLink
               to="/debug"
               className={({ isActive }) => `mm-layout__debug${isActive ? ' mm-layout__debug--active' : ''}`}

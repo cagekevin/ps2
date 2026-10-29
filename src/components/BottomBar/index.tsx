@@ -55,7 +55,7 @@ export function BottomBarButton({
   return (
     <button
       type="button"
-      className="mm-bottom-bar__btn"
+      className="mm-btn mm-bottom-bar__btn"
       title={title}
       aria-label={title}
       disabled={disabled}

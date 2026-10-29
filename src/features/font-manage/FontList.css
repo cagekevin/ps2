@@ -34,11 +34,7 @@
   display: flex;
 }
 
-.mm-font__act{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+/* 居中走公共 `.mm-btn` */
 
 .mm-font__rating{
   display: flex;

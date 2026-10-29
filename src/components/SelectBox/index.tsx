@@ -81,7 +81,7 @@ export function SelectBox({
       <button
         ref={triggerRef}
         type="button"
-        className={`mm-select-box__trigger mm-field-surface${className ? ` ${className}` : ''}`}
+        className={`mm-select-box__trigger mm-input-surface${className ? ` ${className}` : ''}`}
         disabled={disabled}
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
@@ -121,7 +121,7 @@ export function SelectBox({
                 {onRemove ? (
                   <button
                     type="button"
-                    className="mm-select-box__remove"
+                    className="mm-btn mm-select-box__remove"
                     title="删除"
                     aria-label={`删除 ${option.label}`}
                     onClick={(event) => {

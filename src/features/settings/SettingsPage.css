@@ -4,19 +4,13 @@
   overflow-y: auto;
 }
 
-.mm-settings__row{
-  display: flex;
-  align-items: center;
-}
+/* 横排两端铺满走公共 `.mm-u-row` */
 
 .mm-settings__label{
   flex: 0 0 auto;
 }
 
-.mm-settings__select{
-  flex: 1;
-  min-width: 0;
-}
+/* 可伸缩走公共 `.mm-u-grow`，这里不再声明 */
 
 .mm-settings__tiles{
   display: grid;

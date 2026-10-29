@@ -18,7 +18,7 @@ const HomePage = lazy(() => import('../features/home/HomePage'));
 
 export function AppRoutes() {
   return (
-    <Suspense fallback={<div className="mm-loading">加载中…</div>}>
+    <Suspense fallback={<div className="mm-route-loading">加载中…</div>}>
       <Routes>
         <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />
         <Route path="/style" element={<StylePage />} />

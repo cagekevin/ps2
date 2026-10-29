@@ -35,15 +35,15 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
 
   return (
     <section className="mm-font__tags">
-      <div className="mm-font__tags-head">
+      <div className="mm-u-row mm-font__tags-head">
         <span>我的标签</span>
-        <div className="mm-font__tags-tools">
-          <button className="mm-font__tags-add" type="button" aria-label="新建标签" onClick={onCreate}>
+        <div className="mm-u-row mm-font__tags-tools">
+          <button className="mm-btn mm-font__tags-add" type="button" aria-label="新建标签" onClick={onCreate}>
             +
           </button>
           {overflow ? (
             <button
-              className={`mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
+              className={`mm-btn mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
               type="button"
               aria-label="展开或收起标签"
               aria-expanded={open}

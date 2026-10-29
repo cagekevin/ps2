@@ -11,7 +11,7 @@ export function NewGroupRow({
 }) {
   return (
     <div className="mm-style__group">
-      <div className="mm-row mm-style__group-head">
+      <div className="mm-u-row mm-style__group-head">
         {/* 箭头用 `Chevron`：文本字符随系统字体变化，且原版靠 rotate 表示收起（style 页其它组头同款） */}
         <Chevron open={false} size={9} />
         <InlineEdit value="新建分组" onCommit={onCommit} onCancel={onCancel} />

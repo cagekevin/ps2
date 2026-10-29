@@ -41,7 +41,7 @@ function formatDiag(diag: VendorDiag): string {
 function DiagRow({ label, value }: { label: string; value: string }) {
   const bad = value !== 'function' && value !== 'true' && value !== 'false';
   return (
-    <div className={`mm-row mm-home__diag-row${bad ? ' mm-home__diag-row--bad' : ''}`}>
+    <div className={`mm-u-row mm-home__diag-row${bad ? ' mm-home__diag-row--bad' : ''}`}>
       <span className="mm-home__diag-key">{label}</span>
       <span className="mm-home__diag-value">{value}</span>
     </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
         {layerKind ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}` : '—'}
       </div>
 
-      <div className="mm-row mm-home__actions">
+      <div className="mm-u-row mm-home__actions">
         <Button onClick={handleDiag}>诊断官方能力</Button>
         <Button onClick={handleLog}>查看日志</Button>
         <Button variant="primary" onClick={handlePing}>
@@ -115,7 +115,7 @@ export default function HomePage() {
 
       {diag ? (
         <div className="mm-home__diag">
-          <div className="mm-row mm-home__diag-head">
+          <div className="mm-u-row mm-home__diag-head">
             <span className="mm-home__diag-title">官方 jsx 函数</span>
             <button
               type="button"
@@ -141,9 +141,9 @@ export default function HomePage() {
 
       {logText ? (
         <div className="mm-home__log">
-          <div className="mm-row mm-home__diag-head">
+          <div className="mm-u-row mm-home__diag-head">
             <span className="mm-home__diag-title">日志（%TEMP%\maomao.log）</span>
-            <span className="mm-row mm-home__log-actions">
+            <span className="mm-u-row mm-home__log-actions">
               <button type="button" className="mm-btn mm-home__copy" onClick={() => void handleCopy('日志', logText)}>
                 复制
               </button>

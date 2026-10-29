@@ -118,9 +118,9 @@ export function FontColor({
 
   return (
     <div className="mm-font-panel__color">
-      <div className="mm-row mm-font-panel__color-row">
+      <div className="mm-u-row mm-font-panel__color-row">
         <SelectBox
-          className="mm-font-panel__family"
+          className="mm-u-grow mm-font-panel__family"
           options={familyOptions}
           value={info.family}
           onChange={applyFamily}
@@ -128,9 +128,9 @@ export function FontColor({
         />
       </div>
 
-      <div className="mm-row mm-font-panel__color-row">
+      <div className="mm-u-row mm-font-panel__color-row">
         <SelectBox
-          className="mm-font-panel__weight"
+          className="mm-u-grow mm-font-panel__weight"
           options={weightOptions}
           value={info.weight}
           onChange={applyWeight}
@@ -148,7 +148,7 @@ export function FontColor({
         />
       </div>
 
-      <div className="mm-row mm-row--wrap mm-font-panel__styles">
+      <div className="mm-u-row mm-u-row--wrap mm-font-panel__styles">
         <IconButton
           name="iconzihaodaxiao7"
           title="加粗"
@@ -186,7 +186,7 @@ export function FontColor({
       {/* 字号 / 行距的预设互不排斥：可以同时展开 */}
       <IconPanelGroup exclusive={false}>
         <div className="mm-font-panel__metric">
-          <div className="mm-font-panel__half">
+          <div className="mm-u-grow mm-font-panel__half">
             <IconPanel
               id="size-preset"
               title="字号预设"
@@ -220,7 +220,7 @@ export function FontColor({
 
           <div className="mm-font-panel__gutter" />
 
-          <div className="mm-font-panel__half">
+          <div className="mm-u-grow mm-font-panel__half">
             <IconPanel
               id="leading-preset"
               title="行距预设"
@@ -257,7 +257,7 @@ export function FontColor({
 
       <IconPanelGroup exclusive={false}>
         <div className="mm-font-panel__metric">
-          <div className="mm-font-panel__half">
+          <div className="mm-u-grow mm-font-panel__half">
             <IconPanel
               id="tracking-preset"
               title="字距预设"

@@ -81,7 +81,7 @@ interface FieldProps {
 
 export function Field({ label, hint, children }: FieldProps) {
   return (
-    <label className="mm-field">
+    <label className="mm-u-col mm-field">
       <span className="mm-field__label">{label}</span>
       {children}
       {hint ? <span className="mm-field__hint">{hint}</span> : null}

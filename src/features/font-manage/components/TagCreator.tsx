@@ -35,7 +35,7 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
     <div className="mm-modal-mask" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-font__modal"
+        className="mm-u-col mm-font__modal"
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'create' ? '新建标签' : '重命名标签'}
@@ -53,7 +53,7 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
           clearable={false}
           autoFocus
         />
-        <div className="mm-row mm-font__modal-actions">
+        <div className="mm-u-row mm-font__modal-actions">
           <Button disabled={submitting} onClick={onClose}>
             取消
           </Button>

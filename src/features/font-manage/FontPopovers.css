@@ -1,10 +1,6 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
-/* 标签弹窗卡片：纵向排列（标题 / 输入框 / 按钮行）；外层遮罩负责居中 */
-.mm-font__modal{
-  display: flex;
-  flex-direction: column;
-}
+/* 标签弹窗卡片的纵向排列走公共 `.mm-u-col`，外层遮罩负责居中 */
 
 .mm-font__preview-card{
   position: fixed;

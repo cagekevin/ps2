@@ -70,7 +70,7 @@ export function NumberField({
         </span>
       ) : null}
 
-      <span className="mm-font-panel__number-box mm-field-surface">
+      <span className="mm-font-panel__number-box mm-input-surface">
         <Input
           className="mm-font-panel__number-input"
           type="text"

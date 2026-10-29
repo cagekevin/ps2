@@ -89,10 +89,10 @@ export default function SettingsPage() {
       <div className="mm-settings__body">
         <div className="mm-settings__section">使用设置</div>
 
-        <div className="mm-settings__row">
+        <div className="mm-u-row mm-settings__row">
           <span className="mm-settings__label">单位：</span>
           <SelectBox
-            className="mm-settings__select"
+            className="mm-u-grow mm-settings__select"
             options={UNITS.map((unit) => ({ value: unit.value, label: unit.label }))}
             value={current?.value ?? 'px'}
             onChange={changeUnit}
@@ -102,7 +102,7 @@ export default function SettingsPage() {
 
         <div className="mm-settings__section">常用功能面板</div>
 
-        <div className="mm-settings__row">
+        <div className="mm-u-row mm-settings__row">
           <CheckBox
             label="显示缩放区"
             checked={showZoom}
@@ -110,7 +110,7 @@ export default function SettingsPage() {
           />
         </div>
 
-        <div className="mm-settings__row">
+        <div className="mm-u-row mm-settings__row">
           <CheckBox
             label="显示变换区"
             checked={showTransformation}

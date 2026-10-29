@@ -42,8 +42,8 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
   }
 
   return (
-    <div className="mm-font-panel__panel mm-font-panel__create">
-      <div className="mm-row mm-font-panel__row">
+    <div className="mm-u-col mm-font-panel__panel mm-font-panel__create">
+      <div className="mm-u-row mm-font-panel__row">
         <RadioButton
           label="圆角"
           name="mm-font-panel-button-type"
@@ -66,13 +66,13 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-row mm-font-panel__row mm-font-panel__row--pad">
+      <div className="mm-u-row mm-font-panel__row mm-font-panel__row--pad">
         <div className="mm-font-panel__label" title="形状内边距，10,5 表示 宽=10 高=5">
           自定义边距
         </div>
         <Input
           variant="page"
-          className="mm-font-panel__input-grow"
+          className="mm-u-grow mm-font-panel__input-grow"
           value={padding}
           placeholder="10,20"
           title="支持表达式，详细请看帮助文档"
@@ -82,7 +82,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-row mm-font-panel__row mm-font-panel__row--tight">
+      <div className="mm-u-row mm-font-panel__row mm-font-panel__row--tight">
         <div className="mm-font-panel__label">预设</div>
         {CREATE_BUTTON_PADDINGS.map((value) => (
           <button

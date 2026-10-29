@@ -4,26 +4,17 @@
   overflow-y: auto;
 }
 
-.mm-font-panel__icons{
-  display: flex;
-  flex-direction: column;
-}
+/* 纵向排列走公共 `.mm-u-col` */
 
 
 
-.mm-font-panel__panel{
-  display: flex;
-  flex-direction: column;
-}
+/* 纵向排列走公共 `.mm-u-col` */
 
 .mm-font-panel__label{
   flex: 0 0 auto;
 }
 
-.mm-font-panel__input-grow{
-  flex: 1;
-  min-width: 0;
-}
+/* 可伸缩走公共 `.mm-u-grow` */
 
 .mm-font-panel__wide-btn{
   width: 100%;
@@ -47,11 +38,7 @@
   width: 100%;
 }
 
-.mm-font-panel__family,
-.mm-font-panel__weight{
-  flex: 1;
-  min-width: 0;
-}
+/* 可伸缩走公共 `.mm-u-grow` */
 
 .mm-font-panel__color-label{
   flex: 0 0 auto;
@@ -66,10 +53,7 @@
   align-items: flex-start;
 }
 
-.mm-font-panel__half{
-  flex: 1;
-  min-width: 0;
-}
+/* 可伸缩走公共 `.mm-u-grow` */
 
 .mm-font-panel__half--center{
   display: flex;
@@ -89,10 +73,7 @@
   width: 100%;
 }
 
-.mm-font-panel__hierarchy-select{
-  flex: 1;
-  min-width: 0;
-}
+/* 可伸缩走公共 `.mm-u-grow` */
 
 .mm-font-panel__levels{
   display: flex;

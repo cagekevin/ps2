@@ -7,13 +7,10 @@
   justify-content: center;
 }
 
-.mm-field{
-  display: flex;
-  flex-direction: column;
-}
+/* `.mm-field` 的纵向排列走公共 `.mm-u-col`，这里不再声明 */
 
 /*
- * 输入位表面（`CONVENTIONS` §6）：`.mm-input` / `.mm-field-surface` 的底色 / 描边 / 圆角 /
+ * 输入位表面（`CONVENTIONS` §6）：`.mm-input` / `.mm-input-surface` 的底色 / 描边 / 圆角 /
  * 文字色 / 字号**只写在这里**，页面与 feature 不许覆盖。
  * 当前骨架化后无视觉声明（两个使用处各自已有 flex 容器），视觉重写时补在本注释下方。
  */

@@ -476,7 +476,7 @@
 <tr><td>选项下拉</td><td><code>SelectBox</code>（3 个参数）/ <code>FontSetSelect</code>（17 个参数，超集）</td><td><b><code>SelectBox</code></b>（本仓唯一入口）</td><td><code>FontSetSelect</code> 是 Vue 侧件，本仓不存在；参数多不等于要建新件</td></tr>
 <tr><td>下拉 vs 内容面板</td><td><code>FontSetSelect</code>（选项列表）/ <code>GDropdown</code>（任意内容）</td><td><b><code>SelectBox</code> / <code>.mm-popover</code></b></td><td>有「当前值 + 对勾」用前者，其余一律后者；不许再造第三个</td></tr>
 <tr><td>图标按钮</td><td><code>PageBottomBar.__icon</code>（26×26 圆角 0）/ <code>FontSetIcon</code>（26×26 圆角 0）/ <code>MainLayout .nav-item.is-sub</code>（26×26 圆角 4）</td><td><b><code>IconButton</code></b>（26×26，圆角 <code>--mm-radius-md</code>）</td><td>三份逐行相同；圆角按 §7 组件形状表取 4，<b>不取原版 0</b></td></tr>
-<tr><td>输入位表面</td><td><code>GInput</code>（底/边 #2c2c2c）/ 字体面板 <code>FontSetSelect.__trigger</code>、<code>FontSetNumber.__box</code>（底 #222、边 transparent）</td><td><b>一个类：<code>.mm-input</code> / <code>.mm-field-surface</code></b></td><td>底色取 <code>--mm-color-bg-input</code>、描边取暗线 <code>--mm-color-border</code>（§7 规则 8 / 规则 13），<b>不取原版 #2c2c2c</b>；这两条 token 当前不存在，需随色阶一起建</td></tr>
+<tr><td>输入位表面</td><td><code>GInput</code>（底/边 #2c2c2c）/ 字体面板 <code>FontSetSelect.__trigger</code>、<code>FontSetNumber.__box</code>（底 #222、边 transparent）</td><td><b>一个类：<code>.mm-input</code> / <code>.mm-input-surface</code></b></td><td>底色取 <code>--mm-color-bg-input</code>、描边取暗线 <code>--mm-color-border</code>（§7 规则 8 / 规则 13），<b>不取原版 #2c2c2c</b>；这两条 token 当前不存在，需随色阶一起建</td></tr>
 <tr><td>行 hover</td><td><code>--c-surface-active</code> #424242（SelectBox 项）/ <code>--c-hover-2</code> hsla(0,0%,100%,.1)（GMenuItem、FontSetSelect 项）</td><td><b>叠 <code>--mm-color-bg-hover</code></b></td><td>同一语义两个值；叠白不随底色档位漂移（§7 状态表）</td></tr>
 <tr><td>弹窗</td><td><code>CepModal</code>（居中 / 260 / 圆角 4 / 遮罩 .45）/ <code>DistributedDialog</code>（top 30% + <code>50vw-90</code> / 180 / <b>无圆角</b> / 遮罩 .1）</td><td><b>两种用途，表面合 1</b></td><td>确认类居中、输入类偏上（原版如此，不是笔误）；但边框 / 底 / 阴影 / 输入框只写一份</td></tr>
 </table>
@@ -678,7 +678,7 @@
             <span class="pw-cell">档位 26</span><span class="pw-cell">档位 26</span><span class="pw-cell">档位 26</span>
           </div>
         </div>
-        <div class="pw-part"><b>.mm-common__flips</b>（<code>.mm-row--wrap</code>）—— 6 个 26×26 图标按钮，窄面板换行</div>
+        <div class="pw-part"><b>.mm-common__flips</b>（<code>.mm-u-row--wrap</code>）—— 6 个 26×26 图标按钮，窄面板换行</div>
         <div class="pw-line"></div>
         <div class="pw-part"><b>.mm-common__grid</b> → <code>TileButton</code>
           <div class="pw-row" style="margin-top:4px">
@@ -722,7 +722,7 @@
     <div class="pw-navbar"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="pw-main">
       <div class="pw-body">
-        <div class="pw-part"><b>.mm-font-panel__icons</b> → <code>.mm-row--wrap .mm-font-panel__icon-row</code>
+        <div class="pw-part"><b>.mm-font-panel__icons</b> → <code>.mm-u-row--wrap .mm-font-panel__icon-row</code>
           <div class="pw-row" style="margin-top:4px"><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span><span class="pw-cell">26</span></div>
         </div>
         <div class="pw-part"><b>FontColor</b>（字体属性）
@@ -882,7 +882,7 @@
 <tr><td>13</td><td><code>.mm-font__list, .mm-style__list</code></td><td>长列表滚动区</td><td>原 2 份</td></tr>
 <tr><td>14</td><td><code>.mm-bottom-bar__divider, .mm-font-panel__divider</code></td><td>竖向分隔线 1px × 13</td><td>原 2 份</td></tr>
 <tr><td>15</td><td><code>.mm-imgcolor__hr, .mm-menu__hr</code></td><td>横向分隔线（只留底边）</td><td>原 2 份</td></tr>
-<tr><td>16</td><td><code>.mm-row</code> / <code>.mm-row--wrap</code></td><td>一行两端对齐 / 可换行</td><td>原 7 份</td></tr>
+<tr><td>16</td><td><code>.mm-u-row</code> / <code>.mm-u-row--wrap</code></td><td>一行两端对齐 / 可换行</td><td>原 7 份</td></tr>
 <tr><td>17</td><td><code>::-webkit-scrollbar*</code></td><td>滚动条（Chromium 103 只有 webkit 伪元素可用）</td><td>各页不再写</td></tr>
 </table>
 
@@ -890,7 +890,7 @@
 <table>
 <tr><th>页面</th><th>根类</th><th>样式文件</th><th>说明</th></tr>
 <tr><td>首页</td><td><code>.mm-home</code></td><td><code>HomePage.css</code></td><td>诊断与日志（开发用），按钮已挂 <code>.mm-btn</code></td></tr>
-<tr><td>常用页</td><td><code>.mm-common</code></td><td><code>CommonPage.css</code> + <code>components/panel.css</code> + <code>components/tile-button.css</code></td><td>格子 50×50；翻转行用 <code>.mm-row--wrap</code></td></tr>
+<tr><td>常用页</td><td><code>.mm-common</code></td><td><code>CommonPage.css</code> + <code>components/panel.css</code> + <code>components/tile-button.css</code></td><td>格子 50×50；翻转行用 <code>.mm-u-row--wrap</code></td></tr>
 <tr><td>样式页</td><td><code>.mm-style</code></td><td><code>StylePage.css</code> + <code>components/img-color-dialog.css</code></td><td>仓库条 36 / tab 线 20 / 组标题 22；四库格子尺寸各一档</td></tr>
 <tr><td>字体管理页</td><td><code>.mm-font</code></td><td><code>FontManagePage.css</code> + <code>FontList.css</code> + <code>FontPopovers.css</code></td><td>搜索行 / 筛选 / 标签 / 列表头</td></tr>
 <tr><td>字体面板页</td><td><code>.mm-font-panel</code></td><td><code>FontPanelPage.css</code></td><td>图标行 / 抽屉 / 字体快选 / 层级字号 / 拆分 / 生成 / 粘贴 / 数字输入</td></tr>

@@ -35,7 +35,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
     <>
       {children}
       {visible ? (
-        <div className="mm-loading-mask">
+        <div className="mm-loading__mask">
           <Spin tip={tip} />
         </div>
       ) : null}

@@ -26,7 +26,7 @@ interface Props {
 
 export function PageHeader({ title, children, className = '' }: Props) {
   return (
-    <header className={`mm-row mm-page-header${className ? ` ${className}` : ''}`}>
+    <header className={`mm-u-row mm-page-header${className ? ` ${className}` : ''}`}>
       <div className="mm-page-header__title">{title}</div>
       {children}
     </header>

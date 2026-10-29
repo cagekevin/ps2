@@ -6,10 +6,7 @@
   width: 100%;
 }
 
-.mm-common__panel-row{
-  display: flex;
-  align-items: center;
-}
+/* 横排两端铺满走公共 `.mm-u-row` */
 
 .mm-common__panel-rule{
   width: 100%;

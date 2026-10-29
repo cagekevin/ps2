@@ -14,7 +14,7 @@ interface Props {
 
 export function SplitPanel({ onSplit }: Props) {
   return (
-    <div className="mm-font-panel__panel mm-font-panel__split">
+    <div className="mm-u-col mm-font-panel__panel mm-font-panel__split">
       {SPLIT_BUTTONS.map((text, index) => (
         <button
           key={text}

@@ -79,9 +79,9 @@ export default function FontPanelPage() {
         onAlign={page.onTextAlign}
       />
 
-      <div className="mm-font-panel__icons">
+      <div className="mm-u-col mm-font-panel__icons">
         <IconPanelGroup exclusive>
-          <div className="mm-row mm-row--wrap mm-font-panel__icon-row">
+          <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row">
             {TOP_ICONS_ONE.map((icon, index) => (
               <IconPanel
                 key={icon}
@@ -140,8 +140,8 @@ export default function FontPanelPage() {
 
       <div className="mm-font-panel__line mm-font-panel__line--set" />
 
-      <div className="mm-font-panel__icons">
-        <div className="mm-row mm-row--wrap mm-font-panel__icon-row">
+      <div className="mm-u-col mm-font-panel__icons">
+        <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row">
           {BOTTOM_ICONS_ONE.map((icon, index) => (
             <IconButton
               key={icon}
@@ -165,7 +165,7 @@ export default function FontPanelPage() {
           ))}
         </div>
 
-        <div className="mm-row mm-row--wrap mm-font-panel__icon-row mm-font-panel__icon-row--after">
+        <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row mm-font-panel__icon-row--after">
           {BOTTOM_ICONS_THREE.map((icon, index) => (
             <IconButton
               key={icon}

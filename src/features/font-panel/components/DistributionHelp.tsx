@@ -15,7 +15,7 @@ export function DistributionHelp() {
     <>
       <button
         type="button"
-        className="mm-row mm-font-panel__advanced"
+        className="mm-u-row mm-font-panel__advanced"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >

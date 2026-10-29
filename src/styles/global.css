@@ -1,4 +1,4 @@
-/* 【范本】公共布局原语 —— 新增同类布局照此结构：横排一律挂 .mm-row（两端铺满），页面与组件只写差异。 */
+/* 【范本】公共布局原语 —— 新增同类布局照此结构：横排一律挂 .mm-u-row（两端铺满），页面与组件只写差异。 */
 
 *{
   box-sizing: border-box;
@@ -79,12 +79,24 @@ body,
   overflow: hidden;
 }
 
-.mm-row{
+.mm-u-row{
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.mm-row--wrap{
+.mm-u-row--wrap{
   flex-wrap: wrap;
+}
+
+/* 纵向排列：一列子元素 */
+.mm-u-col{
+  display: flex;
+  flex-direction: column;
+}
+
+/* 可伸缩：占满剩余宽度并允许压缩到 0（输入框、下拉触发器这类） */
+.mm-u-grow{
+  flex: 1;
+  min-width: 0;
 }

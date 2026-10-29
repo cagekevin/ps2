@@ -66,7 +66,7 @@ function FontListItemInner({
           <div className="mm-font__actions">
             <button
               type="button"
-              className="mm-font__act"
+              className="mm-btn mm-font__act"
               aria-label="管理标签"
               onClick={(event) => {
                 event.stopPropagation();

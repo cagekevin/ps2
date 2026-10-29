@@ -10,7 +10,6 @@
 
 import { useDismiss } from '../../hooks/useDismiss';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import './confirm.css';
 
 interface ConfirmProps {
   open: boolean;
@@ -33,7 +32,7 @@ export function Confirm({ open, title, message, confirmText = '删除', onConfir
   return (
     <div className="mm-modal-mask">
       <div
-        className="mm-confirm"
+        className="mm-u-col mm-confirm"
         ref={containerRef}
         role="dialog"
         aria-modal="true"
@@ -42,7 +41,7 @@ export function Confirm({ open, title, message, confirmText = '删除', onConfir
       >
         <div className="mm-confirm__title">{title}</div>
         {message ? <div className="mm-confirm__message">{message}</div> : null}
-        <div className="mm-row mm-confirm__actions">
+        <div className="mm-u-row mm-confirm__actions">
           <button type="button" className="mm-btn mm-confirm__btn" onClick={onCancel}>
             取消
           </button>

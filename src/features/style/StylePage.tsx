@@ -165,7 +165,7 @@ export default function StylePage() {
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => void handleDropImage(event)}
     >
-      <div className="mm-row mm-style__toolbar">
+      <div className="mm-u-row mm-style__toolbar">
         {warehouseOptions.length ? (
           <SelectBox
             className="mm-style__warehouse"
@@ -217,7 +217,7 @@ export default function StylePage() {
                   }`}
                 >
                   {editing?.type === 'group' && editing.groupIndex === index ? (
-                    <div className="mm-row mm-style__group-head">
+                    <div className="mm-u-row mm-style__group-head">
                       <Chevron open={isOpen} size={9} />
                       <InlineEdit
                         value={group.name}
@@ -229,7 +229,7 @@ export default function StylePage() {
                   ) : (
                     <button
                       type="button"
-                      className="mm-row mm-style__group-head"
+                      className="mm-u-row mm-style__group-head"
                       data-group-head
                       data-group-index={index}
                       onClick={() => {

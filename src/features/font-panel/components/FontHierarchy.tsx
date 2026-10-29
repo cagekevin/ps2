@@ -75,9 +75,9 @@ export function FontHierarchy({
 
   return (
     <div className="mm-font-panel__hierarchy">
-      <div className="mm-row mm-font-panel__row mm-font-panel__hierarchy-row">
+      <div className="mm-u-row mm-font-panel__row mm-font-panel__hierarchy-row">
         <SelectBox
-          className="mm-font-panel__hierarchy-select"
+          className="mm-u-grow mm-font-panel__hierarchy-select"
           options={presets.map((preset, index) => ({
             value: String(index),
             label: preset.name
@@ -150,7 +150,7 @@ export function FontHierarchy({
             ))}
           </div>
 
-          <div className="mm-row mm-font-panel__editor-actions">
+          <div className="mm-u-row mm-font-panel__editor-actions">
             <button
               type="button"
               className="mm-btn mm-font-panel__preset-btn mm-font-panel__preset-btn--half"

@@ -22,7 +22,7 @@ export function ReferencePanel() {
 
   return (
     <div className="mm-common__panel">
-      <div className="mm-common__panel-row">
+      <div className="mm-u-row mm-common__panel-row">
         <TextField
           variant="fill"
           title="参考线宽度"
@@ -38,7 +38,7 @@ export function ReferencePanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-common__panel-row">
+      <div className="mm-u-row mm-common__panel-row">
         <Button
           className="mm-common__panel-btn mm-common__panel-btn--half"
           onClick={() => void run(clearGuide)}

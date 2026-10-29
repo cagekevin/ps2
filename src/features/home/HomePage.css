@@ -6,7 +6,7 @@
   overflow: auto;
 }
 
-/* 诊断行两端对齐走公共 `.mm-row`，这里只留自己的差异（无） */
+/* 诊断行两端对齐走公共 `.mm-u-row`，这里只留自己的差异（无） */
 .mm-home__diag-key{
   flex: 0 0 auto;
 }

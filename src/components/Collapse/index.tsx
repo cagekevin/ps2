@@ -38,7 +38,7 @@ export function Collapse({ title, open, onToggle, children, className = '' }: Pr
         aria-controls={open ? bodyId : undefined}
         onClick={() => onToggle(!open)}
       >
-        <span className="mm-collapse__arrow">
+        <span className="mm-btn mm-collapse__arrow">
           <Chevron open={open} size={12} />
         </span>
         <span className="mm-collapse__title">{title}</span>

@@ -48,7 +48,7 @@
 
 .mm-style__group,
 
-/* 横排与两端对齐走公共 `.mm-row`，这里只留撑满 */
+/* 横排与两端对齐走公共 `.mm-u-row`，这里只留撑满 */
 .mm-style__group-head{
   width: 100%;
 }
@@ -91,7 +91,7 @@
   height: 100%;
 }
 
-/* 两端对齐走公共 `.mm-row`，这里只留撑满 */
+/* 两端对齐走公共 `.mm-u-row`，这里只留撑满 */
 .mm-style__font-head{
   width: 100%;
 }

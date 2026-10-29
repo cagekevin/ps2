@@ -15,10 +15,7 @@
   flex: 0 0 auto;
 }
 
-.mm-common__zoom{
-  display: flex;
-  flex-direction: column;
-}
+/* 纵向排列走公共 `.mm-u-col` */
 
 .mm-common__zoom-row{
   display: flex;
@@ -61,10 +58,7 @@
   width: 100%;
 }
 
-.mm-common__grid{
-  display: flex;
-  flex-direction: column;
-}
+/* 纵向排列走公共 `.mm-u-col` */
 
 .mm-common__tile-row{
   display: grid;

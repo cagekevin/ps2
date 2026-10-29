@@ -35,7 +35,7 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
   return (
     <div className="mm-font-panel__quick">
       {fonts.length ? (
-        <div className="mm-row mm-font-panel__quick-row">
+        <div className="mm-u-row mm-font-panel__quick-row">
           <SelectBox
             className="mm-font-panel__quick-select"
             options={options}
@@ -64,7 +64,7 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
       )}
 
       {weights.length ? (
-        <div className="mm-row mm-font-panel__quick-weights">
+        <div className="mm-u-row mm-font-panel__quick-weights">
           {weights.map((weight, position) => (
             <IconButton
               key={`${weight}-${position}`}

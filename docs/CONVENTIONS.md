@@ -125,6 +125,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 | jsx 函数 | `mm_<域>_<动作>` | `mm_layer_getState` |
 | CEP 事件 | `com.maomao.event.<域>` | `com.maomao.event.layer` |
 | CSS 类 | `mm-<块>__<元素>--<状态>` | `mm-swatch__item--active` |
+| CSS 工具类 | `mm-u-<名>`（布局原语；`u-` 前缀让「工具」与「组件」一眼可分） | `mm-u-row`、`mm-u-col`、`mm-u-grow` |
 | CSS 变量 | `--mm-<类别>-<语义>` | `--mm-color-bg-panel` |
 | localStorage | `maomao.<域>.<键>` | `maomao.user.token` |
 | 数据目录 | `%APPDATA%\Maomao` | 不读旧目录 |
@@ -712,10 +713,10 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面页头 | `components/PageHeader`（`title` + 右侧插槽） | 页面自写 `<header>` 与 `__title` 样式、各写一套高度与字号 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
-| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-field-surface` 一处给 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background` |
-| 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-field-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background` |
+| 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
-| **横向排列** | `.mm-row` / `.mm-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满** | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
+| **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满** | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
 | 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（描边 / 圆角 / 底色 / 阴影）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
@@ -724,7 +725,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层定宽容器与左图标。
 字体面板、输入弹窗、层级编辑、标签输入、就地编辑**全部渲染 `Input`**，各自的 css 只覆盖
 宽度 / 间距 / 文字色 / 焦点描边——**底色与圆角不许覆盖**，它们只在一个地方给
-（`ui.css` 的 `.mm-input, .mm-field-surface`）。改输入框颜色 = 改 `tokens.css` 的 `--mm-color-bg-input` 一行。
+（`ui.css` 的 `.mm-input, .mm-input-surface`）。改输入框颜色 = 改 `tokens.css` 的 `--mm-color-bg-input` 一行。
 
 尺寸是**全仓定案**（`03` 计划 §9 第 8 条）：勾选 / 单选 `12×12`，右侧距 `6`，
 边框 `1px` `--mm-color-border-control`（亮线档，§7 规则 8），勾选圆角 `3`、单选 `50%`。
@@ -770,7 +771,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 |---|---|---|---|---|
 | Button | `--mm-radius-md` | `--mm-control-h` | `0 var(--mm-space-2)` | 无 |
 | IconButton | `--mm-radius-md` | `--mm-icon-btn-size` | 0 | 无 |
-| Input（含 `.mm-field-surface` 的壳） | `--mm-radius-md` | `--mm-control-h` | `0 var(--mm-space-1)` | `1px` `--mm-color-border-control` |
+| Input（含 `.mm-input-surface` 的壳） | `--mm-radius-md` | `--mm-control-h` | `0 var(--mm-space-1)` | `1px` `--mm-color-border-control` |
 
 > 高度一律写 token 名，不写数字：数字会随档位调整而失真（本表原来的 `24` 在 2026-10-29 之后已经不对，
 > 控件高是 `--mm-control-h` = 26）。表里只列**仓里真有**的公共件；`Card` / `Tag` 目前没有公共实现，
@@ -805,7 +806,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 7. **同排文字与图标视觉等大**：12 号字（行高 16）配 14 图标，13 号字（行高 18）配 16 图标。
    对不上时**缩图标**，不许放大字号（字号一页只有 12 / 13 两档）
 8. **线条只有两档，同一角色只许一种**：颜色、粗细、长度来源唯一。
-   页面分隔、列表行分隔、**输入位描边**（`.mm-input` / `.mm-field-surface`）用 `--mm-color-border`（暗线）；
+   页面分隔、列表行分隔、**输入位描边**（`.mm-input` / `.mm-input-surface`）用 `--mm-color-border`（暗线）；
    控件描边、勾选框、浮层外边缘用 `--mm-color-border-control`（亮线）。不许自造第三种线色。
    （输入框底是纯黑，暗线落在上面几乎不可见——这是刻意的：靠底色反差界定输入区，不靠边框。）
    （2026-10-29：旧的 `--mm-color-verline` / `--mm-color-row-border` / `-float` 三个名字已随 token 重构删除，

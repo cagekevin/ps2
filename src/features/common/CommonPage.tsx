@@ -153,7 +153,7 @@ export default function CommonPage() {
 
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
-          <div className="mm-common__zoom">
+          <div className="mm-u-col mm-common__zoom">
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
@@ -178,7 +178,7 @@ export default function CommonPage() {
         ) : null}
 
         {page.showTransformation ? (
-          <div className="mm-row mm-row--wrap mm-common__flips">
+          <div className="mm-u-row mm-u-row--wrap mm-common__flips">
             {FLIP_ITEMS.map((item) => (
               <IconButton
                 key={item.direction}
@@ -193,7 +193,7 @@ export default function CommonPage() {
         <div className="mm-common__divider" />
 
         {visibleTiles.length ? (
-          <div className="mm-common__grid" ref={page.gridRef}>
+          <div className="mm-u-col mm-common__grid" ref={page.gridRef}>
             {toRows(visibleTiles).map((row, rowIndex) => (
                 <IconPanelGroup
                   /* key 用行首项的 id：顺序会变，用行号会让面板挂到错的组上 */

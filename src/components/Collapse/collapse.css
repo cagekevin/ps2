@@ -10,11 +10,9 @@
   width: 100%;
 }
 
+/* 居中走公共 `.mm-btn`，这里只留箭头槽位不收缩 */
 .mm-collapse__arrow{
-  display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
 }
 
 .mm-collapse__body{

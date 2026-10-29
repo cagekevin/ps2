@@ -6,32 +6,14 @@
   flex-direction: column;
 }
 
-.mm-font__search-row{
-  position: relative;
-}
-
-.mm-font__search-box{
-  position: relative;
-}
-
-.mm-font__search-input.mm-input{
-  width: 100%;
-}
-
+/* 搜索行：横排两端铺满走 `.mm-u-row`；放大镜与漏斗只留不收缩 */
 .mm-font__search-icon{
-  position: absolute;
-  right: var(--mm-space-2);
-  top: 50%;
+  flex: 0 0 auto;
   pointer-events: none;
 }
 
 .mm-font__filter-btn{
-  position: absolute;
-  right: 0;
-  top: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 auto;
 }
 
 .mm-font__filter-badge{
@@ -67,31 +49,15 @@
   flex: 1;
 }
 
-.mm-font__tags-head{
-  display: flex;
-  align-items: center;
-}
+/* 横排两端铺满走公共 `.mm-u-row` */
 
 .mm-font__tags-head > span{
   flex: 1;
 }
 
-.mm-font__tags-tools{
-  display: flex;
-  align-items: center;
-}
+/* 居中走公共 `.mm-btn` */
 
-.mm-font__tags-add{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mm-font__tags-toggle{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+/* 居中走公共 `.mm-btn` */
 
 .mm-font__tag-list{
   display: flex;

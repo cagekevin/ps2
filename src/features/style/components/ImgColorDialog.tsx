@@ -67,7 +67,7 @@ export function ImgColorDialog({
     <div className="mm-modal-mask" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-imgcolor"
+        className="mm-u-col mm-imgcolor"
         role="dialog"
         aria-modal="true"
         aria-label="提取的颜色"

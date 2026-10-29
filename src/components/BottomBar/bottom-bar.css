@@ -1,8 +1,6 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
+/* 居中与横排走公共 `.mm-btn`，这里只留不收缩 */
 .mm-bottom-bar__btn{
-  display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
 }

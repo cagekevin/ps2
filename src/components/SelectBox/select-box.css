@@ -35,9 +35,7 @@
   overflow: hidden;
 }
 
+/* 居中走公共 `.mm-btn`，这里只留不收缩 */
 .mm-select-box__remove{
-  display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
 }

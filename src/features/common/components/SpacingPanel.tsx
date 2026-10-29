@@ -32,7 +32,7 @@ export function SpacingPanel() {
 
   return (
     <div className="mm-common__panel">
-      <div className="mm-common__panel-row">
+      <div className="mm-u-row mm-common__panel-row">
         <TextField
           variant="fill"
           title="间距"
@@ -61,7 +61,7 @@ export function SpacingPanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-common__panel-row">
+      <div className="mm-u-row mm-common__panel-row">
         <RadioButton
           label="按图层排序"
           name="mm-common-spacing-sort"

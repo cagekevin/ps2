@@ -42,10 +42,10 @@ export function SearchRow({
   const filterCount = Object.values(filterState).reduce((sum, ids) => sum + ids.length, 0);
 
   return (
-    <div className="mm-font__search-row">
-      <div className="mm-font__search-box">
+    <div className="mm-u-row mm-font__search-row">
+      <div className="mm-u-row mm-u-grow mm-font__search-box">
         <Input
-          className="mm-font__search-input"
+          className="mm-u-grow mm-font__search-input"
           value={keyword}
           placeholder="搜索"
           aria-label="搜索字体"
@@ -57,7 +57,7 @@ export function SearchRow({
       <button
         ref={triggerRef}
         type="button"
-        className={`mm-font__filter-btn${filterCount ? ' mm-font__filter-btn--on' : ''}`}
+        className={`mm-btn mm-font__filter-btn${filterCount ? ' mm-font__filter-btn--on' : ''}`}
         aria-label="筛选"
         aria-haspopup="dialog"
         aria-expanded={open}
