@@ -1,17 +1,58 @@
-/* 【范本】首页样式 —— 新增页面样式照此结构：只用 token，不写原始色值与 px。 */
+/*
+ * 【范本】首页样式 —— 骨架：只留结构与定位，视觉待重写；新增页面样式照此结构：只用 token，不写原始色值与 px。
+ *
+ * 页面根（`.mm-home`）与 `.mm-common` / `.mm-style` 等一起挂在 `global.css` 的页面根容器组里，
+ * 这里只写本页自己的分层，不重复撑满与滚动那几条。
+ */
 
-
-
-.mm-home__log-body{
-  overflow: auto;
-}
-
-/* 诊断行两端对齐走公共 `.mm-u-row`，这里只留自己的差异（无） */
-.mm-home__diag-key{
+/* 状态行与操作行固定高度：内容区滚动时不带着它们一起动 */
+.mm-home__status,
+.mm-home__actions{
   flex: 0 0 auto;
 }
 
-.mm-home__diag-value{
+/* 内容区：面板多了只在这里滚 */
+.mm-home__body{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 每块面板默认按内容高；只有日志块要吃掉剩余高度（`--grow`） */
+.mm-home__panel{
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+.mm-home__panel--grow{
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mm-home__panel-head,
+.mm-home__panel-actions,
+.mm-home__row{
+  flex: 0 0 auto;
+}
+
+/* 名称不压缩，值可压缩后截断：函数名永远看得全 */
+.mm-home__key{
+  flex: 0 0 auto;
+}
+
+.mm-home__value{
   flex: 0 1 auto;
   overflow: hidden;
+}
+
+/* 日志体自己滚（面板已经占满剩余高度），换行靠 pre-wrap —— 它是排版，不是间距 */
+.mm-home__log-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }

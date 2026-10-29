@@ -1,5 +1,5 @@
 /**
- * 【范本】feature 页面结构（同时是调试页，路由 /debug）
+ * 【范本】feature 页面结构（同时是诊断页，路由 /debug）
  * 新增页面必须照此结构：
  * - UI 只用 components/ui，不自己写按钮/输入框样式
  * - 状态：页面内 useState，跨页面共享用 store 选择器
@@ -7,8 +7,19 @@
  * - 请求：request('endpointKey')，类型自动推导，不写泛型
  * - effect 内异步必须带取消标志
  * - 样式只用 Token
+ *
+ * 骨架分三层，新区块只许挂在第三层的 `__body` 里：
+ *   1. `__status`   当前对象（图层），一眼看到排障起点
+ *   2. `__actions`  本页能做的动作，横向按 `mm-u-row` 铺满
+ *   3. `__body`     内容区，纵向 `flex` + 可滚动；每块是 `__panel`
+ *      （`__panel-head` 标题 + 行尾操作，`__rows` 逐行两端对齐）
+ * 日志面板带 `--grow`：吃掉剩余高度、日志体自己滚，不带着上面两块一起滚。
+ *
+ * 诊断行的标签只有一份（`diagRows` / `configRows`），页面渲染与「复制」的纯文本
+ * 都取这两份 —— 不各写一套标签，否则复制出来的东西和屏幕上看到的会不一样。
  */
-import { useState } from 'react';
+
+import { useState, type ReactNode } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../components/Toast';
@@ -22,31 +33,59 @@ import { LAYER_KIND_LABEL } from '../../types/layer';
 import { MSG } from '../../types/messages';
 import './HomePage.css';
 
-function formatDiag(diag: VendorDiag): string {
-  return [
-    '官方 jsx 函数',
-    `ps_onJsx（调度入口）    ${diag.dispatch}`,
-    `ys_useStyleColor       ${diag.useStyleColor}`,
-    `ys_useGradient         ${diag.useGradient}`,
-    `ps_ysBtnUseStyle       ${diag.btnUseStyle}`,
-    `ys_setForegroundColor  ${diag.setForegroundColor}`,
-    `ys_useShapeFill        ${diag.useShapeFill}`,
-    `dz_callAction          ${diag.callAction}`,
-    `dz_getActionList       ${diag.getActionList}`,
-    '',
-    '官方配置依赖',
-    `sj_set.json            ${diag.configSet}`,
-    `sj_interfaceSet.ini    ${diag.configInterface}`,
-    `cyAutoFillColor        ${String(diag.autoFillColor)}`
-  ].join('\n');
+interface DiagRow {
+  label: string;
+  value: string;
 }
 
-function DiagRow({ label, value }: { label: string; value: string }) {
+/** 官方 jsx 函数：每个值是 typeof 的结果，'function' 才算可用 */
+function diagRows(diag: VendorDiag): DiagRow[] {
+  return [
+    { label: MSG.home.fnDispatch, value: diag.dispatch },
+    { label: MSG.home.fnUseStyleColor, value: diag.useStyleColor },
+    { label: MSG.home.fnUseGradient, value: diag.useGradient },
+    { label: MSG.home.fnBtnUseStyle, value: diag.btnUseStyle },
+    { label: MSG.home.fnSetForegroundColor, value: diag.setForegroundColor },
+    { label: MSG.home.fnUseShapeFill, value: diag.useShapeFill },
+    { label: MSG.home.fnCallAction, value: diag.callAction },
+    { label: MSG.home.fnGetActionList, value: diag.getActionList }
+  ];
+}
+
+/** 官方配置依赖：值只有 true / false 两种，缺了就是 false */
+function configRows(diag: VendorDiag): DiagRow[] {
+  return [
+    { label: MSG.home.cfgSet, value: String(diag.configSet) },
+    { label: MSG.home.cfgInterface, value: String(diag.configInterface) },
+    { label: MSG.home.cfgAutoFillColor, value: String(diag.autoFillColor) }
+  ];
+}
+
+function formatDiag(diag: VendorDiag): string {
+  const section = (title: string, rows: DiagRow[]): string =>
+    [title, ...rows.map((row) => `${row.label}    ${row.value}`), ''].join('\n');
+  return (
+    section(MSG.home.sectionVendorFns, diagRows(diag)) +
+    section(MSG.home.sectionVendorConfig, configRows(diag))
+  );
+}
+
+/** 值不是 function / true / false 就标出来：那是「函数没加载」或「读到了别的类型」 */
+function DiagRowView({ label, value }: DiagRow) {
   const bad = value !== 'function' && value !== 'true' && value !== 'false';
   return (
-    <div className={`mm-u-row mm-home__diag-row${bad ? ' mm-home__diag-row--bad' : ''}`}>
-      <span className="mm-home__diag-key">{label}</span>
-      <span className="mm-home__diag-value">{value}</span>
+    <div className={`mm-u-row mm-home__row${bad ? ' mm-home__row--bad' : ''}`}>
+      <span className="mm-home__key">{label}</span>
+      <span className="mm-home__value">{value}</span>
+    </div>
+  );
+}
+
+function PanelHead({ title, actions }: { title: string; actions?: ReactNode }) {
+  return (
+    <div className="mm-u-row mm-home__panel-head">
+      <span className="mm-home__panel-title">{title}</span>
+      {actions ? <span className="mm-u-row mm-home__panel-actions">{actions}</span> : null}
     </div>
   );
 }
@@ -92,81 +131,89 @@ export default function HomePage() {
     setLogText(MSG.home.emptyLog);
   }
 
-  async function handleCopy(label: string, text: string) {
+  async function handleCopy(text: string, success: string) {
     if (!text) {
       toast.error(MSG.home.nothingToCopy);
       return;
     }
-    await run(() => copyText(text), { spin: false, success: `已复制${label}` });
+    await run(() => copyText(text), { spin: false, success });
   }
+
+  const layerText = layerKind
+    ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}`
+    : MSG.home.layerEmpty;
+
+  const copyButton = (text: string, success: string) => (
+    <button type="button" className="mm-btn mm-home__link" onClick={() => void handleCopy(text, success)}>
+      {MSG.home.copy}
+    </button>
+  );
 
   return (
     <section className="mm-home">
-      <div className="mm-home__row">
-        当前图层：
-        {layerKind ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}` : '—'}
+      <div className="mm-u-row mm-home__status">
+        <span className="mm-home__key">{MSG.home.layerLabel}</span>
+        <span className="mm-home__value">{layerText}</span>
       </div>
 
       <div className="mm-u-row mm-home__actions">
-        <Button onClick={handleDiag}>{'诊断官方能力'}</Button>
-        <Button onClick={handleLog}>{'查看日志'}</Button>
+        <Button onClick={handleDiag}>{MSG.home.diagVendor}</Button>
+        <Button onClick={handleLog}>{MSG.home.viewLog}</Button>
         <Button variant="primary" onClick={handlePing}>
-          测试接口
+          {MSG.home.testApi}
         </Button>
       </div>
 
+      <div className="mm-home__body">
+        {diag ? (
+          <>
+            <div className="mm-home__panel">
+              <PanelHead
+                title={MSG.home.sectionVendorFns}
+                actions={copyButton(formatDiag(diag), MSG.home.copiedDiag)}
+              />
+              <div className="mm-home__rows">
+                {diagRows(diag).map((row) => (
+                  <DiagRowView key={row.label} label={row.label} value={row.value} />
+                ))}
+              </div>
+            </div>
 
-      {diag ? (
-        <div className="mm-home__diag">
-          <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">{'官方 jsx 函数'}</span>
-            <button
-              type="button"
-              className="mm-btn mm-home__copy"
-              onClick={() => void handleCopy('诊断结果', formatDiag(diag))}
-            >
-              复制
-            </button>
+            <div className="mm-home__panel">
+              <PanelHead title={MSG.home.sectionVendorConfig} />
+              <div className="mm-home__rows">
+                {configRows(diag).map((row) => (
+                  <DiagRowView key={row.label} label={row.label} value={row.value} />
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {logText ? (
+          <div className="mm-home__panel mm-home__panel--grow">
+            <PanelHead
+              title={MSG.home.sectionLog}
+              actions={
+                <>
+                  {copyButton(logText, MSG.home.copiedLog)}
+                  <button type="button" className="mm-btn mm-home__link" onClick={handleLog}>
+                    {MSG.home.refresh}
+                  </button>
+                  <button
+                    type="button"
+                    className="mm-btn mm-home__link"
+                    onClick={() => void handleClearLog()}
+                  >
+                    {MSG.home.clear}
+                  </button>
+                </>
+              }
+            />
+            <div className="mm-home__log-body">{logText}</div>
           </div>
-          <DiagRow label="ps_onJsx（调度入口）" value={diag.dispatch} />
-          <DiagRow label="ys_useStyleColor" value={diag.useStyleColor} />
-          <DiagRow label="ys_useGradient" value={diag.useGradient} />
-          <DiagRow label="ps_ysBtnUseStyle" value={diag.btnUseStyle} />
-          <DiagRow label="ys_setForegroundColor" value={diag.setForegroundColor} />
-          <DiagRow label="ys_useShapeFill" value={diag.useShapeFill} />
-          <DiagRow label="dz_callAction（动作页）" value={diag.callAction} />
-          <DiagRow label="dz_getActionList（动作页）" value={diag.getActionList} />
-
-          <div className="mm-home__diag-title">{'官方配置依赖'}</div>
-          <DiagRow label="sj_set.json" value={String(diag.configSet)} />
-          <DiagRow label="sj_interfaceSet.ini" value={String(diag.configInterface)} />
-          <DiagRow label="cyAutoFillColor" value={String(diag.autoFillColor)} />
-        </div>
-      ) : null}
-
-      {logText ? (
-        <div className="mm-home__log">
-          <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">{'日志（%TEMP%\\maomao.log）'}</span>
-            <span className="mm-u-row mm-home__log-actions">
-              <button
-              type="button"
-              className="mm-btn mm-home__copy"
-              onClick={() => void handleCopy('日志', logText)}
-            >
-                复制
-              </button>
-              <button type="button" className="mm-btn mm-home__copy" onClick={handleLog}>
-                刷新
-              </button>
-              <button type="button" className="mm-btn mm-home__copy" onClick={() => void handleClearLog()}>
-                清空
-              </button>
-            </span>
-          </div>
-          <div className="mm-home__log-body">{logText}</div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </section>
   );
 }

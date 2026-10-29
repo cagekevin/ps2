@@ -217,7 +217,32 @@ export const MSG = {
     clearTitle: '清空日志？',
     clearMessage: '清空后无法恢复。',
     clearConfirm: '清空',
-    nothingToCopy: '没有可复制的内容'
+    nothingToCopy: '没有可复制的内容',
+    layerLabel: '当前图层：',
+    layerEmpty: '—',
+    diagVendor: '诊断官方能力',
+    viewLog: '查看日志',
+    testApi: '测试接口',
+    copy: '复制',
+    refresh: '刷新',
+    clear: '清空',
+    copiedDiag: '已复制诊断结果',
+    copiedLog: '已复制日志',
+    sectionVendorFns: '官方 jsx 函数',
+    sectionVendorConfig: '官方配置依赖',
+    sectionLog: '日志（%TEMP%\\maomao.log）',
+    /* 诊断行标签：前半是官方函数名 / 文件名（标识符），括号里是它挂在哪条通道、给哪个页面用 */
+    fnDispatch: 'ps_onJsx（调度入口）',
+    fnUseStyleColor: 'ys_useStyleColor',
+    fnUseGradient: 'ys_useGradient',
+    fnBtnUseStyle: 'ps_ysBtnUseStyle',
+    fnSetForegroundColor: 'ys_setForegroundColor',
+    fnUseShapeFill: 'ys_useShapeFill',
+    fnCallAction: 'dz_callAction（动作页）',
+    fnGetActionList: 'dz_getActionList（动作页）',
+    cfgSet: 'sj_set.json',
+    cfgInterface: 'sj_interfaceSet.ini',
+    cfgAutoFillColor: 'cyAutoFillColor'
   },
 
   /** 字体域（`commands/font-set`、字体面板、字体管理页）的失败与提示 */
