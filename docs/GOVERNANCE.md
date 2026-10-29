@@ -160,6 +160,7 @@
 | 常用页事件 | `src/app/common-use-watcher.tsx` | 常用页 5 个语义（拖入 / 粘贴 / 剪贴蒙版 / 填色 / 参考线）的唯一订阅者；按 store 的 5 个设置开关 + `guideOn` 订阅 / 退订，失败只 `log.warn` 不弹 toast；与 `layer-watcher` 分开（那个永不写盘） | ⚠️ 待真机 |
 | 状态持久化 | `src/hooks/usePersisted.ts` | 界面偏好，key 强类型 | ⚠️ 待真机 |
 | 全局快捷键 | `src/hooks/useShortcut.ts` | 常驻字母键；负责「打字中 / 带修饰键」两条排除；与 `useDismiss` 分工写在文件头 | ⚠️ 待真机 |
+| 禁右键菜单 | `src/hooks/useNoContextMenu.ts` | 全项目唯一 `contextmenu` 监听；只 `preventDefault`、不 `stopPropagation`（自己的 `ContextMenu` 仍能打开）；只在 `app/layout` 挂一次 | ⚠️ 待真机 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 | ✅ 真机 |
 | 浮层定位 | `src/hooks/useFloatingPosition.ts` | 唯一锚点矩形入口（`update` 返回锚点矩形，对齐宽度也用它） | ✅ 真机 |
 | 焦点陷阱 | `src/hooks/useFocusTrap.ts` | 仅模态弹窗：Tab 循环 + 关闭还原焦点 | ⚠️ 待真机 |
@@ -176,7 +177,7 @@
 | 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 | ⚠️ 待真机 |
 | 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` | ⚠️ 待真机 |
 | 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」 | ⚠️ 待真机 |
-| 图标 + 展开面板样式 | `src/components/IconPanel/icon-panel.css` | `__box` 只给通栏（`width:100%`）；底色 / 直角 / 内边距在视觉重写时补；左右通栏靠承载行的 `--mm-icon-panel-bleed`，不许给 `__box` 写 padding | ⚠️ 待真机 |
+| 图标 + 展开面板样式 | `src/components/IconPanel/icon-panel.css` | `__box` 只给通栏（`width:100%`）+ `isolation: isolate`；**底色由 `__box::before` 左右铺满**（`left/right: calc(-1 * bleed)`、`z-index:-1`），内容盒与位置不动。左右通栏靠承载行声明的 `--mm-icon-panel-bleed`（页面根壳声明为 `--mm-page-pad-x`）；`__box` 上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）；不许用负 margin（会连内容一起拉宽） | ⚠️ 待真机 |
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input | ⚠️ 待真机 |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 | ⚠️ 待真机 |
 | 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` | ⚠️ 待真机 |

@@ -16,9 +16,10 @@
   min-width: 0;
 }
 
-/* 横向排列与两端对齐走公共 `.mm-u-row`，这里只留自己不收缩这一条 */
+/* 横向排列与两端对齐走公共 `.mm-u-row`，这里只留自己不收缩 + 底色 */
 .mm-layout__header{
   flex: 0 0 auto;
+  background: var(--mm-color-bg-header);
 }
 
 

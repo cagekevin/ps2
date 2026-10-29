@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ConfirmHost } from '../components/Confirm/useConfirm';
 import { APP_TITLE, APP_VERSION } from '../core/env';
+import { useNoContextMenu } from '../hooks/useNoContextMenu';
 import { CommonUseWatcher } from './common-use-watcher';
 import { LayerWatcher } from './layer-watcher';
 import { NavBar } from './nav-bar';
@@ -17,6 +18,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  /* 插件面板不吃 Chromium 右键菜单；自己的 ContextMenu 仍正常（只 preventDefault） */
+  useNoContextMenu();
+
   return (
     <div className="mm-layout">
       <LayerWatcher />

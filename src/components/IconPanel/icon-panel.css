@@ -4,7 +4,31 @@
    底色 / 直角 / 内边距在视觉重写时补；左右通栏靠承载行声明的 `--mm-icon-panel-bleed`，
    不要在这里写 padding（`CONVENTIONS` §6 明文禁止给 `__box` 覆写 padding / 底色 / 圆角）。 */
 .mm-icon-panel__box{
+  position: relative;
+  /* 自成一个层叠上下文：伪元素的 z-index:-1 才落在内容之下、而不是父层背景之后 */
+  isolation: isolate;
   width: 100%;
+  /* 上下 8（组间档）；左右为 0 —— 左右位置不动，通栏交给 `::before` 的底色层 */
+  padding: var(--mm-space-2) 0;
+  margin: var(--mm-space-2) 0;
+}
+
+/*
+ * 抽屉底色：左右铺到面板边（页面壳统一给了 `--mm-page-pad-x` 页边）。
+ * 用伪元素而不是负 margin —— 负 margin 会把 `__box` 一起拉宽，里面内容跟着左移变宽；
+ * 伪元素只铺一层底，内容盒宽度与位置完全不变。
+ * 承载行若自己还有左右 padding，就在那一行上把 `--mm-icon-panel-bleed` 改成合计值。
+ */
+.mm-icon-panel__box::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(-1 * var(--mm-icon-panel-bleed, 0));
+  left: calc(-1 * var(--mm-icon-panel-bleed, 0));
+  z-index: -1;
+  background: var(--mm-color-bg-drawer);
+  pointer-events: none;
 }
 
 /* 标题行触发器（`sectionTrigger`）：整行可点，箭头 + 标题。只给结构，视觉待重写（03 §0.5） */

@@ -27,6 +27,9 @@ p{
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
+  /* 浮层外形全仓一处：外缘与圆角；底色视觉重写时统一给 */
+  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border-radius: var(--mm-radius-md);
 }
 
 /* 面板整体不出现滚动条：滚动只发生在页面内部的列表容器上 */
@@ -85,8 +88,9 @@ button{
   max-width: 100%;
 }
 
-/* 页面根容器：在 `.mm-layout`（横向 flex）里必须撑满剩余宽度，
-   否则宽度由内容决定、右边留白（不是 margin / padding 问题） */
+/* 页面公共壳：撑满 + 页边。页面根不再各写 padding（§7 规则 5：五页同值，没有横向例外）。
+   通栏元素（底栏）自己用负 margin 抵消页边，不要让壳为个别元素开例外 */
+.mm-action,
 .mm-common,
 .mm-font,
 .mm-font-panel,
@@ -99,6 +103,9 @@ button{
   min-width: 0;
   height: 100%;
   min-height: 0;
+  padding: 0 var(--mm-page-pad-x);
+  /* 承载行的左右 padding 合计：抽屉底色靠它左右铺满（`IconPanel` 的 `__box::before`） */
+  --mm-icon-panel-bleed: var(--mm-page-pad-x);
 }
 
 .mm-font__list,
@@ -150,4 +157,21 @@ button{
 .mm-u-grow{
   flex: 1;
   min-width: 0;
+}
+
+/*
+ * 插件面板不是网页：文字不可被选中 / 拖出（右击菜单的「复制」「检查」入口就没了）。
+ * 真正的浏览器右键菜单由 `hooks/useNoContextMenu` 吃掉 —— CSS 挡不住右键菜单，只能挡选中。
+ * 输入控件恢复可选中：用户要能选自己的字、复制自己的输入。
+ */
+body{
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true']{
+  -webkit-user-select: text;
+  user-select: text;
 }

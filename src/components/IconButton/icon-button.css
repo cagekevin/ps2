@@ -11,9 +11,11 @@
   color: var(--mm-color-icon);
 }
 
-/* hover 只换图标颜色，不加背景 */
-.mm-icon-btn:hover{
-  color: var(--mm-color-text-strong);
+/* hover / 选中：底色与前景色视觉重写时统一给；这里只留状态的存在（类名已在 TSX 上） */
+
+.mm-icon-btn:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /*

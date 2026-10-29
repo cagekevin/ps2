@@ -28,7 +28,10 @@
   width: 100%;
   height: var(--mm-list-head-h);
   align-items: center;
+  cursor: pointer;
 }
+
+/* hover / 当前项的底色视觉重写时统一给 */
 
 .mm-select-box__check{
   position: absolute;

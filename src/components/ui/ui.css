@@ -1,22 +1,54 @@
-/* 【范本】UI 控件样式（Button / Input / Field）—— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/*
+ * 【范本】UI 控件样式（Button / Input / Field）
+ * 只给「壳」定结构与形状：尺寸 / 内边距 / 圆角 / 描边宽度 / 字号 / 状态描边。
+ * **底色与前景色尚未定**（视觉重写时统一给）；页面与 feature 也不许自行补。
+ * 新增同类代码照此结构：一个壳一条规则块，状态用 `:disabled` / `:focus-visible`。
+ */
 
-/* 按钮唯一根类：全仓按钮都挂 `.mm-btn`；高度与圆角取 token，底色等视觉重写时补 */
+/* 唯一根类：全仓按钮都挂 `.mm-btn`；`--primary` 只是语义标记，实底等视觉重写时补 */
 .mm-btn{
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: var(--mm-control-h);
+  padding: 0 var(--mm-space-2);
   border-radius: var(--mm-radius-md);
+  font-size: var(--mm-font-sm);
+}
+
+.mm-btn:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-btn:focus-visible{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
 }
 
 /* `.mm-field` 的纵向排列走公共 `.mm-u-col`，这里不再声明 */
 
 /*
- * 输入位表面（`CONVENTIONS` §6）：`.mm-input` / `.mm-input-surface` 的底色 / 描边 / 圆角 /
- * 文字色 / 字号**只写在这里**，页面与 feature 不许覆盖。
- * 高度与圆角取 token；底色 / 描边 / 文字色在视觉重写时补进本规则。
+ * 输入位壳：尺寸 / 内边距 / 圆角 / 描边宽度 / 字号只写在这里（`CONVENTIONS` §6），
+ * 页面与 feature 不许覆盖。两个选择器必须写在一起：
+ *   `.mm-input`         = `Input` 元素本身；
+ *   `.mm-input-surface` = 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）。
+ * 少写一个，那一类控件就退回透明。
  */
+.mm-input,
 .mm-input-surface{
   height: var(--mm-control-h);
+  padding: 0 var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
+  font-size: var(--mm-font-sm);
+}
+
+/* 校验失败只换描边，文字保持可读 */
+.mm-input--invalid{
+  border-color: var(--mm-color-danger);
+}
+
+.mm-input:focus,
+.mm-input-surface:focus-visible{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
 }

@@ -1,11 +1,5 @@
 /* 骨架：只留结构与定位（03 §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
 
-.mm-action{
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 .mm-action__body{
   display: flex;
   flex: 1 1 auto;

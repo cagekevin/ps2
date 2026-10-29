@@ -616,7 +616,7 @@ evalScript("ps_onJsx('" + JSON.stringify(r) + "')")
 | 调用 | 唯一位置 | 页面通过什么用 |
 |---|---|---|
 | `setInterval` / `setTimeout` 轮询 | `app/*-watcher.tsx` | 读 `store` |
-| `addEventListener` / `window.addEventListener('keydown')` | `hooks/useDismiss`（Esc 关浮层）/ `hooks/useShortcut`（字母快捷键） | 调 hook；全站只这两个全局键盘入口，别在组件里再挂一个 |
+| `addEventListener` / `window.addEventListener('keydown')` | `hooks/useDismiss`（Esc 关浮层）/ `hooks/useShortcut`（字母快捷键）/ `hooks/useNoContextMenu`（禁浏览器右键菜单，只 `preventDefault`） | 调 hook；全站只这三个全局监听入口，别在组件里再挂一个 |
 | `getBoundingClientRect` | `hooks/useFloatingPosition` | 调 hook（要锚点宽度就用 `update()` 的返回值） |
 | `createPortal(…, document.body)` | `components/Portal` | 用 `<Portal>` 包住浮层 |
 | `localStorage` | `core/prefs`（界面偏好）/ `core/auth`（登录 token——凭证不进偏好文件，否则清偏好就掉登录） | `hooks/usePersisted` |
@@ -710,7 +710,7 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 确认 | `useConfirm()` | `confirm()` |
 | 加载 | `useLoading()` | 各组件自己维护 loading 文案 |
 | 区域不可用 | `components/StateMask`（内部渲染 `StateHint`） | 页面自己写绝对定位 + 提示文案；也**不要**用「把内容换成一行提示」代替（会让下面的东西整体上移） |
-| 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0） | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
+| 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0；页面根壳声明为 `--mm-page-pad-x`）。**底色用 `__box::before` 左右铺**（`top/bottom:0` + `left/right: calc(-1 * bleed)` + `z-index:-1`，`__box` 自己要 `isolation: isolate`），**不要用负 margin**；`__box` 的上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）——那会把 `__box` 连内容一起拉宽 | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |

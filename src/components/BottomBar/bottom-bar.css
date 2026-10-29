@@ -4,6 +4,8 @@
 /* 底栏高度与按钮宽取 token */
 .mm-bottom-bar{
   height: var(--mm-bottom-bar-h);
+  /* 底栏通栏：页面壳统一给了左右页边，这里抵掉，底栏才能贴到面板左右边 */
+  margin: 0 calc(-1 * var(--mm-page-pad-x));
 }
 
 .mm-bottom-bar__btn{
