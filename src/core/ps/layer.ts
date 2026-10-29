@@ -7,6 +7,7 @@
  */
 
 import { callJsx } from '../cep/bridge';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { LAYER_KIND_LABEL, type LayerKind } from '../../types/layer';
 import { gateFailed } from './capability';
@@ -40,7 +41,7 @@ export async function getLayerState(): Promise<Result<LayerState>> {
 
   /* 名称里可能含 '|'，只切第一个 */
   const index = raw.indexOf('|');
-  if (index < 0) return failWithDetail('PS_ERROR', '图层信息格式错误', `raw:${raw}`);
+  if (index < 0) return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${raw}`);
 
   const kindRaw = raw.slice(0, index);
   const name = raw.slice(index + 1);
@@ -98,7 +99,7 @@ export async function getSelectionCount(): Promise<Result<number>> {
 
   /* 函数没加载（旧 jsx）就如实报，不要让它去调一个不存在的函数变成 EvalScript error */
   if (await funcMissing('mm_layer_getSelection')) {
-    return failWithDetail('PS_UNREADY', '「mm_layer_getSelection」未加载', 'fn:mm_layer_getSelection');
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'fn:mm_layer_getSelection');
   }
 
   const call = await callJsx('mm_layer_getSelection', []);
@@ -109,7 +110,7 @@ export async function getSelectionCount(): Promise<Result<number>> {
 
   const count = Number(call.value.trim());
   if (!Number.isInteger(count) || count < 0) {
-    return failWithDetail('CORRUPT', '图层数量不是整数', `raw:${call.value}`);
+    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `shape:notInt raw:${call.value}`);
   }
   return ok(count);
 }

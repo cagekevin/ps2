@@ -9,7 +9,8 @@
  * `presets` / `commercials` 没有数据源，不落字段、不解码——留着会让筛选说出没根据的结论。
  */
 import { isRecord } from '../types/guards';
-import { fail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 
 export interface CategoryTag {
   id: number;
@@ -58,7 +59,7 @@ export function emptyClassification(): Classification {
 
 /** `classification.json` → Classification；顶层不是对象才整份失败 */
 export function decodeClassification(raw: unknown): Result<Classification> {
-  if (!isRecord(raw)) return fail('CORRUPT', '分类数据顶层不是对象');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
 
   const rawCategories = isRecord(raw.categories) ? raw.categories : {};
   const categories: Category[] = [];

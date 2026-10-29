@@ -27,43 +27,30 @@ export function StateHint(props: Props) {
   if (result.status === 'ok') return null;
 
   /*
-   * `NOT_FOUND` **不再改写成「文件不存在」**：生产者的 reason 往往更准
-   *（「文件夹内没有PSD文件」「索引里没有登记这个库的文件名」），
-   * 统一改成「文件不存在」等于替生产者改口径。只有 reason 为空时才回落。
+   * **只转发，不造句**：这里的字就是生产者给的 `reason`。
+   * 不再按码改写（原先 `NOT_FOUND → '文件不存在'`）、不再加「数据异常：」帽子、
+   * 也不再查表补字 —— 补字等于消费者替生产者说话。生产者（含 `core`）必须从
+   * `types/messages.ts` 取句子填进 `reason`。
    */
-  if (result.code === 'NOT_FOUND') {
-    return <div className="mm-u-row mm-state-hint">{result.reason || '文件不存在'}</div>;
-  }
+  const text = result.reason;
 
   /*
-   * 前提不满足不是故障：没打开文档 / 当前图层类型不对（文字、形状、智能对象…），
-   * 都是「换一下就好」的提示。标红会让人以为面板坏了，而这两个码的文案
-   * 本来就说得清当前是什么、需要什么。
+   * 前提不满足不是故障：没打开文档 / 当前图层类型不对 / 文件本来就没有 ——
+   * 都是「换一下就好」的提示，标红会让人以为面板坏了。
    */
-  if (result.code === 'PS_NO_DOC' || result.code === 'PS_WRONG_LAYER') {
-    return <div className="mm-u-row mm-state-hint">{result.reason}</div>;
-  }
+  const soft = result.code === 'NOT_FOUND' || result.code === 'PS_NO_DOC' || result.code === 'PS_WRONG_LAYER';
 
-  if (result.code === 'CORRUPT') {
-    /* detail 是机器现场（哪个字段、期望什么）：不进正文，挂 title 让它可查 */
-    return (
-      <div className="mm-u-row mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
-        数据异常：{result.reason}
-      </div>
-    );
-  }
+  if (soft) return <div className="mm-u-row mm-state-hint">{text}</div>;
 
-  if (result.code === 'IO_ERROR') {
-    return (
-      <div className="mm-u-row mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
-        读取失败：{result.reason}
+  /* `detail` 是机器现场：不进正文，挂 title 让它可查；重试只给环境问题 */
+  return (
+    <div className="mm-u-row mm-state-hint mm-state-hint--error" title={result.detail || undefined}>
+      {text}
+      {result.code === 'IO_ERROR' ? (
         <button type="button" className="mm-state-hint__retry" onClick={onRetry}>
           重试
         </button>
-      </div>
-    );
-  }
-
-  /* 其余码不该出现在读取链路；如实显示原因，不给重试 */
-  return <div className="mm-u-row mm-state-hint mm-state-hint--error">{result.reason}</div>;
+      ) : null}
+    </div>
+  );
 }

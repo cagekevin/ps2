@@ -56,7 +56,7 @@ import {
 } from '../core/ps/common-use';
 import { setTool } from '../core/ps/style';
 import { COMMON_USE_SEED, decodePsdList } from '../domain/common-use';
-import { MSG } from '../domain/messages';
+import { MSG } from '../types/messages';
 import {
   booleanOptionOf,
   exportConfigOf,

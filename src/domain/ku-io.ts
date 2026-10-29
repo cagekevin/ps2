@@ -9,6 +9,7 @@ import { decodeKuData, isKuLibraryFileName, kuLibraryKind } from './ku-format';
 import type { KuKind, StyleWarehouseIndex } from './style-library';
 import { isArrayOf, isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
+import { MSG } from '../types/messages';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 /** 导出文件里的一个条目。`data` 是布尔 `false` 时表示「这个文件当时读不到」（契约 §2.5/§2.6） */
@@ -64,7 +65,7 @@ function badItem(index: number): Result<never> {
 }
 
 function emptyContent(): Result<never> {
-  return fail('CORRUPT', '内容为空');
+  return failWithDetail('CORRUPT', MSG.corrupt, 'content:empty');
 }
 
 function normalizeEntry(raw: unknown, index: number): Result<KuFileEntry> {

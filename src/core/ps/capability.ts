@@ -38,6 +38,7 @@
  */
 
 import { callJsx } from '../cep/bridge';
+import { MSG } from '../../types/messages';
 import { failWithDetail, type Result } from '../../types/result';
 import { funcMissing, requireCore, requireVendor } from './init';
 import type { Parser } from './raw';
@@ -45,8 +46,8 @@ import type { Parser } from './raw';
 /** 调度通道的宿主函数名；只有这里认识这个字符串 */
 const DISPATCH = 'ps_onJsx';
 
-/** 官方能力缺失时的统一文案 */
-const UNREADY = '官方 PS 能力未就绪';
+/** 官方能力缺失时的统一文案：**从唯一文案表取**（`types/messages.ts`，core 可 import） */
+const UNREADY = MSG.codeReason.PS_UNREADY;
 
 /** 线上通道：`direct` = 直调 `fn(...)`；`dispatch` = `ps_onJsx({ f, arr, n })` */
 type Channel = 'direct' | 'dispatch';
@@ -83,7 +84,7 @@ export type CapabilitySpec<T> = SpecBase<T> &
 
 const GATE: Record<Gate, { ready: () => Promise<boolean>; message: string }> = {
   vendor: { ready: requireVendor, message: UNREADY },
-  core: { ready: requireCore, message: 'PS 脚本未加载' }
+  core: { ready: requireCore, message: MSG.codeReason.PS_UNREADY }
 };
 
 /**
@@ -124,7 +125,7 @@ export async function callCapability<T>(
    * 不降级放行，否则真机上「为什么这个按钮没反应」就查不出来了。
    */
   if (await funcMissing(spec.fn)) {
-    return failWithDetail('PS_UNREADY', `「${spec.fn}」未加载`, `fn:${spec.fn}`);
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `fn:${spec.fn}`);
   }
 
   if (spec.require) {

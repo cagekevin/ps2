@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MSG } from '../types/messages';
 import {
   buildTranslateParams,
   decodeText,
@@ -48,11 +49,12 @@ describe('translate', () => {
   });
 
   it('条目归一：缺 text 的段落要报出第几段，不按空串继续', () => {
+    /* 句子来自 `MSG`（生产者给字），`detail` 指出第几段 */
     expect(decodeTranslateItems([{ text: 'a' }, { other: 1 }])).toEqual({
       status: 'error',
       code: 'CORRUPT',
-      reason: '文本段落缺少 text 字段',
-      detail: 'root[1]'
+      reason: MSG.corrupt,
+      detail: 'root[1].text'
     });
   });
 });

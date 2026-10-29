@@ -15,7 +15,7 @@ import {
   type WarehouseIndex
 } from './action-library';
 import { isRecord } from '../types/guards';
-import { MSG } from './messages';
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 
 /** `.dzx` 的一项：`data` 是 base64 的文件内容 */

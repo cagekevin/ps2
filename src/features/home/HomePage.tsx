@@ -19,11 +19,12 @@ import { clearLogText, readLogText } from '../../core/logger';
 import { diagVendor, type VendorDiag } from '../../core/ps/diag';
 import { useAppStore } from '../../store/app';
 import { LAYER_KIND_LABEL } from '../../types/layer';
+import { MSG } from '../../types/messages';
 import './HomePage.css';
 
 function formatDiag(diag: VendorDiag): string {
   return [
-    '官方 jsx 函数',
+    MSG.home.sectionJsx,
     `ps_onJsx（调度入口）    ${diag.dispatch}`,
     `ys_useStyleColor       ${diag.useStyleColor}`,
     `ys_useGradient         ${diag.useGradient}`,
@@ -33,7 +34,7 @@ function formatDiag(diag: VendorDiag): string {
     `dz_callAction          ${diag.callAction}`,
     `dz_getActionList       ${diag.getActionList}`,
     '',
-    '官方配置依赖',
+    MSG.home.sectionConfig,
     `sj_set.json            ${diag.configSet}`,
     `sj_interfaceSet.ini    ${diag.configInterface}`,
     `cyAutoFillColor        ${String(diag.autoFillColor)}`
@@ -63,7 +64,7 @@ export default function HomePage() {
 
   async function handlePing() {
     /* 诊断页要转圈（等接口），失败留痕由 hook 出 */
-    await run(() => request('productList'), { success: '接口可达' });
+    await run(() => request('productList'), { success: MSG.home.reachable });
   }
 
   async function handleDiag() {
@@ -73,27 +74,27 @@ export default function HomePage() {
 
   function handleLog() {
     const text = readLogText();
-    setLogText(text || '（日志为空）');
+    setLogText(text || MSG.home.emptyLog);
   }
 
   async function handleClearLog() {
     const agreed = await confirm({
-      title: '清空日志？',
-      message: '清空后无法恢复。',
-      confirmText: '清空'
+      title: MSG.home.clearTitle,
+      message: MSG.home.clearMessage,
+      confirmText: MSG.home.clearConfirm
     });
     if (!agreed) return;
 
     /* 同步命令也走统一入口：失败留痕与成功文案都由 hook 出 */
-    const result = await run(async () => clearLogText(), { spin: false, success: '日志已清空' });
+    const result = await run(async () => clearLogText(), { spin: false, success: MSG.home.cleared });
     if (result.status === 'error') return;
     /* 清完留在原地显示空态：整块消失会让人以为按钮点错了 */
-    setLogText('（日志为空）');
+    setLogText(MSG.home.emptyLog);
   }
 
   async function handleCopy(label: string, text: string) {
     if (!text) {
-      toast.error('没有可复制的内容');
+      toast.error(MSG.home.nothingToCopy);
       return;
     }
     await run(() => copyText(text), { spin: false, success: `已复制${label}` });
@@ -107,8 +108,8 @@ export default function HomePage() {
       </div>
 
       <div className="mm-u-row mm-home__actions">
-        <Button onClick={handleDiag}>诊断官方能力</Button>
-        <Button onClick={handleLog}>查看日志</Button>
+        <Button onClick={handleDiag}>{MSG.home.diagButton}</Button>
+        <Button onClick={handleLog}>{MSG.home.logButton}</Button>
         <Button variant="primary" onClick={handlePing}>
           测试接口
         </Button>
@@ -118,11 +119,11 @@ export default function HomePage() {
       {diag ? (
         <div className="mm-home__diag">
           <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">官方 jsx 函数</span>
+            <span className="mm-home__diag-title">{MSG.home.sectionJsx}</span>
             <button
               type="button"
               className="mm-btn mm-home__copy"
-              onClick={() => void handleCopy('诊断结果', formatDiag(diag))}
+              onClick={() => void handleCopy(MSG.home.copyDiag, formatDiag(diag))}
             >
               复制
             </button>
@@ -136,7 +137,7 @@ export default function HomePage() {
           <DiagRow label="dz_callAction（动作页）" value={diag.callAction} />
           <DiagRow label="dz_getActionList（动作页）" value={diag.getActionList} />
 
-          <div className="mm-home__diag-title">官方配置依赖</div>
+          <div className="mm-home__diag-title">{MSG.home.sectionConfig}</div>
           <DiagRow label="sj_set.json" value={String(diag.configSet)} />
           <DiagRow label="sj_interfaceSet.ini" value={String(diag.configInterface)} />
           <DiagRow label="cyAutoFillColor" value={String(diag.autoFillColor)} />
@@ -146,9 +147,13 @@ export default function HomePage() {
       {logText ? (
         <div className="mm-home__log">
           <div className="mm-u-row mm-home__diag-head">
-            <span className="mm-home__diag-title">日志（%TEMP%\maomao.log）</span>
+            <span className="mm-home__diag-title">{MSG.home.sectionLog}</span>
             <span className="mm-u-row mm-home__log-actions">
-              <button type="button" className="mm-btn mm-home__copy" onClick={() => void handleCopy('日志', logText)}>
+              <button
+              type="button"
+              className="mm-btn mm-home__copy"
+              onClick={() => void handleCopy(MSG.home.copyLog, logText)}
+            >
                 复制
               </button>
               <button type="button" className="mm-btn mm-home__copy" onClick={handleLog}>

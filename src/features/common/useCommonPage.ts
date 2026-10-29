@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { flip, reorder, toggleAutoFill, zoom } from '../../commands/common-use';
 import type { FlipDirection } from '../../commands/common-use';
 import type { CommonUseTile } from '../../domain/common-use';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import { booleanOptionOf } from '../../domain/common-use-options';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useRunCommand } from '../../hooks/useRunCommand';

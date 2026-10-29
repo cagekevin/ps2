@@ -33,7 +33,7 @@ import {
 } from '../../../commands/common-use';
 import { chooseFolder, openFile } from '../../../core/dialog';
 import { needsBatchConfirm } from '../../../domain/common-use';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { exportConfigOf, type ExportCompressKey } from '../../../domain/common-use-options';
 import { useDraft } from '../../../hooks/useDraft';
 import { useRunCommand } from '../../../hooks/useRunCommand';

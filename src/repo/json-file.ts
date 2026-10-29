@@ -18,7 +18,8 @@ import { log } from '../core/logger';
 import { exists, readTextResult, writeTextAtomic, type StorageRoot } from '../core/storage';
 import { runSerial } from '../core/serial';
 import { parseJson } from '../types/json';
-import { fail, failWithDetail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 
 /**
  * 写 mutator：`ok(null)` = 不需要写，`error` = 判定失败原样上抛。
@@ -99,7 +100,7 @@ function enqueue(name: string, root: StorageRoot, task: () => Promise<Result<voi
     try {
       return await task();
     } catch (error) {
-      return failWithDetail('IO_ERROR', '读写队列异常', String(error));
+      return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `queue:${String(error)}`);
     }
   });
 }
@@ -187,7 +188,7 @@ async function createJsonFile<T>(
 ): Promise<Result<void>> {
   if (exists(name, root)) {
     log.warn('拒绝覆盖已存在文件', { name, root });
-    return fail('VALIDATION', '文件已存在，不能按新建写入');
+    return failWithDetail('VALIDATION', MSG.stale, 'file:exists');
   }
 
   return writeTextAtomic(name, JSON.stringify(value), root);

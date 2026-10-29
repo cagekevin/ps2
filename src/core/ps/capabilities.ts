@@ -22,6 +22,7 @@
 
 import { LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { isRecord } from '../../types/guards';
+import { MSG } from '../../types/messages';
 import type { CapabilitySpec } from './capability';
 import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 
@@ -76,7 +77,7 @@ export const CAP = {
   /** 属性快照：`err !== 0` 当失败，其余交 `data` 载荷 */
   textInfo: {
     fn: 'zt_getFontSimpleInfo', gate: 'vendor', channel: 'direct', timeout: READ_TIMEOUT,
-    require: requireTextLayer, parse: strictData('当前图层没有可读的文字属性')
+    require: requireTextLayer, parse: strictData(MSG.coreOps.textNoAttrs)
   },
 
   /** 字体快选「加当前图层」：只拆 `data`，不判 err（原版不拦） */
@@ -106,89 +107,89 @@ export const CAP = {
   /** 换字面：`err === 1` 不止字体缺失，原因取宿主 `msg` */
   setFontName: {
     fn: 'zt_setFontName', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('字体不可用')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.fontUnavailable)
   },
 
   /** 面板输入的字号，与层级字号是两条 jsx */
   setNumberSize: {
     fn: 'layer_font_setFontSize', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持改字号')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.fontSize)
   },
 
   /** 层级字号（层级面板点一下） */
   setHierarchySize: {
     fn: 'zt_setFontSize', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持改字号')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.fontSize)
   },
 
   setLeading: {
     fn: 'layer_font_setLeading', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持改行距')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.leading)
   },
 
   setTracking: {
     fn: 'zt_setFontWordSpacing', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持改字距')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.tracking)
   },
 
   setAllCaps: {
     fn: 'zt_setFontAllCaps', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持切换大小写')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.letterCase)
   },
 
   setFontVision: {
     fn: 'zt_setFontVision', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持视觉调整')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.visual)
   },
 
   /** 倾斜：jsx 侧原版拼写照抄（`zt_setFauxItali`），别改成 Italic */
   setFauxItalic: {
     fn: 'zt_setFauxItali', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持倾斜')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.skew)
   },
 
   setFauxBold: {
     fn: 'zt_setFontAddBold', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持加粗')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.bold)
   },
 
   /** 段落对齐：属性面板 Ctrl+点击才走这条 */
   setJustified: {
     fn: 'zt_setFontJustified', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持段落对齐')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.paraAlign)
   },
 
   /** 点文本对齐：第二参数「不传」与「传 false」是两种调用，由调用方决定是否带上 */
   setTextAlignment: {
     fn: 'zt_setTextAlignment', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持文本对齐')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.textAlign)
   },
 
   setHorizontalCenters: {
     fn: 'zt_setHorizontalCenters', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持水平居中分布')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.hCenterDistribute)
   },
 
   setVerticalCenter: {
     fn: 'zt_verticalCenter', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持垂直平均分布')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.vAvgDistribute)
   },
 
   setUpDownAlign: {
     fn: 'zt_setUpDownAlign', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持垂直对齐')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.vAlign)
   },
 
   /** 与背景对齐：jsx 侧原版拼写照抄（`zt_setBackrgoudAlign`） */
   setBackgroundAlign: {
     fn: 'zt_setBackrgoudAlign', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持与背景对齐')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.bgAlign)
   },
 
   /** 水平垂直居中：只服务第二入口，字体面板不放按钮 */
   alignHorizontal: {
     fn: 'zt_alignHorizontal', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持居中对齐')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.centerAlign)
   },
 
   /**
@@ -197,7 +198,7 @@ export const CAP = {
    */
   distributeByPitch: {
     fn: 'cy_distributedByPitch', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTwoLayers, parse: lenientVoid('当前图层不支持按间距分布')
+    require: requireTwoLayers, parse: lenientVoid(MSG.coreOps.spacingDistribute)
   },
 
   /**
@@ -208,24 +209,24 @@ export const CAP = {
    */
   textBranchMerge: {
     fn: 'zt_textBranchMerge', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持拆分或合并')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.splitMerge)
   },
 
   /** 生成按钮：参数是一个对象 `{ type, isLine, padding }` */
   createButton: {
     fn: 'zt_createButton', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层无法生成按钮')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.createButton)
   },
 
   switchFontDirection: {
     fn: 'zt_switchFontDirection', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持切换文本方向')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.textDirection)
   },
 
   /** 写回译文：`replace` 为真 = 覆盖原文 */
   setTranslateText: {
     fn: 'zt_setTranslateText', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid('当前图层不支持写回译文')
+    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.writeBack)
   },
 
   /* ---------------- 常用页（§11.4：通道按原版调用点分，不按前缀猜） ---------------- */
@@ -233,7 +234,7 @@ export const CAP = {
   /** 放大 / 缩小：直调（原版 `jsx`），没选中图层由 jsx 自己返回约定值 */
   zoom: {
     fn: 'cy_zoom', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('当前图层不支持缩放')
+    parse: lenientVoid(MSG.coreOps.scale)
   },
 
   flip: {
@@ -291,19 +292,19 @@ export const CAP = {
   /** 清除参考线：与切片同一个函数，参数 `1` */
   clearGuide: {
     fn: 'cy_guideFunction', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('清除参考线失败')
+    parse: lenientVoid(MSG.coreOps.clearGuide)
   },
 
   /** 按参考线切片：同一个函数，参数 `2` */
   sliceByGuide: {
     fn: 'cy_guideFunction', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('按参考线切片失败')
+    parse: lenientVoid(MSG.coreOps.sliceByGuide)
   },
 
   /** 打开当前文件所在目录：**无参**，直调 */
   openDirectory: {
     fn: 'cy_openDirectory', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('打开所在目录失败')
+    parse: lenientVoid(MSG.coreOps.openFolder)
   },
 
   /** 让 jsx 弹选图对话框：返回结构未实测，raw 原样交出（按 JSON 解析会把裸路径判成 CORRUPT） */
@@ -347,7 +348,7 @@ export const CAP = {
   /** 转链接智能对象（改路径）：直调，参数 `[path]` */
   relinkPlacedLayer: {
     fn: 'Layer_placedLayerRelinkToFile', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('转链接智能对象失败')
+    parse: lenientVoid(MSG.coreOps.relink)
   },
 
   toLinkSmartObject: {
@@ -369,7 +370,7 @@ export const CAP = {
   /** 优化单个 PSD：直调，参数 `[option, file]`；跨文档的循环在 commands（§8 例外） */
   batchOptimizeDoc: {
     fn: 'cy_batchOptimizeDoc', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid('优化文档失败')
+    parse: lenientVoid(MSG.coreOps.optimizeDoc)
   },
 
   /** 自定义变换：参数顺序由 `CustomTransformParams` 具名字段保证，见 `common-use.ts` */

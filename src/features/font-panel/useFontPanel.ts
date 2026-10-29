@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { align as alignCommand } from '../../commands/font-set';
 import {
@@ -136,11 +136,11 @@ export function useFontPanel() {
   const persist = useCallback(
     (patch: Partial<FontSetSettings>) => {
       setLocalSettings(patch);
-      void runCommand(() => saveSettings(patch), {
-        spin: false,
-        /* 比通用文案多一句「设置未保存」：用户刚点的档位没落盘，要说清是哪件事 */
-        reasonOf: (result) => `设置未保存：${result.reason}`
-      });
+      /*
+       * 不再自己给提示加「设置未保存：」前缀 —— 那是消费者替生产者下结论。
+       * 落盘失败的原因由 `saveSettings` 的 `reason` 给（`core` 只给码时由 `MSG.codeReason` 兜）。
+       */
+      void runCommand(() => saveSettings(patch), { spin: false });
     },
     [setLocalSettings, runCommand]
   );

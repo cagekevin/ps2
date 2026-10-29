@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import {
   envelopeMessage,
@@ -55,7 +56,8 @@ describe('parseJsxRaw', () => {
     expect(result.status).toBe('error');
     if (result.status === 'error') {
       expect(result.code).toBe('PS_ERROR');
-      expect(result.reason).toContain('jsx 返回值');
+      /* 生产者自己从表里取句子（消费者只转发，不补字） */
+      expect(result.reason).toBe(MSG.codeReason.PS_ERROR);
       expect(result.detail).toContain('not json');
     }
   });
@@ -144,12 +146,12 @@ describe('passthrough', () => {
 describe('lenientVoid', () => {
   const parse = lenientVoid(FALLBACK);
 
-  it('约定值折成对应码', () => {
-    expect(verdict(parse(RAWS.noDoc))).toBe('PS_NO_DOC:没有打开的文档');
-    expect(verdict(parse(RAWS.rejected))).toBe('PS_REJECTED:PS 拒绝执行，请确认已选中图层');
+  it('约定值折成对应码，句子来自表', () => {
+    expect(verdict(parse(RAWS.noDoc))).toBe(`PS_NO_DOC:${MSG.codeReason.PS_NO_DOC}`);
+    expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
   });
 
-  it('err:1 取宿主 msg，没给才用兜底', () => {
+  it('err:1 取宿主原话；没给才用兜底（core 里唯一的例外，属宿主话）', () => {
     expect(verdict(parse(RAWS.errMsg))).toBe('VALIDATION:请选择文字图层');
     expect(verdict(parse(RAWS.errBare))).toBe(`VALIDATION:${FALLBACK}`);
   });
@@ -164,8 +166,8 @@ describe('strictVoid', () => {
   const parse = strictVoid(FALLBACK);
 
   it('码与 reason 与 lenientVoid 相同', () => {
-    expect(verdict(parse(RAWS.noDoc))).toBe('PS_NO_DOC:没有打开的文档');
-    expect(verdict(parse(RAWS.rejected))).toBe('PS_REJECTED:PS 拒绝执行，请确认已选中图层');
+    expect(verdict(parse(RAWS.noDoc))).toBe(`PS_NO_DOC:${MSG.codeReason.PS_NO_DOC}`);
+    expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
     expect(verdict(parse(RAWS.errMsg))).toBe('VALIDATION:请选择文字图层');
     expect(verdict(parse(RAWS.errBare))).toBe(`VALIDATION:${FALLBACK}`);
     expect(verdict(parse(RAWS.normal))).toBe('ok');
@@ -199,9 +201,9 @@ describe('strictData', () => {
 
   it('折约定值：no-doc → PS_NO_DOC、-1 → PS_REJECTED', () => {
     /* 以前这里不折，`no-doc` 会落成 `CORRUPT`「不是合法 JSON」——那不是「数据坏了」，
-       是宿主说「没打开文档」。真机 2026-10-28 给的正是 `PS_NO_DOC` */
-    expect(verdict(parse(RAWS.noDoc))).toBe('PS_NO_DOC:没有打开的文档');
-    expect(verdict(parse(RAWS.rejected))).toBe('PS_REJECTED:PS 拒绝执行，请确认已选中图层');
+       是宿主说「没打开文档」。真机 2026-10-28 给的正是 `PS_NO_DOC`。句子由生产者从表里取 */
+    expect(verdict(parse(RAWS.noDoc))).toBe(`PS_NO_DOC:${MSG.codeReason.PS_NO_DOC}`);
+    expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
   });
 
   it('非 JSON → PS_ERROR（宿主没给出可解析的结果）', () => {

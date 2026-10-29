@@ -11,7 +11,8 @@
 
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
-import { fail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 import { resolveKuGroups } from './ku-format';
 
 /** 四类库，顺序 = tab 顺序（原版 switchval，app.v4.js:54590） */
@@ -154,8 +155,8 @@ export function normalizeStyleIndex(raw: unknown): StyleWarehouseIndex {
 
 /** 结构判断在归一化之前，结构不认识就是 corrupt，不折成「新用户」 */
 export function decodeStyleIndex(raw: unknown): Result<StyleWarehouseIndex> {
-  if (!isRecord(raw)) return fail('CORRUPT', '索引不是对象');
-  if (!Array.isArray(raw.list)) return fail('CORRUPT', '索引缺少 list 数组');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
+  if (!Array.isArray(raw.list)) return failWithDetail('CORRUPT', MSG.corrupt, 'root.list');
   return ok(normalizeStyleIndex(raw));
 }
 

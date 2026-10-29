@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MSG } from '../types/messages';
 import { decodeKuData, isKuLibraryFileName, kuLibraryKind, kuShapeOf, resolveKuGroups } from './ku-format';
 
 /** 模拟 base64 解码：真实数据是 UTF-8 JSON 的 base64 */
@@ -81,7 +82,11 @@ describe('decodeKuData', () => {
   it('解码抛错 → corrupt', () => {
     const result = decodeKuData('BAD', fakeDecode);
     expect(result.status).toBe('error');
-    if (result.status === 'error') expect(result.reason).toContain('base64');
+    /* 句子来自 `MSG`；「哪一步坏了」在 `detail`（`data:base64`） */
+    if (result.status === 'error') {
+      expect(result.reason).toBe(MSG.corrupt);
+      expect(result.detail).toContain('base64');
+    }
   });
 
   it('解码前去掉空白', () => {

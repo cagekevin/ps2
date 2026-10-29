@@ -10,7 +10,8 @@
 
 import { decodeList, type Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
-import { fail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 import type { FontItem } from './font-item';
 
 /**
@@ -25,11 +26,11 @@ function asStringArray(value: unknown): string[] {
 
 /** 单项归一化；缺家族名视为坏项 */
 export function decodeFontItem(raw: unknown): Result<FontItem> {
-  if (!isRecord(raw)) return fail('CORRUPT', '字体项不是对象');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'item:not-object');
 
   const family =
     typeof raw.family === 'string' ? raw.family : typeof raw.name === 'string' ? raw.name : '';
-  if (!family) return fail('CORRUPT', '字体项缺少家族名');
+  if (!family) return failWithDetail('CORRUPT', MSG.corrupt, 'field:family');
 
   return ok({
     family,

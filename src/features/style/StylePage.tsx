@@ -40,6 +40,7 @@ import { ImgColorDialog } from './components/ImgColorDialog';
 import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
 import { StateHint } from '../../components/StateHint';
+import { MSG } from '../../types/messages';
 import { ADD_TITLE, useStyleActions } from './useStyleActions';
 import './StylePage.css';
 
@@ -98,7 +99,7 @@ export default function StylePage() {
     event.preventDefault();
     const files = event.dataTransfer.files;
     if (files.length !== 1) {
-      toast.info('请拖入1张图片');
+      toast.info(MSG.style.dropOneImage);
       return;
     }
 
@@ -115,7 +116,9 @@ export default function StylePage() {
           );
 
           /* 一张图提不出颜色 = 解析失败（不是「成功但空」），也要走统一出口 */
-          if (!colors.length) return failWithDetail('CORRUPT', '解析图片失败', 'colors:0');
+          if (!colors.length) {
+            return failWithDetail('CORRUPT', MSG.style.parseImageFailed, 'colors:0');
+          }
 
           setExtracted(colors.map((color) => color.hex));
           return ok(undefined);
@@ -123,7 +126,7 @@ export default function StylePage() {
           /* `extractImageColors` 是纯函数、失败**抛错**（decode 拒绝 / 缺注入）；
              在这里折成 Result，否则整个 handler 会变成一个无人捕获的 rejection ——
              遮罩消失、界面没反应、日志里什么都没有。 */
-          return failWithDetail('CORRUPT', '解析图片失败', String(error));
+          return failWithDetail('CORRUPT', MSG.style.parseImageFailed, String(error));
         }
       }
     );

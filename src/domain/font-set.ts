@@ -10,6 +10,7 @@
  *      未知键与未改动的键原样保留（`sj_set.json` 里还有别的页面的设置，动它们等于改别人的数据）
  */
 
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import { DAILY_LIMIT } from './translate';
@@ -126,7 +127,7 @@ export function validateLevels(levels: number[]): Result<number[]> {
     );
   }
   if (!levels.every((level) => isFiniteNumber(level) && level > 0)) {
-    return failWithDetail('VALIDATION', '层级字号必须是大于 0 的数字', `levels:${levels.join(',')}`);
+    return failWithDetail('VALIDATION', MSG.font.hierarchySizePositive, `levels:${levels.join(',')}`);
   }
   return ok([...levels]);
 }

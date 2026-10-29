@@ -34,7 +34,7 @@ import {
   type ActionGroup,
   type WarehouseIndex
 } from '../domain/action-library';
-import { MSG } from '../domain/messages';
+import { MSG } from '../types/messages';
 import type { Dropped } from '../types/decode-list';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 import {

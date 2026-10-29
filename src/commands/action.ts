@@ -30,7 +30,7 @@ import {
   type ActionGroup,
   type ActionItem
 } from '../domain/action-library';
-import { MSG } from '../domain/messages';
+import { MSG } from '../types/messages';
 import type { DropPosition } from '../domain/reorder';
 import {
   createWarehouse,

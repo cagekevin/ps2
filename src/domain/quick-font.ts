@@ -6,6 +6,7 @@
  * 三个数组必须等长同序：`zz[i]`/`hjm[i]`/`mz[i]` 描述同一个字重，错位就会应用错字体。
  */
 
+import { MSG } from '../types/messages';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import type { FontItem } from './font-item';
@@ -74,18 +75,18 @@ function isQuickFont(value: unknown): value is QuickFont {
  * 读坏不回落空数组：回落等于把用户攒的快捷字体当没存过，下次写就把文件洗掉。
  */
 export function decodeQuickFontFile(raw: unknown): Result<QuickFontFile> {
-  if (!isRecord(raw)) return failWithDetail('CORRUPT', '快捷字体文件顶层不是对象', 'root');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
 
   const list = raw.list;
   if (!Array.isArray(list)) {
-    return failWithDetail('CORRUPT', '快捷字体文件缺少 list 数组', 'root.list');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root.list');
   }
 
   const items: QuickFont[] = [];
   for (let index = 0; index < list.length; index += 1) {
     const item: unknown = list[index];
     if (!isQuickFont(item)) {
-      return failWithDetail('CORRUPT', '快捷字体条目结构不符', `root.list[${index}]`);
+      return failWithDetail('CORRUPT', MSG.corrupt, `root.list[${index}]`);
     }
     items.push({
       family: item.family,
@@ -153,7 +154,7 @@ function validIndex(file: QuickFontFile, index: number): boolean {
  */
 export function selectQuickFont(file: QuickFontFile, index: number): Result<QuickFontFile> {
   if (!validIndex(file, index)) {
-    return failWithDetail('VALIDATION', '切换快捷字体失败：下标越界', `index:${index}`);
+    return failWithDetail('VALIDATION', MSG.stale, `quick:switch index:${index}`);
   }
   return ok({ ...file, index });
 }
@@ -161,10 +162,10 @@ export function selectQuickFont(file: QuickFontFile, index: number): Result<Quic
 /** 删掉第 `index` 个；**至少要留一个**（这条与下标判据同住这里，不散到命令层） */
 export function deleteQuickFont(file: QuickFontFile, index: number): Result<QuickFontFile> {
   if (!validIndex(file, index)) {
-    return failWithDetail('VALIDATION', '删除快捷字体失败：下标越界', `index:${index}`);
+    return failWithDetail('VALIDATION', MSG.stale, `quick:delete index:${index}`);
   }
   if (file.list.length <= 1) {
-    return fail('VALIDATION', '至少要保留一个快捷字体');
+    return fail('VALIDATION', MSG.font.keepOneQuickFont);
   }
   return ok({ index: 0, list: file.list.filter((_, position) => position !== index) });
 }

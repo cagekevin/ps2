@@ -37,6 +37,7 @@ import {
 } from '../domain/ku-io';
 
 import { normalizeStyleIndex, type StyleWarehouse, type StyleWarehouseIndex } from '../domain/style-library';
+import { MSG } from '../types/messages';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
@@ -105,7 +106,7 @@ export async function exportKuArchive(
   if (index.status === 'error') return index;
 
   const list = current ? [index.value.list[index.value.index]].filter(Boolean) : index.value.list;
-  if (!list.length) return fail('VALIDATION', '没有可导出的仓库');
+  if (!list.length) return failWithDetail('VALIDATION', MSG.stale, 'index:no-entry');
 
   const store = (current
     ? { ...index.value, index: 0, list: [{ ...list[0] }] }
@@ -134,7 +135,9 @@ export async function exportKuArchive(
     }
   }
 
-  if (!arrFileData.length) return fail('VALIDATION', '没有可导出的库文件（索引与磁盘不符）');
+  if (!arrFileData.length) {
+    return failWithDetail('VALIDATION', MSG.stale, 'index:disk-mismatch');
+  }
 
   return writeTextAtAtomic(targetPath, encodeKuContainer({ arrFileData, store }));
 }
@@ -258,7 +261,9 @@ export async function importKuArchive(
     if (local.status === 'error') return local;
 
     const parsed = parseJson(local.value, '本地索引');
-    if (parsed.status === 'error') return fail('CORRUPT', '本地索引读不懂，无法追加导入');
+    if (parsed.status === 'error') {
+      return failWithDetail('CORRUPT', MSG.corrupt, 'index:unreadable');
+    }
     const raw = isRecord(parsed.value) ? parsed.value : {};
     const list = Array.isArray(raw.list) ? raw.list : [];
     raw.list = [...list, ...incoming];

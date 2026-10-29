@@ -24,7 +24,7 @@ import {
   type CommonUseBooleanKey,
   type LinkObjectValue
 } from '../../../domain/common-use-options';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import { useCommonUseStore } from '../../../store/common-use';
 import './panel.css';

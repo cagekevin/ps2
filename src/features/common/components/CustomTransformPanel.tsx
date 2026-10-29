@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { TextField } from '../../../components/TextField';
 import { Button } from '../../../components/ui';
 import { customBuildTransform } from '../../../commands/common-use';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import { useToast } from '../../../hooks/useToast';
 import type { IconName } from '../../../components/icons';

@@ -6,7 +6,8 @@
 
 import { emitUnauthorized, getToken } from '../auth';
 import { log } from '../logger';
-import { fail, ok, type Result } from '../../types/result';
+import { MSG } from '../../types/messages';
+import { failWithDetail, ok, type Result } from '../../types/result';
 import { ENDPOINTS, resolveUrl, type EndpointKey, type EndpointResponses } from './endpoints';
 
 export interface RequestOptions {
@@ -48,13 +49,13 @@ export async function request<K extends EndpointKey>(
 
     if (response.status === 401) {
       emitUnauthorized();
-      return fail('AUTH', '登录已失效');
+      return failWithDetail('AUTH', MSG.codeReason.AUTH, `http:${response.status}`);
     }
     if (response.status === 403) {
-      return fail('FORBIDDEN', '没有访问权限');
+      return failWithDetail('FORBIDDEN', MSG.codeReason.FORBIDDEN, `http:${response.status}`);
     }
     if (!response.ok) {
-      return fail('NETWORK', `请求失败（HTTP ${response.status}）`);
+      return failWithDetail('NETWORK', MSG.codeReason.NETWORK, `http:${response.status}`);
     }
 
     /* json() 返回 any；端点响应的真实形状声明在 `EndpointResponses`（值就是 unknown），此处不猜 */
@@ -62,10 +63,10 @@ export async function request<K extends EndpointKey>(
     return ok(data);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return fail('TIMEOUT', '请求超时');
+      return failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, 'http:timeout');
     }
     log.error('请求异常', { key, error });
-    return fail('NETWORK', '网络异常');
+    return failWithDetail('NETWORK', MSG.codeReason.NETWORK, String(error));
   } finally {
     window.clearTimeout(timer);
   }

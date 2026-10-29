@@ -20,7 +20,7 @@ import {
   type FlipDirection
 } from '../../commands/common-use';
 import type { IconName } from '../../components/icons';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import type { Result } from '../../types/result';
 
 /** 缩放四组档位（按钮上只显示数字，原版就是 `105` 不带百分号） */

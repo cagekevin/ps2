@@ -16,7 +16,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '../../../components/ui';
 import { CheckBox } from '../../../components/CheckBox';
 import { SelectBox } from '../../../components/SelectBox';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import type { ActionItem } from '../../../domain/action-library';
 import './add-action-dialog.css';
 

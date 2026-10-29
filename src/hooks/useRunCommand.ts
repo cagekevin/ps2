@@ -57,13 +57,6 @@ export interface RunOptions {
   success?: string;
   /** 这些码不算故障（典型：用户取消 `CANCELLED`），不提示 */
   quiet?: readonly ErrorCode[];
-  /**
-   * 本域更具体的失败文案（如「设置未保存：」前缀、库文件缺失）；不给就用 `result.reason`。
-   *
-   * 入参只给**失败臂**：调用点本来就在 `status === 'error'` 分支里，收窄之后
-   * 直接 `result.reason` / `result.code` 即可，不必自己再判一次。
-   */
-  reasonOf?: (failure: Extract<Result<unknown>, { status: 'error' }>) => string;
   /** 收尾动作（如重读列表）。**无论成败都执行**，与原 `runWithFeedback` 行为一致 */
   after?: () => void;
   /**
@@ -103,7 +96,8 @@ function announce(
    *（「请选择文字图层!」）就没了，排障只能靠猜。
    */
   log.warn(label, { code: failure.code, reason: failure.reason, detail: failure.detail });
-  toast.error(options.reasonOf ? options.reasonOf(failure) : failure.reason);
+  /* 只转发生产者给的句子；不查表补字（补字 = 消费者替生产者说话） */
+  toast.error(failure.reason);
 }
 
 /**

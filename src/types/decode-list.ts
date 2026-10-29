@@ -12,6 +12,7 @@
  * （`.bak` 只有上一版）。
  */
 
+import { MSG } from './messages';
 import { failWithDetail, ok, type ErrorCode, type Result } from './result';
 
 /** 被跳过的一项：`path` 指出第几个（与 `detail` 同一写法），`code` / `reason` 是那一项自己的失败 */
@@ -38,7 +39,7 @@ export type DropPolicy = 'reject' | 'filter';
  * 别在各自文件里再写一遍 `Array.isArray`。
  */
 export function decodeArray(raw: unknown, pathPrefix = 'root'): Result<unknown[]> {
-  if (!Array.isArray(raw)) return failWithDetail('CORRUPT', '文件顶层不是数组', pathPrefix);
+  if (!Array.isArray(raw)) return failWithDetail('CORRUPT', MSG.corrupt, pathPrefix);
   return ok(raw);
 }
 

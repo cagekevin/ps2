@@ -9,6 +9,7 @@
  * 让面板显示「读取失败」——把一坨看不懂的返回渲染成「12 点 / 白色」等于骗用户。
  */
 
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 
@@ -97,10 +98,10 @@ const KNOWN_KEYS = [
 
 export function decodeTextInfo(raw: unknown): Result<TextInfo> {
   if (!isRecord(raw)) {
-    return failWithDetail('CORRUPT', '文字属性返回不是对象', `root:${typeof raw}`);
+    return failWithDetail('CORRUPT', MSG.badPayload, `root:${typeof raw}`);
   }
   if (!KNOWN_KEYS.some((key) => key in raw)) {
-    return failWithDetail('CORRUPT', '文字属性返回里没有可识别字段', 'root:known-keys=0');
+    return failWithDetail('CORRUPT', MSG.badPayload, 'root:known-keys=0');
   }
 
   const base = DEFAULT_TEXT_INFO;

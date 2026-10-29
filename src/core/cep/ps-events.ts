@@ -33,7 +33,8 @@ import { getExtensionId } from './bridge';
 import { log } from '../logger';
 import { isRecord } from '../../types/guards';
 import { parseJson } from '../../types/json';
-import { fail, failWithDetail, ok, type Result } from '../../types/result';
+import { MSG } from '../../types/messages';
+import { failWithDetail, ok, type Result } from '../../types/result';
 
 /** CEP 桥；类型来自 bridge.ts 的 declare global，这里判空取用 */
 function getBridge() {
@@ -344,7 +345,7 @@ export async function subscribeHostEvent(
   if (!bridge || !id) {
     /* 浏览器 dev / 单测：订阅不成立，调用方必须知情（否则只剩轮询，且无任何标记） */
     log.warn('非 CEP 环境，无法订阅 PS 事件', { name });
-    return fail('PS_UNREADY', '非 CEP 环境，无法订阅 PS 事件');
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'subscribe:no-cep');
   }
 
   let set = listeners.get(name);
@@ -363,7 +364,7 @@ export async function subscribeHostEvent(
       set.delete(listener);
       if (set.size === 0) listeners.delete(name);
       log.error('PS 事件注册失败', { name, typeId: eventId });
-      return failWithDetail('PS_UNREADY', `PS 事件注册失败：${name}`, `typeId:${eventId}`);
+      return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `register:${name} typeId:${eventId}`);
     }
     registeredIds.add(eventId);
   }

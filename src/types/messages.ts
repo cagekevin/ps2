@@ -6,29 +6,33 @@
  * 同一个概念在不同文件里长出不同说法（「文件无法识别」与「XX 项不是对象」并存），
  * 下一次写码的人不知道抄哪一句。
  *
- * 谁在用：`domain/*`、`repo/*`、`commands/*`。**`core/` 不能用**——`core` 不许 import `domain`，
- * 那里 27 处 `lenientVoid('…失败')` 文案仍是独立来源（已记债，收法是把 label 换成码）。
+ * **谁在用**：`core/*`、`domain/*`、`repo/*`、`commands/*`、`features/*` —— 全仓所有层。
+ * 本表放在 `types/` 正是为了让 **`core` 也能 import**（`core` 不许 import `domain`，而 `types` 是最底层）。
  *
- * 存量边界（不追溯，但别照抄）：
- *   - 常用页 / 动作页 **已全部迁到本表**（`grep 中文 fail*` 在这两条链路 = 0）；
- *   - `font` / `style` / `ku` 等页面仍有约 **99 处**就地写中文 → `TD-09-6`（逐页迁）；
- *   - `core/ps` 的 **29 处** `lenientVoid` / `strictVoid` 文案 → `TD-04-1`（`core` 不能 import `domain`，
- *     收法是把 label 换成码、由 `commands` 给文案）。
- *   **看到存量不要照着写**：新写与正在改的一律用本表。
+ * 现状（2026-10-29 收口完成，可复算）：
+ *   `grep -rnE "fail(WithDetail)?\('[A-Z_]+', *'[^']*[一-龥]" src` 在**生产代码 = 0 处**（只剩注释里的历史说明）；
+ *   `grep -rnE "toast\.(error|info)\('[^']*[一-龥]" src` = 0 处。
  *
- * **唯一例外**：传给 jsx 的**参数值**（如翻转方向 `'左右'` / `'上下'`）不是界面文字，
- * 必须与官方字符串逐字一致，留在调用点或数据表里，**不要**挪进来。
+ * **唯一例外（不是文案，别搬进来）**：
+ *   1. 传给 jsx 的**参数值**（翻转方向 `'左右'`/`'上下'`、`fn: 'cy_xxx'`）；
+ *   2. **官方数据表**（语言下拉 `自动检测/中文/…`、`font-panel-constants` 的官方按钮名）；
+ *   3. PS 历史记录名 `CapabilitySpec.label`（`批量导出一级图片` 等，按官方逐字传给 PS）。
+ *   这三类改的是「数据/协议」，不是「界面话术」；搬进来会把数据表变成文案表。
  *
- * 分层：顶层键 = 跨页通用句（`corrupt` / `badPayload` / `stale` / `badArgument` / `freePanelOffline`）；
- * `common` = 常用页（失败 + 全部界面文字）；`action` = 动作页（同上）。
+ * 分层：顶层 = 跨页通用（`corrupt` / `badPayload` / `stale` / `badArgument` / `freePanelOffline` / `droppedSummary`…）；
+ * `codeReason` = 错误码 → 话（生产者自己取，消费者不查表补字）；
+ * `common` / `action` / `style` / `font` / `home` / `coreOps` = 分域。
  *
  * 禁止：
- *   1. 在 `fail` / `failWithDetail` 里**再写中文**（`grep -rnE "fail\([^)]*[一-龥]" src` 应为 0，`core/` 除外）；
- *   2. 为**每个字段**各造一句（「XX 项缺少 YY」这类）——统一用 `corrupt`，现场（字段路径 / 下标）进 `detail`；
- *   3. 把 log 用的技术描述写进来——这里是**用户能看到的**话，技术现场归 `detail`。
+ *   1. 在 `fail` / `failWithDetail` / `toast.*` 里**再写中文**；
+ *   2. 为**每个字段**各造一句（「XX 项缺少 YY」）——统一用 `corrupt`，现场（字段路径 / 下标）进 `detail`；
+ *   3. 消费者替生产者改口径：`StateHint` / `run` 只展示 `result.reason`，**不查表补字、不加前缀**；
+ *   4. 把 log 用的技术描述写进来——这里是**用户能看到的**话。
  *
  * 判据：一段中文的读者是谁？用户 ⇒ 必须来自本表；写代码的人 ⇒ 断言（`throw`），不要放这里。
  */
+
+import type { ErrorCode } from './result';
 
 export const MSG = {
   /**
@@ -256,8 +260,182 @@ export const MSG = {
     exExportOriginal: '同时导出原图',
     exFolderPanel: '所在目录设置',
     exOpenFolderAfter: '保存后自动打开所在目录',
-    exBatchPanel: '批量导出功能',
-
+    exBatchPanel: '批量导出功能'
   },
+
+  /**
+   * **错误码 → 用户话**的唯一映射：`core` 只产码（不产中文），消费方（`StateHint` / `useRunCommand`）
+   * 在 `reason` 为空时用这里兜。
+   *
+   * 为什么需要它：`core` 不许 import `domain`（分层），所以 core 的失败臂只能带 `code` + 技术 `detail`；
+   * 若让每个调用点自己拼中文，就又长出第二套写法。
+   */
+  /** 样式页（`features/style`）的界面文字：按钮 title、右键菜单、成功提示、确认正文 */
+  style: {
+    addColor: '添加当前前景色',
+    addGradient: '添加渐变色，仅支持形状图层',
+    addFont: '添加字体，支持多图层',
+    addStyle: '添加样式',
+
+    noWarehouse: '没有选中仓库',
+    gradientNoData: '这个渐变项缺少数据',
+
+    doneAdded: '已添加',
+    doneAddedForeground: '已添加当前前景色',
+    doneGroupCreated: '已新建分组',
+    doneDelete: '已删除',
+    doneRename: '已重命名',
+    doneReorder: '已调整顺序',
+    doneReorderGroup: '已调整分组顺序',
+    doneImport: '导入完成',
+    doneExportAll: '已导出所有仓库',
+    doneExportCurrent: '已导出当前仓库',
+    doneToSwatch: '已发送到色板',
+    doneAppendSwatch: '已追加到色板',
+    donePickToGroup: '已吸取颜色到组',
+
+    menuNewGroup: '创建新组',
+    menuToSwatch: '发送到色板',
+    menuAppendToSwatch: '追加到色板',
+    menuPickToGroup: '快速吸色到组',
+    menuToWarehouse: '发送到仓库…',
+    menuMoveWarehouse: '移动到仓库…',
+
+    /* 吸色 / 解析图片 */
+    dropOneImage: '请拖入1张图片',
+    parseImageFailed: '解析图片失败',
+
+    confirmDeleteMessage:
+      '会直接改写库文件，原文件已备份为同目录下的 .bak（回滚：把 .bak 复制回同名文件）',
+
+    /* repo 层：文件名（进 `${label}不是合法 JSON`）、索引缺登记的提示、新建分组默认名 */
+    fileIndex: '仓库索引',
+    fileLibrary: '库文件',
+    noLibraryFile: '索引里没有登记这个库的文件名',
+    untitledGroup: '未命名分组',
+    /** 库条目内层 JSON 的标签（进 `${label}不是合法 JSON`） */
+    kuItemInner: '库条目内层',
+    /** 色板文件 */
+    fileSwatch: '色板文件',
+
+    /* 命令层：默认名、新建组名、吸色结果、文件对话框标题 */
+    untitledName: '未命名',
+    groupFromColors: '提取颜色组',
+    groupFromGradients: '提取渐变组',
+    pickTimeout: '吸色超时（60 秒内没有取色）',
+    dialogImport: '导入样式仓库',
+    dialogAppend: '追加样式仓库',
+    dialogExportAll: '导出所有仓库',
+    dialogExportCurrent: '导出当前仓库'
+  },
+
+  /** 诊断页（`features/home`）：页头、分区标题、确认句、成功提示 */
+  home: {
+    diagButton: '诊断官方能力',
+    logButton: '查看日志',
+    sectionJsx: '官方 jsx 函数',
+    sectionConfig: '官方配置依赖',
+    sectionLog: '日志（%TEMP%\\maomao.log）',
+    copyDiag: '诊断结果',
+    copyLog: '日志',
+    reachable: '接口可达',
+    emptyLog: '（日志为空）',
+    cleared: '日志已清空',
+    clearTitle: '清空日志？',
+    clearMessage: '清空后无法恢复。',
+    clearConfirm: '清空',
+    nothingToCopy: '没有可复制的内容'
+  },
+
+  /** 字体域（`commands/font-set`、字体面板、字体管理页）的失败与提示 */
+  font: {
+    /* 输入校验：用户填错了，给具体规则 */
+    needButtonPadding: '请填写按钮内边距',
+    needPresetName: '请输入预设名字',
+    fontSizePositive: '字号必须是大于 0 的数字',
+    leadingNotNegative: '行距不能是负数',
+    trackingNumber: '字距必须是数字',
+    hierarchySizePositive: '层级字号必须是大于 0 的数字',
+
+    /* 业务前提 */
+    copyStyleFirst: '请先复制字体样式',
+    noTextToTranslate: '没有可翻译的文本',
+    translateLimit: '今天的翻译次数已用完，请明天再试',
+    missingPostScript: '缺少 PostScript 名，无法换字体',
+    keepOnePreset: '至少要保留一个层级预设',
+    keepOneQuickFont: '至少要保留一个快捷字体',
+    starRange: '评分只能是 1、2、3',
+    tagNameEmpty: '标签名不能为空',
+    tagsExported: '已导出标签',
+
+    noPresetToOverwrite: '当前没有可覆盖的层级预设',
+    fontNotInSystem: '系统字体里找不到该字体，无法加入快捷字体',
+
+    /* 文件名（进 JSON 解析失败的句子里：`${label}不是合法 JSON`） */
+    fileSettings: '字体面板设置',
+    fileQuickFonts: '快捷字体',
+    fileHierarchy: '层级预设',
+    fileTranslateCounter: '翻译计数',
+    fileRecentFonts: '最近字体',
+    /** 层级预设里自动补的那条名字（用户可见） */
+    defaultPreset: '默认',
+    /** 标签/评分导入文件的文件名（进 `${label}不是合法 JSON`） */
+    fileTagsImport: '标签导入文件'
+  },
+
+  /**
+   * `core/ps` 里**每个能力各自的**失败话术（能力表 `parse` 的 fallback）。
+   *
+   * 为什么要单独一组：这些不是"某个码的通用话"，而是"这个操作为什么不支持"，
+   * 换句泛化话术会丢掉「不支持改字号 / 不支持缩放」的区分。它们仍在**同一张表**里。
+   */
+  coreOps: {
+    textNoAttrs: '当前图层没有可读的文字属性',
+    fontUnavailable: '字体不可用',
+    fontSize: '当前图层不支持改字号',
+    leading: '当前图层不支持改行距',
+    tracking: '当前图层不支持改字距',
+    letterCase: '当前图层不支持切换大小写',
+    visual: '当前图层不支持视觉调整',
+    skew: '当前图层不支持倾斜',
+    bold: '当前图层不支持加粗',
+    paraAlign: '当前图层不支持段落对齐',
+    textAlign: '当前图层不支持文本对齐',
+    hCenterDistribute: '当前图层不支持水平居中分布',
+    vAvgDistribute: '当前图层不支持垂直平均分布',
+    vAlign: '当前图层不支持垂直对齐',
+    bgAlign: '当前图层不支持与背景对齐',
+    centerAlign: '当前图层不支持居中对齐',
+    spacingDistribute: '当前图层不支持按间距分布',
+    splitMerge: '当前图层不支持拆分或合并',
+    createButton: '当前图层无法生成按钮',
+    textDirection: '当前图层不支持切换文本方向',
+    writeBack: '当前图层不支持写回译文',
+    scale: '当前图层不支持缩放',
+    clearGuide: '清除参考线失败',
+    sliceByGuide: '按参考线切片失败',
+    openFolder: '打开所在目录失败',
+    relink: '转链接智能对象失败',
+    optimizeDoc: '优化文档失败'
+  },
+
+  codeReason: {
+    IO_ERROR: '文件读写失败',
+    NOT_FOUND: '文件不存在',
+    CORRUPT: '文件无法识别',
+    VALIDATION: '参数不合法',
+    PS_NO_DOC: '没有打开的文档',
+    PS_WRONG_LAYER: '当前图层不是形状图层',
+    PS_SKIPPED: '自动填充已关闭，请先在 PS 里打开',
+    PS_REJECTED: 'PS 拒绝执行，请确认已选中图层',
+    PS_UNREADY: 'PS 还没准备好，请稍后重试',
+    PS_ERROR: 'PS 执行失败',
+    NETWORK: '网络请求失败',
+    TIMEOUT: '等待超时',
+    AUTH: '没有权限，请重新登录',
+    FORBIDDEN: '当前操作不被允许',
+    CANCELLED: '已取消',
+    UNKNOWN: '未知错误'
+  } as Record<ErrorCode, string>
 
 } as const;

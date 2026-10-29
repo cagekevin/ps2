@@ -14,7 +14,7 @@ import { IconButton } from '../../../components/IconButton';
 import { RadioButton } from '../../../components/RadioButton';
 import { TextField } from '../../../components/TextField';
 import { distribute } from '../../../commands/common-use';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import './panel.css';
 

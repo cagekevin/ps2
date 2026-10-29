@@ -11,7 +11,8 @@
  */
 
 import { log } from '../logger';
-import { fail, failWithDetail, ok, type Result } from '../../types/result';
+import { MSG } from '../../types/messages';
+import { failWithDetail, ok, type Result } from '../../types/result';
 
 const DEFAULT_TIMEOUT = 20_000;
 
@@ -57,11 +58,11 @@ export function jsonpGet(
 
     const timer = window.setTimeout(() => {
       log.warn('JSONP 超时', { url, timeoutMs });
-      done(fail('TIMEOUT', '翻译接口超时'));
+      done(failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, 'jsonp:translate'));
     }, timeoutMs);
 
     setGlobal(name, (data: unknown) => done(ok(data)));
-    script.onerror = () => done(failWithDetail('NETWORK', '翻译接口连接失败', `url:${url}`));
+    script.onerror = () => done(failWithDetail('NETWORK', MSG.codeReason.NETWORK, `url:${url}`));
 
     const query = new URLSearchParams(params);
     query.set('callback', name);

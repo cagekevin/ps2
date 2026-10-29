@@ -22,7 +22,7 @@ import {
   sliceByGuide,
   toggleSmartGuide
 } from '../../../commands/common-use';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import { useCommonUseStore } from '../../../store/common-use';
 import './panel.css';

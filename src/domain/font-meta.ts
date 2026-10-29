@@ -11,6 +11,7 @@
 import { decodeList, type Dropped } from '../types/decode-list';
 import { isArrayOf, isRecord, isString } from '../types/guards';
 import { parseJson } from '../types/json';
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 
 /** 标签项（字段名保持原版：text / arr / xz） */
@@ -26,62 +27,50 @@ function isStringArray(value: unknown): value is string[] {
   return isArrayOf(value, isString);
 }
 
-/** `field` 进 `detail`（机器可查），`message` 进 `reason`（给用户看，不带序号） */
-interface FieldFail {
-  field: string;
-  message: string;
-}
-
-function tagFieldFail(tag: Record<string, unknown>): FieldFail | null {
-  if (typeof tag.text !== 'string' || !tag.text) {
-    return { field: 'text', message: '标签缺少 text' };
-  }
-  if (tag.arr !== undefined && !isStringArray(tag.arr)) {
-    return { field: 'arr', message: '标签的 arr 必须是字符串数组' };
-  }
-  if (tag.xz !== undefined && typeof tag.xz !== 'boolean') {
-    return { field: 'xz', message: '标签的 xz 必须是布尔值' };
-  }
+/**
+ * 缺哪个字段就返回字段名，**不返回句子**：句子只有一句 `MSG.corrupt`，
+ * 字段名进 `detail`（`root[2].text`）。这里是「逐字段造句」的老窝，改掉了才不会有 5 种说法。
+ */
+function tagFieldFail(tag: Record<string, unknown>): string | null {
+  if (typeof tag.text !== 'string' || !tag.text) return 'text';
+  if (tag.arr !== undefined && !isStringArray(tag.arr)) return 'arr';
+  if (tag.xz !== undefined && typeof tag.xz !== 'boolean') return 'xz';
   return null;
 }
 
-function starFieldFail(star: Record<string, unknown>): FieldFail | null {
-  if (typeof star.name !== 'string' || !star.name) {
-    return { field: 'name', message: '评分缺少 name' };
-  }
-  if (typeof star.star !== 'string' && typeof star.star !== 'number') {
-    return { field: 'star', message: '评分的 star 必须是字符串或数字' };
-  }
+function starFieldFail(star: Record<string, unknown>): string | null {
+  if (typeof star.name !== 'string' || !star.name) return 'name';
+  if (typeof star.star !== 'string' && typeof star.star !== 'number') return 'star';
   return null;
 }
 
 /** 一项标签 → `FontTag`；缺省 `arr` / `xz` 补默认值 */
 function tagItem(value: unknown, path: string): Result<FontTag> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '标签不是对象', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
 
   const error = tagFieldFail(value);
-  if (error) return failWithDetail('CORRUPT', error.message, `${path}.${error.field}`);
+  if (error) return failWithDetail('CORRUPT', MSG.corrupt, `${path}.${error}`);
 
   /* 只为类型收窄；字段合法性已由 tagFieldFail 证明 */
   const text = value.text;
-  if (typeof text !== 'string') return failWithDetail('CORRUPT', '标签缺少 text', `${path}.text`);
+  if (typeof text !== 'string') return failWithDetail('CORRUPT', MSG.corrupt, `${path}.text`);
 
   return ok({ text, arr: isStringArray(value.arr) ? value.arr : [], xz: value.xz === true });
 }
 
 /** 一项评分 → `{ name, star }`；`star` 数字/字符串混用都收，非正数算坏项 */
 function starItem(value: unknown, path: string): Result<{ name: string; star: number }> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '评分不是对象', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
 
   const error = starFieldFail(value);
-  if (error) return failWithDetail('CORRUPT', error.message, `${path}.${error.field}`);
+  if (error) return failWithDetail('CORRUPT', MSG.corrupt, `${path}.${error}`);
 
   const name = value.name;
-  if (typeof name !== 'string') return failWithDetail('CORRUPT', '评分缺少 name', `${path}.name`);
+  if (typeof name !== 'string') return failWithDetail('CORRUPT', MSG.corrupt, `${path}.name`);
 
   const star = typeof value.star === 'number' ? value.star : Number(value.star);
   if (!Number.isFinite(star) || star <= 0) {
-    return failWithDetail('CORRUPT', '评分的 star 必须是正数', `${path}.star`);
+    return failWithDetail('CORRUPT', MSG.corrupt, `${path}.star`);
   }
 
   return ok({ name, star: Math.trunc(star) });
@@ -121,20 +110,20 @@ export interface FontTagArchive {
 
 /** 导入文件里的项**原样返回**（不重建对象），未知键与 `star` 的类型都保留 */
 function tagRecord(value: unknown, path: string): Result<RawFontRecord> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '标签不是对象', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
 
   const error = tagFieldFail(value);
-  if (error) return failWithDetail('CORRUPT', error.message, `${path}.${error.field}`);
+  if (error) return failWithDetail('CORRUPT', MSG.corrupt, `${path}.${error}`);
 
   return ok(value);
 }
 
 /** 同上，评分项 */
 function starRecord(value: unknown, path: string): Result<RawFontRecord> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '评分不是对象', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
 
   const error = starFieldFail(value);
-  if (error) return failWithDetail('CORRUPT', error.message, `${path}.${error.field}`);
+  if (error) return failWithDetail('CORRUPT', MSG.corrupt, `${path}.${error}`);
 
   return ok(value);
 }
@@ -147,7 +136,7 @@ function starRecord(value: unknown, path: string): Result<RawFontRecord> {
  *   `{ tags: [...], stars?: [...] }`            可同时覆盖评分
  */
 export function parseTagArchive(text: string): Result<FontTagArchive> {
-  const parsed = parseJson(text, '标签导入文件');
+  const parsed = parseJson(text, MSG.font.fileTagsImport);
   if (parsed.status === 'error') return parsed;
 
   const root = parsed.value;
@@ -159,10 +148,10 @@ export function parseTagArchive(text: string): Result<FontTagArchive> {
   }
 
   if (!isRecord(root)) {
-    return failWithDetail('CORRUPT', '标签导入文件顶层必须是对象或数组', 'root');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root');
   }
   if (!Array.isArray(root.tags)) {
-    return failWithDetail('CORRUPT', '标签导入文件缺少 tags 数组', 'root.tags');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root.tags');
   }
 
   const tags = decodeList(root.tags, tagRecord, 'reject', 'tags');
@@ -170,7 +159,7 @@ export function parseTagArchive(text: string): Result<FontTagArchive> {
 
   if (root.stars === undefined) return ok({ tags: tags.value.items });
   if (!Array.isArray(root.stars)) {
-    return failWithDetail('CORRUPT', 'stars 必须是数组', 'root.stars');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root.stars');
   }
 
   const stars = decodeList(root.stars, starRecord, 'reject', 'stars');

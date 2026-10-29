@@ -5,6 +5,7 @@
  * 读写日志文件走 core/cep/node，不用 window.cep.fs。
  */
 
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { nodeRequire } from '../cep/node';
 
@@ -163,13 +164,13 @@ export function readLogText(): string {
 export function clearLogText(): Result<void> {
   const fs = nodeRequire<NodeFs>('fs');
   const file = logPath();
-  if (!fs || !file) return failWithDetail('IO_ERROR', '日志文件不可用', 'fs:false');
+  if (!fs || !file) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'log:fs:false');
   try {
     fs.writeFileSync(file, '', 'utf8');
     /* 折叠窗口也要一起清：否则清空后 3 秒内复现同一个问题，第一行会被当成「重复」吞掉 */
     recent.clear();
     return ok(undefined);
   } catch (error) {
-    return failWithDetail('IO_ERROR', '清空日志失败', `${file} ${String(error)}`);
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `clear:${file} ${String(error)}`);
   }
 }

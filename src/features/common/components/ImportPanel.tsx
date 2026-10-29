@@ -9,7 +9,7 @@
  */
 
 import { CheckBox } from '../../../components/CheckBox';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { setOption } from '../../../commands/common-use';
 import { booleanOptionOf } from '../../../domain/common-use-options';
 import { useRunCommand } from '../../../hooks/useRunCommand';

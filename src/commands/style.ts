@@ -10,6 +10,7 @@
  */
 
 import { openFile, saveFile } from '../core/dialog';
+import { MSG } from '../types/messages';
 import { exportKuArchive, importKuArchive, kuArchiveDefaultName, type KuImportResult } from '../repo/ku-archive';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
 import {
@@ -67,7 +68,7 @@ import { emitAppEvent } from '../core/cep/bridge';
 import { log } from '../core/logger';
 import type { DropPosition } from '../domain/reorder';
 import type { KuKind, StyleWarehouse } from '../domain/style-library';
-import { fail, ok, type Result } from '../types/result';
+import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 /** 把颜色应用到当前图层（按图层类型自动分流） */
 export function applyColor(item: Record<string, unknown>): Promise<Result<void>> {
@@ -160,7 +161,7 @@ export async function addGradientFromLayer(
   if (gradient.status === 'error') return gradient;
 
   return addKuItem(warehouse, kind, groupIndex, {
-    name: '未命名',
+    name: MSG.style.untitledName,
     gradient: gradient.value
   });
 }
@@ -327,8 +328,12 @@ export async function pickColorToGroup(
 
     const outcome = await waiter.value.result;
     /* 用户切走选区 = 主动放弃，不是故障 */
-    if (outcome.kind === 'cancelled') return fail('CANCELLED', '已取消吸色');
-    if (outcome.kind === 'timeout') return fail('TIMEOUT', '吸色超时（60 秒内没有取色）');
+    if (outcome.kind === 'cancelled') {
+      return failWithDetail('CANCELLED', MSG.codeReason.CANCELLED, 'pick:cancelled');
+    }
+    if (outcome.kind === 'timeout') {
+      return failWithDetail('TIMEOUT', MSG.style.pickTimeout, 'pick:timeout');
+    }
   } finally {
     waiter.value.close();
   }
@@ -344,29 +349,29 @@ export async function pickColorToGroup(
 
 /** 导入预设仓库（覆盖）：旧文件先进回收目录，索引整份替换 */
 export function importKuReplace(): Promise<Result<KuImportResult>> {
-  const path = openFile('导入样式仓库', ['kux']);
-  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  const path = openFile(MSG.style.dialogImport, ['kux']);
+  if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
   return importKuArchive(false, path);
 }
 
 /** 追加预设仓库：只往索引 push 仓库，本地已有文件不动 */
 export function importKuAppend(): Promise<Result<KuImportResult>> {
-  const path = openFile('追加样式仓库', ['kux']);
-  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  const path = openFile(MSG.style.dialogAppend, ['kux']);
+  if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
   return importKuArchive(true, path);
 }
 
 /** 导出所有仓库 */
 export function exportKuAll(): Promise<Result<void>> {
-  const path = saveFile('导出所有仓库', ['kux'], kuArchiveDefaultName(false));
-  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  const path = saveFile(MSG.style.dialogExportAll, ['kux'], kuArchiveDefaultName(false));
+  if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
   return Promise.resolve(exportKuArchive(false, path));
 }
 
 /** 导出当前仓库 */
 export function exportKuCurrent(): Promise<Result<void>> {
-  const path = saveFile('导出当前仓库', ['kux'], kuArchiveDefaultName(true));
-  if (!path) return Promise.resolve(fail('CANCELLED', '已取消'));
+  const path = saveFile(MSG.style.dialogExportCurrent, ['kux'], kuArchiveDefaultName(true));
+  if (!path) return Promise.resolve(fail('CANCELLED', MSG.codeReason.CANCELLED));
   return Promise.resolve(exportKuArchive(true, path));
 }
 
@@ -377,12 +382,12 @@ export function exportKuCurrent(): Promise<Result<void>> {
  * CMYK 分流在 jsx 内部做——前端只发库项形状，CMYK 字段由库里已有项自带。
  */
 export function applyColorByHex(hex: string): Promise<Result<void>> {
-  return applyStyleColor({ name: '未命名', color: { hex } });
+  return applyStyleColor({ name: MSG.style.untitledName, color: { hex } });
 }
 
 /** 应用提取的渐变对（原版 `setGrad` `:52905-52908`：createGradientItem → ys_useGradient） */
 export function applyGradientPair(pair: [string, string]): Promise<Result<void>> {
-  const item: GradientLibraryItem = createGradientItem('未命名', pair);
+  const item: GradientLibraryItem = createGradientItem(MSG.style.untitledName, pair);
   return applyGradient(item.gradient);
 }
 
@@ -391,7 +396,10 @@ export function applyGradientPair(pair: [string, string]): Promise<Result<void>>
  * 注意原版语义就是**整份替换**色板文件——不是追加。
  */
 export async function saveExtractedToSwatch(hexes: string[]): Promise<Result<void>> {
-  const items = hexes.map((hex) => ({ name: '未命名', color: { hex: hex.replace('#', '') } }));
+  const items = hexes.map((hex) => ({
+    name: MSG.style.untitledName,
+    color: { hex: hex.replace('#', '') }
+  }));
   return persistSwatch(items);
 }
 
@@ -400,8 +408,11 @@ export function saveExtractedColorsToGroup(
   warehouse: StyleWarehouse,
   hexes: string[]
 ): Promise<Result<void>> {
-  const items = hexes.map((hex) => ({ name: '未命名', color: { hex: hex.replace('#', '') } }));
-  return addKuGroupWithItems(warehouse, 'color', '提取颜色组', items);
+  const items = hexes.map((hex) => ({
+    name: MSG.style.untitledName,
+    color: { hex: hex.replace('#', '') }
+  }));
+  return addKuGroupWithItems(warehouse, 'color', MSG.style.groupFromColors, items);
 }
 
 /** 提取色两两成渐变，新建「提取渐变组」分组（原版 `saveGrad` `:52882-52901`） */
@@ -410,6 +421,6 @@ export function saveExtractedGradientsToGroup(
   hexes: string[]
 ): Promise<Result<void>> {
   const pairs = buildColorPairGradients(hexes).slice(0, 30);
-  const items = pairs.map(({ pair }) => createGradientItem('未命名', pair));
-  return addKuGroupWithItems(warehouse, 'gradient', '提取渐变组', items);
+  const items = pairs.map(({ pair }) => createGradientItem(MSG.style.untitledName, pair));
+  return addKuGroupWithItems(warehouse, 'gradient', MSG.style.groupFromGradients, items);
 }

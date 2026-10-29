@@ -33,6 +33,7 @@ import {
 import { decodeQuickFontFile, type QuickFontFile } from '../domain/quick-font';
 import { DAILY_LIMIT } from '../domain/translate';
 import { decodeList } from '../types/decode-list';
+import { MSG } from '../types/messages';
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
 import {
@@ -65,7 +66,7 @@ function decodeFontSetSettings(raw: unknown): Result<FontSetSettings> {
 /** 设置投影：缺失 = 全部默认值（首次使用不是故障），坏文件仍报错 */
 export function readFontSetSettings(): Result<FontSetSettings> {
   return readOrEmpty(
-    readJsonFile(SETTINGS_FILE, ROOT, '字体面板设置', decodeFontSetSettings),
+    readJsonFile(SETTINGS_FILE, ROOT, MSG.font.fileSettings, decodeFontSetSettings),
     () => ok(normalizeFontSetSettings({}))
   );
 }
@@ -75,7 +76,7 @@ export function updateFontSetSettings(patch: Partial<FontSetSettings>): Promise<
   return updateOrCreateJsonFile(
     SETTINGS_FILE,
     ROOT,
-    '字体面板设置',
+    MSG.font.fileSettings,
     decodeSettingsObject,
     (raw) => ok(mergeFontSetSettings(raw, patch)),
     { missing: () => ({}) }
@@ -86,7 +87,7 @@ export function updateFontSetSettings(patch: Partial<FontSetSettings>): Promise<
 
 export function readQuickFonts(): Result<QuickFontFile> {
   return readOrEmpty(
-    readJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile),
+    readJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile),
     () => ok({ index: 0, list: [] })
   );
 }
@@ -95,7 +96,7 @@ export function readQuickFonts(): Result<QuickFontFile> {
 export function updateQuickFonts(
   mutator: JsonMutator<QuickFontFile>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(QUICK_FILE, ROOT, '快捷字体', decodeQuickFontFile, mutator, {
+  return updateOrCreateJsonFile(QUICK_FILE, ROOT, MSG.font.fileQuickFonts, decodeQuickFontFile, mutator, {
     missing: () => ({ index: 0, list: [] })
   });
 }
@@ -109,18 +110,18 @@ export function updateQuickFonts(
  * 早期文件里 6 级以外的预设一律拒绝（读进来也应用不了，改坏它等于毁掉用户预设）。
  */
 function decodeHierarchy(raw: unknown): Result<HierarchyFile> {
-  if (!isRecord(raw)) return failWithDetail('CORRUPT', '层级预设文件顶层不是对象', 'root');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
 
   const list = raw.list;
   if (!Array.isArray(list)) {
-    return failWithDetail('CORRUPT', '层级预设文件缺少 list 数组', 'root.list');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root.list');
   }
 
   const presets: HierarchyPreset[] = [];
   for (let index = 0; index < list.length; index += 1) {
     const item: unknown = list[index];
     if (!isRecord(item) || typeof item.name !== 'string' || !Array.isArray(item.data)) {
-      return failWithDetail('CORRUPT', '层级预设条目结构不符', `root.list[${index}]`);
+      return failWithDetail('CORRUPT', MSG.corrupt, `root.list[${index}]`);
     }
 
     const levels = validateLevels(item.data);
@@ -140,28 +141,31 @@ function decodeHierarchy(raw: unknown): Result<HierarchyFile> {
 
 export function readHierarchy(): Result<HierarchyFile> {
   return readOrEmpty(
-    readJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy),
-    () => ok({ index: 0, list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
+    readJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy),
+    () => ok({ index: 0, list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
   );
 }
 
 export function updateHierarchy(
   mutator: JsonMutator<HierarchyFile>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, '层级预设', decodeHierarchy, mutator, {
-    missing: () => ({ index: 0, list: [{ name: '默认', data: [...FONT_SET_DEFAULTS.ztHierarych] }] })
+  return updateOrCreateJsonFile(HIERARCHY_FILE, ROOT, MSG.font.fileHierarchy, decodeHierarchy, mutator, {
+    missing: () => ({
+      index: 0,
+      list: [{ name: MSG.font.defaultPreset, data: [...FONT_SET_DEFAULTS.ztHierarych] }]
+    })
   });
 }
 
 /* ---------------- sj_ztTranslate.json ---------------- */
 
 function decodeCounter(raw: unknown): Result<TranslateCounter> {
-  if (!isRecord(raw)) return failWithDetail('CORRUPT', '翻译计数顶层不是对象', 'root');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
 
   const { num, max, time } = raw;
-  if (typeof num !== 'number') return failWithDetail('CORRUPT', '翻译计数缺少 num', 'root.num');
-  if (typeof max !== 'number') return failWithDetail('CORRUPT', '翻译计数缺少 max', 'root.max');
-  if (typeof time !== 'string') return failWithDetail('CORRUPT', '翻译计数缺少 time', 'root.time');
+  if (typeof num !== 'number') return failWithDetail('CORRUPT', MSG.corrupt, 'root.num');
+  if (typeof max !== 'number') return failWithDetail('CORRUPT', MSG.corrupt, 'root.max');
+  if (typeof time !== 'string') return failWithDetail('CORRUPT', MSG.corrupt, 'root.time');
 
   return ok({ num, max, time });
 }
@@ -174,7 +178,7 @@ function decodeCounter(raw: unknown): Result<TranslateCounter> {
  */
 export function readTranslateCounter(): Result<TranslateCounter> {
   return readOrEmpty(
-    readJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter),
+    readJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter),
     () => ok({ num: 0, max: DAILY_LIMIT, time: '' })
   );
 }
@@ -182,7 +186,7 @@ export function readTranslateCounter(): Result<TranslateCounter> {
 export function updateTranslateCounter(
   mutator: JsonMutator<TranslateCounter>
 ): Promise<Result<void>> {
-  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, '翻译计数', decodeCounter, mutator, {
+  return updateOrCreateJsonFile(TRANSLATE_FILE, ROOT, MSG.font.fileTranslateCounter, decodeCounter, mutator, {
     missing: () => ({ num: 0, max: 380, time: '' })
   });
 }
@@ -197,7 +201,7 @@ export function bumpTranslateCounter(today: string): Promise<Result<void>> {
 /** 一条历史：必须是字符串（空串照收，与原实现一致） */
 function historyItem(value: unknown, path: string): Result<string> {
   if (typeof value !== 'string') {
-    return failWithDetail('CORRUPT', '最近字体里有非字符串条目', path);
+    return failWithDetail('CORRUPT', MSG.corrupt, path);
   }
   return ok(value);
 }
@@ -232,11 +236,11 @@ function decodeHistoryForRead(raw: unknown): Result<string[]> {
 }
 
 export function readFontHistory(): Result<string[]> {
-  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryForRead), () => ok([]));
+  return readOrEmpty(readJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryForRead), () => ok([]));
 }
 
 export function updateFontHistory(mutator: JsonMutator<string[]>): Promise<Result<void>> {
-  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, '最近字体', decodeHistoryStrict, mutator, {
+  return updateOrCreateJsonFile(HISTORY_FILE, ROOT, MSG.font.fileRecentFonts, decodeHistoryStrict, mutator, {
     missing: () => []
   });
 }

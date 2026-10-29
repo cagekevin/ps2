@@ -17,7 +17,8 @@ import { decodeFontStars, decodeFontTags } from '../domain/font-meta';
 import { decodeFontList } from '../domain/font-decode';
 import type { Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
-import { fail, failWithDetail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 import { readJsonFile, readOrEmpty, replaceJsonFile, updateOrCreateJsonFile, type JsonMutator } from './json-file';
 import { decodeRawRecords, type RawRecords } from './settings-object';
 
@@ -42,16 +43,16 @@ export function readSystemFontCache(
   const allowEmpty = options.allowEmpty ?? false;
 
   return readJsonFile(SYS_FONT_FILE, ROOT, '系统字体缓存', (raw) => {
-    if (!isRecord(raw)) return fail('CORRUPT', '系统字体缓存顶层不是对象');
+    if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
 
     const arr = raw.arr;
-    if (!Array.isArray(arr)) return fail('CORRUPT', '系统字体缓存缺少 arr 数组');
+    if (!Array.isArray(arr)) return failWithDetail('CORRUPT', MSG.corrupt, 'root.arr');
 
     const decoded = decodeFontList(arr);
     if (decoded.status === 'error') return decoded;
 
     if (!allowEmpty && decoded.value.list.length === 0) {
-      return failWithDetail('CORRUPT', '系统字体缓存为空', 'SysFont2.json:arr.length=0');
+      return failWithDetail('CORRUPT', MSG.corrupt, 'SysFont2.json:arr.length=0');
     }
 
     return ok({ fonts: decoded.value.list, dropped: decoded.value.dropped });

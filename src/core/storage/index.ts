@@ -15,7 +15,8 @@ import { nodeRequire } from '../cep/node';
 import { getUserDataPath } from '../cep/bridge';
 import { log } from '../logger';
 import { runSerial } from '../serial';
-import { fail, failWithDetail, ok, type Result } from '../../types/result';
+import { MSG } from '../../types/messages';
+import { failWithDetail, ok, type Result } from '../../types/result';
 
 export type StorageRoot = 'data' | 'legacy' | 'swatch';
 
@@ -72,15 +73,15 @@ export function exists(name: string, root: StorageRoot = 'data'): boolean {
 /** 读文件正文的唯一实现：凡是「路径 → 文本」都走这里 */
 function readTextFile(absPath: string, label: string): Result<string> {
   const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
 
   try {
-    if (!fs.existsSync(absPath)) return fail('NOT_FOUND', '文件不存在');
+    if (!fs.existsSync(absPath)) return failWithDetail('NOT_FOUND', MSG.codeReason.NOT_FOUND, `path:${absPath}`);
     return ok(stripBom(fs.readFileSync(absPath, 'utf8')));
   } catch (error) {
     log.warn('读取文件失败', { label, absPath, error });
     /* reason 只放用户话；路径是观测，进 detail（同一个名字不许装两种语义） */
-    return failWithDetail('IO_ERROR', '文件存在但读取失败', `path:${absPath};${String(error)}`);
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `read:${absPath};${String(error)}`);
   }
 }
 
@@ -109,7 +110,7 @@ function dirnameOf(absPath: string): string {
 /** 写文件的唯一实现；`backup` 决定是否把原文复制到 `.bak` */
 function writeTextFile(absPath: string, text: string, backup: boolean): Result<void> {
   const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
 
   try {
     if (backup && fs.existsSync(absPath)) {
@@ -120,7 +121,7 @@ function writeTextFile(absPath: string, text: string, backup: boolean): Result<v
     return ok(undefined);
   } catch (error) {
     log.error('写入文件失败', { absPath, backup, error });
-    return failWithDetail('IO_ERROR', '写入失败', `path:${absPath};${String(error)}`);
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `write:${absPath};${String(error)}`);
   }
 }
 
@@ -136,7 +137,7 @@ function writeTextFile(absPath: string, text: string, backup: boolean): Result<v
  */
 export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<void> {
   const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
 
   const target = filePath(root, name);
   const backup = `${target}.bak`;
@@ -150,14 +151,14 @@ export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<
     return ok(undefined);
   } catch (error) {
     log.error('回滚失败', { name, root, error });
-    return failWithDetail('IO_ERROR', '回滚失败', `path:${target};${String(error)}`);
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `rollback:${target};${String(error)}`);
   }
 }
 
 /** 二进制文件复制（导入覆盖前的旧文件回收；不能按 utf8 读图片/PSD） */
 export function copyFileAt(fromAbs: string, toAbs: string): Result<void> {
   const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
 
   try {
     fs.mkdirSync(dirnameOf(toAbs), { recursive: true });
@@ -165,7 +166,7 @@ export function copyFileAt(fromAbs: string, toAbs: string): Result<void> {
     return ok(undefined);
   } catch (error) {
     log.warn('复制文件失败', { fromAbs, toAbs, error });
-    return failWithDetail('IO_ERROR', '复制失败', String(error));
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `copy:${String(error)}`);
   }
 }
 
@@ -199,7 +200,7 @@ export function writeTextAtomic(
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
 export function removeFile(name: string, root: StorageRoot = 'data'): Result<void> {
   const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', 'Node 文件模块不可用', 'fs:null');
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
 
   const target = filePath(root, name);
   try {
@@ -208,7 +209,7 @@ export function removeFile(name: string, root: StorageRoot = 'data'): Result<voi
     return ok(undefined);
   } catch (error) {
     log.error('removeFile 失败', { name, root, error });
-    return failWithDetail('IO_ERROR', '删除失败', String(error));
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `remove:${String(error)}`);
   }
 }
 

@@ -12,7 +12,8 @@
 
 import { isArrayOf, isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
-import { fail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { failWithDetail, ok, type Result } from '../types/result';
 
 export type KuKindName = 'color' | 'gradient' | 'font' | 'style';
 
@@ -54,7 +55,7 @@ export function kuShapeOf(parsed: unknown): Result<ProvenKu> {
     }
 
     if (!isArrayOf(parsed, isRecord)) {
-      return fail('CORRUPT', '库数组里混有非对象项');
+      return failWithDetail('CORRUPT', MSG.corrupt, 'groups:item-not-object');
     }
     return ok({ shape: 'groups', groups: parsed });
   }
@@ -62,7 +63,7 @@ export function kuShapeOf(parsed: unknown): Result<ProvenKu> {
   if (isRecord(parsed)) {
     const arrFileData = parsed.arrFileData;
     if (!Array.isArray(arrFileData)) {
-      return fail('CORRUPT', '压缩包缺少 arrFileData 数组');
+      return failWithDetail('CORRUPT', MSG.corrupt, 'root.arrFileData');
     }
     const entries = arrFileData.filter(
       (entry): entry is { name: string; data?: unknown } =>
@@ -71,7 +72,7 @@ export function kuShapeOf(parsed: unknown): Result<ProvenKu> {
     return ok({ shape: 'container', entries });
   }
 
-  return fail('CORRUPT', '既不是数组也不是对象');
+  return failWithDetail('CORRUPT', MSG.corrupt, `shape:${typeof parsed}`);
 }
 
 /**
@@ -82,26 +83,32 @@ export function decodeKuData(
   value: unknown,
   decode: (base64: string) => string
 ): Result<string> {
-  if (typeof value !== 'string') return fail('CORRUPT', '条目没有内容');
+  if (typeof value !== 'string') {
+    return failWithDetail('CORRUPT', MSG.corrupt, `data:${typeof value}`);
+  }
 
   const compact = value.replace(/\s/g, '');
-  if (!compact) return fail('CORRUPT', '条目内容为空');
+  if (!compact) return failWithDetail('CORRUPT', MSG.corrupt, 'data:empty');
 
   try {
     return ok(decode(compact));
   } catch {
-    return fail('CORRUPT', 'base64 解码失败');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'data:base64');
   }
 }
 
 function decodeArrayText(content: Result<string>): Result<Record<string, unknown>[]> {
   if (content.status === 'error') return content;
 
-  const parsed = parseJson(content.value, '库条目内层');
+  const parsed = parseJson(content.value, MSG.style.kuItemInner);
   if (parsed.status === 'error') return parsed;
 
-  if (!Array.isArray(parsed.value)) return fail('CORRUPT', '内层不是数组');
-  if (!isArrayOf(parsed.value, isRecord)) return fail('CORRUPT', '内层混有非对象项');
+  if (!Array.isArray(parsed.value)) {
+    return failWithDetail('CORRUPT', MSG.corrupt, 'inner:not-array');
+  }
+  if (!isArrayOf(parsed.value, isRecord)) {
+    return failWithDetail('CORRUPT', MSG.corrupt, 'inner:item-not-object');
+  }
 
   return ok(parsed.value);
 }
@@ -125,7 +132,7 @@ export function resolveKuGroups(
       return decodeArrayText(decodeKuData(shape.head.data, decode));
     case 'container': {
       const hit = shape.entries.find((entry) => isKuLibraryFileName(entry.name));
-      if (!hit) return fail('CORRUPT', '压缩包里没有库文件');
+      if (!hit) return failWithDetail('CORRUPT', MSG.corrupt, 'container:no-library');
       return decodeArrayText(decodeKuData(hit.data, decode));
     }
   }

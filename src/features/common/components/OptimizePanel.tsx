@@ -11,7 +11,7 @@
  */
 
 import { CheckBox } from '../../../components/CheckBox';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { Button } from '../../../components/ui';
 import { optimizeFolder, setOption } from '../../../commands/common-use';
 import { booleanOptionOf, type CommonUseBooleanKey } from '../../../domain/common-use-options';

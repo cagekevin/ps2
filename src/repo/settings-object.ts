@@ -11,6 +11,7 @@
  */
 import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 
 /** `sj_set.json` —— 全客户端共用的官方设置文件 */
@@ -25,13 +26,13 @@ export type RawRecords = Record<string, unknown>[];
  * 写路径要拿到原始对象才能保留别的页面/模块写的键，所以这里不重建、不挑字段。
  */
 export function decodeSettingsObject(raw: unknown): Result<Record<string, unknown>> {
-  if (!isRecord(raw)) return failWithDetail('CORRUPT', '设置文件顶层不是对象', 'root');
+  if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'root');
   return ok(raw);
 }
 
 /** 一项必须是对象：写路径的严格判据（读路径用 `decodeCommonUseItem` 那类，坏项可跳过） */
 function requireRecord(value: unknown, path: string): Result<Record<string, unknown>> {
-  if (!isRecord(value)) return failWithDetail('CORRUPT', '文件里存在非对象条目', path);
+  if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
   return ok(value);
 }
 

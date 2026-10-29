@@ -15,7 +15,7 @@
 
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
-import { MSG } from './messages';
+import { MSG } from '../types/messages';
 
 /** 一条常用项：官方写 10 个键，其余键不解释但不丢 */
 export interface CommonUseItem {

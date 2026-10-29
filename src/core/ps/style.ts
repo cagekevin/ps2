@@ -21,6 +21,7 @@
 
 import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
 import { ROOTS } from '../storage';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { callCapability, gateFailed } from './capability';
 import { CAP } from './capabilities';
@@ -97,7 +98,7 @@ export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
   const err = parseErrEnvelope(call.value);
   if (err.status === 'error') return err;
   if (err.value === 1) {
-    return failWithDetail('PS_ERROR', '保存图层样式失败', `raw:${call.value}`);
+    return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `saveLayerStyle raw:${call.value}`);
   }
 
   return ok(undefined);

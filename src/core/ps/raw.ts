@@ -14,16 +14,19 @@
 
 import { isRecord } from '../../types/guards';
 import { parseJson } from '../../types/json';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/result';
 
-const RAW_FAILURES: Record<string, { code: ErrorCode; reason: string }> = {
-  'no-doc': { code: 'PS_NO_DOC', reason: '没有打开的文档' },
-  'not-shape': { code: 'PS_WRONG_LAYER', reason: '当前图层不是形状图层' },
-  skipped: {
-    code: 'PS_SKIPPED',
-    reason: '自动填充已关闭（sj_interfaceSet.ini 里的 img_cya4 为 false）'
-  },
-  '-1': { code: 'PS_REJECTED', reason: 'PS 拒绝执行，请确认已选中图层' }
+/**
+ * 约定值 → 错误码。**这里不产中文**：`core` 不许 import `domain`，中文由消费方
+ * 用 `MSG.codeReason[code]` 兜（`CONVENTIONS`「文案只有一个入口」）。
+ * 哪个约定值坏在哪，进 `detail`（`raw:no-doc`），不进 `reason`。
+ */
+const RAW_FAILURES: Record<string, ErrorCode> = {
+  'no-doc': 'PS_NO_DOC',
+  'not-shape': 'PS_WRONG_LAYER',
+  skipped: 'PS_SKIPPED',
+  '-1': 'PS_REJECTED'
 };
 
 /**
@@ -32,8 +35,8 @@ const RAW_FAILURES: Record<string, { code: ErrorCode; reason: string }> = {
  */
 export function unwrapRaw(raw: string): Result<void> {
   const trimmed = raw.trim();
-  const hit = RAW_FAILURES[trimmed];
-  if (hit) return failWithDetail(hit.code, hit.reason, `raw:${trimmed}`);
+  const code = RAW_FAILURES[trimmed];
+  if (code) return failWithDetail(code, MSG.codeReason[code], `raw:${trimmed}`);
   return ok(undefined);
 }
 
@@ -47,7 +50,12 @@ export function unwrapRaw(raw: string): Result<void> {
  * 报 `CORRUPT` 会让人以为「文件/结构坏了」，实际是「这次没读到」。
  */
 export function parseJsxRaw(raw: string): Result<unknown> {
-  return parseJson(raw, 'jsx 返回值', 'PS_ERROR');
+  /* label 只进 `detail`（技术现场），不进 `reason`：core 不产中文文案 */
+  const parsed = parseJson(raw, '', 'PS_ERROR');
+  if (parsed.status === 'error') {
+    return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, parsed.detail);
+  }
+  return parsed;
 }
 
 /**
@@ -65,7 +73,8 @@ export function parseFontFamily(raw: string): Result<string> {
 
   const family = isRecord(data.value) ? data.value.family : undefined;
   if (typeof family !== 'string' || !family) {
-    return failWithDetail('CORRUPT', '字体信息里没有 family', `raw:${raw.slice(0, 120)}`);
+    /* 现场（哪个字段缺）进 `detail`；句子由生产者从表里取（消费者不补字） */
+    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `field:family raw:${raw.slice(0, 120)}`);
   }
   return ok(family);
 }
@@ -98,7 +107,7 @@ export function parseSystemFontList(raw: string): Result<SystemFontListRaw> {
   if (parsed.status === 'error') return parsed;
 
   if (!Array.isArray(parsed.value)) {
-    return failWithDetail('CORRUPT', '系统字体列表不是数组', `raw:${raw.slice(0, 120)}`);
+    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `shape:${typeof parsed.value}`);
   }
 
   return ok({ kind: 'list', value: parsed.value });
@@ -133,7 +142,7 @@ export function envelopeMessage(value: unknown): string {
 export function errOf(value: unknown, raw: string): Result<number> {
   const err = isRecord(value) ? value.err : undefined;
   if (typeof err !== 'number') {
-    return failWithDetail('CORRUPT', '返回里没有 err 字段', `raw:${raw.slice(0, 120)}`);
+    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `field:err raw:${raw.slice(0, 120)}`);
   }
   return ok(err);
 }

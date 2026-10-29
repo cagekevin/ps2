@@ -15,7 +15,7 @@
 import { decodeList, type Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
-import { MSG } from './messages';
+import { MSG } from '../types/messages';
 import type { DropPosition } from './reorder';
 
 /* ---------------- 形状（7 个里属于本文件的 4 个） ---------------- */

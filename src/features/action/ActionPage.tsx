@@ -17,7 +17,7 @@ import { InputDialog } from '../../components/InputDialog';
 import { PageHeader } from '../../components/PageHeader';
 import { StateHint } from '../../components/StateHint';
 import { Button } from '../../components/ui';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import { ACTION_ICONS } from './action-constants';
 import { AddActionDialog } from './components/AddActionDialog';
 import { WarehouseBar } from './components/WarehouseBar';

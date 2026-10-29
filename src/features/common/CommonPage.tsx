@@ -16,7 +16,7 @@ import { Chevron } from '../../components/Chevron';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { PageHeader } from '../../components/PageHeader';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import { StateHint } from '../../components/StateHint';
 import { Icon, type IconName } from '../../components/icons';
 import type { CommonUseTile } from '../../domain/common-use';

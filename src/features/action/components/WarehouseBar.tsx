@@ -15,7 +15,7 @@ import { SelectBox } from '../../../components/SelectBox';
 import { Icon } from '../../../components/icons';
 import { Button } from '../../../components/ui';
 import type { WarehouseEntry } from '../../../domain/action-library';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import { ACTION_ICONS } from '../action-constants';
 import './warehouse-bar.css';
 

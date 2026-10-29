@@ -15,7 +15,7 @@
  */
 
 import { type StorageRoot } from '../core/storage';
-import { MSG } from '../domain/messages';
+import { MSG } from '../types/messages';
 import {
   COMMON_USE_SEED,
   decodeCommonUseItem,

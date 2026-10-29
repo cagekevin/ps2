@@ -36,7 +36,7 @@ import {
 } from '../../commands/action';
 import { saveFile, openFile } from '../../core/dialog';
 import type { ActionItem } from '../../domain/action-library';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';

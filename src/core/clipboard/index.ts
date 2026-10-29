@@ -4,7 +4,8 @@
  * 失败走全仓唯一形状 Result（失败原因：两条路都不行时才失败）。
  */
 
-import { fail, ok, type Result } from '../../types/result';
+import { MSG } from '../../types/messages';
+import { failWithDetail, ok, type Result } from '../../types/result';
 
 export async function copyText(text: string): Promise<Result<void>> {
   try {
@@ -25,8 +26,10 @@ export async function copyText(text: string): Promise<Result<void>> {
     area.select();
     const copied = document.execCommand('copy');
     document.body.removeChild(area);
-    return copied ? ok(undefined) : fail('IO_ERROR', '浏览器拒绝了复制命令');
-  } catch {
-    return fail('IO_ERROR', '复制失败');
+    return copied
+      ? ok(undefined)
+      : failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'clipboard:rejected');
+  } catch (error) {
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, String(error));
   }
 }

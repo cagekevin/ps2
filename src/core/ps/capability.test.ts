@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok } from '../../types/result';
 import { callJsx, LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { CAP } from './capabilities';
@@ -40,7 +41,8 @@ describe('callCapability', () => {
 
     const result = await callCapability(SPEC, [1]);
 
-    expect(result).toEqual(failWithDetail('PS_UNREADY', '官方 PS 能力未就绪', 'vendor:false'));
+    /* 文案来自唯一表；门名只在 `detail`（`vendor:false` / `core:false`） */
+    expect(result).toEqual(failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'vendor:false'));
     expect(callJsx).not.toHaveBeenCalled();
   });
 
@@ -50,7 +52,8 @@ describe('callCapability', () => {
 
     const result = await callCapability(SPEC, [1]);
 
-    expect(result).toEqual(failWithDetail('PS_UNREADY', '「zt_demo」未加载', 'fn:zt_demo'));
+    /* 函数名进 `detail`（`fn:zt_demo`），不再拼进文案 */
+    expect(result).toEqual(failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'fn:zt_demo'));
     expect(callJsx).not.toHaveBeenCalled();
   });
 

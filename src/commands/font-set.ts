@@ -11,6 +11,7 @@
  */
 
 import { jsonpGet } from '../core/http/jsonp';
+import { MSG } from '../types/messages';
 import { log } from '../core/logger';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
 import {
@@ -105,13 +106,17 @@ function rememberFamily(family: string): void {
 export function align(axis: AlignAxis, index?: number): Promise<Result<void>> {
   if (axis === 'h') {
     if (index === 3) return setHorizontalCenters();
-    if (index === undefined) return Promise.resolve(fail('VALIDATION', '水平对齐缺少下标'));
+    if (index === undefined) {
+      return Promise.resolve(failWithDetail('VALIDATION', MSG.badArgument, 'axis:h index:none'));
+    }
     return setTextAlignment(index);
   }
 
   if (axis === 'v') {
     if (index === 3) return setVerticalCenter();
-    if (index === undefined) return Promise.resolve(fail('VALIDATION', '垂直对齐缺少下标'));
+    if (index === undefined) {
+      return Promise.resolve(failWithDetail('VALIDATION', MSG.badArgument, 'axis:v index:none'));
+    }
     return setTextUpDownAlign(index);
   }
 
@@ -119,7 +124,7 @@ export function align(axis: AlignAxis, index?: number): Promise<Result<void>> {
   if (axis === 'bg-v') return setBackgroundAlign(4);
 
   return Promise.resolve(
-    failWithDetail('VALIDATION', '未知的对齐轴向', `axis:${String(axis)}（合法值 h / v / bg-h / bg-v）`)
+    failWithDetail('VALIDATION', MSG.badArgument, `axis:${String(axis)} legal:h/v/bg-h/bg-v`)
   );
 }
 
@@ -142,7 +147,7 @@ export function alignHorizontal(): Promise<Result<void>> {
 /** 按间距分布：空值拦在前端，不要让它进 jsx */
 export function distribute(axis: 1 | 2, value: string, filter: boolean): Promise<Result<void>> {
   const text = value.trim();
-  if (!text) return Promise.resolve(fail('VALIDATION', '请输入间距'));
+  if (!text) return Promise.resolve(fail('VALIDATION', MSG.common.needGap));
   return distributeByPitch(axis, text, filter);
 }
 
@@ -161,10 +166,10 @@ export function split(mode: 1 | 2 | 3 | 4): Promise<Result<void>> {
 /** 生成按钮：`padding` 是形状内边距表达式，空值会让 jsx 内部抛异常 */
 export function createButton(config: CreateButtonConfig): Promise<Result<void>> {
   if (typeof config.padding !== 'string' || !config.padding.trim()) {
-    return Promise.resolve(fail('VALIDATION', '请填写按钮内边距'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.needButtonPadding));
   }
   if (config.type !== 1 && config.type !== 2) {
-    return Promise.resolve(failWithDetail('VALIDATION', '按钮类型不正确', `type:${String(config.type)}`));
+    return Promise.resolve(failWithDetail('VALIDATION', MSG.badArgument, `type:${String(config.type)}`));
   }
   return createButtonJsx({ type: config.type, isLine: config.isLine, padding: config.padding.trim() });
 }
@@ -186,10 +191,10 @@ export async function copyFont(): Promise<Result<void>> {
  * 深拷贝后再改：改到剪贴板里的原对象，下一次粘贴就会缺字段。
  */
 export async function pasteFont(keeps: PasteFontConfig): Promise<Result<void>> {
-  if (!hasFontClipboard()) return fail('VALIDATION', '请先复制字体样式');
+  if (!hasFontClipboard()) return fail('VALIDATION', MSG.font.copyStyleFirst);
 
   const source = getFontClipboard();
-  if (!source) return fail('VALIDATION', '请先复制字体样式');
+  if (!source) return fail('VALIDATION', MSG.font.copyStyleFirst);
 
   const clone = structuredClone(source);
   const fonts = Array.isArray(clone.fonts) ? clone.fonts.filter(isRecord) : [];
@@ -231,7 +236,7 @@ export async function translate(input: {
   const counter = counterRead.status === 'ok' ? counterRead.value : null;
   const max = counter && counter.max > 0 ? counter.max : DAILY_LIMIT;
   if (counter && counter.num >= max) {
-    return fail('VALIDATION', `每天最多使用 ${max} 次翻译功能`);
+    return failWithDetail('VALIDATION', MSG.font.translateLimit, `max:${max}`);
   }
 
   const raw = await getCurrentTextRaw();
@@ -239,7 +244,7 @@ export async function translate(input: {
 
   const items = decodeTranslateItems(raw.value);
   if (items.status === 'error') return items;
-  if (items.value.length === 0) return fail('VALIDATION', '没有可翻译的文本');
+  if (items.value.length === 0) return fail('VALIDATION', MSG.font.noTextToTranslate);
 
   const sources = items.value.map((item) => decodeText(item.text));
   const total = sources.reduce((sum, text) => sum + text.length, 0);
@@ -283,7 +288,7 @@ export async function translate(input: {
 /** 字号：必须是正数，否则 jsx 会写入 0 号字 */
 export function setFontSize(value: number): Promise<Result<void>> {
   if (!Number.isFinite(value) || value <= 0) {
-    return Promise.resolve(fail('VALIDATION', '字号必须是大于 0 的数字'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.fontSizePositive));
   }
   return setNumberSize(value);
 }
@@ -291,7 +296,7 @@ export function setFontSize(value: number): Promise<Result<void>> {
 /** 层级字号（6 个按钮） */
 export function setHierarchySize(value: number): Promise<Result<void>> {
   if (!Number.isFinite(value) || value <= 0) {
-    return Promise.resolve(fail('VALIDATION', '层级字号必须是大于 0 的数字'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.hierarchySizePositive));
   }
   return setHierarchySizeJsx(value);
 }
@@ -299,7 +304,7 @@ export function setHierarchySize(value: number): Promise<Result<void>> {
 /** 行距：0 是合法值（PS 里表示自动之外的最小行距） */
 export function setLeading(value: number): Promise<Result<void>> {
   if (!Number.isFinite(value) || value < 0) {
-    return Promise.resolve(fail('VALIDATION', '行距不能是负数'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.leadingNotNegative));
   }
   return setLeadingJsx(value);
 }
@@ -307,7 +312,7 @@ export function setLeading(value: number): Promise<Result<void>> {
 /** 字距：负数合法（收紧），只拦非数字 */
 export function setTracking(value: number): Promise<Result<void>> {
   if (!Number.isFinite(value)) {
-    return Promise.resolve(fail('VALIDATION', '字距必须是数字'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.trackingNumber));
   }
   return setTrackingJsx(value);
 }
@@ -344,7 +349,7 @@ export async function applyFontName(input: {
   weight: string;
   family?: string;
 }): Promise<Result<void>> {
-  if (!input.postScriptName) return fail('VALIDATION', '缺少 PostScript 名，无法换字体');
+  if (!input.postScriptName) return fail('VALIDATION', MSG.font.missingPostScript);
 
   const applied = await setFontName(input.postScriptName, input.name, input.weight);
   if (applied.status === 'error') return applied;
@@ -406,7 +411,7 @@ export async function quickFont(action: QuickFontAction): Promise<Result<void>> 
   }
 
   const hit = cache.value.fonts.find((item) => item.family === family);
-  if (!hit) return fail('VALIDATION', `系统字体里找不到「${family}」，无法加入快捷字体`);
+  if (!hit) return failWithDetail('VALIDATION', MSG.font.fontNotInSystem, `family:${family}`);
 
   const next = toQuickFont(hit);
   return updateQuickFonts((file) => {
@@ -433,16 +438,16 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
 
   if (action.action === 'select') {
     if (!inRange(action.index)) {
-      return failWithDetail('VALIDATION', '切换层级预设失败：下标越界', `index:${action.index}`);
+      return failWithDetail('VALIDATION', MSG.stale, `preset:switch index:${action.index}`);
     }
     return updateHierarchy((file) => ok({ ...file, index: action.index }));
   }
 
   if (action.action === 'rename') {
     const name = action.name.trim();
-    if (!name) return fail('VALIDATION', '请输入预设名字');
+    if (!name) return fail('VALIDATION', MSG.font.needPresetName);
     if (!inRange(action.index)) {
-      return failWithDetail('VALIDATION', '重命名失败：下标越界', `index:${action.index}`);
+      return failWithDetail('VALIDATION', MSG.stale, `preset:rename index:${action.index}`);
     }
     return updateHierarchy((file) =>
       ok({
@@ -456,9 +461,9 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
 
   if (action.action === 'delete') {
     if (!inRange(action.index)) {
-      return failWithDetail('VALIDATION', '删除失败：下标越界', `index:${action.index}`);
+      return failWithDetail('VALIDATION', MSG.stale, `preset:delete index:${action.index}`);
     }
-    if (presets.length <= 1) return fail('VALIDATION', '至少要保留一个层级预设');
+    if (presets.length <= 1) return fail('VALIDATION', MSG.font.keepOnePreset);
     return updateHierarchy((file) =>
       ok({ index: 0, list: file.list.filter((_, position) => position !== action.index) })
     );
@@ -469,7 +474,7 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
 
   if (action.action === 'create') {
     const name = action.name.trim();
-    if (!name) return fail('VALIDATION', '请输入预设名字');
+    if (!name) return fail('VALIDATION', MSG.font.needPresetName);
 
     const next: HierarchyPreset = { name, data: levels.value };
     return updateHierarchy((file) => ok({ index: file.index, list: [...file.list, next] }));
@@ -477,7 +482,7 @@ export async function hierarchyPreset(action: HierarchyPresetAction): Promise<Re
 
   /* save：用当前 6 级覆盖当前选中的预设 */
   if (!inRange(current.value.index)) {
-    return fail('VALIDATION', '当前没有可覆盖的层级预设');
+    return fail('VALIDATION', MSG.font.noPresetToOverwrite);
   }
   return updateHierarchy((file) =>
     ok({

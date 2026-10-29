@@ -13,6 +13,7 @@
 import { failWithDetail, ok, type Result } from '../types/result';
 import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
+import { MSG } from '../types/messages';
 import { md5 } from './md5';
 
 /** 原版硬编码，`app.v4.js:42816-42818` */
@@ -93,24 +94,24 @@ export function buildTranslateParams(input: {
  */
 export function decodeTranslateResponse(raw: unknown): Result<string> {
   if (!isRecord(raw)) {
-    return failWithDetail('CORRUPT', '翻译接口返回不是对象', `raw:${String(raw).slice(0, 120)}`);
+    return failWithDetail('CORRUPT', MSG.badPayload, `raw:${String(raw).slice(0, 120)}`);
   }
 
   const code = raw.error_code;
   if (code !== undefined && String(code) !== '0' && String(code) !== '52000') {
     const message = typeof raw.error_msg === 'string' ? raw.error_msg : `error_code:${String(code)}`;
-    return failWithDetail('CORRUPT', '翻译接口返回错误', message);
+    return failWithDetail('CORRUPT', MSG.badPayload, `api:${message}`);
   }
 
   const results = raw.trans_result;
   if (!Array.isArray(results) || results.length === 0) {
-    return failWithDetail('CORRUPT', '翻译接口没有返回译文', `raw:${JSON.stringify(raw).slice(0, 120)}`);
+    return failWithDetail('CORRUPT', MSG.badPayload, `noText:${JSON.stringify(raw).slice(0, 120)}`);
   }
 
   const first: unknown = results[0];
   const dst = isRecord(first) ? first.dst : undefined;
   if (typeof dst !== 'string' || !dst) {
-    return failWithDetail('CORRUPT', '翻译接口没有返回译文', `raw:${JSON.stringify(first).slice(0, 120)}`);
+    return failWithDetail('CORRUPT', MSG.badPayload, `noText:${JSON.stringify(first).slice(0, 120)}`);
   }
 
   return ok(dst);
@@ -131,7 +132,7 @@ export interface TranslateItem {
 /** 一段文本：必须有 `text` 字符串，其余键原样保留 */
 function translateItem(value: unknown, path: string): Result<TranslateItem> {
   if (!isRecord(value) || typeof value.text !== 'string') {
-    return failWithDetail('CORRUPT', '文本段落缺少 text 字段', path);
+    return failWithDetail('CORRUPT', MSG.corrupt, `${path}.text`);
   }
   return ok({ ...value, text: value.text });
 }

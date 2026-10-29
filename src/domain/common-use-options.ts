@@ -18,7 +18,7 @@
 
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
-import { MSG } from './messages';
+import { MSG } from '../types/messages';
 
 /** 17 个键，一个不多一个不少（顺序按官方 `sj_set.json` 里的出现顺序） */
 export const COMMON_USE_SETTING_KEYS = [

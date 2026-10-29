@@ -10,6 +10,7 @@
  */
 
 import { log } from '../logger';
+import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 
 export interface CepEvent {
@@ -63,7 +64,7 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
    */
   if (!cep) {
     log.error('CEP 宿主不可用，evalScript 未执行', { script: script.slice(0, 60) });
-    return Promise.resolve(failWithDetail('PS_UNREADY', 'CEP 宿主不可用', 'bridge:no-cep'));
+    return Promise.resolve(failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'bridge:no-cep'));
   }
 
   return new Promise<Result<string>>((resolve) => {
@@ -76,7 +77,7 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
         script: script.slice(0, 60),
         timeout
       });
-      resolve(failWithDetail('TIMEOUT', 'evalScript 超时，队列放行（PS 侧可能仍在执行）', script.slice(0, 60)));
+      resolve(failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, `evalScript:${script.slice(0, 60)}`));
     }, timeout);
 
     const done = (result: string) => {
@@ -91,7 +92,7 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
     } catch (error) {
       log.error('evalScript 抛异常', { error, script: script.slice(0, 60) });
       settled = true;
-      resolve(failWithDetail('PS_ERROR', 'evalScript 抛异常', script.slice(0, 60)));
+      resolve(failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `evalScript:${script.slice(0, 60)}`));
     }
   });
 }
@@ -156,7 +157,7 @@ export async function callJsx(
 
   if (raw === 'EvalScript error.') {
     log.error('jsx 执行失败', { fn, raw });
-    return failWithDetail('PS_ERROR', 'PS 脚本执行失败（超时或异常）', `raw:${raw}`);
+    return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${raw}`);
   }
   if (raw.startsWith('error:')) {
     log.error('jsx 内部异常', { fn, reason: raw.slice(6) });
@@ -170,7 +171,7 @@ export async function callJsx(
 export async function loadJsx(relativePath: string): Promise<Result<void>> {
   /* Windows 路径含反斜杠，放进 evalScript 字符串会被当转义，必须转成正斜杠 */
   const base = getExtensionPath().replace(/\\/g, '/');
-  if (!base) return failWithDetail('PS_UNREADY', '扩展路径不可用', `file:${relativePath}`);
+  if (!base) return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `file:${relativePath}`);
   const result = await evalScript(`$.evalFile("${base}/${relativePath}")`);
   return result.status === 'error' ? result : ok(undefined);
 }
@@ -224,7 +225,7 @@ export function emitAppEvent(type: string, data: unknown): Result<void> {
   const cep = window.__adobe_cep__;
   if (!CSEventCtor || !cep) {
     log.warn('应用事件未广播（CEP 挂接不存在）', { type });
-    return failWithDetail('PS_UNREADY', 'CEP 挂接不存在，应用事件未广播', `type:${type}`);
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `attach:none type:${type}`);
   }
   const event = new CSEventCtor(type, 'APPLICATION');
   event.data = data;

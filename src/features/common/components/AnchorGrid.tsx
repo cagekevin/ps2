@@ -12,7 +12,7 @@
  */
 
 import { Icon, type IconName } from '../../../components/icons';
-import { MSG } from '../../../domain/messages';
+import { MSG } from '../../../types/messages';
 import './anchor-grid.css';
 
 /** 锚点下标 → 图标名后缀（1-9 对应 pointIndex 0-8） */

@@ -9,6 +9,7 @@ import { readTextResult, type StorageRoot } from '../core/storage';
 import { resolveKuGroups } from '../domain/ku-format';
 import { mutateJsonFile, readJsonFile, replaceJsonFile, type JsonMutator } from './json-file';
 import { applyItemDrop, applyListDrop, type DropMove, type DropPosition } from '../domain/reorder';
+import { MSG } from '../types/messages';
 import {
   decodeStyleIndex,
   fileNameOf,
@@ -36,7 +37,7 @@ export function readIndex(): Result<StyleWarehouseIndex> {
   const text = readTextResult(INDEX_FILE, ROOT);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value, '仓库索引');
+  const parsed = parseJson(text.value, MSG.style.fileIndex);
   if (parsed.status === 'error') return parsed;
 
   return decodeStyleIndex(parsed.value);
@@ -48,7 +49,7 @@ function readLibraryText(
   kind: KuKind
 ): Result<string> {
   const fileName = fileNameOf(warehouse, kind);
-  if (!fileName) return fail('NOT_FOUND', '索引里没有登记这个库的文件名');
+  if (!fileName) return fail('NOT_FOUND', MSG.style.noLibraryFile);
   return readTextResult(fileName, ROOT);
 }
 
@@ -58,7 +59,7 @@ function libraryFileName(
   kind: KuKind
 ): Result<string> {
   const fileName = fileNameOf(warehouse, kind);
-  return fileName ? ok(fileName) : fail('NOT_FOUND', '索引里没有登记这个库的文件名');
+  return fileName ? ok(fileName) : fail('NOT_FOUND', MSG.style.noLibraryFile);
 }
 
 /**
@@ -72,7 +73,7 @@ export function readRawGroups(
   const name = libraryFileName(warehouse, kind);
   if (name.status === 'error') return name;
 
-  return readJsonFile(name.value, ROOT, '库文件', (raw) => resolveKuGroups(raw, decodeBase64));
+  return readJsonFile(name.value, ROOT, MSG.style.fileLibrary, (raw) => resolveKuGroups(raw, decodeBase64));
 }
 
 /** 读某个仓库的某一类库（归一化后的视图模型） */
@@ -101,12 +102,12 @@ export function readKuGroupItems(
   const text = readLibraryText(warehouse, kind);
   if (text.status === 'error') return text;
 
-  const parsed = parseJson(text.value, '库文件');
+  const parsed = parseJson(text.value, MSG.style.fileLibrary);
   if (parsed.status === 'error') return parsed;
 
   const groups = parsed.value;
   if (!Array.isArray(groups)) {
-    return fail('CORRUPT', '库文件顶层不是数组');
+    return failWithDetail('CORRUPT', MSG.corrupt, 'root');
   }
 
   const group = groups[groupIndex] as { list?: unknown } | undefined;
@@ -171,7 +172,7 @@ export async function mutateRawGroups(
   return mutateJsonFile(
     name.value,
     ROOT,
-    '库文件',
+    MSG.style.fileLibrary,
     (raw) => resolveKuGroups(raw, decodeBase64),
     mutator
   );
@@ -212,7 +213,7 @@ export function addKuGroup(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group: Record<string, unknown> = {
       id: kuGuid(),
-      name: name || '未命名分组',
+      name: name || MSG.style.untitledGroup,
       show: true,
       list: []
     };
@@ -232,7 +233,7 @@ export function addKuGroupWithItems(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group: Record<string, unknown> = {
       id: kuGuid(),
-      name: name || '未命名分组',
+      name: name || MSG.style.untitledGroup,
       show: true,
       list: items
     };
@@ -249,7 +250,7 @@ export function renameKuGroup(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
+    if (!group) return failWithDetail('VALIDATION', MSG.stale, `group:${groupIndex}`);
     group.name = name;
     return ok(groups);
   });
@@ -261,7 +262,9 @@ export function deleteKuGroup(
   groupIndex: number
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
-    if (!groups[groupIndex]) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
+    if (!groups[groupIndex]) {
+      return failWithDetail('VALIDATION', MSG.stale, `group:${groupIndex}`);
+    }
     groups.splice(groupIndex, 1);
     return ok(groups);
   });
@@ -276,7 +279,7 @@ export function setKuGroupShow(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
+    if (!group) return failWithDetail('VALIDATION', MSG.stale, `group:${groupIndex}`);
     group.show = show;
     return ok(groups);
   });
@@ -307,9 +310,9 @@ export function renameKuItem(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = kuListOf(groups[groupIndex]);
-    if (!list) return fail('VALIDATION', '目标分组的项列表已不存在');
+    if (!list) return failWithDetail('VALIDATION', MSG.stale, `group:${groupIndex} list:none`);
     const item = list[itemIndex];
-    if (!isRecord(item)) return failWithDetail('CORRUPT', '目标项不是对象', `index:${itemIndex}`);
+    if (!isRecord(item)) return failWithDetail('CORRUPT', MSG.corrupt, `index:${itemIndex}`);
     item.name = name;
     return ok(groups);
   });
@@ -324,7 +327,7 @@ export function deleteKuItem(
   return mutateRawGroups(warehouse, kind, (groups) => {
     const list = kuListOf(groups[groupIndex]);
     if (!list || itemIndex < 0 || itemIndex >= list.length) {
-      return fail('VALIDATION', '目标项已不存在（可能已被删除）');
+      return failWithDetail('VALIDATION', MSG.stale, `item:${itemIndex}`);
     }
     list.splice(itemIndex, 1);
     return ok(groups);
@@ -340,7 +343,7 @@ export function addKuItem(
 ): Promise<Result<void>> {
   return mutateRawGroups(warehouse, kind, (groups) => {
     const group = groups[groupIndex];
-    if (!group) return fail('VALIDATION', '目标分组已不存在（可能已被删除）');
+    if (!group) return failWithDetail('VALIDATION', MSG.stale, `group:${groupIndex}`);
     kuEnsureListOf(group).push(item);
     return ok(groups);
   });

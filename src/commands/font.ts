@@ -26,7 +26,8 @@ import {
 } from '../repo/font-repo';
 import type { RawRecords } from '../repo/settings-object';
 import type { Dropped } from '../types/decode-list';
-import { fail, ok, type Result } from '../types/result';
+import { MSG } from '../types/messages';
+import { fail, failWithDetail, ok, type Result } from '../types/result';
 
 export interface FontListRead {
   fonts: FontItem[];
@@ -95,9 +96,11 @@ export async function applyFontFaceToLayer(
  * 直接改原始记录，未知键保留。
  */
 export function rateFont(family: string, value: number): Promise<Result<void>> {
-  if (!family) return Promise.resolve(fail('VALIDATION', '字体家族名为空，无法评分'));
+  if (!family) {
+    return Promise.resolve(failWithDetail('VALIDATION', MSG.badArgument, 'family:empty'));
+  }
   if (!Number.isInteger(value) || value < 1 || value > 3) {
-    return Promise.resolve(fail('VALIDATION', '评分只能是 1、2、3'));
+    return Promise.resolve(fail('VALIDATION', MSG.font.starRange));
   }
 
   return updateFontStars((records: RawRecords) => {
@@ -122,7 +125,7 @@ const MAX_TAG_LENGTH = 8;
 
 function normalizeTagName(text: string): Result<string> {
   const name = text.trim();
-  if (!name) return fail('VALIDATION', '标签名不能为空');
+  if (!name) return fail('VALIDATION', MSG.font.tagNameEmpty);
   if (name.length > MAX_TAG_LENGTH) {
     return fail('VALIDATION', `标签名不能超过 ${MAX_TAG_LENGTH} 个字`);
   }
@@ -191,7 +194,7 @@ export async function deleteTag(text: string): Promise<Result<void>> {
  */
 export async function importFontTags(): Promise<Result<{ tags: number; stars: number }>> {
   const path = openFile('导入标签', ['json']);
-  if (!path) return fail('CANCELLED', '已取消导入');
+  if (!path) return fail('CANCELLED', MSG.codeReason.CANCELLED);
 
   const read = readTextAt(path);
   if (read.status === 'error') return read;
@@ -216,7 +219,7 @@ export async function exportFontTags(): Promise<Result<void>> {
   if (stars.status === 'error') return stars;
 
   const path = saveFile('导出标签', ['json'], '字体标签.json');
-  if (!path) return fail('CANCELLED', '已取消导出');
+  if (!path) return fail('CANCELLED', MSG.codeReason.CANCELLED);
 
   return writeTextAtAtomic(
     path,

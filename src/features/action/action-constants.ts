@@ -6,7 +6,7 @@
  */
 
 import type { MenuItem } from '../../components/ContextMenu';
-import { MSG } from '../../domain/messages';
+import { MSG } from '../../types/messages';
 import type { IconName } from '../../components/icons';
 import type { ActionColumns } from '../../store/action';
 

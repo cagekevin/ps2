@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MSG } from '../types/messages';
 import {
   decodeStyleIndex,
   fileNameOf,
@@ -29,7 +30,9 @@ describe('decodeStyleIndex', () => {
     expect(result.status).toBe('error');
     if (result.status === 'error') {
       expect(result.code).toBe('CORRUPT');
-      expect(result.reason).toContain('list');
+      /* 句子统一「文件无法识别」，缺哪个字段看 `detail` */
+      expect(result.reason).toBe(MSG.corrupt);
+      expect(result.detail).toContain('list');
     }
   });
 

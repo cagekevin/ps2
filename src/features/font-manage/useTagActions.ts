@@ -17,6 +17,7 @@ import {
   toggleTag
 } from '../../commands/font';
 import type { FontTag } from '../../domain/font-meta';
+import { MSG } from '../../types/messages';
 import type { Result } from '../../types/result';
 
 interface TagMenuState {
@@ -90,7 +91,7 @@ export function useTagActions({
     async (value: string) => {
       if (!tagCreator) return;
       if (!value) {
-        toast.error('标签名不能为空');
+        toast.error(MSG.font.tagNameEmpty);
         return;
       }
       if (tags.some((tag) => tag.text === value && tag.text !== tagCreator.from)) {
@@ -168,7 +169,7 @@ export function useTagActions({
     const result = await run(() => exportFontTags(), { spin: false, quiet: ['CANCELLED'] });
     if (result.status === 'error') return;
 
-    toast.info('已导出标签');
+    toast.info(MSG.font.tagsExported);
   }, [confirm, run, toast]);
 
   const createTagFromMenu = useCallback(
