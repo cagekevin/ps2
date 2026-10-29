@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>面板视口探针</title>
+<style>
+  /* 仅用于截图核对：把真实页面装进指定宽度的 iframe，
+     headless Chrome 的最小视口是 500，直接 --window-size=360 拿不到 360 视口。 */
+  html, body { margin: 0; background: #111; }
+  iframe { display: block; border: 0; }
+</style>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const page = params.get('p') || 'set';
+  const width = params.get('w') || '360';
+  const height = params.get('h') || '760';
+  const frame = document.createElement('iframe');
+  frame.src = `/#/${page}`;
+  frame.width = width;
+  frame.height = height;
+  document.body.appendChild(frame);
+</script>
+</body>
+</html>

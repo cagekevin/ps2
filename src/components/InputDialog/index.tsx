@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】输入弹窗 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】输入弹窗（原版全局 `$inputBox`）
  *
  * 原版同一个组件被两处复用，行为完全一致，所以这里是公共件而不是各页面各写一个：
@@ -21,7 +23,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { enterSubmit } from '../../hooks/input-method-enter';
-import { Input, stopClickPropagation } from '../ui';
+import { Button, Input, stopClickPropagation } from '../ui';
 import './input-dialog.css';
 
 interface Props {
@@ -99,9 +101,9 @@ export function InputDialog({
         {extra}
 
         <div className="mm-input-dialog__footer">
-          <button type="button" className="mm-input-dialog__ok" onClick={submit}>
+          <Button className="mm-input-dialog__ok" onClick={submit}>
             确定
-          </button>
+          </Button>
         </div>
       </div>
     </div>

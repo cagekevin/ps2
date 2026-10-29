@@ -6,10 +6,12 @@
   z-index: var(--mm-z-tooltip);
   min-width: var(--mm-menu-min-w);
   padding: var(--mm-space-1);
-  border: var(--mm-border-w) solid var(--mm-color-border);
+  /* 与 `SelectBox` / 其它浮层同色：深色底上 rgba(0,0,0,.5) 那条看不见，
+     浮层边缘统一用亮线，否则两个浮层挨着出现时一条有一无 */
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
-  box-shadow: var(--mm-shadow-md);
+  background: var(--mm-color-bg-overlay);
+  box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-menu__item {
@@ -26,7 +28,7 @@
 }
 
 .mm-menu__item:hover {
-  background: var(--mm-color-nav-active);
+  background: var(--mm-color-bg-panel);
 }
 
 .mm-menu__item--danger {

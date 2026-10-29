@@ -1,4 +1,8 @@
-/* 【范本】基础组件样式：只用 Token */
+/* 【范本】基础组件样式：只用 Token
+ *
+ * 【唯一入口】控件表面（按钮 / 输入框 / 字段）—— 底色、描边、圆角、字号只在这里写。
+ * 页面与 feature 的类只许覆盖宽度 / 间距 / 文字色 / 焦点色；再写一份 background / border /
+ * border-radius / font-size 就是第二个输入框（2026-10-29 刚把三种底色收成一种）。 */
 .mm-btn {
   height: var(--mm-control-h);
   padding: 0 var(--mm-space-2);
@@ -9,7 +13,7 @@
 }
 
 .mm-btn--ghost {
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-overlay);
   color: var(--mm-color-text);
 }
 
@@ -22,8 +26,10 @@
   color: var(--mm-color-text);
 }
 
+/* 实底蓝上叠白会偏灰，hover 走亮一档的蓝。不用 `opacity` —— 半透明会把下面的深底透上来，
+   蓝反而变暗，与「hover 必须比静态亮」相反 */
 .mm-btn--primary:hover:not(:disabled) {
-  opacity: 0.85;
+  background: var(--mm-color-accent-hover);
 }
 
 .mm-btn:disabled {
@@ -34,23 +40,25 @@
 .mm-input {
   height: var(--mm-control-h);
   padding: 0 var(--mm-space-1);
-  border: var(--mm-border-w) solid var(--mm-color-border);
+  /*
+   * 表面与下拉触发器（`select-box.css`）同一套：sunken 底 + 亮描边。
+   * 原来这里是 overlay（比页面底亮一档，那是浮层色）+ 暗描边，于是全仓输入框有三种底色
+   * （overlay / sunken / 透明）——输入框是「凹进去」的，不该用浮层的色。
+   * sunken 落在 base 上反差只有 11，没有描边就看不出边界，所以描边是必需品。
+   */
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-sunken);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   outline: none;
 }
 
-/* 页内深色输入框（原版 `.inputcom*` / `.switch-input` 那一类）：
-   字体面板、输入弹窗、层级编辑三处原先各写一份同样的声明，收敛到这里 */
+/* 页内宽输入框（原版 `.inputcom*` / `.switch-input` 那一类）：只多给左右 12。
+   表面（底色 / 描边 / 圆角 / 字号）继承 `.mm-input`，变体不再重复声明——
+   重复一次就是两个出处，改底色时必漏一处 */
 .mm-input--page {
-  height: var(--mm-font-panel-btn-h);
   padding: 0 var(--mm-space-3);
-  border-color: var(--mm-color-input-page);
-  border-radius: var(--mm-field-radius);
-  background: var(--mm-color-input-page);
-  font-size: var(--mm-font-md);
 }
 
 .mm-input:focus {

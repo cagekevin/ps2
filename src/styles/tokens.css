@@ -1,37 +1,129 @@
-/* 唯一允许写原始色值与 px 的文件 */
+/*
+ * 【范本】设计 Token —— 全仓唯一允许写原始色值与 px 的文件
+ *
+ * 是什么：界面所有颜色 / 间距 / 尺寸 / 字号的唯一出处。组件与页面只引用这里的变量，
+ *         不写色值、不写 px（由 `npm run lint:css` 拦截）。
+ *
+ * 四条主轴，每轴内一个角色只有一个值：
+ *   1. 色阶 `--mm-gray-N`：数字越大越暗，按亮度单调。新增档位必须实测亮度再插入，
+ *      不许插入破坏单调的值——序列一断，下游「亮一档 / 暗一档」的语义就会反。
+ *   2. 语义角色 `--mm-color-<角色>`：每角色唯一。同值两个名字、同角色两个值都是错。
+ *   3. 间距：六档 + 两贴合档。页边单独一个值。
+ *   4. 尺寸：控件高度全仓只有一档；图标只有两档；字号只有三档。
+ *
+ * 谁在用：所有 `src/**\/*.css`。
+ * 禁止：在本文件之外写色值或 px；引用本文件没定义的变量（`var()` 引用未定义变量
+ *       不会报错，会让整条声明静默失效，由 `npm run check:css-tokens` 拦截）。
+ */
 :root {
-  /* 原始值 */
-  --mm-gray-900: #2b2b2b;
-  --mm-gray-800: #3f3f3f;
-  --mm-gray-700: #535353;
+  /* ---------- 1. 原始色阶 ---------- */
+  /* 中性灰：数字越大越暗（#171717 → #ececec，亮度严格单调） */
+  --mm-gray-1000: #171717;
+  --mm-gray-900: #1f1f1f;
+  --mm-gray-800: #2b2b2b;
+  --mm-gray-700: #363636;
   --mm-gray-600: #434343;
-  --mm-gray-500: #4b4b4b;
-  --mm-gray-400: #6e6e6e;
-  --mm-gray-300: #b8b8b8;
+  --mm-gray-550: #4c4c4c;
+  --mm-gray-500: #535353;
+  --mm-gray-400: #5c5c5c;
+  --mm-gray-300: #6e6e6e;
+  --mm-gray-200: #8a8a8a;
+  --mm-gray-100: #b0b0b0;
+  --mm-gray-50: #d0d0d0;
+  --mm-gray-0: #ececec;
+
+  /* 强调与语义色（唯一写死的三类彩色） */
   --mm-blue-500: #0f7df2;
-  --mm-green-500: #4caf50;
+  --mm-blue-400: #4da3ff;
   --mm-red-500: #e05252;
+  --mm-green-500: #4caf50;
+  --mm-yellow-500: #dcdcaa;
+
+  /* ---------- 2. 语义角色 ---------- */
+  /* 底：越浮起越亮（sunken 43 < base 54 < panel 67 < raised 76 < overlay 83）。
+     输入框比页面更暗才有「凹进去」的感觉；弹窗在最上层所以最亮。 */
+  --mm-color-bg-sunken: var(--mm-gray-800);
+  --mm-color-bg-base: var(--mm-gray-700);
+  --mm-color-bg-panel: var(--mm-gray-600);
+  --mm-color-bg-raised: var(--mm-gray-550);
+  --mm-color-bg-overlay: var(--mm-gray-500);
+
+  /* 交互态：叠一层白而不是换底色档位。换档会让 hover 在某些组件上变暗、
+     某些上变亮——「叠白」保证 hover 永远比静态亮。 */
+  --mm-color-bg-hover: rgba(255, 255, 255, 0.08);
+  --mm-color-bg-active: rgba(255, 255, 255, 0.14);
+
+  /* 文字：四级。strong 用于 hover / 选中，muted 用于弱信息与禁用。 */
+  --mm-color-text-strong: var(--mm-gray-0);
+  --mm-color-text: var(--mm-gray-100);
+  --mm-color-text-dim: var(--mm-gray-200);
+  --mm-color-text-muted: var(--mm-gray-300);
+  --mm-color-text-on-accent: #ffffff;
+
+  /* 图标：与文字同级，不再单独给页面开一档 */
+  --mm-color-icon: var(--mm-gray-100);
+
+  /* 线：两种。暗线用于页面 / 列表分隔（相对底色，换底不用改），
+     亮线用于控件描边与勾选框（必须看得见）。一页之内不许出现第三种。 */
+  --mm-color-border: rgba(0, 0, 0, 0.5);
+  --mm-color-border-control: var(--mm-gray-300);
+
+  /* 强调：全仓只有一个蓝，不再分 solid / soft / tab-active */
+  --mm-color-accent: var(--mm-blue-500);
+  --mm-color-accent-hover: var(--mm-blue-400);
 
   /* 语义色 */
-  --mm-color-bg-panel: var(--mm-gray-700);
-  --mm-color-bg-elevated: var(--mm-gray-800);
-  --mm-color-bg-hover: rgba(255, 255, 255, 0.08);
-  --mm-color-text: #d6d6d6;
-  --mm-color-text-dim: #9a9a9a;
-  /* 原版 hover 纯白 #fff（对照清单 #11 / #66） */
-  --mm-color-text-inverse: #ffffff;
-  --mm-color-border: rgba(0, 0, 0, 0.5);
-  --mm-color-accent: var(--mm-blue-500);
-  --mm-color-ok: var(--mm-green-500);
   --mm-color-error: var(--mm-red-500);
+  --mm-color-ok: var(--mm-green-500);
+  --mm-color-warn: var(--mm-yellow-500);
 
-  /* 导航（对齐原版 #nav 与 .nav-item 参数） */
-  --mm-color-nav-active: var(--mm-gray-600);
-  --mm-color-nav-sub-hover: var(--mm-gray-500);
-  --mm-color-icon: var(--mm-gray-300);
-  --mm-color-border-checked: var(--mm-gray-400);
-  --mm-nav-w: 40px;
-  --mm-nav-item-sub: 26px;
+  /* 遮罩：三档（弹窗 / 区域不可用 / 输入弹窗的淡遮罩） */
+  --mm-color-mask: rgba(0, 0, 0, 0.4);
+  --mm-color-mask-strong: rgba(0, 0, 0, 0.6);
+  --mm-color-mask-faint: rgba(0, 0, 0, 0.1);
+
+  /* ---------- 3. 间距（六档 + 两贴合档） ---------- */
+  --mm-space-1: 4px;          /* 组内 */
+  --mm-space-2: 8px;          /* 组间 */
+  --mm-space-3: 12px;         /* 区块内 */
+  --mm-space-4: 16px;         /* 区块间 */
+  --mm-space-5: 20px;
+  --mm-space-tight: 2px;      /* 贴合：徽标内边距这类 */
+  --mm-space-inline: 6px;     /* 同行并列 */
+  --mm-page-pad-x: 8px;       /* 页边 */
+
+  /* ---------- 4. 尺寸 ---------- */
+  /* 控件高度：全仓唯一一档。原先 24 / 26 / 26 / 30 四档并存，
+     字体管理页用 30 导致它的工具栏比别页厚——这就是「不够紧凑」的实因。 */
+  --mm-control-h: 26px;
+  --mm-icon-btn-size: 26px;   /* 图标按钮是正方形，与控件同高 */
+  --mm-icon-md: 16px;
+  --mm-icon-lg: 24px;
+  /* 控件预留位：输入框给左侧图标（16）或右侧按钮留出的内边距 */
+  --mm-control-reserve: 30px;
+
+  /* 结构高度 */
+  --mm-header-h: 40px;
+  --mm-bottom-bar-h: 26px;
+  --mm-bottom-btn-w: 30px;
+  --mm-verline-h: 13px;
+  --mm-group-head-h: 22px;
+  --mm-list-head-h: 26px;
+  --mm-row-head-h: 18px;
+  --mm-warehouse-h: 36px;
+  --mm-tab-line-h: 20px;
+  --mm-collapse-h: 24px;
+  --mm-collapse-arrow-w: 20px;
+  --mm-collapse-arrow-h: 13px;
+  --mm-check-size: 12px;
+  --mm-check-radius: 3px;
+
+  /* 字号：三档。10 / 14 / 15 原先各只用一两次，已并入相邻档。 */
+  --mm-font-xs: 11px;
+  --mm-font-sm: 12px;
+  --mm-font-md: 13px;
+  --mm-line-16: 16px;
+  --mm-line-17: 17px;
 
   /* 形状 */
   --mm-radius-sm: 2px;
@@ -39,46 +131,30 @@
   --mm-radius-pill: 999px;
   --mm-border-w: 1px;
   --mm-shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.4);
+  /* 动效时长：全仓一档（箭头旋转、浮层淡入） */
+  --mm-dur-fast: 120ms;
 
-  /* 间距：4 的倍数 */
-  --mm-space-1: 4px;
-  --mm-space-2: 8px;
-  --mm-space-3: 12px;
-  --mm-space-4: 16px;
-  --mm-space-5: 20px;
+  /* 滚动条：Chromium 默认是浅色 15px，深色面板上刺眼。宽度按 8 档，
+     滑块比控件描边暗一档、hover 才亮到描边色（滑块是背景元件，不该比控件抢眼） */
+  --mm-scrollbar-w: 8px;
+  --mm-scrollbar-thumb: var(--mm-gray-400);
+  --mm-scrollbar-thumb-hover: var(--mm-color-border-control);
 
-  /* 尺寸 */
-  --mm-control-h: 24px;
-  --mm-control-h-sm: 20px;
-  /* 原版分组头行高 22px（对照清单 #62） */
-  --mm-group-head-h: 22px;
-  /* 原版下拉触发器 / 选项都是 28px */
-  /* 下拉与其它控件同高：原来 28 比面板按钮（26）、数字框（26）高一档，并排时不齐 */
-  --mm-select-h: 26px;
-  /* 下拉面板最大高度：字体列表有几百项，超过就滚动，不往屏幕外铺 */
-  --mm-select-panel-max-h: 320px;
-  --mm-icon-sm: 14px;
-  --mm-icon-md: 16px;
-  --mm-icon-lg: 24px;
-  --mm-font-xs: 11px;
-  --mm-font-sm: 12px;
-  --mm-font-md: 13px;
-  /* 原版 `.block-context` 的中文字预览 14px（对照清单 #24） */
-  --mm-font-lg: 14px;
-  /* 字体页：10px 小字 / 15px 标题（原版实测） */
-  --mm-font-2xs: 10px;
-  --mm-font-xl: 15px;
+  /* ---------- 5. 导航 ---------- */
+  --mm-nav-w: 40px;
+  --mm-nav-item-sub: 26px;
 
-  /* 精确间距：原版是 1/2/3/5/6/7/10px，不是 4 的倍数 */
-  --mm-space-exact-1: 1px;
-  --mm-space-exact-2: 2px;
-  --mm-space-exact-3: 3px;
-  --mm-space-exact-5: 5px;
-  --mm-space-exact-6: 6px;
-  --mm-space-exact-7: 7px;
-  --mm-space-exact-10: 10px;
+  /* ---------- 6. 层级 ---------- */
+  --mm-z-nav: 10;
+  --mm-z-loading: 200;
+  --mm-z-drag: 999;
+  --mm-z-dropdown: 1000;
+  --mm-z-input-box: 1001;
+  --mm-z-tooltip: 1100;
+  --mm-z-toast-top: 1200;
 
-  /* 样式页四库格子：原版逐个 scoped 段实测，不共用一套 */
+  /* ---------- 7. 各页专有尺寸（按角色保留，不并档） ---------- */
+  /* 样式页格子：四库各自的格子尺寸，原版逐个实测，不共用一套 */
   --mm-swatch-w: 25px;
   --mm-swatch-h: 25px;
   --mm-gradient-w: 50px;
@@ -87,228 +163,87 @@
   --mm-font-card-h: 44px;
   --mm-style-thumb: 26px;
 
-  /* 样式页结构尺寸 */
-  --mm-warehouse-h: 36px;
-  --mm-bottom-bar-h: 26px;
-  /* 底栏按钮比图标宽一圈，图标之间才有呼吸感 */
-  --mm-bottom-btn-w: 30px;
-  --mm-tab-line-h: 20px;
-
-  /* 底栏颜色/渐变两个按钮的方块（原版是彩色方块与蓝方块，不是图标） */
-  --mm-swatch-rainbow: linear-gradient(
-    135deg,
-    #ff4d4d 0%,
-    #ffd93d 25%,
-    #4dd964 50%,
-    #4db8ff 75%,
-    #b44dff 100%
-  );
-  --mm-swatch-blue: #4db8ff;
-
-  /* 层级：原版浮层是 1101（菜单）/ 1000（弹窗），Toast 100，Loading 200 */
-  --mm-z-nav: 10;
-  --mm-z-toast: 100;
-  /* 提示必须在弹窗/确认框之上，否则校验失败用户看不到原因 */
-  --mm-z-toast-top: 1200;
-  --mm-z-loading: 200;
-  --mm-z-dropdown: 1000;
-  /* 拖拽浮层（长按拖动时的跟手节点），与下拉/菜单同档 */
-  --mm-z-drag: 999;
-  /* 悬停浮层：app 的 --c-sunken（比页面底更暗一档） */
-  --mm-color-sunken: #222;
-  --mm-describe-max-w: 240px;
-  /* 转圈指示器（原版 NewSpin 默认 18px / 0.8s） */
-  --mm-spin-size: 18px;
-  --mm-spin-duration: 0.8s;
-  /* 图片取色弹层（原版 imgColor 的色圈 28、渐变条 42×22、蓝 #0084ff、次按钮 #e9e9e9） */
-  --mm-imgcolor-grad-w: 42px;
-  --mm-imgcolor-grad-h: 22px;
-  --mm-color-imgcolor-border: #0084ff;
-  --mm-color-imgcolor-primary: #0084ff;
-  --mm-color-imgcolor-second: #e9e9e9;
-  --mm-imgcolor-w: 300px;
-  --mm-z-tooltip: 1100;
-
-  /* 样式页专用色：页面底 #363636、仓库条 #282828（原版 --c-surface / --c-warehouse） */
-  --mm-color-bg-page: #363636;
-  --mm-color-bg-warehouse: #282828;
-  --mm-color-bottom-bar: var(--mm-gray-700);
-  /* 原版底栏按钮 hover：纯 #222 底色，**无描边**（对照清单 #90） */
-  --mm-color-bottom-hover: #222;
-  /* 原版底栏分隔竖线 1×13 #333，左右各 8px（对照清单 #92） */
-  --mm-color-verline: #333;
-  --mm-verline-h: 13px;
-  --mm-color-icon-hover-border: var(--mm-gray-600);
-  /* 原版 `.select-switch{color:#006fff}`，比全局蓝略深 */
-  --mm-color-tab-active: #006fff;
-  --mm-color-swatch-hover: #d5d5d5;
-  --mm-color-style-thumb: rgba(0, 0, 0, 0.3);
-  --mm-color-card: var(--mm-gray-700);
-  --mm-color-card-hover: var(--mm-gray-600);
-
-  /* ---------- 字体管理页（原版 app.bf68b505.css 实测，2026-10-27） ---------- */
-  --mm-color-row-hover: #424242;
-  --mm-color-row-border: #2e2e2e;
-  --mm-color-input-page: #2c2c2c;
-  --mm-color-float: rgba(64, 64, 64, 0.96);
-  --mm-color-border-float: hsla(0, 0%, 100%, 0.1);
-  --mm-color-border-float-strong: hsla(0, 0%, 100%, 0.2);
-  --mm-color-mask-soft: rgba(0, 0, 0, 0.25);
-  /* 区域遮罩（`components/StateMask`）：黑底压到能看出「这块不可用」，又不是全黑 */
-  --mm-color-mask-strong: rgba(0, 0, 0, 0.6);
-  /* 字体页原版蓝（#3565ff），与全局 --mm-color-accent 不是同一个值；
-     只在字体页用，不要拿去改全局强调色 */
-  --mm-color-accent-solid: #3565ff;
-  --mm-color-accent-soft: #759fff;
-  --mm-color-text-muted: #b3b3b3;
-  --mm-color-text-preview: #e0e0e0;
-  --mm-color-text-name: #eaeaea;
-  --mm-color-text-chip: #c0c0c0;
-  --mm-color-text-strong: #f5f5f5;
-  --mm-color-text-onchip: hsla(0, 0%, 100%, 0.95);
-  --mm-color-disabled-bg: #3d3d3d;
-  --mm-color-disabled-text: #7b7b7b;
-  --mm-color-warn: #dcdcaa;
-  --mm-color-icon-page: #cacaca;
-  --mm-color-header-bar: #333333;
-  --mm-color-border-soft: rgba(0, 0, 0, 0.15);
-  --mm-color-surface-raised: var(--mm-gray-500);
-  --mm-color-surface-raised-hover: #575757;
-  --mm-color-star: #cacaca;
-  --mm-color-star-on: #b3b3b3;
-  --mm-color-modal-mask: rgba(0, 0, 0, 0.4);
-
-  /* 尺寸：原版本页 scoped 段 */
-  --mm-field-h: 30px;
-  --mm-field-radius: 5px;
-  --mm-page-pad-x: 8px;
-  /* 名字行最小高度：行内操作按钮 18×18 是这一行最高的元素，行高不能小于它，
-     否则按钮会压到下面的预览上（无预览模式还要容下 16px/22 的家族名） */
-  --mm-row-head-h: 18px;
-  --mm-list-head-h: 26px;
+  /* 字体管理页 */
+  /* 列表项的占位估算高度（content-visibility 用），随预览字号同步 */
+  --mm-font-item-est: 96px;
+  --mm-font-item-est-none: 40px;
+  --mm-font-item-est-sm: 88px;
+  --mm-font-item-est-md: 96px;
+  --mm-font-item-est-lg: 116px;
+  --mm-font-item-est-xl: 148px;
+  /* 预览字号是「给用户看的字」，不是 UI 字号，不并入三档。
+     行高统一取字号的 1.36~1.38 倍，保证五档的「字/空白」比例一致——
+     原先 38/53、50/70、72/101 三档比例不同，换档时列表节奏会跳。 */
   --mm-name-size: 16px;
   --mm-name-lh: 22px;
-  --mm-preview-sm: 24px;
-  --mm-preview-sm-lh: 34px;
-  --mm-preview-md: 38px;
-  --mm-preview-md-lh: 53px;
-  --mm-preview-lg: 50px;
-  --mm-preview-lg-lh: 70px;
-  --mm-preview-xl: 72px;
-  --mm-preview-xl-lh: 101px;
-  --mm-tag-collapse-h: 94px;
-  --mm-tag-panel-w: 180px;
-  --mm-filter-panel-w: 220px;
-  --mm-line-16: 16px;
-  --mm-line-17: 17px;
-  --mm-space-exact-12: 12px;
-  --mm-space-exact-15: 15px;
-  --mm-space-exact-20: 20px;
-  --mm-space-exact-40: 40px;
-  --mm-space-exact-30: 30px;
-  --mm-space-exact-34: 34px;
-  --mm-space-exact-43: 43px;
-  --mm-space-exact-56: 56px;
-  --mm-space-exact-64: 64px;
-  --mm-space-exact-54: 54px;
-  --mm-space-exact-60: 60px;
-  --mm-space-exact-70: 70px;
-  --mm-space-exact-120: 120px;
-  --mm-filter-badge: 14px;
-  --mm-tag-strip-h: 22px;
-  --mm-tag-chip-w: 18px;
-  /* 字重字形、字重计数、行内操作是同一行并排的三个方块，统一 18 */
+  --mm-preview-sm: 20px;
+  --mm-preview-sm-lh: 28px;
+  --mm-preview-md: 28px;
+  --mm-preview-md-lh: 38px;
+  --mm-preview-lg: 40px;
+  --mm-preview-lg-lh: 54px;
+  --mm-preview-xl: 60px;
+  --mm-preview-xl-lh: 82px;
   --mm-weight-glyph: 18px;
   --mm-weight-count: 18px;
-
-  --mm-font-item-est: 120px;
-  --mm-font-item-est-none: 48px;
-  --mm-font-item-est-sm: 110px;
-  --mm-font-item-est-md: 140px;
-  --mm-font-item-est-lg: 175px;
-  --mm-font-item-est-xl: 210px;
-  /* 页头高（各页统一，走 `components/PageHeader`） */
-  --mm-header-h: 40px;
-  --mm-tag-ctx-w: 105px;
-  --mm-modal-w: 260px;
-  --mm-preview-card-w: 180px;
-  --mm-weight-menu-min-w: 120px;
   --mm-search-filter-gap: 34px;
   --mm-name-reserve: 60px;
-  --mm-preview-card-left: 43px;
-  --mm-preview-card-bottom: 26px;
+  --mm-tag-collapse-h: 94px;
+  --mm-tag-panel-w: 180px;
+  --mm-tag-strip-h: 22px;
+  --mm-tag-chip-w: 18px;
+  /* --mm-tag-ctx-w 已删：标签右键菜单改用公共 ContextMenu，不再需要固定宽度 */
+  --mm-filter-panel-w: 220px;
   --mm-filter-panel-max-h: 420px;
   --mm-filter-panel-max-w-gap: 64px;
+  --mm-filter-badge: 14px;
 
+  /* 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%）。
+     名字不带 font-panel-：它是 `components/InputDialog` 在用，属于公共弹层尺寸 */
+  --mm-dialog-w: 220px;
+  --mm-dialog-offset-x: 90px;
 
-  /* ---------- 图标按钮 ---------- */
-  /* 全仓唯一的图标按钮尺寸（原版 .base-icon 26×26）。字体管理页原先另立 28 的
-     `--mm-font-icon-btn`，同页与页头 26 并存（同类两种尺寸），2026-10-28 并回这一档 */
-  --mm-icon-btn-size: 26px;
-
-  /* ---------- 字体面板页（面板按钮实测） ---------- */
-  /* 面板里的 .btn-small 高 26 */
-  --mm-font-panel-btn-h: 26px;
-  /* 字体面板的三层底：输入最暗 → 面板中间 → 按钮最亮（原版 .base-input #222 /
-     面板 #363636 / .btn-small #535353）。页面底比面板暗，别拿 bg-page 当面板底 */
-  --mm-color-font-panel-bg: #363636;
-  --mm-color-font-btn-hover: #444;
-  /* 分布弹窗 / 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%） */
-  --mm-font-panel-dialog-w: 220px;
-  --mm-font-panel-dialog-left: 90px;
-  /* 原版 .input-box 遮罩是 rgba(0,0,0,.1)，比弹窗遮罩淡 */
-  --mm-color-mask-faint: rgba(0, 0, 0, 0.1);
-  /* 原版弹窗阴影是 20px 模糊（比 --mm-shadow-pop 的 12px 更散） */
-  --mm-shadow-dialog: 0 4px 20px rgba(0, 0, 0, 0.4);
-  /* 原版 .input-box 的 z-index 是 1001，介于下拉与 tooltip 之间 */
-  --mm-z-input-box: 1001;
-  /* 属性面板颜色块宽 60 */
+  /* 字体面板页 */
   --mm-font-panel-swatch-w: 60px;
-  /* 原版层级编辑器 padding 13px（不是 4 的倍数） */
-  --mm-space-exact-13: 13px;
+  --mm-preview-card-w: 180px;
+  --mm-preview-card-left: 43px;
+  --mm-preview-card-bottom: 26px;
+  --mm-weight-menu-min-w: 120px;
 
-  /* ---------- 公共输入件（勾选 / 单选 / 输入框 / 折叠行） ---------- */
-  /* 12×12 是全仓定案（`docs/plan/03-常用-2026-10-27.md` §9 第 8 条），字体面板同步改成 12 */
-  --mm-check-size: 12px;
-  --mm-check-radius: 3px;
-  /* 官方 .base-check / .base-radio 的边框是 #707070；
-     不复用 --mm-color-border-checked（#6e6e6e，导航与字体管理页在用），两者不是同一个值 */
-  --mm-color-border-check: #707070;
-  /* 输入框三套宽度：宽 80 / 一半减 5 / 70×30（原版 .inputcom1 / .inputcom-2 / .switch-input） */
-  --mm-input-w-wide: 80px;
-  --mm-input-w-half: calc(50% - 5px);
-  --mm-input-w-compact: 70px;
-  --mm-input-h-compact: 30px;
-  /* 折叠行：整行高 24、箭头位 20×13（原版 .opencom / .open-wrap） */
-  --mm-collapse-h: 24px;
-  --mm-collapse-arrow-w: 20px;
-  --mm-collapse-arrow-h: 13px;
-
-  /* 组件最小 / 最大尺寸：stylelint 的 `min-*` / `max-*` 前缀此前漏检（只匹配精确属性名），
-     补上规则后这几处从裸 px 收到这里 */
-  --mm-modal-min-w: 240px;
-  --mm-modal-max-w: 320px;
-  --mm-menu-min-w: 120px;
-  --mm-log-max-h: 240px;
-
-  /* ---------- 常用页（05-常用-尺寸与状态表」本页 scoped 值） ---------- */
-  /* 功能格是 50×50，内部 svg 才是 32（清单把这俩搞反过，见 03 计划 §0.4） */
+  /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
+  /* 格子图标 32 的出处在 `TileButton.tsx` 的 `TILE_ICON_SIZE`（`Icon` 收数字 prop，
+     拿不到 CSS 变量），这里不再留同名 token——留着就是两个出处 */
   --mm-common-tile: 50px;
-  --mm-common-tile-icon: 32px;
-  --mm-common-tile-radius: 10px;
-  --mm-common-tile-gap: 15px;
-  --mm-common-tile-bg: #494949;
-  --mm-common-tile-hover-icon: #006fff;
-  /* 角标 3×3，上移 30、左移 -3 */
+  --mm-common-tile-radius: var(--mm-radius-md);
   --mm-common-mark: 3px;
   --mm-common-mark-offset-y: 30px;
   --mm-common-mark-offset-x: -3px;
-  /* 分隔线：本页 scoped 是 inset 30（全局那条 100% 不用） */
-  --mm-divider-inset: calc(100% - 30px);
-  /* 预设小按钮：高 26、内空 6；四颗 / 十颗 / 半宽 */
-  --mm-btn-small-h: 26px;
-  --mm-btn-small-pad: 6px;
-  --mm-btn-quarter: calc(25% - 4.5px);
-  --mm-btn-tenth: calc(20% - 4.8px);
-  --mm-btn-half: calc(50% - 5px);
+
+  /* 弹层 / 浮层 */
+  --mm-modal-w: 260px;
+  --mm-modal-min-w: 240px;
+  --mm-modal-max-w: 320px;
+  --mm-menu-min-w: 120px;
+  /* 下拉面板最大高度：字体列表有几百项，超过就滚动，不往屏幕外铺 */
+  --mm-select-panel-max-h: 320px;
+  --mm-log-max-h: 240px;
+  --mm-describe-max-w: 240px;
+  --mm-imgcolor-w: 300px;
+  --mm-imgcolor-grad-w: 42px;
+  --mm-imgcolor-grad-h: 22px;
+  --mm-spin-size: 18px;
+  --mm-spin-duration: 0.8s;
+
+  /* 定宽输入框（原版 .inputcom1 / .inputcom-2 / .switch-input）
+     half 与父级 gap 12 配对：(100% - 12) / 2 = 50% - 6px。
+     写成 50%-5px 时两个框加起来比容器宽 2px，右边的框会压出边界 */
+  --mm-input-w-wide: 80px;
+  --mm-input-w-half: calc(50% - 6px);
+  --mm-input-w-compact: 70px;
+  /* 预设小按钮宽度 = (100% - (列数 - 1) × gap) / 列数。
+     原来的 25%-4.5px / 20%-4.8px 是按 6px 间距算的，实际 gap 是 4px，
+     结果四列的行右边缺 6、十列的缺 8——每行都收不到 border-box 的右边缘。 */
+  --mm-btn-quarter: calc(25% - 3px);
+  --mm-btn-tenth: calc(20% - 3.2px);
+  --mm-btn-half: calc(50% - 6px);
 }

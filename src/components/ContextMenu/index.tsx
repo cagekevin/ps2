@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】右键菜单 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】右键菜单
  *
  * 定位走 useFloatingPosition（唯一锚点矩形入口），关闭走 useDismiss（唯一点外监听）。

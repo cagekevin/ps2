@@ -12,7 +12,7 @@ body {
   margin: 0;
   padding: 0;
   /* 原版 --c-surface / --c-bg 都是 #363636；#535353 只用于底栏 */
-  background: var(--mm-color-bg-page);
+  background: var(--mm-color-bg-base);
   color: var(--mm-color-text);
   font-family: "Microsoft Yahei", "PingFang SC", sans-serif;
   font-size: var(--mm-font-md);
@@ -40,5 +40,30 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--mm-color-modal-mask);
+  background: var(--mm-color-mask);
+}
+
+/* 滚动条：全仓一套，页面不再单独写。
+   只样式化 webkit 伪元素——CEP 12 是 Chromium 103，`scrollbar-width` / `scrollbar-color`
+   要 121 才有，写了等于没写；默认滚动条是浅色 15px，在深色面板上白得刺眼 */
+::-webkit-scrollbar {
+  width: var(--mm-scrollbar-w);
+  height: var(--mm-scrollbar-w);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-scrollbar-thumb);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mm-scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

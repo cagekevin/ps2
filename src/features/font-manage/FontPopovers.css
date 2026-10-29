@@ -8,18 +8,18 @@
   bottom: var(--mm-preview-card-bottom);
   width: var(--mm-preview-card-w);
   padding: var(--mm-space-3) 0;
-  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-float);
+  background: var(--mm-color-bg-overlay);
   box-shadow: var(--mm-shadow-pop);
-  color: var(--mm-color-text-name);
+  color: var(--mm-color-text-strong);
 }
 
 .mm-font__preview-item {
   position: relative;
   width: 100%;
   /* 左 30 是勾选位；右 16 与字重选项同一档（原来右侧 30 是多余留白） */
-  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-space-exact-30);
+  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-control-reserve);
   border: 0;
   background: transparent;
   color: inherit;
@@ -28,10 +28,15 @@
   cursor: pointer;
 }
 
-.mm-font__preview-item:hover,
+/* hover 是临时反馈，按 §7 规则 12 叠白、不铺蓝；选中（--active）才是状态，铺蓝底 */
+.mm-font__preview-item:hover {
+  background: var(--mm-color-bg-hover);
+  color: var(--mm-color-text-strong);
+}
+
 .mm-font__preview-item--active {
-  background: var(--mm-color-accent-solid);
-  color: var(--mm-color-text-inverse);
+  background: var(--mm-color-accent);
+  color: var(--mm-color-text-strong);
 }
 
 .mm-font__preview-check {
@@ -49,11 +54,10 @@
   z-index: var(--mm-z-dropdown);
   width: var(--mm-tag-panel-w);
   padding: var(--mm-space-3);
-  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-float);
+  background: var(--mm-color-bg-overlay);
   box-shadow: var(--mm-shadow-pop);
-  box-sizing: border-box;
 }
 
 .mm-font__tag-menu-title {
@@ -78,14 +82,12 @@
 /* 标签输入框（两套视觉） */
 .mm-font__tag-input {
   position: relative;
-  box-sizing: border-box;
 }
 
 .mm-font__tag-field {
   width: 100%;
   border-radius: var(--mm-radius-md);
-  box-sizing: border-box;
-  color: var(--mm-color-text-inverse);
+  color: var(--mm-color-text-strong);
 }
 
 .mm-font__tag-field::placeholder {
@@ -100,26 +102,15 @@
   margin: var(--mm-space-3) 0 var(--mm-space-2);
 }
 
-.mm-font__tag-input--menu .mm-font__tag-field {
-  height: var(--mm-control-h);
-  /* 输入框统一：左 10，右 30 给清除按钮留位 */
-  padding: 0 var(--mm-space-exact-30) 0 var(--mm-space-exact-10);
-  border: var(--mm-border-w) solid transparent;
-  background: var(--mm-color-input-page);
-  font-size: var(--mm-font-sm);
-}
-
+/* 标签输入框的表面由 `.mm-input` 给，两档只差左右内边距（右 30 给清除按钮留位） */
+.mm-font__tag-input--menu .mm-font__tag-field,
 .mm-font__tag-input--modal .mm-font__tag-field {
-  height: var(--mm-field-h);
-  /* 输入框统一：左 10；右侧 30 给清除按钮留位 */
-  padding: 0 var(--mm-space-exact-30) 0 var(--mm-space-exact-10);
-  border: var(--mm-border-w) solid transparent;
-  background: var(--mm-color-input-page);
-  font-size: var(--mm-font-sm);
+  padding: 0 var(--mm-control-reserve) 0 var(--mm-space-3);
 }
 
+/* 焦点是状态，用蓝；但 `--mm-color-accent-hover` 是 hover 档，静态焦点态不许借它（§7 规则 12） */
 .mm-font__tag-input--modal .mm-font__tag-field:focus {
-  border-color: var(--mm-color-accent-soft);
+  border-color: var(--mm-color-accent);
 }
 
 .mm-font__tag-clear {
@@ -131,37 +122,14 @@
   border: 0;
   background: transparent;
   color: var(--mm-color-text-muted);
-  font-size: var(--mm-font-xl);
+  font-size: var(--mm-font-md);
   line-height: 1;
   cursor: pointer;
 }
 
-/* 标签右键浮层 */
-.mm-font__tag-ctx {
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
-  z-index: var(--mm-z-dropdown);
-  width: var(--mm-tag-ctx-w);
-  padding: var(--mm-space-1) var(--mm-space-3);
-  background: var(--mm-color-accent-solid);
-  color: var(--mm-color-text-inverse);
-  font-size: var(--mm-font-sm);
-  line-height: var(--mm-space-exact-20);
-}
-
-.mm-font__tag-ctx button {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  text-align: left;
-  cursor: pointer;
-}
+/* 标签右键菜单已改用公共 `components/ContextMenu`（样式在 `menu.css`）。
+   这里不再有 `.mm-font__tag-ctx`：那一版是蓝底白字、无边框无圆角无阴影，
+   与样式页 / 常用页的右键菜单不是同一种东西。 */
 
 /* 标签新建 / 重命名弹窗 */
 .mm-font__modal-mask {
@@ -171,17 +139,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--mm-color-modal-mask);
+  background: var(--mm-color-mask);
 }
 
 .mm-font__modal {
   width: var(--mm-modal-w);
   padding: var(--mm-space-3);
-  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-float);
+  background: var(--mm-color-bg-overlay);
   box-shadow: var(--mm-shadow-pop);
-  box-sizing: border-box;
 }
 
 .mm-font__modal-title {
@@ -198,24 +165,4 @@
   margin-top: var(--mm-space-3);
 }
 
-.mm-font__modal-btn {
-  height: var(--mm-control-h);
-  padding: 0 var(--mm-space-4);
-  border: var(--mm-border-w) solid transparent;
-  border-radius: var(--mm-radius-md);
-  background: var(--mm-color-surface-raised);
-  color: var(--mm-color-text-strong);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-.mm-font__modal-btn--primary {
-  border-color: var(--mm-color-accent-solid);
-  background: var(--mm-color-accent-solid);
-  color: var(--mm-color-text-inverse);
-}
-
-.mm-font__modal-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+/* 弹窗按钮表面由 `ui.Button` 给（`primary` / `ghost` 两档），禁用态也在那里，这里不再画一份 */

@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】图标注册表 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 图标组件
  * 由 tools/build-icons.mjs 从 assets/icons-sprite.svg 生成，不要手改。
  * 用法：<Icon name="icon-nav_mobanku" size={24} />

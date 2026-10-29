@@ -1,8 +1,12 @@
 /**
  * 【范本】图标 + 展开面板的壳
  *
- * 壳本身不画背景：面板内容（`IconPanel` 的 panel）自己带 padding 与底色，
- * 这样同一个壳既能装深色设置区，也能装浅色表单，不用为每种面板改壳。
+ * 抽屉的表面（底色 / 圆角 / 内边距）由 `__box` 统一给，面板内容只管自己内部的布局。
+ *
+ * 为什么改成由壳来画：原先约定「壳不画背景、内容自己带」，结果各页各写一份——
+ * `.mm-common__panel`（常用页 2 个抽屉）、`.mm-font-panel__panel`（字体面板 3 个）、
+ * `.mm-font-panel__presets`（字体面板 3 个），参数发散成「12 + 圆角」「8 + 无圆角」
+ * 几种，同一个角色的 8 个抽屉长得不一样。抽屉是同一个角色，表面就该只有一处定义。
  *
  * `__host` 是组末尾的空容器，面板通过 portal 落到这里——它的宽度就是面板宽度。
  */
@@ -11,4 +15,11 @@
 .mm-icon-panel__host,
 .mm-icon-panel__box {
   width: 100%;
+}
+
+/* 抽屉表面：全仓唯一一处。各页的 panel 类不要再写 padding / 底色 / 圆角 */
+.mm-icon-panel__box {
+  padding: var(--mm-space-3);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-sunken);
 }

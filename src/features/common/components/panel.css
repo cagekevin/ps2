@@ -1,25 +1,27 @@
-/* 常用页两个子面板的公共壳与行布局（面板内容不画背景，壳由 IconPanel 给）
-   `IconPanel` 的宿主 div 就是面板宽度，这里只负责内边距与行距。 */
+/*
+ * 常用页两个抽屉（参考线 / 间距分布）的内部布局。
+ * 表面（sunken 底 + 4 圆角 + 12 内边距）已由 `components/IconPanel` 的 `__box` 统一给，
+ * 这里只管抽屉内部各行的排列，不要再写 padding / 底色 / 圆角。
+ */
 .mm-common__panel {
   display: flex;
   flex-direction: column;
   gap: var(--mm-space-2);
   width: 100%;
-  padding: var(--mm-space-2) 0;
 }
 
 /* 一行：输入框（占满）+ 按钮；或两颗半宽按钮 */
 .mm-common__panel-row {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-exact-6);
+  gap: var(--mm-space-inline);
 }
 
 .mm-common__panel-rule {
   width: 100%;
   height: var(--mm-border-w);
-  margin: var(--mm-space-exact-2) 0;
-  background: var(--mm-color-border-soft);
+  margin: var(--mm-space-tight) 0;
+  background: var(--mm-color-border);
 }
 
 .mm-common__panel-btn {

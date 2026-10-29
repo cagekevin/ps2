@@ -1,10 +1,14 @@
 /* 勾选框：12×12 / 圆角 3 / 1px #707070（官方 .base-check 本页实测值） */
 .mm-check {
   display: inline-flex;
+  /* 面板拉窄到 200 时不撑破父容器：没有这两条，长标签会按内容宽度顶出去 */
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
-  gap: var(--mm-space-exact-6);
+  gap: var(--mm-space-inline);
   color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  /* 与 `ui.css` 的按钮 / 输入框同字号：表单控件是同一类，不能这一页 13 那一页 12 */
+  font-size: var(--mm-font-sm);
   cursor: pointer;
   user-select: none;
 }
@@ -12,8 +16,8 @@
 /* 原生控件只保留语义与焦点，不占布局位置 */
 .mm-check__input {
   position: absolute;
-  width: var(--mm-space-exact-1);
-  height: var(--mm-space-exact-1);
+  width: var(--mm-space-tight);
+  height: var(--mm-space-tight);
   opacity: 0;
 }
 
@@ -23,9 +27,9 @@
   flex: 0 0 auto;
   width: var(--mm-check-size);
   height: var(--mm-check-size);
-  border: var(--mm-border-w) solid var(--mm-color-border-check);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-check-radius);
-  background: var(--mm-color-sunken);
+  background: var(--mm-color-bg-sunken);
 }
 
 .mm-check__input:checked + .mm-check__box {
@@ -36,12 +40,12 @@
 /* 对勾用两条边框拼出：不用 svg，省一个图标也不用随尺寸改 viewBox */
 .mm-check__input:checked + .mm-check__box::after {
   position: absolute;
-  top: var(--mm-space-exact-1);
-  left: var(--mm-space-exact-3);
-  width: var(--mm-space-exact-3);
-  height: var(--mm-space-exact-6);
-  border: solid var(--mm-color-text-inverse);
-  border-width: 0 var(--mm-space-exact-2) var(--mm-space-exact-2) 0;
+  top: var(--mm-space-tight);
+  left: var(--mm-space-tight);
+  width: var(--mm-space-tight);
+  height: var(--mm-space-inline);
+  border: solid var(--mm-color-text-strong);
+  border-width: 0 var(--mm-space-tight) var(--mm-space-tight) 0;
   content: '';
   transform: rotate(45deg);
 }
@@ -63,6 +67,8 @@
 }
 
 .mm-check__label {
+  /* ellipsis 要真的生效必须有 min-width: 0，否则 flex 子项按内容宽度撑开 */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

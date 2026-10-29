@@ -1,18 +1,22 @@
 /* 单选框：12×12 / 50% 正圆 / 1px #707070（官方 .base-radio 本页实测值） */
 .mm-radio {
   display: inline-flex;
+  /* 与 CheckBox 同一套收缩规则 */
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
-  gap: var(--mm-space-exact-6);
+  gap: var(--mm-space-inline);
   color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  /* 与 CheckBox / 按钮 / 输入框同字号（原来这三个各不相同） */
+  font-size: var(--mm-font-sm);
   cursor: pointer;
   user-select: none;
 }
 
 .mm-radio__input {
   position: absolute;
-  width: var(--mm-space-exact-1);
-  height: var(--mm-space-exact-1);
+  width: var(--mm-space-tight);
+  height: var(--mm-space-tight);
   opacity: 0;
 }
 
@@ -21,15 +25,15 @@
   flex: 0 0 auto;
   width: var(--mm-check-size);
   height: var(--mm-check-size);
-  border: var(--mm-border-w) solid var(--mm-color-border-check);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-pill);
-  background: var(--mm-color-sunken);
+  background: var(--mm-color-bg-sunken);
 }
 
 /* 选中：外圈强调色 + 内圈留一圈底色，形成实心点 */
 .mm-radio__input:checked + .mm-radio__dot {
   border-color: var(--mm-color-accent);
-  box-shadow: inset 0 0 0 var(--mm-space-exact-2) var(--mm-color-sunken);
+  box-shadow: inset 0 0 0 var(--mm-space-tight) var(--mm-color-bg-sunken);
   background: var(--mm-color-accent);
 }
 
@@ -48,6 +52,7 @@
 }
 
 .mm-radio__label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

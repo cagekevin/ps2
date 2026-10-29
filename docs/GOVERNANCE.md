@@ -77,6 +77,7 @@
 
 | 层 | 范本文件 | 说明 | 状态 |
 |---|---|---|---|
+| 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `CONVENTIONS` §7 规则 12 | ✅ 五页实测（2026-10-29：5 页 × 6 宽度核对，见 `docs/review/REVIEW-2026-10-29.md`） |
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 | ✅ 真机 |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 | ✅ 真机 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 | ✅ 真机 |
@@ -164,7 +165,7 @@
 | 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 | ⚠️ 待真机 |
 | 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` | ⚠️ 待真机 |
 | 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」 | ⚠️ 待真机 |
-| 展开面板样式 | `src/components/IconPanel/icon-panel.css` | 壳不画背景，面板内容自带 padding/底色 | ⚠️ 待真机 |
+| 展开面板样式 | `src/components/IconPanel/icon-panel.css` | 抽屉表面（sunken 底 + 4 圆角 + 12 内边距）由 `__box` 唯一一处给；内容类只管布局，不再各写 padding/底色/圆角 | ⚠️ 待真机 |
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `#707070` / 右空 6；原生 input | ⚠️ 待真机 |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 | ⚠️ 待真机 |
 | 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` | ⚠️ 待真机 |

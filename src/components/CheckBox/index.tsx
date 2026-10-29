@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】勾选框 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】勾选框（原版 `baseCheck`）
  *
  * 全仓唯一实现：`components/**` 与 `features/**` 一律 import 这里，

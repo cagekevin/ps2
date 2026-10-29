@@ -150,7 +150,7 @@ export function useLongPressDrag() {
           .join(';');
         /* 拖起来文字变纯白：#fff 走 token（原版 hover 就是纯白，不是 #f5f5f5） */
         if (paragraph) {
-          paragraph.style.cssText = `${paragraphCss};color:var(--mm-color-text-inverse)`;
+          paragraph.style.cssText = `${paragraphCss};color:var(--mm-color-text-strong)`;
         }
       }
 

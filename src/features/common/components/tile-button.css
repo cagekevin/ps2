@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--mm-space-exact-2);
+  gap: var(--mm-space-tight);
   width: 100%;
   padding: 0;
   border: 0;
@@ -12,26 +12,36 @@
   cursor: pointer;
 }
 
-/* 悬停「变白」是有意不做（2026-10-23 判定），这里只换底色与图标色 */
+/* 方块宽度自适应所在列（列已由 grid 等分），height 仍是 50。
+   原来是固定 50×50，在 ~93 宽的列里居中，左右各空 21——
+   列的边界和方块的边界对不上，整行看着左一块右一块地错位 */
 .mm-common__tile-box {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--mm-common-tile);
+  width: 100%;
   height: var(--mm-common-tile);
   border-radius: var(--mm-common-tile-radius);
-  background: var(--mm-common-tile-bg);
+  background: var(--mm-color-bg-raised);
 }
 
-.mm-common__tile:hover .mm-common__tile-box,
+/* hover 一律叠白（§7 状态表）：原来这里换成 `--mm-color-bg-sunken`，比静态的 raised 还暗，
+   hover 反而变暗。抽屉展开中（--active）是「凹下去」的语义，那个才用 sunken */
+.mm-common__tile:hover .mm-common__tile-box {
+  background: var(--mm-color-bg-hover);
+}
+
 .mm-common__tile--active .mm-common__tile-box {
-  background: var(--mm-color-sunken);
+  background: var(--mm-color-bg-sunken);
 }
 
+/* 图标不承载状态：hover 与抽屉展开中都是同一个最亮白。
+   「展开」这件事由底色凹下去 + 抽屉本身表达，不靠图标变色——14 个格子里一半白一半蓝，
+   看起来像两种图标，而不是「有一个开着」（§7 规则 12：蓝只给真正的选中态） */
 .mm-common__tile:hover .mm-common__tile-icon,
 .mm-common__tile--active .mm-common__tile-icon {
-  color: var(--mm-common-tile-hover-icon);
+  color: var(--mm-color-text-strong);
 }
 
 /* 有悬停图时：默认画 rest，悬停换成 filled（官方 fillSvg 的语义） */
@@ -77,7 +87,7 @@
 }
 
 .mm-common__tile--disabled:hover .mm-common__tile-box {
-  background: var(--mm-common-tile-bg);
+  background: var(--mm-color-bg-raised);
 }
 
 .mm-common__tile--disabled:hover .mm-common__tile-icon {

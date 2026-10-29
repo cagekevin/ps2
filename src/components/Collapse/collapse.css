@@ -20,7 +20,7 @@
 }
 
 .mm-collapse__head:hover {
-  color: var(--mm-color-text-inverse);
+  color: var(--mm-color-text-strong);
 }
 
 .mm-collapse__arrow {

@@ -23,7 +23,7 @@
 
 .mm-icon-btn:hover:not(:disabled),
 .mm-icon-btn--active {
-  border-color: var(--mm-color-icon-hover-border);
+  border-color: var(--mm-color-border-control);
 }
 
 .mm-icon-btn:hover:not(:disabled) {
@@ -31,7 +31,7 @@
 }
 
 .mm-icon-btn--active {
-  background: var(--mm-color-sunken);
+  background: var(--mm-color-bg-sunken);
 }
 
 .mm-icon-btn:disabled {
@@ -41,7 +41,7 @@
 
 /* 原版角标是 baseIcon 的第二个 flex 子项（不是绝对定位），mt12 压到右下 */
 .mm-icon-btn__badge {
-  margin-top: var(--mm-space-exact-12);
+  margin-top: var(--mm-space-3);
   color: inherit;
   pointer-events: none;
 }

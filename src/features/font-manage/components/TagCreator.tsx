@@ -1,7 +1,7 @@
 /** 新建 / 重命名标签：居中弹窗 + 输入 + 取消/确定 */
 import { useState } from 'react';
 import { Portal } from '../../../components/Portal';
-import { stopClickPropagation } from '../../../components/ui';
+import { Button, stopClickPropagation } from '../../../components/ui';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { TagInput } from './TagInput';
@@ -54,22 +54,16 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
           autoFocus
         />
         <div className="mm-font__modal-actions">
-          <button
-            type="button"
-            className="mm-font__modal-btn"
-            disabled={submitting}
-            onClick={onClose}
-          >
+          <Button disabled={submitting} onClick={onClose}>
             取消
-          </button>
-          <button
-            type="button"
-            className="mm-font__modal-btn mm-font__modal-btn--primary"
+          </Button>
+          <Button
+            variant="primary"
             disabled={!text.trim() || submitting}
             onClick={() => void submit()}
           >
             {submitting ? '处理中…' : '确定'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

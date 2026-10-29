@@ -32,7 +32,7 @@ import {
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { usePagedList } from '../../hooks/usePagedList';
 import { defaultPreviewText, useFontStore } from '../../store/font';
-import type { Result } from '../../types/result';
+import { ok, type Result } from '../../types/result';
 import type { HeaderMenuAction } from './components/FontHeader';
 import { fontFamilyValue } from './css';
 import { useTagActions } from './useTagActions';
@@ -87,7 +87,11 @@ export function useFontManage() {
     const seq = ++requestSeq.current;
     setLoading(true);
 
-    const result = await loadFontList(force);
+    /* 浏览器里没有 PS，系统字体必然读不到；dev 下换假数据，才看得到列表的真实排版 */
+    const result = import.meta.env.DEV
+      ? ok({ fonts: (await import('../../dev/preview')).PREVIEW_FONTS, dropped: [] })
+      : await loadFontList(force);
+
     if (!aliveRef.current || seq !== requestSeq.current) return;
 
     setLoadResult(result);

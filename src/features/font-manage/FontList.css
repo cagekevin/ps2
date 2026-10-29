@@ -12,9 +12,10 @@
 }
 
 .mm-font__item {
-  padding: var(--mm-space-2) var(--mm-page-pad-x);
-  background: var(--mm-color-bg-page);
-  border-bottom: var(--mm-border-w) solid var(--mm-color-row-border);
+  /* 上下 6：项内已有「名字—预览—字重」三段节奏，再给 8 会显得每项都在喘气 */
+  padding: var(--mm-space-inline) var(--mm-page-pad-x);
+  background: var(--mm-color-bg-base);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
   cursor: pointer;
   content-visibility: auto;
   contain-intrinsic-size: var(--mm-font-item-est);
@@ -48,7 +49,7 @@
 
 .mm-font__item:hover,
 .mm-font__item--active {
-  background: var(--mm-color-row-hover);
+  background: var(--mm-color-bg-hover);
 }
 
 .mm-font__item-body {
@@ -82,7 +83,7 @@
 }
 
 .mm-font__family--name-only {
-  color: var(--mm-color-text-name);
+  color: var(--mm-color-text-strong);
   font-family: var(--mm-preview-family, inherit);
   font-size: var(--mm-name-size);
   line-height: var(--mm-name-lh);
@@ -117,12 +118,12 @@
   border: 0;
   border-radius: var(--mm-radius-sm);
   background: transparent;
-  color: var(--mm-color-icon-page);
+  color: var(--mm-color-icon);
   cursor: pointer;
 }
 
 .mm-font__act:hover {
-  color: var(--mm-color-text-inverse);
+  color: var(--mm-color-text-strong);
 }
 
 /* 星级 */
@@ -137,22 +138,22 @@
   padding: 0 0 0 var(--mm-space-1);
   border: 0;
   background: transparent;
-  color: var(--mm-color-star);
+  color: var(--mm-color-text-muted);
   font-size: var(--mm-font-sm);
   line-height: 1;
   cursor: pointer;
 }
 
 .mm-font__star--on {
-  color: var(--mm-color-star-on);
+  color: var(--mm-color-text);
 }
 
 /* 预览文字 */
 .mm-font__preview {
   margin: 0;
-  /* 名字是预览的标签：贴近预览（上 4），与下面的字重行留 8 */
-  padding: var(--mm-space-1) 0 var(--mm-space-2);
-  color: var(--mm-color-text-preview);
+  /* 名字是预览的标签：贴近预览（上 2），与下面的字重行留 6 */
+  padding: var(--mm-space-tight) 0 var(--mm-space-inline);
+  color: var(--mm-color-text);
   font-family: var(--mm-preview-family, inherit);
   white-space: nowrap;
   overflow: hidden;
@@ -212,7 +213,7 @@
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
   background: transparent;
-  color: var(--mm-color-text-chip);
+  color: var(--mm-color-text);
   font-family: var(--mm-glyph-font, inherit);
   font-size: var(--mm-font-sm);
   line-height: 1;
@@ -220,7 +221,7 @@
 }
 
 .mm-font__glyph--current {
-  border-color: var(--mm-color-border-checked);
+  border-color: var(--mm-color-border-control);
 }
 
 .mm-font__weight-count {
@@ -233,7 +234,7 @@
   padding: 0;
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-surface-raised);
+  background: var(--mm-color-bg-raised);
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-sm);
   line-height: 1;
@@ -248,19 +249,19 @@
   min-width: var(--mm-weight-menu-min-w);
   /* 与其它弹层一致：上下同档，不再上 12 下 8 */
   padding: var(--mm-space-3) 0;
-  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-input-page);
+  background: var(--mm-color-bg-sunken);
   box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-font__weight-option {
   position: relative;
   width: 100%;
-  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-space-exact-30);
+  padding: var(--mm-space-1) var(--mm-space-4) var(--mm-space-1) var(--mm-control-reserve);
   border: 0;
   background: transparent;
-  color: var(--mm-color-text-inverse);
+  color: var(--mm-color-text-strong);
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-17);
   text-align: left;

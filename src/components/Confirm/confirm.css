@@ -6,8 +6,8 @@
   padding: var(--mm-space-3);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
-  box-shadow: var(--mm-shadow-md);
+  background: var(--mm-color-bg-overlay);
+  box-shadow: var(--mm-shadow-pop);
 }
 
 .mm-confirm__title {
@@ -40,8 +40,10 @@
   cursor: pointer;
 }
 
+/* hover 是临时反馈，按 §7 规则 12 不用蓝：改成亮线那一档。
+   蓝留给「选中 / 主操作」，危险按钮的红由 `--danger` 给，两者不混 */
 .mm-confirm__btn:hover {
-  border-color: var(--mm-color-accent);
+  border-color: var(--mm-color-border-control);
 }
 
 .mm-confirm__btn--danger {
@@ -51,5 +53,5 @@
 
 .mm-confirm__btn--danger:hover {
   background: var(--mm-color-error);
-  color: var(--mm-color-bg);
+  color: var(--mm-color-text-on-accent);
 }

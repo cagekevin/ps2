@@ -6,8 +6,8 @@
   align-items: center;
   gap: var(--mm-space-2);
   padding: 0 var(--mm-page-pad-x);
-  background: var(--mm-color-header-bar);
-  border-bottom: var(--mm-border-w) solid var(--mm-color-border-soft);
+  background: var(--mm-color-bg-panel);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
 }
 
 .mm-page-header__title {

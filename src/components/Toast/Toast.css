@@ -15,7 +15,7 @@
   max-width: 90%;
   padding: var(--mm-space-1) var(--mm-space-2);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-overlay);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
   box-shadow: var(--mm-shadow-pop);

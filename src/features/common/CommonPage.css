@@ -4,7 +4,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--mm-color-bg-page);
+  /* 底色由外壳 `.mm-layout` 统一给，页面根不写 */
 }
 
 .mm-common__body {
@@ -17,22 +17,24 @@
 .mm-common__row {
   display: flex;
   align-items: center;
-  gap: var(--mm-space-exact-10);
+  gap: var(--mm-space-3);
 }
 
-/* 档位按钮：高 26 / 内空 6 / 圆角 5 / 右空 6 */
+/* 档位按钮：高 26 / 内空 6 / 圆角 4
+   组内 4、组间 8：原来组内 6、组间 8 只差 2px，
+   四组「放大 / 缩小 / 整体放大 / 整体缩小」糊成一整片，看不出哪几个是一组 */
 .mm-common__presets {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-exact-6) var(--mm-space-exact-6);
+  gap: var(--mm-space-1);
   margin-top: var(--mm-space-2);
 }
 
 .mm-common__preset {
-  height: var(--mm-btn-small-h);
-  padding: 0 var(--mm-btn-small-pad);
+  height: var(--mm-control-h);
+  padding: 0 var(--mm-space-inline);
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
@@ -48,41 +50,32 @@
 }
 
 .mm-common__preset:hover {
-  background: var(--mm-color-surface-raised-hover);
-}
-
-/* 翻转 6 向：一排小图标按钮，尺寸沿用 26×26 的工具按钮 */
-.mm-common__flips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-exact-6);
-  margin-top: var(--mm-space-2);
-}
-
-.mm-common__flip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--mm-icon-btn-size);
-  height: var(--mm-icon-btn-size);
-  padding: 0;
-  border: var(--mm-border-w) solid transparent;
-  background: transparent;
-  color: var(--mm-color-text);
-  cursor: pointer;
-}
-
-.mm-common__flip:hover {
-  border-color: var(--mm-color-icon-hover-border);
   background: var(--mm-color-bg-hover);
 }
 
-/* 分隔线：inset 30 / 高 1 / 上下 5 / rgba(0,0,0,.15) */
+/* 翻转 6 向：与字体面板的图标行同一套排法——flex + 两端对齐，按钮固定 26×26。
+   不再自绘 `.mm-common__flip`：它是图标按钮，形状 / 悬停 / 选中都在 `components/IconButton` 一处，
+   两页同一种东西就必须同一个实现（§6.1） */
+.mm-common__flips {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mm-space-1);
+  /* 与字体面板 `.mm-font-panel__icon-row` 同一写法：面板拉到 200 时一排 6 个放不下，
+     换行而不是把最后一颗顶出面板（实测 200 宽下原写法溢出 32px） */
+  flex-wrap: wrap;
+  row-gap: var(--mm-space-1);
+  margin-top: var(--mm-space-2);
+}
+
+/* 分隔线：通栏，与其它所有行的左右边界一致。
+   原来是 inset 30 + margin auto，左右各缩 15，这一横线比上下所有内容都窄一截，
+   正好踩 CONVENTIONS §7 规则 10 点名禁止的「分隔线左右 15、内容左右 10」 */
 .mm-common__divider {
-  width: var(--mm-divider-inset);
+  width: 100%;
   height: var(--mm-border-w);
-  margin: var(--mm-space-exact-5) auto;
-  background: var(--mm-color-border-soft);
+  margin: var(--mm-space-2) 0;
+  background: var(--mm-color-border);
 }
 
 /* 网格：每行 3 个（每格占宽 33%），行距 15；每行是一个 IconPanelGroup */
@@ -97,13 +90,14 @@
 .mm-common__grid {
   display: flex;
   flex-direction: column;
-  padding-top: var(--mm-space-exact-2);
+  padding-top: var(--mm-space-tight);
 }
 
 .mm-common__tile-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  row-gap: var(--mm-common-tile-gap);
+  /* minmax(0,…) 而不是 1fr：格子里有长名字时会把列撑破，右边那格被挤出去 */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mm-space-3);
 }
 
 /* 面板的宿主：整行宽，落在本行之后（原版是「面板项 width:100% 靠 flex 换行」） */

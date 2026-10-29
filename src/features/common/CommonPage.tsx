@@ -12,7 +12,6 @@
 
 import type { ReactNode } from 'react';
 import { Collapse } from '../../components/Collapse';
-import { Icon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { PageHeader } from '../../components/PageHeader';
@@ -122,10 +121,15 @@ export default function CommonPage() {
               />
             </div>
 
+            {/* 「放大」与「缩小」是两个语义组，各自一个 flex 行：
+                混在一行里只靠 flex-wrap 换行，换行处与组边界对不上，读不出哪四个是一组 */}
             <div className="mm-common__presets">
               {ZOOM_LEVELS.enlargePart.map((value) => (
                 <ZoomPreset key={`enlarge-${value}`} value={value} wide={false} onClick={() => page.zoomTo(value)} />
               ))}
+            </div>
+
+            <div className="mm-common__presets">
               {ZOOM_LEVELS.narrowPart.map((value) => (
                 <ZoomPreset key={`narrow-${value}`} value={value} wide={false} onClick={() => page.zoomTo(value)} />
               ))}
@@ -153,16 +157,12 @@ export default function CommonPage() {
           >
             <div className="mm-common__flips">
               {FLIP_ITEMS.map((item) => (
-                <button
+                <IconButton
                   key={item.direction}
-                  type="button"
-                  className="mm-common__flip"
+                  name={item.icon}
                   title={item.title}
-                  aria-label={item.title}
                   onClick={() => page.flipTo(item.direction)}
-                >
-                  <Icon name={item.icon} size={18} />
-                </button>
+                />
               ))}
             </div>
           </Collapse>

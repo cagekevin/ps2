@@ -17,7 +17,7 @@ interface Props {
 
 export function PageFooter({ mode, onMode, onToggleText }: Props) {
   return (
-    <BottomBar className="mm-font__footer">
+    <BottomBar>
       <PreviewSetting mode={mode} onMode={onMode} onToggleText={onToggleText} />
     </BottomBar>
   );

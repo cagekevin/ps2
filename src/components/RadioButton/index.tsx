@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】单选框 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】单选框（原版 `baseRadio`）
  *
  * 全仓唯一实现：不写裸 `<input type="radio">`（`CONVENTIONS` §6）。

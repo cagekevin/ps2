@@ -8,7 +8,7 @@
  * 落盘 / 应用通过回调交给页面。
  */
 import { useState, type CSSProperties } from 'react';
-import { stopClickPropagation } from '../../../components/ui';
+import { Button, stopClickPropagation } from '../../../components/ui';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { buildColorPairGradients } from '../../../domain/image-color';
 import './img-color-dialog.css';
@@ -89,20 +89,12 @@ export function ImgColorDialog({
           ))}
         </div>
         <div className="mm-imgcolor__row">
-          <button
-            type="button"
-            className="mm-imgcolor__btn mm-imgcolor__btn--primary"
-            onClick={() => onSaveColorGroup(hexes)}
-          >
+          <Button variant="primary" className="mm-imgcolor__btn" onClick={() => onSaveColorGroup(hexes)}>
             保存到颜色
-          </button>
-          <button
-            type="button"
-            className="mm-imgcolor__btn mm-imgcolor__btn--second"
-            onClick={() => onSaveSwatch(hexes)}
-          >
+          </Button>
+          <Button className="mm-imgcolor__btn" onClick={() => onSaveSwatch(hexes)}>
             保存到色板
-          </button>
+          </Button>
         </div>
 
         <hr className="mm-imgcolor__hr" />
@@ -123,13 +115,13 @@ export function ImgColorDialog({
             />
           ))}
         </div>
-        <button
-          type="button"
-          className="mm-imgcolor__btn mm-imgcolor__btn--primary mm-imgcolor__btn--wide"
+        <Button
+          variant="primary"
+          className="mm-imgcolor__btn mm-imgcolor__btn--wide"
           onClick={() => onSaveGradientGroup(hexes)}
         >
           保存渐变
-        </button>
+        </Button>
       </div>
     </div>
   );

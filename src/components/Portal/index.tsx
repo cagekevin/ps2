@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】浮层挂载点 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】浮层挂载点
  *
  * 全仓唯一「挂到 `document.body`」的地方：`features/**` 不许再自己写 `document.body`。

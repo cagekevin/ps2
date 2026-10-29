@@ -22,7 +22,6 @@
   background: transparent;
   color: var(--mm-color-icon);
   text-decoration: none;
-  box-sizing: border-box;
   cursor: default;
 }
 
@@ -34,7 +33,7 @@
 /* 原版 .nav-item-active：background-color #434343 */
 .mm-nav__item--active,
 .mm-nav__item:hover {
-  background: var(--mm-color-nav-active);
+  background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
 }
 
@@ -50,7 +49,7 @@
   align-items: center;
   padding: 0 var(--mm-space-5);
   border-radius: 0 var(--mm-radius-md) var(--mm-radius-md) 0;
-  background: var(--mm-color-nav-active);
+  background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   line-height: 1;
@@ -77,8 +76,8 @@
 }
 
 .mm-nav__item--sub:hover {
-  background: var(--mm-color-nav-sub-hover);
-  border-color: var(--mm-color-border-checked);
+  background: var(--mm-color-bg-hover);
+  border-color: var(--mm-color-border-control);
 }
 
 .mm-nav__item--sub::after {

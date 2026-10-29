@@ -1,14 +1,12 @@
 /**
  * 字体面板页样式（类名前缀统一 `mm-font-panel__`）
  *
- * 尺寸与颜色只取 token：面板底色 `--mm-color-sunken`（比页面底暗一档），
- * 面板底 `--mm-color-font-panel-bg`、按钮底 `--mm-color-bg-panel`、输入框底 `--mm-color-sunken`（三层从暗到亮），
- * 分隔线 `--mm-color-verline`。原版值写在 tokens.css 的注释里，这里不复制。
+ * 尺寸与颜色只取 token：面板底 `--mm-color-bg-sunken`、按钮底 `--mm-color-bg-panel`、
+ * 分隔线 `--mm-color-border`（整页只有这一种线色）。原版值写在 tokens.css 的注释里，这里不复制。
  */
 
 .mm-font-panel {
   display: flex;
-  width: 100%;
   height: 100%;
   flex-direction: column;
   /*
@@ -16,19 +14,17 @@
    * 两处各给一半是上一版净间隔忽 6 忽 10 忽 12 的根因；
    * 需要更近/更远时包一层子容器用另一个 gap，不要回到 margin。
    */
-  gap: var(--mm-space-exact-6);
+  gap: var(--mm-space-inline);
   overflow-y: auto;
-  /* 面板自己一层底：页面底比它暗，直接继承会把输入框显得比面板还亮 */
-  background: var(--mm-color-font-panel-bg);
-  color: var(--mm-color-text);
-  font-size: var(--mm-font-md);
+  /*
+   * 底色由外壳 `.mm-layout` 给；文字色 / 字号 / box-sizing 由 global.css 给。
+   * 原注释「面板自己一层底：页面底比它暗」是外壳底色与现在不同时的情形，
+   * 现在外壳与这里同为 `--mm-color-bg-base`，删掉视觉不变。
+   */
 }
 
-/* 面板里的下拉与数字框统一成「输入」这一层：比面板暗一档。
-   公共件 `SelectBox` 的底色是给普通页面用的，这里按面板语义覆盖 */
-.mm-font-panel .mm-select-box__trigger {
-  background: var(--mm-color-sunken);
-}
+/* 下拉不再单独覆盖底色：`SelectBox` 的触发器已统一成 sunken（与输入框同一层），
+   原先这里覆盖一次，导致字体面板与设置页的下拉一个暗一个亮 */
 
 /* ---------------- 图标行 ---------------- */
 
@@ -36,14 +32,17 @@
   /* 两行图标之间的间距同样只由 gap 给 */
   display: flex;
   flex-direction: column;
-  gap: var(--mm-space-exact-6);
-  padding: 0 var(--mm-space-exact-10);
+  gap: var(--mm-space-inline);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__icon-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 面板拉到最窄（200）时一排放不下 6 个 26px 按钮，换行而不是把它们顶到面板外 */
+  flex-wrap: wrap;
+  row-gap: var(--mm-space-1);
   /* 间距由父容器 gap 给，自己不给 */
   margin: 0;
 }
@@ -52,19 +51,18 @@
   flex: 0 0 auto;
   width: var(--mm-border-w);
   height: var(--mm-verline-h);
-  background: var(--mm-color-verline);
+  background: var(--mm-color-border);
 }
 
 .mm-font-panel__line {
   height: var(--mm-border-w);
   /* 只留左右：上下由根容器 gap 给 */
-  margin: 0 var(--mm-space-exact-12);
+  margin: 0 var(--mm-space-3);
   border: 0;
-  background: var(--mm-color-verline);
+  background: var(--mm-color-border);
 }
 
-/* `--set` 不再单独覆盖颜色：原来它是 `--mm-color-sunken`（比 #333 暗一档），
-   一页里两条线颜色不同。整页只留一种线色，靠上面的间距区分区块 */
+/* 整页只留一种线色（`--mm-color-border`），区块靠间距区分，不再给某一块单独开一档线色 */
 
 /* ---------------- 展开面板 ---------------- */
 
@@ -73,10 +71,12 @@
  * 它的宿主挂在图标行里（那层有左右 10 的内边距），所以左右各外扩 10 才能铺满，
  * 否则背景比预设块窄 20px、左边缘也对不齐。
  */
+/* 表面（sunken 底 + 4 圆角 + 12 内边距）由 `components/IconPanel` 的 `__box` 统一给。
+   原来的负 margin 是为了「外扩铺满」，现在壳本身就有内边距，外扩反而会溢出圆角外面 */
 .mm-font-panel__panel {
-  margin: 0 calc(-1 * var(--mm-space-exact-10));
-  padding: var(--mm-space-3) var(--mm-space-exact-10);
-  background: var(--mm-color-sunken);
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-3);
 }
 
 .mm-font-panel__row {
@@ -89,7 +89,7 @@
 
 .mm-font-panel__row--pad,
 .mm-font-panel__row--tight {
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
 }
 
 .mm-font-panel__row--tight {
@@ -117,10 +117,10 @@
 }
 
 .mm-font-panel__preset-btn {
-  height: var(--mm-font-panel-btn-h);
+  height: var(--mm-control-h);
   padding: 0 var(--mm-space-3);
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
@@ -129,15 +129,15 @@
 
 .mm-font-panel__preset-btn:hover,
 .mm-font-panel__wide-btn:hover {
-  background: var(--mm-color-font-btn-hover);
+  background: var(--mm-color-bg-hover);
 }
 
 .mm-font-panel__wide-btn {
   width: 100%;
-  height: var(--mm-font-panel-btn-h);
-  margin-top: var(--mm-space-exact-6);
+  height: var(--mm-control-h);
+  margin-top: var(--mm-space-inline);
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
@@ -154,7 +154,7 @@
 .mm-font-panel__quick-row {
   display: flex;
   align-items: center;
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
 }
 
 .mm-font-panel__quick-select {
@@ -165,10 +165,10 @@
 .mm-font-panel__quick-add {
   width: 100%;
   /* 与下拉项同一套：同高、同左内边距、同字号，只有文字色不同（它是动作，不是选项） */
-  height: var(--mm-select-h);
+  height: var(--mm-control-h);
   padding: 0 var(--mm-space-4);
   border: 0;
-  border-top: var(--mm-border-w) solid var(--mm-color-border-float);
+  border-top: var(--mm-border-w) solid var(--mm-color-border-control);
   background: transparent;
   color: var(--mm-color-accent);
   font-size: var(--mm-font-sm);
@@ -186,7 +186,7 @@
   align-items: center;
   justify-content: space-between;
   margin-top: var(--mm-space-1);
-  padding: 0 var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-3);
 }
 
 /* ---------------- 字体属性 ---------------- */
@@ -200,8 +200,8 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-2);
-  margin-top: var(--mm-space-exact-6);
-  padding: 0 var(--mm-space-exact-10);
+  margin-top: var(--mm-space-inline);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__family,
@@ -220,9 +220,9 @@
 .mm-font-panel__swatch {
   flex: 0 0 auto;
   width: var(--mm-font-panel-swatch-w);
-  height: var(--mm-font-panel-btn-h);
-  border: var(--mm-border-w) solid var(--mm-color-sunken);
-  background: var(--mm-font-panel-color, var(--mm-color-swatch));
+  height: var(--mm-control-h);
+  border: var(--mm-border-w) solid var(--mm-color-bg-sunken);
+  background: var(--mm-font-panel-color, var(--mm-color-bg-sunken));
   cursor: pointer;
 }
 
@@ -230,16 +230,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* 与工具条同一条：最窄 200 时六颗按钮铺不开，换行而不是顶出面板 */
+  flex-wrap: wrap;
+  row-gap: var(--mm-space-1);
   gap: 0;
-  margin-top: var(--mm-space-exact-6);
-  padding: 0 var(--mm-space-exact-10);
+  margin-top: var(--mm-space-inline);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__metric {
   display: flex;
   align-items: flex-start;
-  margin-top: var(--mm-space-exact-6);
-  padding: 0 var(--mm-space-exact-10);
+  margin-top: var(--mm-space-inline);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__half {
@@ -249,14 +252,14 @@
 
 .mm-font-panel__half--center {
   display: flex;
-  height: var(--mm-font-panel-btn-h);
+  height: var(--mm-control-h);
   align-items: center;
 }
 
 /* 原版两栏之间的固定空档 .setNbsp（30px） */
 .mm-font-panel__gutter {
-  flex: 0 0 var(--mm-space-exact-30);
-  width: var(--mm-space-exact-30);
+  flex: 0 0 var(--mm-control-reserve);
+  width: var(--mm-control-reserve);
 }
 
 .mm-font-panel__presets {
@@ -264,19 +267,18 @@
      后者每格宽度是小数，6 格相加会超出 1px 以内，最后一个就被挤到下一行（只剩 5 个一行） */
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  column-gap: var(--mm-space-exact-6);
-  row-gap: var(--mm-space-exact-6);
-  margin-top: var(--mm-space-exact-6);
-  padding: var(--mm-space-2);
-  background: var(--mm-color-sunken);
+  column-gap: var(--mm-space-inline);
+  row-gap: var(--mm-space-inline);
+  margin-top: var(--mm-space-inline);
+  /* 表面（sunken 底 + 4 圆角 + 12 内边距）由 `components/IconPanel` 的 `__box` 统一给 */
 }
 
 .mm-font-panel__preset {
   /* 宽度交给 grid 的列宽，自己不再算 */
-  height: var(--mm-font-panel-btn-h);
+  height: var(--mm-control-h);
   padding: 0;
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
@@ -284,7 +286,7 @@
 }
 
 .mm-font-panel__preset:hover {
-  background: var(--mm-color-font-btn-hover);
+  background: var(--mm-color-bg-hover);
 }
 
 /* ---------------- 层级字号 ---------------- */
@@ -299,7 +301,7 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-2);
-  padding: 0 var(--mm-space-exact-10);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__hierarchy-select {
@@ -310,17 +312,17 @@
 .mm-font-panel__levels {
   display: flex;
   justify-content: space-between;
-  gap: var(--mm-space-exact-6);
-  margin-top: var(--mm-space-exact-6);
-  padding: 0 var(--mm-space-exact-10);
+  gap: var(--mm-space-inline);
+  margin-top: var(--mm-space-inline);
+  padding: 0 var(--mm-space-3);
 }
 
 .mm-font-panel__level {
-  width: calc((100% - 5 * var(--mm-space-exact-6)) / 6);
-  height: var(--mm-font-panel-btn-h);
+  width: calc((100% - 5 * var(--mm-space-inline)) / 6);
+  height: var(--mm-control-h);
   padding: 0;
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
@@ -328,25 +330,25 @@
 }
 
 .mm-font-panel__level:hover {
-  background: var(--mm-color-font-btn-hover);
+  background: var(--mm-color-bg-hover);
 }
 
 .mm-font-panel__editor {
-  margin-top: var(--mm-space-exact-6);
-  padding: var(--mm-space-2) var(--mm-space-exact-10);
-  background: var(--mm-color-sunken);
+  margin-top: var(--mm-space-inline);
+  padding: var(--mm-space-2) var(--mm-space-3);
+  background: var(--mm-color-bg-sunken);
 }
 
 .mm-font-panel__editor-row {
   display: flex;
   justify-content: space-between;
-  gap: var(--mm-space-exact-2);
+  gap: var(--mm-space-tight);
 }
 
 /* 表面对齐 `.mm-input--page`；这里只收窄宽度、去掉边框（原版这格没有描边） */
 .mm-font-panel__editor-input {
-  width: var(--mm-space-exact-30);
-  padding: 0 var(--mm-space-exact-2);
+  width: var(--mm-control-reserve);
+  padding: 0 var(--mm-space-tight);
   border-color: transparent;
   text-align: center;
 }
@@ -355,11 +357,11 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-2);
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
 }
 
 .mm-font-panel__preset-btn--half {
-  width: calc(50% - var(--mm-space-exact-5));
+  width: calc(50% - var(--mm-space-1));
 }
 
 /* ---------------- 拆分 ---------------- */
@@ -372,18 +374,18 @@
 
 .mm-font-panel__split-btn {
   width: calc(50% - var(--mm-space-3));
-  height: var(--mm-font-panel-btn-h);
-  border: var(--mm-border-w) solid var(--mm-color-sunken);
+  height: var(--mm-control-h);
+  border: var(--mm-border-w) solid var(--mm-color-bg-sunken);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-sunken);
+  background: var(--mm-color-bg-sunken);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   cursor: pointer;
 }
 
 .mm-font-panel__split-btn:hover {
-  border-color: var(--mm-color-border-float-strong);
-  background: var(--mm-color-surface-raised);
+  border-color: var(--mm-color-border-control);
+  background: var(--mm-color-bg-raised);
 }
 
 /* ---------------- 生成按钮 ---------------- */
@@ -393,15 +395,15 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: var(--mm-space-2);
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
 }
 
 /* 与预设按钮同一套：同高、同字号、同圆角、同底色、同横向内边距 */
 .mm-font-panel__quick-btn {
-  height: var(--mm-font-panel-btn-h);
+  height: var(--mm-control-h);
   padding: 0 var(--mm-space-3);
   border: 0;
-  border-radius: var(--mm-field-radius);
+  border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
@@ -409,7 +411,7 @@
 }
 
 .mm-font-panel__quick-btn:hover {
-  background: var(--mm-color-font-btn-hover);
+  background: var(--mm-color-bg-hover);
 }
 
 /* ---------------- 粘贴 ---------------- */
@@ -421,7 +423,7 @@
 }
 
 .mm-font-panel__paste-row + .mm-font-panel__paste-row {
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
 }
 
 /* ---------------- 数字输入 ---------------- */
@@ -429,14 +431,14 @@
 .mm-font-panel__number {
   display: flex;
   min-width: 0;
-  height: var(--mm-font-panel-btn-h);
+  height: var(--mm-control-h);
   align-items: center;
 }
 
 .mm-font-panel__number-icon {
   display: inline-flex;
   flex: 0 0 auto;
-  margin-right: var(--mm-space-exact-2);
+  margin-right: var(--mm-space-tight);
   color: var(--mm-color-text-dim);
 }
 
@@ -446,11 +448,12 @@
   min-width: 0;
   height: 100%;
   align-items: center;
-  gap: var(--mm-space-exact-2);
-  padding: 0 var(--mm-space-exact-2);
-  border: var(--mm-border-w) solid transparent;
-  border-radius: var(--mm-field-radius);
-  background: var(--mm-color-sunken);
+  gap: var(--mm-space-tight);
+  padding: 0 var(--mm-space-tight);
+  /* 与 `.mm-input` / 下拉触发器同一套表面：sunken 底 + 亮描边（原先描边透明，静态无边界） */
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-sunken);
   color: var(--mm-color-text);
 }
 
@@ -497,7 +500,7 @@
 /* 弹窗本体走公共 `components/InputDialog`（原版就是同一个 $inputBox），这里只剩它的附加按钮 */
 .mm-font-panel__pin {
   display: inline-flex;
-  padding: var(--mm-space-exact-1);
+  padding: var(--mm-space-tight);
   border: 0;
   border-radius: var(--mm-radius-sm);
   background: transparent;
@@ -514,7 +517,7 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-3);
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
   padding: 0;
   border: 0;
   background: transparent;
@@ -532,12 +535,12 @@
 }
 
 .mm-font-panel__help {
-  margin-top: var(--mm-space-exact-6);
+  margin-top: var(--mm-space-inline);
   color: var(--mm-color-text);
   font-size: var(--mm-font-md);
   line-height: var(--mm-line-16);
 }
 
 .mm-font-panel__help p {
-  margin: 0 0 var(--mm-space-exact-3);
+  margin: 0 0 var(--mm-space-tight);
 }

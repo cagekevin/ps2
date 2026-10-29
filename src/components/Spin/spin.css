@@ -17,7 +17,7 @@
 .mm-spin--mask {
   position: absolute;
   inset: 0;
-  background: var(--mm-color-bg-page);
+  background: var(--mm-color-bg-base);
 }
 
 .mm-spin__ring {

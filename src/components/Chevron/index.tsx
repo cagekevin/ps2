@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】展开 / 折叠箭头 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】展开 / 折叠箭头。
  *
  * 原版用 `iconzhankaizhedie`（一个向下的 chevron），靠 CSS `rotate(-90deg)` 表示收起态：

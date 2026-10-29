@@ -25,7 +25,7 @@
   padding: var(--mm-space-2);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-overlay);
 }
 
 .mm-home__diag-title {
@@ -53,7 +53,8 @@
 
 .mm-home__copy:hover {
   color: var(--mm-color-text);
-  border-color: var(--mm-color-accent);
+  /* hover 不用蓝（§7 规则 12）：这只是「可以点」，不是状态 */
+  border-color: var(--mm-color-border-control);
 }
 
 .mm-home__log {
@@ -61,7 +62,7 @@
   padding: var(--mm-space-2);
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-overlay);
 }
 
 .mm-home__log-actions {

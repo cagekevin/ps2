@@ -36,5 +36,5 @@
 }
 
 .mm-text-field--compact .mm-text-field__input {
-  height: var(--mm-input-h-compact);
+  height: var(--mm-control-h);
 }

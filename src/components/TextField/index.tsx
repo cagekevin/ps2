@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】定宽输入框（内部渲染 ui.Input） —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】文本输入框（原版 `baseInput`）
  *
  * 与 `components/ui` 的 `Input` 分工：`Input` 是不带宽度约定的基础形状，

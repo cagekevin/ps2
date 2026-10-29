@@ -2,7 +2,7 @@
   display: flex;
   height: 100vh;
   /* 原版内容区底色 #363636；#535353 只用于底栏 */
-  background: var(--mm-color-bg-page);
+  background: var(--mm-color-bg-base);
   color: var(--mm-color-text);
 }
 
@@ -41,7 +41,12 @@
   text-decoration: none;
 }
 
-.mm-layout__debug:hover,
+/* hover 是临时反馈，按 §7 规则 12 不用蓝；「当前页」(--active) 才是状态，用蓝 */
+.mm-layout__debug:hover {
+  color: var(--mm-color-text);
+  border-color: var(--mm-color-border-control);
+}
+
 .mm-layout__debug--active {
   color: var(--mm-color-text);
   border-color: var(--mm-color-accent);

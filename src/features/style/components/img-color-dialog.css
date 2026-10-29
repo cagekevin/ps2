@@ -4,9 +4,9 @@
 
 .mm-imgcolor {
   width: var(--mm-imgcolor-w);
-  padding: var(--mm-space-exact-10) var(--mm-space-exact-15);
+  padding: var(--mm-space-3) var(--mm-space-4);
   border-radius: var(--mm-radius-md);
-  background: var(--mm-color-bg-elevated);
+  background: var(--mm-color-bg-overlay);
   box-shadow: var(--mm-shadow-pop);
 }
 
@@ -20,49 +20,34 @@
 .mm-imgcolor__row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-exact-6);
+  gap: var(--mm-space-inline);
   margin-bottom: var(--mm-space-2);
 }
 
-/* 原版 `.color-item`：28px 圆、蓝边 */
+/* 原版 `.color-item`：28px 圆、蓝边。蓝边不是状态（它不表示选中 / 进行中），
+   按 §7 规则 12 改成亮线那一档——色值本身才是内容，边框只负责把它框出来 */
 .mm-imgcolor__swatch {
   width: var(--mm-gradient-h);
   height: var(--mm-gradient-h);
-  border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: 50%;
   /* 色值是数据：内联只传 CSS 变量，background 这一层留在 CSS 里 */
   background: var(--mm-imgcolor-color);
   cursor: pointer;
 }
 
-/* 原版 `.grad-item`：42×22、蓝边 */
+/* 原版 `.grad-item`：42×22、蓝边（同上，边框不表状态，走亮线档） */
 .mm-imgcolor__grad {
   width: var(--mm-imgcolor-grad-w);
   height: var(--mm-imgcolor-grad-h);
-  border: var(--mm-border-w) solid var(--mm-color-imgcolor-border);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
   background: var(--mm-imgcolor-gradient);
   cursor: pointer;
 }
 
+/* 按钮表面一律由 `ui.Button` 给（`primary` / `ghost` 两档），这里只给布局：两颗等分 */
 .mm-imgcolor__btn {
   flex: 1 1 0;
-  height: var(--mm-select-h);
-  border: none;
-  border-radius: var(--mm-radius-sm);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-/* 原版 `.theme-btn`：#0084ff 实底白字 */
-.mm-imgcolor__btn--primary {
-  background: var(--mm-color-imgcolor-primary);
-  color: var(--mm-color-text-inverse);
-}
-
-/* 原版 `.second-btn`：#e9e9e9 实底 */
-.mm-imgcolor__btn--second {
-  background: var(--mm-color-imgcolor-second);
-  color: var(--mm-color-text-inverse);
 }
 
 .mm-imgcolor__btn--wide {

@@ -1,8 +1,11 @@
-/** 标签右键浮层：删除 / 重命名（原版 105px 蓝底） */
-import { useLayoutEffect } from 'react';
-import { Portal } from '../../../components/Portal';
-import { useDismiss } from '../../../hooks/useDismiss';
-import { useFloatingPosition } from '../../../hooks/useFloatingPosition';
+/**
+ * 标签右键菜单：删除 / 重命名。
+ *
+ * 走公共 `components/ContextMenu`，不再自绘。
+ * 自绘那一版（`.mm-font__tag-ctx`）是蓝底白字、无边框无圆角无阴影、宽 105 行高 20，
+ * 和样式页 / 常用页的右键菜单完全不是同一种东西——CONVENTIONS §6 定死了右键菜单只有一个入口。
+ */
+import { ContextMenu } from '../../../components/ContextMenu';
 
 interface Props {
   x: number;
@@ -13,34 +16,15 @@ interface Props {
 }
 
 export function TagContextMenu({ x, y, onRename, onRemove, onClose }: Props) {
-  const { floatingRef, update } = useFloatingPosition({ placement: 'bottom-start' });
-
-  useDismiss(true, floatingRef, onClose);
-
-  useLayoutEffect(() => {
-    update({ x, y });
-  }, [x, y, update]);
-
-  return <Portal>
-    <div ref={floatingRef} className="mm-font__tag-ctx" role="menu" aria-label="标签操作">
-      <button
-        type="button"
-        onClick={() => {
-          onClose();
-          onRemove();
-        }}
-      >
-        删除
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onClose();
-          onRename();
-        }}
-      >
-        重命名
-      </button>
-    </div>
-  </Portal>;
+  return (
+    <ContextMenu
+      x={x}
+      y={y}
+      onClose={onClose}
+      items={[
+        { label: '删除', danger: true, onSelect: onRemove },
+        { label: '重命名', onSelect: onRename }
+      ]}
+    />
+  );
 }

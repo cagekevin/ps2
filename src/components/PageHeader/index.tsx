@@ -1,4 +1,6 @@
 /**
+ * 【唯一入口】页面页头 —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ *
  * 【范本】页面页头：40 高深色条 + 标题 + 右侧插槽
  *
  * 替代了什么：`features/common` / `features/font-manage` / `features/settings` 各写过一份
