@@ -1,4 +1,4 @@
-/* 【范本】导航样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】导航样式 —— 新增同类代码照此结构。 */
 
 .mm-nav{
   flex: 0 0 var(--mm-nav-w);
@@ -16,15 +16,17 @@
   width: 100%;
   height: var(--mm-nav-w);
   color: var(--mm-color-icon);
+  /* 图标走 1em：24 号，40 格子里每边留 8 */
+  font-size: var(--mm-icon-lg);
 }
 
-/* 悬停：原版整格压深 + 右侧滑出名字 */
+/* 悬停：整格压深 + 右侧滑出名字 */
 .mm-nav__item:hover{
   background: var(--mm-color-nav-hover);
   color: var(--mm-color-text-strong);
 }
 
-/* 激活：原版 #434343 */
+/* 激活 */
 .mm-nav__item--active{
   background: var(--mm-color-bg-panel);
   color: var(--mm-color-text-strong);
@@ -35,9 +37,10 @@
   opacity: 0.4;
 }
 
-/* sub 项比主项矮一档 */
+/* sub 项比主项矮一档：26 格 + 16 图标 */
 .mm-nav__item--sub{
   height: var(--mm-nav-item-sub);
+  font-size: var(--mm-icon-md);
 }
 
 .mm-nav__item::after{

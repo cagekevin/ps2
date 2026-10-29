@@ -1,7 +1,25 @@
 /* 【范本】公共布局原语 —— 新增同类布局照此结构：横排一律挂 .mm-u-row（两端铺满），页面与组件只写差异。 */
 
+/* 基础重置：骨架化时把 reset 一起删了，浏览器默认值全部生效——
+   body 的 8px margin 会顶出滚动条、ul 的 40px padding-left 会把列表推歪。
+   这里只归零，不给任何间距；间距一律由组件按 `--mm-space-*` 显式给。 */
 *{
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+}
+
+ul,
+ol{
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+p{
+  margin: 0;
 }
 
 .mm-popover{
@@ -11,10 +29,12 @@
   z-index: var(--mm-z-dropdown);
 }
 
+/* 面板整体不出现滚动条：滚动只发生在页面内部的列表容器上 */
 html,
 body,
 #root{
   height: 100%;
+  overflow: hidden;
 }
 
 /* 基础字号与文字色：三档里的中档，行高配 12 号 */
@@ -56,6 +76,8 @@ button{
   max-width: 100%;
 }
 
+/* 页面根容器：在 `.mm-layout`（横向 flex）里必须撑满剩余宽度，
+   否则宽度由内容决定、右边留白（不是 margin / padding 问题） */
 .mm-common,
 .mm-font,
 .mm-font-panel,
@@ -63,6 +85,8 @@ button{
 .mm-style{
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   min-height: 0;
 }

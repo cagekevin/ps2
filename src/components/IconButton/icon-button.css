@@ -1,4 +1,4 @@
-/* 【范本】图标按钮样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】图标按钮样式 —— 新增同类代码照此结构。 */
 
 .mm-icon-btn{
   position: relative;
@@ -8,6 +8,12 @@
   justify-content: center;
   width: var(--mm-icon-btn-size);
   height: var(--mm-icon-btn-size);
+  color: var(--mm-color-icon);
+}
+
+/* hover 只换图标颜色，不加背景 */
+.mm-icon-btn:hover{
+  color: var(--mm-color-text-strong);
 }
 
 .mm-icon-btn__badge{

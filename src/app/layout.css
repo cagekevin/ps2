@@ -1,9 +1,11 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 整页布局：左侧导航 + 右侧内容区 */
 
-/* 页面底色只有一个出处（§7 规则 13）：七个页面根类都不写 background */
+/* 页面底色只有一个出处（§7 规则 13）：七个页面根类都不写 background。
+   高度用 100% 而不是 100vh：CEP 面板里 vh 会算进滚动条高度，多出 1px 就出滚动条 */
 .mm-layout{
   display: flex;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
   background: var(--mm-color-bg-base);
 }
 
