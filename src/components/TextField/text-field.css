@@ -3,6 +3,8 @@
 .mm-text-field{
   display: inline-flex;
   align-items: center;
+  height: var(--mm-control-h);
+  border-radius: var(--mm-radius-md);
 }
 
 .mm-text-field--fill{

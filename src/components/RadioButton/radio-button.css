@@ -3,4 +3,7 @@
 .mm-radio__dot{
   display: inline-flex;
   flex: 0 0 auto;
+  width: var(--mm-check-size);
+  height: var(--mm-check-size);
+  border-radius: var(--mm-radius-pill);
 }

@@ -1,6 +1,12 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
 /* 居中与横排走公共 `.mm-btn`，这里只留不收缩 */
+/* 底栏高度与按钮宽取 token */
+.mm-bottom-bar{
+  height: var(--mm-bottom-bar-h);
+}
+
 .mm-bottom-bar__btn{
   flex: 0 0 auto;
+  width: var(--mm-bottom-btn-w);
 }

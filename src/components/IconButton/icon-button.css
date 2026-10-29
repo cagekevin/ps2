@@ -6,6 +6,8 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  width: var(--mm-icon-btn-size);
+  height: var(--mm-icon-btn-size);
 }
 
 .mm-icon-btn__badge{

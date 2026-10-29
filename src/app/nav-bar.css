@@ -12,6 +12,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: var(--mm-nav-w);
+}
+
+/* sub 项比主项矮一档 */
+.mm-nav__item--sub{
+  height: var(--mm-nav-item-sub);
 }
 
 .mm-nav__item::after{

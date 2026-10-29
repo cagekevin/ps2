@@ -1,10 +1,12 @@
 /* 【范本】UI 控件样式（Button / Input / Field）—— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
 
-/* 按钮唯一根类：全仓按钮都挂 `.mm-btn`，内容居中；高度 / 底色 / 圆角在视觉重写时补 */
+/* 按钮唯一根类：全仓按钮都挂 `.mm-btn`；高度与圆角取 token，底色等视觉重写时补 */
 .mm-btn{
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  height: var(--mm-control-h);
+  border-radius: var(--mm-radius-md);
 }
 
 /* `.mm-field` 的纵向排列走公共 `.mm-u-col`，这里不再声明 */
@@ -12,5 +14,9 @@
 /*
  * 输入位表面（`CONVENTIONS` §6）：`.mm-input` / `.mm-input-surface` 的底色 / 描边 / 圆角 /
  * 文字色 / 字号**只写在这里**，页面与 feature 不许覆盖。
- * 当前骨架化后无视觉声明（两个使用处各自已有 flex 容器），视觉重写时补在本注释下方。
+ * 高度与圆角取 token；底色 / 描边 / 文字色在视觉重写时补进本规则。
  */
+.mm-input-surface{
+  height: var(--mm-control-h);
+  border-radius: var(--mm-radius-md);
+}

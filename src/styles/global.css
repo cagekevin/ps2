@@ -17,6 +17,12 @@ body,
   height: 100%;
 }
 
+/* 基础字号：三档里的中档，行高配 12 号 */
+body{
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-16);
+}
+
 .mm-drag-float{
   z-index: var(--mm-z-drag);
 }
