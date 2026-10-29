@@ -84,3 +84,8 @@
   left: var(--mm-check-slot);
   top: var(--mm-space-1);
 }
+
+/* 字重列表的勾选对号：小标记档（12） */
+.mm-font__weight-check{
+  font-size: var(--mm-icon-xs);
+}

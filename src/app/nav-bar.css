@@ -16,8 +16,11 @@
   width: 100%;
   height: var(--mm-nav-w);
   color: var(--mm-color-icon);
-  /* 图标走 1em：24 号，40 格子里每边留 8 */
-  font-size: var(--mm-icon-lg);
+}
+
+/* 图标走 1em：24 号，40 格子里每边留 8 */
+.mm-nav__item .mm-icon{
+  font-size: var(--mm-icon-nav);
 }
 
 /* 悬停：整格压深 + 右侧滑出名字 */
@@ -37,10 +40,14 @@
   opacity: 0.4;
 }
 
-/* sub 项比主项矮一档：26 格 + 16 图标 */
+/* sub 项比主项矮一档：26 格 */
 .mm-nav__item--sub{
   height: var(--mm-nav-item-sub);
-  font-size: var(--mm-icon-md);
+}
+
+/* 同是导航、只比主项矮一档，图标取行内档（14），不另立 16 这一档 */
+.mm-nav__item--sub .mm-icon{
+  font-size: var(--mm-icon-sm);
 }
 
 .mm-nav__item::after{

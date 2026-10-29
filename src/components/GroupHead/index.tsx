@@ -61,7 +61,7 @@ export function GroupHead({
   data,
   className = ''
 }: Props) {
-  const chevron = <Chevron open={open} size={12} />;
+  const chevron = <Chevron open={open} />;
   const countNode = count === undefined ? null : (
     <span className="mm-group-head__count">{count}</span>
   );

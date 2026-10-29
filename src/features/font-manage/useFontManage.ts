@@ -33,7 +33,7 @@ import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { usePagedList } from '../../hooks/usePagedList';
 import { defaultPreviewText, useFontStore } from '../../store/font';
 import { ok, type Result } from '../../types/result';
-import type { HeaderMenuAction } from './components/FontHeader';
+import type { FontMenuAction } from './components/FontMenu';
 import { useTagActions } from './useTagActions';
 
 export function useFontManage() {
@@ -224,7 +224,7 @@ export function useFontManage() {
   const { handleImportTags, handleExportTags } = tagActions;
 
   const onMenuSelect = useCallback(
-    (action: HeaderMenuAction) => {
+    (action: FontMenuAction) => {
       if (action === 'refresh') refresh();
       else if (action === 'preview') cyclePreview();
       else if (action === 'import-tags') void handleImportTags();

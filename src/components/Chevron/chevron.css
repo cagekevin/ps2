@@ -2,6 +2,8 @@
 
 .mm-chevron{
   flex: 0 0 auto;
+  /* 箭头是小标记，跟勾选对号同一档（12）；尺寸只在这里给，调用点不传 */
+  font-size: var(--mm-icon-xs);
   transition: transform var(--mm-dur-fast) ease;
 }
 

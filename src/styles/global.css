@@ -45,6 +45,15 @@ body{
   background: var(--mm-color-bg-base);
 }
 
+/*
+ * 图标尺寸：`<Icon>` 默认 1em，尺寸由所在容器的 font-size 决定。
+ * 用 `:where()` 把这条的特异性降到 0，任何单类选择器都能按层级覆盖它，
+ * 调用点不许再写 `size={n}` —— 那是把尺寸从 css 里搬走，第二处就对不齐。
+ */
+:where(.mm-icon){
+  font-size: var(--mm-icon-sm);
+}
+
 /* 按钮重置：骨架化时删过，浏览器默认 ButtonFace 在深色主题下是深灰，
    会把自绘表面整片盖住；背景 / 描边由组件自己给 */
 button{

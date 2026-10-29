@@ -1,5 +1,6 @@
 /**
  * 常用页（`/common`）：缩放区 → 变换区 → 分隔线 → 14 项功能网格。
+ * **没有页头**：标题已去掉（导航上已有页名），内容区从第一行开始，与字体管理页同一处理。
  *
  * 结构照 `docs/plan/03-常用-2026-10-27.md` §5。**本页不做折叠**（2026-10-29 决定）：
  * 三块区域的折叠只省高度，但要额外维护一份本地偏好，收益不抵；需要「一行标题开合一块内容」
@@ -15,7 +16,6 @@ import type { ReactNode } from 'react';
 import { Chevron } from '../../components/Chevron';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
-import { PageHeader } from '../../components/PageHeader';
 import { MSG } from '../../types/messages';
 import { StateHint } from '../../components/StateHint';
 import { Icon, type IconName } from '../../components/icons';
@@ -113,9 +113,9 @@ function ZoomRow({
             aria-controls={handlers['aria-controls']}
             onClick={handlers.toggle}
           >
-            <Icon name={icon} size={14} />
+            <Icon name={icon} />
             <span className="mm-common__zoom-label">{label}</span>
-            <Chevron size={12} />
+            <Chevron />
           </button>
         )}
         panel={(close) => (
@@ -149,13 +149,11 @@ export default function CommonPage() {
   return (
     <div className="mm-common">
       {/*
-       * 页头**没有右侧按钮**（2026-10-29 两次改判后）：
+       * **没有页头**：标题（原「常用功能页」）已去掉，与字体管理页同一处理 —— 导航上已经写着页名，
+       * 再占 40 高只是白扔一行。两个曾有归口的入口仍然不是页头的，别借机加回来：
        *   - 「打开所在目录」属导出面板（官方 `cy_openDirectory` 两处调用都在那里）；
        *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
-       * 两个入口都不是页头的，别再加回来。
        */}
-      <PageHeader title={'常用功能页'} />
-
       <div className="mm-common__body">
         {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}
         {page.reasons.options ? (

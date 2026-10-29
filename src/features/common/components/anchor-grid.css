@@ -11,3 +11,8 @@
   justify-content: center;
   width: 100%;
 }
+
+/* 九宫格锚点：按钮档（20），与图标按钮、底栏同一档 */
+.mm-common__anchor .mm-icon{
+  font-size: var(--mm-icon-btn);
+}

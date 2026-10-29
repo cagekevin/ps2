@@ -43,17 +43,17 @@ export function SpacingPanel() {
         />
         <span className="mm-common__panel-btn">
           <IconButton
+            className="mm-icon-btn--inline"
             name="iconshuipingjuzhongfenbu"
             title={'按间距水平分布'}
-            size={16}
             onClick={() => distributeTo(1)}
           />
         </span>
         <span className="mm-common__panel-btn">
           <IconButton
+            className="mm-icon-btn--inline"
             name="iconchuizhijuzhongfenbu"
             title={'按间距垂直分布'}
-            size={16}
             onClick={() => distributeTo(2)}
           />
         </span>

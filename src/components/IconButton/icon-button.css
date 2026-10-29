@@ -16,6 +16,34 @@
   color: var(--mm-color-text-strong);
 }
 
-.mm-icon-btn__badge{
+/*
+ * 纯图标条（一排只有图标按钮，没有文字同排）：26 格里配 20，原版 `baseIcon` 实测。
+ * 页头工具、对齐图标两排、样式/字重、翻转、IconPanel 触发器都属于这一档 —— 是多数场景。
+ */
+.mm-icon-btn .mm-icon{
+  font-size: var(--mm-icon-btn);
+}
+
+/*
+ * 与文字同排时降一档（14）：输入框右侧、间距行、分组行、层级预设行。
+ * 这是**显式标注**（`className="mm-icon-btn--inline"`），不靠容器猜：
+ * 同一排有 12 号字（行高 16），图标再大就比字还高（`CONVENTIONS` §7 规则 7）。
+ */
+.mm-icon-btn--inline .mm-icon{
+  font-size: var(--mm-icon-sm);
+}
+
+/*
+ * 角标：贴右上角的小三角（原版 `iconjiaobiao`）。
+ * - 定位挂在这里，不让调用点写：按钮本身就是 `position: relative` 的定位基准；
+ * - 图标原图是**朝下**的三角，原版要的是朝上贴右上角，所以转 180°，再水平镜像把斜边转回来。
+ * 写两个类是为了压过上面那条同特异性的规则。
+ */
+.mm-icon-btn .mm-icon-btn__badge{
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: var(--mm-icon-badge);
+  transform: rotate(180deg) scaleX(-1);
   pointer-events: none;
 }

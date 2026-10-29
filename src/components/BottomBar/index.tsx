@@ -11,7 +11,13 @@
  *   - 在页面 css 里重定义底栏高度 / 底色 / 按钮宽（都走 token）
  *   - 给底栏按钮加描边（原版 `.bottom-hover:hover` 是**纯底色**，没有边框）
  *
- * 尺寸来源：`--mm-bottom-bar-h`(26) / `--mm-bottom-btn-w`(30) / `--mm-verline-h`(13)；
+ * **图标尺寸由外壳统一给**（`bottom-bar.css` 的 `.mm-bottom-bar svg` → `--mm-icon-sm` 14）：
+ * 底栏里的图标有两种来源 —— sprite 的 `<Icon>` 与原版图片 `<svg>`（样式页的彩虹方块），
+ * 交给调用点各自定就会出现一排 14 / 一排 20。所以：
+ *   - 页面传 `name` 或 `children` 都行，**都不写尺寸**；
+ *   - 自定义 SVG 也不要写 `width` / `height`，只写 `viewBox`（尺寸让外壳压）。
+ *
+ * 尺寸来源：`--mm-bottom-bar-h`(26) / `--mm-bottom-btn-w`(30) / `--mm-verline-h`(13) / `--mm-icon-sm`(14)；
  * 底色 `--mm-color-bg-panel`、hover `--mm-color-bg-active`、竖线 `--mm-color-border`。
  */
 
@@ -37,7 +43,6 @@ interface BottomBarButtonProps {
   title: string;
   /** 用 sprite 图标时的名字；要自定义 SVG（如彩虹方块）就传 `children` */
   name?: IconName;
-  size?: number;
   disabled?: boolean;
   onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   children?: ReactNode;
@@ -47,7 +52,6 @@ interface BottomBarButtonProps {
 export function BottomBarButton({
   title,
   name,
-  size = 18,
   disabled = false,
   onClick,
   children
@@ -61,7 +65,7 @@ export function BottomBarButton({
       disabled={disabled}
       onClick={onClick}
     >
-      {children ?? (name ? <Icon name={name} size={size} /> : null)}
+      {children ?? (name ? <Icon name={name} /> : null)}
     </button>
   );
 }

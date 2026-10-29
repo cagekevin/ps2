@@ -1,22 +1,25 @@
 /**
- * 字体管理页页头：标题 + 「更多」菜单（刷新 / 切换预览 / 导入导出）。
+ * 字体管理页的「更多」菜单：刷新字体列表 / 切换预览 / 导入导出标签。
  *
- * 壳用公共件 `components/PageHeader`（40 高、深底、底部一条线），本文件只剩菜单业务。
+ * **只是按钮 + 菜单，不含页头**：本页没有标题行（原版字体管理页也没有），
+ * 它由 `SearchRow` 的 `trailing` 插槽渲染，与筛选漏斗同一排。
+ *
+ * 图标 14：同一排有搜索框里的文字与漏斗图标，属「与文字同排」档（`CONVENTIONS` §7 规则 14），
+ * 所以显式传 `mm-icon-btn--inline`；不传会落到纯图标条的 20，比同排文字还高。
  */
 import { useState } from 'react';
 import { ContextMenu, type MenuItem } from '../../../components/ContextMenu';
 import { IconButton } from '../../../components/IconButton';
-import { PageHeader } from '../../../components/PageHeader';
 import { PREVIEW_LABEL, type PreviewMode } from '../../../store/font';
 
-export type HeaderMenuAction = 'refresh' | 'preview' | 'import-tags' | 'export-tags';
+export type FontMenuAction = 'refresh' | 'preview' | 'import-tags' | 'export-tags';
 
 interface Props {
   previewMode: PreviewMode;
-  onMenuSelect: (action: HeaderMenuAction) => void;
+  onMenuSelect: (action: FontMenuAction) => void;
 }
 
-export function FontHeader({ previewMode, onMenuSelect }: Props) {
+export function FontMenu({ previewMode, onMenuSelect }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
   const items: MenuItem[] = [
@@ -31,11 +34,11 @@ export function FontHeader({ previewMode, onMenuSelect }: Props) {
   ];
 
   return (
-    <PageHeader title="我的字体">
+    <>
       <IconButton
         name="icongengduocaidan"
         title="更多操作"
-        /* 不传 size：图标跟着 `IconButton` 的默认 20，与字体面板 / 常用页的同类按钮同一尺寸 */
+        className="mm-icon-btn--inline"
         ariaExpanded={!!anchor}
         /* 锚点取事件里的 currentTarget：`IconButton` 不转发 ref，只把原始事件交出来 */
         onClick={(event) =>
@@ -53,6 +56,6 @@ export function FontHeader({ previewMode, onMenuSelect }: Props) {
           }}
         />
       ) : null}
-    </PageHeader>
+    </>
   );
 }

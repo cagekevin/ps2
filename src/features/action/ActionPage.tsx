@@ -9,12 +9,12 @@
  * 分组行用公共件 `GroupHead`（不新建 `ActionGroupRow`）。
  */
 
+import type { CSSProperties } from 'react';
 import { BottomBar, BottomBarButton } from '../../components/BottomBar';
 import { IconButton } from '../../components/IconButton';
 import { ContextMenu } from '../../components/ContextMenu';
 import { GroupHead } from '../../components/GroupHead';
 import { InputDialog } from '../../components/InputDialog';
-import { PageHeader } from '../../components/PageHeader';
 import { StateHint } from '../../components/StateHint';
 import { Button } from '../../components/ui';
 import { MSG } from '../../types/messages';
@@ -36,8 +36,7 @@ export default function ActionPage() {
 
   return (
     <div className="mm-action">
-      <PageHeader title={'动作管理页'} />
-
+      {/* 没有页头：导航上已写着「动作管理」，标题行白占 40 高（与字体管理、常用功能一致） */}
       <div className="mm-action__body">
         {page.reasons.index ? (
           <StateHint result={page.reasons.index} onRetry={page.reload} />
@@ -81,9 +80,9 @@ export default function ActionPage() {
                 data={{ 'data-group-head': '', 'data-group-index': groupIndex }}
                 trailing={
                   <IconButton
+                    className="mm-icon-btn--inline"
                     name={ACTION_ICONS.addGroup}
                     title={'添加动作'}
-                    size={14}
                     onClick={() => void page.openAddAction(groupIndex)}
                   />
                 }
@@ -93,8 +92,8 @@ export default function ActionPage() {
                 group.list.length ? (
                   <div
                     className="mm-action__items"
-                    /* 列数只决定 grid-template-columns，不搞三档类（`05` §4.8 第 17 条） */
-                    style={{ gridTemplateColumns: `repeat(${page.columns}, 1fr)` }}
+                    /* 列数是运行时值：只注入 CSS 变量，`grid-template-columns` 写在 ActionPage.css */
+                    style={{ '--mm-action-columns': String(page.columns) } as CSSProperties}
                   >
                     {group.list.map((item, itemIndex) => (
                       <Button
@@ -140,25 +139,21 @@ export default function ActionPage() {
         <BottomBarButton
           title={'添加分组'}
           name={ACTION_ICONS.addGroup}
-          size={14}
           onClick={page.openAddGroup}
         />
         <BottomBarButton
           title={'显示方式'}
           name={ACTION_ICONS.columns}
-          size={14}
           onClick={page.openColumnMenu}
         />
         <BottomBarButton
           title={'导入预设'}
           name={ACTION_ICONS.importPreset}
-          size={14}
           onClick={page.openImportMenu}
         />
         <BottomBarButton
           title={'导出预设'}
           name={ACTION_ICONS.exportPreset}
-          size={14}
           onClick={page.openExportMenu}
         />
       </BottomBar>

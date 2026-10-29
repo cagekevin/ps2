@@ -70,7 +70,8 @@ export function SelectBox({
     const panel = floatingRef.current;
     if (!trigger || !panel) return;
 
-    panel.style.width = `${Math.round(anchorRect(trigger).width)}px`;
+    /* 宽度是运行时值：注入变量，`width` 由 select-box.css 消费 */
+    panel.style.setProperty('--mm-select-panel-w', `${Math.round(anchorRect(trigger).width)}px`);
     update(trigger);
   }, [open, update, floatingRef]);
 
@@ -88,7 +89,7 @@ export function SelectBox({
       >
         {icon ? <span className="mm-select-box__icon">{icon}</span> : null}
         <span className="mm-select-box__label">{current?.label ?? ''}</span>
-        <Chevron size={12} />
+        <Chevron />
       </button>
 
       {open ? (
@@ -115,7 +116,7 @@ export function SelectBox({
                 }}
               >
                 {option.value === value ? (
-                  <Icon name="icongouxuan" size={12} className="mm-select-box__check" />
+                  <Icon name="icongouxuan" className="mm-select-box__check" />
                 ) : null}
                 <span className="mm-select-box__item-label">{option.label}</span>
                 {onRemove ? (
@@ -134,7 +135,7 @@ export function SelectBox({
                       if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
                     }}
                   >
-                    <Icon name="iconshanchu" size={12} />
+                    <Icon name="iconshanchu" />
                   </button>
                 ) : null}
               </div>

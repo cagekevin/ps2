@@ -1,8 +1,10 @@
 /**
- * 搜索行：输入框（30px / 圆角 5）+ 放大镜（框内右侧）+ 漏斗触发器（框外右侧）。
+ * 工具行：输入框（30px / 圆角 5）+ 放大镜（框内右侧）+ 漏斗触发器（框外右侧）+ 行尾插槽。
  * 漏斗角标 = 已选条件数；分类数据为空时禁用。
+ *
+ * 本页**没有标题行**，所以「更多」菜单也从 `trailing` 进来，与漏斗同一排（原版字体管理页如此）。
  */
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../../components/icons';
 import { Input } from '../../../components/ui';
 import type { Category } from '../../../domain/classification';
@@ -17,6 +19,8 @@ interface Props {
   categories: Category[];
   filterState: FilterState;
   onFilterChange: (next: FilterState) => void;
+  /** 行尾插槽：本页的「更多」菜单落在这里，与漏斗同排 */
+  trailing?: ReactNode;
 }
 
 export function SearchRow({
@@ -24,7 +28,8 @@ export function SearchRow({
   onKeyword,
   categories,
   filterState,
-  onFilterChange
+  onFilterChange,
+  trailing
 }: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -51,7 +56,7 @@ export function SearchRow({
           aria-label="搜索字体"
           onChange={(event) => onKeyword(event.target.value)}
         />
-        <Icon name="iconsousuo" size={14} className="mm-font__search-icon" />
+        <Icon name="iconsousuo" className="mm-font__search-icon" />
       </div>
 
       <button
@@ -64,9 +69,11 @@ export function SearchRow({
         disabled={!categories.length}
         onClick={() => setOpen((value) => !value)}
       >
-        <Icon name="iconguolv" size={16} />
+        <Icon name="iconguolv" />
         {filterCount ? <span className="mm-font__filter-badge">{filterCount}</span> : null}
       </button>
+
+      {trailing}
 
       {open ? (
         <div ref={floatingRef} className="mm-popover mm-font__filter-float" role="dialog" aria-label="筛选">

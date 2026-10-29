@@ -10,3 +10,13 @@
   flex: 0 0 auto;
   width: var(--mm-bottom-btn-w);
 }
+
+/*
+ * 底栏里**所有** svg 由外壳统一定尺寸（14），按钮与页面一律不许再传：
+ * 底栏前两颗是原版 14×14 的彩虹方块图片，后几颗是 sprite 图标 —— 用 `svg` 而不是 `.mm-icon`，
+ * 才能把两种来源一起管住；只管 `.mm-icon` 时 sprite 走 20、图片停在 14，同一排一大一小。
+ */
+.mm-bottom-bar svg{
+  width: var(--mm-icon-sm);
+  height: var(--mm-icon-sm);
+}

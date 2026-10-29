@@ -20,6 +20,7 @@ export async function copyText(text: string): Promise<Result<void>> {
   try {
     const area = document.createElement('textarea');
     area.value = text;
+    /* 功能性离屏（不参与设计样式、不进 React 树）：`CONVENTIONS` §14.1 的豁免范围 */
     area.style.position = 'fixed';
     area.style.opacity = '0';
     document.body.appendChild(area);

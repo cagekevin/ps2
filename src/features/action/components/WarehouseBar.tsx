@@ -45,7 +45,7 @@ export function WarehouseBar({ warehouses, currentIndex, onChange, onAdd, onRemo
         options={options}
         value={String(currentIndex)}
         onChange={onChange}
-        icon={<Icon name={ACTION_ICONS.warehouse} size={16} />}
+        icon={<Icon name={ACTION_ICONS.warehouse} />}
         onRemove={(value) => {
           const entry = warehouses[Number(value)];
           if (entry) onRemove(entry.name, value);

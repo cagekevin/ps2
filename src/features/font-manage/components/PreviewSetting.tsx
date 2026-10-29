@@ -24,10 +24,10 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
         title="预览设置"
         onClick={() => setOpen((value) => !value)}
       >
-        <Icon name="iconxianshi" size={16} />
+        <Icon name="iconxianshi" />
       </BottomBarButton>
       <BottomBarButton title="编辑预览文案" onClick={onToggleText}>
-        <Icon name="iconzihaodaxiao1" size={16} />
+        <Icon name="iconzihaodaxiao1" />
       </BottomBarButton>
 
       {open
@@ -49,7 +49,7 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
                   }}
                 >
                   {mode === item ? (
-                    <Icon name="icongouxuan" size={12} className="mm-font__preview-check" />
+                    <Icon name="icongouxuan" className="mm-font__preview-check" />
                   ) : null}
                   <span>{PREVIEW_LABEL[item]}</span>
                 </button>

@@ -95,7 +95,7 @@ export function FontWeight({ font, current, onSelect }: Props) {
                 }}
               >
                 {index === current ? (
-                  <Icon name="icongouxuan" size={12} className="mm-font__weight-check" />
+                  <Icon name="icongouxuan" className="mm-font__weight-check" />
                 ) : null}
                 <span>{weight}</span>
               </button>

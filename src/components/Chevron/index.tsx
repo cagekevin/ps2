@@ -15,6 +15,10 @@
  *
  * 禁止：裸写 `<Icon name="iconxiala">` 当箭头；禁止另起 `__caret` / `__arrow` 类名；
  * 禁止为了「下拉箭头」再引第二个图标（`iconxiala` 是实心三角，与 chevron 不同形状，混用会一眼看出两套）。
+ *
+ * 尺寸固定小标记档（`--mm-icon-xs` = 12，在 `chevron.css` 给），**没有 `size` 参数**：
+ * 箭头永远附着在一行文字或一个控件旁边，不该比字大（`CONVENTIONS` §7 规则 7/14）。
+ * 曾经默认 14、调用点又传 12 / 8 三种值，同一个箭头在五处五种大小 —— 别再开这个口子。
  */
 import { Icon } from '../icons';
 import './chevron.css';
@@ -22,15 +26,15 @@ import './chevron.css';
 export interface ChevronProps {
   /** 折叠态：展开 true（朝下）/ 收起 false（转成朝右）。弹层指示不传，恒朝下 */
   open?: boolean;
-  size?: number;
   className?: string;
 }
 
-export function Chevron({ open = true, size = 14, className = '' }: ChevronProps) {
+/* 尺寸不在这里传：与所有图标一样由 `chevron.css` 的 `.mm-chevron` 按层级给（小标记档 12）。
+   曾经默认 14、调用点又传 12 / 8 三种值，同一个箭头在五个地方五种大小。 */
+export function Chevron({ open = true, className = '' }: ChevronProps) {
   return (
     <Icon
       name="iconzhankaizhedie"
-      size={size}
       className={`mm-chevron${open ? '' : ' mm-chevron--closed'}${className ? ` ${className}` : ''}`}
     />
   );

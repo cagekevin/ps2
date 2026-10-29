@@ -73,7 +73,7 @@ function FontListItemInner({
                 onOpenTags(event, font.family);
               }}
             >
-              <Icon name="iconbiaoqian" size={14} />
+              <Icon name="iconbiaoqian" />
             </button>
             <Rating selected={star} onRate={(value) => onRate(font.family, value)} />
           </div>

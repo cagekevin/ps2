@@ -20,7 +20,7 @@ export function PreviewText({ current, onApply }: Props) {
 
   return (
     <div className="mm-font__preview-text">
-      <Icon name="iconzihaodaxiao1" size={16} className="mm-font__preview-text-icon" />
+      <Icon name="iconzihaodaxiao1" className="mm-font__preview-text-icon" />
       <Input
         className="mm-font__preview-text-field"
         value={text}

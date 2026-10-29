@@ -20,7 +20,7 @@ export function DistributionHelp() {
         onClick={() => setOpen((current) => !current)}
       >
         高级用法
-        <Chevron open={open} size={8} />
+        <Chevron open={open} />
       </button>
 
       {open ? (

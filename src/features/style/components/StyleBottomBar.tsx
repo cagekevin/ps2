@@ -4,7 +4,8 @@
  * **壳与按钮用公共件** `components/BottomBar`（26 高 / 深底 / 30 宽 / 竖线），
  * 本文件只剩业务：两个彩虹方块 + 导入导出菜单。
  *
- * 前两个按钮的图标是图片，不是 sprite：颜色 14×14 彩虹渐变、渐变 14×14 蓝色渐变
+ * 前两个按钮的图标是图片，不是 sprite：颜色 / 渐变的彩虹方块（原版 14×14，viewBox 不变）；
+ * **尺寸由底栏外壳统一给**（`bottom-bar.css` 的 `.mm-bottom-bar svg`），这里不写 width / height
  * （原版 `img/bottom1*.svg` / `img/bottom2*.svg`），渐变色照抄，id 改 `mm-` 前缀避免互相覆盖。
  */
 import { useRef, useState } from 'react';
@@ -21,7 +22,7 @@ const ICONS: Record<'font' | 'style', 'iconzitimianban' | 'iconxinjianyangshifen
 /** 原版 `img/bottom1.f8c1ea17.svg`：新建颜色分组 */
 function ColorSwatch() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    <svg viewBox="0 0 14 14" aria-hidden="true">
       <defs>
         <linearGradient
           id="mm-bottom-color"
@@ -49,7 +50,7 @@ function ColorSwatch() {
 /** 原版 `img/bottom2.5843fcfd.svg`：新建渐变分组 */
 function GradientSwatch() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    <svg viewBox="0 0 14 14" aria-hidden="true">
       <defs>
         <linearGradient
           id="mm-bottom-gradient"
@@ -90,7 +91,7 @@ export function StyleBottomBar({ onAddGroup, onImport, onExport }: Props) {
           ) : kind === 'gradient' ? (
             <GradientSwatch />
           ) : (
-            <Icon name={ICONS[kind]} size={18} />
+            <Icon name={ICONS[kind]} />
           )}
         </BottomBarButton>
       ))}

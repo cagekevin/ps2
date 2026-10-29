@@ -39,3 +39,9 @@
   max-width: 100%;
   overflow: hidden;
 }
+
+/* 格子里的图标 32（原版实测）：格子是 50 的方块，图标比工具条大一档。
+   尺寸只在这里给，调用点不传 */
+.mm-common__tile-icon{
+  font-size: var(--mm-common-tile-icon);
+}

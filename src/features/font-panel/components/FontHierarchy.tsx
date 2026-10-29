@@ -87,24 +87,23 @@ export function FontHierarchy({
         />
 
         <IconButton
+          className="mm-icon-btn--inline"
           name="iconshuru"
           title="重命名预设"
-          size={14}
           disabled={nameMode !== null || presets.length === 0}
           onClick={() => setNameMode({ kind: 'rename' })}
         />
         <IconButton
+          className="mm-icon-btn--inline"
           name="iconshanchu"
           title="删除预设"
-          size={14}
           disabled={presets.length <= 1}
           onClick={() => onDeletePreset(presetIndex)}
         />
         <IconButton
           name="iconchangguicengjiyushe"
           title="设置层级预设"
-          /* 与左边两颗同一尺寸：不传就走 IconButton 的默认 20，同一行会出现 14/14/20 */
-          size={14}
+          className="mm-icon-btn--inline"
           active={editorOpen}
           onClick={() => setEditorOpen((open) => !open)}
         />

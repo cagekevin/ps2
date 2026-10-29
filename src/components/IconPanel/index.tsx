@@ -169,7 +169,6 @@ interface PanelProps {
   onPrimary?: (event: MouseEvent<HTMLElement>) => void;
   /** 默认触发器的图标；用 `trigger` 时忽略 */
   icon?: IconName;
-  size?: number;
   badge?: boolean;
   disabled?: boolean;
   /** 自定义触发器（数字框右侧小箭头这类），需要自己处理 active 与 aria */
@@ -195,7 +194,7 @@ export function sectionTrigger(title: string) {
       aria-controls={handlers['aria-controls']}
       onClick={handlers.toggle}
     >
-      <Chevron open={handlers.active} size={12} />
+      <Chevron open={handlers.active} />
       <span className="mm-icon-panel__title-text">{title}</span>
     </button>
   );
@@ -208,7 +207,6 @@ export function IconPanel({
   panel,
   onPrimary,
   icon,
-  size = 20,
   badge = false,
   disabled = false,
   trigger
@@ -268,7 +266,6 @@ export function IconPanel({
     <IconButton
       name={icon ?? 'iconzihaodaxiao1'}
       title={title}
-      size={size}
       badge={badge}
       active={open}
       disabled={disabled}

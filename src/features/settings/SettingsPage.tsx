@@ -17,7 +17,6 @@
 
 import { useEffect, useState } from 'react';
 import { CheckBox } from '../../components/CheckBox';
-import { PageHeader } from '../../components/PageHeader';
 import { SelectBox } from '../../components/SelectBox';
 import { Button } from '../../components/ui';
 import { useRunCommand } from '../../hooks/useRunCommand';
@@ -89,8 +88,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mm-settings">
-      <PageHeader title="设置" />
-
+      {/* 没有页头：导航上已写着「设置」，标题行白占 40 高（全站页面一致） */}
       <div className="mm-settings__body">
         <div className="mm-settings__section">使用设置</div>
 

@@ -67,7 +67,7 @@ export function TextField({
     <div className={`mm-text-field mm-text-field--${variant}`} title={title}>
       {icon ? (
         <span className="mm-text-field__icon">
-          <Icon name={icon} size={14} />
+          <Icon name={icon} />
         </span>
       ) : null}
       <Input

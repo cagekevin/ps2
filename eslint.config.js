@@ -166,6 +166,44 @@ export default tseslint.config(
     }
   },
 
+  /*
+   * 视觉样式（位置 / 尺寸 / 间距 / 颜色 / 圆角 / 边框 / 字号）只能由 css 决定，JS 不许改。
+   * 运行时算出来的值（浮层坐标、列数）只许以 CSS 变量交出（`--mm-x`），由 css 决定怎么用；
+   * 功能性的 DOM 操作（离屏元素、拖拽克隆）不在本条范围内，见下面的豁免。
+   * 理由：内联样式特异性最高、改 tokens 不生效、DevTools 里要去第二处找，视觉出问题查不到根因。
+   *
+   * **这条是视觉重写期的临时闸，不是永久规则**：定稿后连同 `CONVENTIONS` §14.1 一起删，
+   * 债号 `TD-13-1`（`node scripts/debt.mjs show TD-13-1`）。
+   */
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='style'] Property[key.type='Identifier']",
+          message:
+            '内联样式只允许 CSS 变量：style={{ \'--mm-x\': 值 }}；属性本身写进 css（CONVENTIONS §14）'
+        },
+        {
+          selector: "AssignmentExpression > MemberExpression[object.property.name='style']",
+          message:
+            '不要写 element.style.xxx：动态值用 setProperty(\'--mm-x\', 值)，属性写进 css（CONVENTIONS §14）'
+        }
+      ]
+    }
+  },
+
+  /*
+   * 豁免：**功能性** DOM 操作，不是视觉样式。
+   *   - 剪贴板降级要一个离屏 textarea（`position: fixed; opacity: 0`）才能 `select()`；
+   *   - 长按拖拽的克隆节点不在 React 树里，必须整体复制原节点 `cssText` 才看得出「拖的是什么」。
+   */
+  {
+    files: ['src/hooks/useLongPressDrag.ts', 'src/core/clipboard/index.ts'],
+    rules: { 'no-restricted-syntax': 'off' }
+  },
+
   /* 唯一允许直接 fetch 的地方 */
   {
     files: ['src/core/http/**/*.ts'],

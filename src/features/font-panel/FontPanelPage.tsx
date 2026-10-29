@@ -230,7 +230,7 @@ export default function FontPanelPage() {
               aria-pressed={page.settings.ztDistributedIsFixed}
               onClick={() => page.onPinDistribution(!page.settings.ztDistributedIsFixed)}
             >
-              <Icon name="icongudingxuanxiangye" size={14} />
+              <Icon name="icongudingxuanxiangye" />
             </button>
           }
           extra={<DistributionHelp />}

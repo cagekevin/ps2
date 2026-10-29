@@ -1,5 +1,8 @@
 /**
- * 字体管理页：页头 → 搜索/筛选 → 我的标签 → 计数行 → 字体列表 → 底栏。
+ * 字体管理页：工具行（搜索 / 筛选 / 更多）→ 我的标签 → 计数行 → 字体列表 → 底栏。
+ *
+ * **没有标题行**：原版字体管理页也没有，「我的字体」这个标题随页头一起去掉了；
+ * 「更多」菜单与筛选漏斗同排（`SearchRow` 的 `trailing`）。
  *
  * 页面只做组装：动作在 `useFontManage`，单项在 `components/FontListItem`。
  */
@@ -7,7 +10,7 @@ import { StateHint } from '../../components/StateHint';
 import { FontListItem } from './components/FontListItem';
 import { CountRow } from './components/CountRow';
 import { PageFooter } from './components/PageFooter';
-import { FontHeader } from './components/FontHeader';
+import { FontMenu } from './components/FontMenu';
 import { PreviewText } from './components/PreviewText';
 import { SearchRow } from './components/SearchRow';
 import { TagContextMenu } from './components/TagContextMenu';
@@ -24,8 +27,6 @@ export default function FontManagePage() {
 
   return (
     <div className="mm-font">
-      <FontHeader previewMode={page.previewMode} onMenuSelect={page.onMenuSelect} />
-
       <div className="mm-font__toolbar">
         <SearchRow
           keyword={page.keyword}
@@ -33,6 +34,9 @@ export default function FontManagePage() {
           categories={page.categories}
           filterState={page.filterState}
           onFilterChange={page.setFilterState}
+          trailing={
+            <FontMenu previewMode={page.previewMode} onMenuSelect={page.onMenuSelect} />
+          }
         />
 
         {page.showTextPanel ? (

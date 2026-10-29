@@ -15,6 +15,8 @@
 .mm-text-field__icon{
   display: inline-flex;
   flex: 0 0 auto;
+  /* 外壳规定：输入位图标与输入文字同排，固定 14 */
+  font-size: var(--mm-icon-sm);
 }
 
 .mm-text-field__input{

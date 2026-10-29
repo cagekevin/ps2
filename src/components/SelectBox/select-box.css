@@ -10,9 +10,14 @@
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
+  /* 外壳规定，不让调用点传：触发器里图标与文字同排 */
+  font-size: var(--mm-icon-sm);
 }
 
 .mm-select-box__panel{
+  /* 宽度 = 触发器宽：运行期由 TSX 注入 `--mm-select-panel-w`，这里只消费 */
+  width: var(--mm-select-panel-w, 100%);
+  max-height: var(--mm-select-panel-max-h);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -21,6 +26,7 @@
   position: relative;
   display: flex;
   width: 100%;
+  height: var(--mm-list-head-h);
   align-items: center;
 }
 
@@ -28,6 +34,8 @@
   position: absolute;
   left: var(--mm-space-1);
   top: 50%;
+  /* 小标记档（12）：与菜单、字重里的对号同一档 */
+  font-size: var(--mm-icon-xs);
 }
 
 .mm-select-box__item-label{
@@ -38,4 +46,9 @@
 /* 居中走公共 `.mm-btn`，这里只留不收缩 */
 .mm-select-box__remove{
   flex: 0 0 auto;
+}
+
+/* 删除图标：小标记档（12） */
+.mm-select-box__remove .mm-icon{
+  font-size: var(--mm-icon-xs);
 }

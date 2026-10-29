@@ -45,7 +45,7 @@ export function AnchorGrid({ value, onChange }: Props) {
             }
             onClick={() => onChange(index)}
           >
-            <Icon name={anchorIcon(index, selected)} size={18} />
+            <Icon name={anchorIcon(index, selected)} />
           </button>
         );
       })}

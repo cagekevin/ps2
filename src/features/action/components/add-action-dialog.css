@@ -3,7 +3,7 @@
 .mm-action-dialog{
   display: flex;
   flex-direction: column;
-  max-height: var(--mm-card-max-h, 50vh);
+  max-height: var(--mm-card-max-h);
 }
 
 .mm-action-dialog__list{

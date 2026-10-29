@@ -3,7 +3,7 @@
  *
  * 尺寸全部走 token：方块 50×50（`--mm-common-tile`）/ 圆角 `--mm-radius-md` /
  * 底色 `--mm-color-bg-raised`，hover 叠白、展开中才换 `--mm-color-bg-sunken`；
- * 内部 svg 32×32（下面的 `TILE_ICON_SIZE`），角标 3×3。
+ * 内部 svg 32×32（`--mm-common-tile-icon`，在 tile-button.css 给），角标 3×3。
  * **不要复用 `IconButton`**：那是 26×26 的工具条按钮，形状不同。
  *
  * 图标名来自用户文件（`sj_commonFunction.json` 的 `svg`），所以必须过 `isIconName`——
@@ -16,9 +16,6 @@ import type { MouseEvent } from 'react';
 import { Icon, isIconName } from '../../../components/icons';
 import type { CommonUseTile } from '../../../domain/common-use';
 import './tile-button.css';
-
-/** 格子里的图标 32×32（原版实测）。`Icon` 收数字 prop，拿不到 CSS 变量，所以尺寸只能落在 TSX */
-const TILE_ICON_SIZE = 32;
 
 interface Props {
   tile: CommonUseTile;
@@ -72,14 +69,12 @@ export function TileButton({
         {isIconName(tile.icon.rest) ? (
           <Icon
             name={tile.icon.rest}
-            size={TILE_ICON_SIZE}
             className="mm-common__tile-icon mm-common__tile-icon--rest"
           />
         ) : null}
         {filled ? (
           <Icon
             name={filled}
-            size={TILE_ICON_SIZE}
             className="mm-common__tile-icon mm-common__tile-icon--filled"
           />
         ) : null}

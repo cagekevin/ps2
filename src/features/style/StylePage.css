@@ -102,3 +102,8 @@
   align-items: center;
   justify-content: center;
 }
+
+/* 组末尾「+」：小标记档（12），与勾选对号同一档 */
+.mm-style__add .mm-icon{
+  font-size: var(--mm-icon-xs);
+}

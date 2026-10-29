@@ -74,7 +74,7 @@ export function ContextMenu({ x, y, anchor, items, inside, onClose }: ContextMen
             }}
           >
             <span>{item.label}</span>
-            {item.checked ? <Icon name="icongouxuan" size={12} /> : null}
+            {item.checked ? <Icon name="icongouxuan" className="mm-menu__check" /> : null}
           </button>
         )
       )}

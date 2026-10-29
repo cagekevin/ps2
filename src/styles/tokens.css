@@ -12,7 +12,7 @@
  *
  * 四条主轴，每轴内一个角色只有一个值：
  *   1. 间距 --mm-space-*：六档 + 两贴合档；页边单独一档。
- *   2. 尺寸 --mm-*-h / --mm-*-w：控件高度全仓一档；图标只有两档。
+ *   2. 尺寸 --mm-*-h / --mm-*-w：控件高度全仓一档；图标四档（xs/sm/btn/nav）+ 角标。
  *   3. 字号 --mm-font-*：三档。
  *   4. 层级 --mm-z-*、动效 --mm-dur-*：各一档。
  */
@@ -29,12 +29,22 @@
   /* 控件高度 */
   --mm-control-h: 26px;
   --mm-icon-btn-size: 26px;   /* 图标按钮是正方形，与控件同高 */
-  --mm-icon-md: 16px;
-  --mm-icon-lg: 24px;
+  /* 图标四档 + 两个独立角色，值只在这里给；调用点不写像素（<Icon> 默认 1em，尺寸由容器 font-size 给）。
+     选档看「旁边有没有字」（CONVENTIONS §7 规则 14）：
+       xs   小标记 —— 勾选对号、删除、「+」、折叠箭头（小于同排文字，属标记不属同排元素）
+       sm   与文字同排 —— 行内图标、输入位、带文字的按钮行（12 号字行高 16 → 图标 14，规则 7）
+       btn  纯图标条 —— 页头工具、对齐/样式/字重图标排、翻转、IconPanel 触发器、九宫格
+       （底栏不用这档：底栏外壳把里面的 svg 一律压成 sm 14，见 bottom-bar.css）
+       nav  导航主项 —— 40 格里的唯一图标
+     判定：同一层级出现第二种尺寸，那个少数派就是写错的，往多数那档并，不许加第五档。 */
+  --mm-icon-xs: 12px;
+  --mm-icon-sm: 14px;
+  --mm-icon-btn: 20px;
+  --mm-icon-nav: 24px;
+  --mm-icon-badge: 4px;    /* 图标按钮右下角标：只挂在按钮角上，不占档位 */
   --mm-control-reserve: 30px; /* 输入框给左侧图标（16）或右侧按钮留出的内边距 */
 
   /* 结构高度 */
-  --mm-header-h: 40px;
   --mm-bottom-bar-h: 26px;
   --mm-bottom-btn-w: 30px;
   --mm-verline-h: 13px;
@@ -127,6 +137,7 @@
 
   /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
   --mm-common-tile: 50px;
+  --mm-common-tile-icon: 32px;
   --mm-common-tile-radius: var(--mm-radius-md);
   --mm-common-mark: 3px;
   --mm-common-mark-offset-y: 30px;
@@ -136,6 +147,7 @@
   --mm-modal-w: 260px;
   --mm-modal-min-w: 240px;
   --mm-modal-max-w: 320px;
+  --mm-card-max-h: 50vh;
   --mm-menu-min-w: 120px;
   --mm-select-panel-max-h: 320px;
   --mm-log-max-h: 240px;

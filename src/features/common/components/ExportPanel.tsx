@@ -199,7 +199,7 @@ export function ExportPanel() {
             setField('path', next);
             write('path', next);
           }}
-          rightSlot={<IconButton name="iconwenjianjiaguanli" title={'选择目录'} size={14} onClick={pickFolder} />}
+          rightSlot={<IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择目录'} onClick={pickFolder} />}
         />
         <RadioButton
           name="mm-common-path-type"
@@ -293,7 +293,7 @@ export function ExportPanel() {
             writeCompress('watermark', next);
           }}
           rightSlot={
-            <IconButton name="iconwenjianjiaguanli" title={'选择水印文件'} size={14} onClick={pickWatermark} />
+            <IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择水印文件'} onClick={pickWatermark} />
           }
         />
         <CheckBox

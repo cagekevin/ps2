@@ -1,7 +1,24 @@
 /**
  * 图标组件
  * 由 tools/build-icons.mjs 从 assets/icons-sprite.svg 生成，不要手改。
- * 用法：<Icon name="icon-nav_mobanku" size={24} />
+ * 用法：<Icon name="icon-nav_mobanku" />
+ *
+ * 尺寸不传：width / height 固定 1em，等于**所在容器的 font-size**。
+ * 档位只有四档（值在 tokens.css 的 --mm-icon-*），选哪档看「旁边有没有字」（CONVENTIONS §7 规则 14）：
+ *   xs  12  小标记：勾选对号、删除、「+」、折叠箭头 —— 小于同排文字，属标记不属同排元素
+ *   sm  14  与文字同排：行内图标、输入位、带文字的按钮行 —— 12 号字行高 16，图标正好 14（规则 7）
+ *   btn 20  纯图标条：页头工具、对齐/样式/字重图标排、翻转、IconPanel 触发器、底栏、九宫格
+ *   nav 24  导航主项：40 格里唯一的图标
+ *
+ * 四种落法（照着抄，别自己想第五种）：
+ *   纯图标条      <IconButton name="iconsousuo" title="搜索" />                        什么都不写 → 20
+ *   与文字同排    <IconButton className="mm-icon-btn--inline" title="选择目录" ... />   → 14
+ *   普通行内图标  <Icon name="iconguolv" />                                            默认 → 14
+ *   小标记        <Icon name="icongouxuan" className="mm-menu__check" />               容器类给 → 12
+ *
+ * 要改尺寸就改 css（或 tokens.css 的档位值），不要回 TSX 找：
+ * `IconProps` 已 Omit 掉 size / width / height，写像素编译不过。
+ * 同一层级出现第二种尺寸时，那个少数派就是写错的，往多数那档并。
  *
  * 不用 <use href="#id">：旧版 Chromium 下会在父级重绘时重新解析 symbol，
  * 表现为图标闪烁。这里直接内联 path。
@@ -617,19 +634,19 @@ export function isIconName(value: string): value is IconName {
   return Object.prototype.hasOwnProperty.call(ICONS, value);
 }
 
-export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
+export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name' | 'width' | 'height'> {
   name: IconName;
-  size?: number | string;
 }
 
-export function Icon({ name, size = '1em', ...rest }: IconProps) {
+export function Icon({ name, className, ...rest }: IconProps) {
   const data = ICONS[name];
   if (!data) return null;
   return (
     <svg
       viewBox={data.viewBox}
-      width={size}
-      height={size}
+      className={className ? `mm-icon ${className}` : 'mm-icon'}
+      width="1em"
+      height="1em"
       fill="currentColor"
       aria-hidden="true"
       {...rest}

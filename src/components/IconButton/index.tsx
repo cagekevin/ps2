@@ -6,6 +6,12 @@
  * 26×26 点击区 + 选中态 + 右下角标。与 `components/ui` 的 `Button` 分工不同：
  * `Button` 是带文字的按钮，这里是只有一个图标的工具条按钮。
  *
+ * **图标尺寸不传，按「旁边有没有字」分两档**（值是 `tokens.css` 的 `--mm-icon-btn` / `--mm-icon-sm`，
+ * 规则见 `CONVENTIONS` §7 规则 14，实测表在 `components/icons` 文件头）：
+ * - 纯图标条（页头工具、对齐/样式图标排、翻转、`IconPanel` 触发器）→ 默认 20，什么都不写
+ * - 与文字同排（输入框右侧、带文字的分组行 / 预设行 / 间距行）→ 传 `className="mm-icon-btn--inline"` 得 14
+ * 为什么不能用容器选择器自动判：同一个容器里两种都可能有（如分组行既有组名也有工具图标），只能由调用点声明。
+ *
  * 修饰键不在这里判定：组件只把原始事件交出去。`Ctrl` / `Shift` 的语义各处不同
  * （字体面板顶部 Ctrl = 自由面板，属性面板 Ctrl = 段落对齐），统一判定会把语义定死。
  *
@@ -19,9 +25,12 @@ import './icon-button.css';
 interface Props {
   name: IconName;
   title: string;
-  /** 图标像素尺寸；默认 20 */
-  size?: number;
   active?: boolean;
+  /**
+   * 与文字同排时传 `mm-icon-btn--inline`：图标降一档（20 → 14），
+   * 否则图标比同一行的 12 号字还高（`CONVENTIONS` §7 规则 7）。
+   */
+  className?: string;
   /** 右下角标（原版 `iconjiaobiao`）：表示可加入自由面板 */
   badge?: boolean;
   disabled?: boolean;
@@ -36,8 +45,8 @@ interface Props {
 export function IconButton({
   name,
   title,
-  size = 20,
   active = false,
+  className = '',
   badge = false,
   disabled = false,
   ariaExpanded,
@@ -48,7 +57,7 @@ export function IconButton({
   return (
     <button
       type="button"
-      className={`mm-icon-btn${active ? ' mm-icon-btn--active' : ''}`}
+      className={`mm-icon-btn${active ? ' mm-icon-btn--active' : ''}${className ? ` ${className}` : ''}`}
       title={title}
       aria-label={title}
       aria-pressed={active}
@@ -61,8 +70,8 @@ export function IconButton({
         onContextMenu?.(event);
       }}
     >
-      <Icon name={name} size={size} />
-      {badge ? <Icon name="iconjiaobiao" size={4} className="mm-icon-btn__badge" /> : null}
+      <Icon name={name} />
+      {badge ? <Icon name="iconjiaobiao" className="mm-icon-btn__badge" /> : null}
     </button>
   );
 }

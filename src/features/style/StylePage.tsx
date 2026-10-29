@@ -174,7 +174,7 @@ export default function StylePage() {
             className="mm-style__warehouse"
             value={String(activeIndex)}
             options={warehouseOptions}
-            icon={<Icon name="iconmorencangku" size={16} />}
+            icon={<Icon name="iconmorencangku" />}
             onChange={(next) => {
               void selectWarehouse(Number(next));
             }}
@@ -314,7 +314,7 @@ export default function StylePage() {
                         title={ADD_TITLE[activeKind]}
                         onClick={() => void handleAddItem(index)}
                       >
-                        <Icon name="iconchuangjian" size={12} />
+                        <Icon name="iconchuangjian" />
                       </button>
                     </div>
                   ) : null}

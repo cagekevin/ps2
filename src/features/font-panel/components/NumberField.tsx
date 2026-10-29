@@ -66,7 +66,7 @@ export function NumberField({
     <div className="mm-font-panel__number" title={title}>
       {icon ? (
         <span className="mm-font-panel__number-icon">
-          <Icon name={icon} size={16} />
+          <Icon name={icon} />
         </span>
       ) : null}
 
@@ -90,7 +90,7 @@ export function NumberField({
             aria-expanded={presetOpen}
             onClick={onPreset}
           >
-            <Chevron open={presetOpen} size={8} />
+            <Chevron open={presetOpen} />
           </button>
         ) : null}
       </span>

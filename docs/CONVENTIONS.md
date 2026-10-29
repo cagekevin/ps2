@@ -713,7 +713,7 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0） | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
-| 页面页头 | `components/PageHeader`（`title` + 右侧插槽） | 页面自写 `<header>` 与 `__title` 样式、各写一套高度与字号 |
+| 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background` |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
@@ -837,6 +837,19 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     其余按角色取（值全部回到 Vue 原版）：输入位 `--mm-color-bg-input`(#2c2c2c) /
     抽屉 `--mm-color-bg-drawer`(#222) / 页头 `--mm-color-bg-header`(#333) /
     底栏 `--mm-color-bg-bar`(#545454) / 浮层 `--mm-color-bg-overlay`(rgba(64,64,64,.96))
+14. **图标四档，按「旁边有没有字」选**，值只在 `tokens.css` 的 `--mm-icon-*`，**调用点不传 size**
+    （`<Icon>` 默认 `1em`，尺寸由所在容器的 `font-size` 给，判定依据见 `tools/build-icons.mjs` 文件头）：
+
+    | 场景 | 档 | 落法 |
+    |---|---|---|
+    | 纯图标条：页头工具、对齐 / 样式 / 字重图标排、翻转、`IconPanel` 触发器 | `btn` 20 | `IconButton` 默认，什么都不写 |
+    | 与文字同排：输入框右侧、带文字的分组行 / 预设行 / 间距行 | `sm` 14 | 按钮传 `className="mm-icon-btn--inline"`；普通图标走默认 |
+    | **底栏**里的一切图标（sprite 与自定义 `<svg>` 图片都要） | `sm` 14 | 底栏外壳 `.mm-bottom-bar svg` 统一压，页面与 `BottomBarButton` 都不传 |
+    | 小标记：勾选对号、删除、「+」、折叠箭头 | `xs` 12 | 容器类（`.mm-select-box__check` 等）或 `.mm-chevron` |
+    | 导航主项 / 常用页格子 | `nav` 24 / `tile-icon` 32 | `nav-bar.css` / `tile-button.css` |
+
+    **判据**：同一排里图标不得大于该排文字（12 号字行高 16 → 图标 14，规则 7）；
+    同一层级出现第二种尺寸时，**那个少数派就是写错的**，往多数那档并，不许新增第五档。
 
 ---
 
@@ -950,6 +963,22 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 ```tsx
 <div style={{ '--mm-swatch-color': color } as React.CSSProperties} />
 ```
+
+### 14.1 JS 不许改视觉样式（2026-10-30 立，eslint 已锁）
+
+**位置 / 尺寸 / 间距 / 颜色 / 圆角 / 边框 / 字号 —— 这些只能由 css 决定，JS 不许写。**
+
+| 场景 | 允许 | 禁止 |
+|---|---|---|
+| 静态视觉值 | 写进 css（token 或组件规则） | `style={{ width: 24 }}`、`el.style.padding = '8px'` |
+| 运行时算出来的值（浮层坐标 / 列数 / 色值） | 交出 CSS 变量：`style={{ '--mm-x': 值 }}`、`el.style.setProperty('--mm-x', 值)`，**怎么用由 css 决定** | 直接写 `style={{ left: x }}`、`el.style.left = x`、`el.style.width = x` |
+| 功能性 DOM（离屏 textarea、拖拽克隆） | 不在本条范围内，豁免见 eslint 配置 | — |
+
+- 判据：**删掉这行 JS，视觉会不会变？会 → 它属于本条，要进 css；只是把数据交给 css → 允许。**
+- 机器闸：`eslint.config.js` 的 `no-restricted-syntax` 两条（JSX `style` 里出现非 `--` 键、`element.style.xxx = `），命中即 error；豁免只给 `hooks/useLongPressDrag.ts` 与 `core/clipboard/index.ts` 两个功能模块，业务代码不许加 `eslint-disable`。
+- 已收敛：动作页列数 `--mm-action-columns`、下拉面板宽 `--mm-select-panel-w`、浮层坐标 `--floating-x/y`。
+- 理由：内联样式特异性最高、改 `tokens.css` 不生效、DevTools 里要跑到第二处找 —— 视觉出问题时排查不到根因。
+- **本条是视觉重写期的临时护栏，不是永久规则**：视觉定稿后连同 eslint 那两条一起删。债号 `TD-13-1`（`node scripts/debt.mjs show TD-13-1`）。
 
 ---
 
