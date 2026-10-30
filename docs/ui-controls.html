@@ -1016,8 +1016,8 @@
 <p class="lead">现在：<b>全仓只有 <code>&lt;Chevron&gt;</code> 一个箭头件</b>，图标统一 <code>iconzhankaizhedie</code>（<code>&gt;</code> 形）。</p>
 <table>
 <tr><th>#</th><th>场景</th><th>写法</th><th>尺寸</th></tr>
-<tr><td>1</td><td>有开合状态：折叠行 / 组头 / 新建分组 / 高级用法 / 数字框预设 / 标签展开</td><td><code>&lt;Chevron open={open} /&gt;</code>，收起转 <code>rotate(-90deg)</code></td><td>8 / 9 / 12</td></tr>
-<tr><td>2</td><td>弹层指示：下拉触发器 / 常用页缩放区</td><td><code>&lt;Chevron /&gt;</code>（不传 <code>open</code>），恒朝下、不旋转</td><td>12</td></tr>
+<tr><td>1</td><td>有开合状态：折叠行 / 组头 / 新建分组 / 缩放行 / 标签展开</td><td><code>&lt;Chevron open={open} /&gt;</code>，收起转 <code>rotate(-90deg)</code></td><td>12</td></tr>
+<tr><td>2</td><td>按钮 / 弹层指示：字体面板的数字框预设与「高级用法」、下拉触发器</td><td><code>&lt;Chevron open="static" /&gt;</code>，恒朝下、不旋转</td><td>12</td></tr>
 </table>
 <p class="lead"><b>已删净</b>：<code>SelectBox</code> 的 <code>arrowIcon</code> / <code>arrowSize</code> 参数、<code>mm-select-box__arrow</code>、<code>mm-font-panel__caret</code>、<code>mm-font-panel__number-caret--open</code>、<code>mm-common__zoom-arrow</code>。<code>iconxiala</code> 不再有调用（图标定义留在 sprite 里）。</p>
 <p class="lead"><b>复核</b>：<code>rg "rotate\(" src</code> 只剩 <code>chevron.css</code> 一处；<code>rg "arrowIcon|arrowSize" src</code> 为 0；<code>npm run check</code> 全绿（37 文件 / 313 测试）。</p>

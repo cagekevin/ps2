@@ -6,7 +6,7 @@
  * 不用原生 `<select>`：箭头是浏览器画的、面板样式不可控、
  * 选中项要在左侧打勾，原生没有那个位置。
  *
- * 右侧箭头固定渲染 `<Chevron />`（全仓唯一箭头件，恒朝下，不随开合翻转）；
+ * 右侧箭头固定渲染 `<Chevron open="static" />`（全仓唯一箭头件，恒朝下，不随开合翻转）；
  * **没有 `arrowIcon` / `arrowSize` 参数**——需要别的箭头就是第二种形状，按约定不许有。
  *
  * 面板 = `Portal` 挂 body（不被任何滚动容器裁）+ `.mm-popover`（`global.css` 里的浮层壳）。
@@ -90,8 +90,8 @@ export function SelectBox({
         {icon ? <span className="mm-select-box__icon">{icon}</span> : null}
         <span className="mm-select-box__label">{current?.label ?? ''}</span>
         {/* 下拉触发器的箭头**恒朝下**（官方 `select` 实拍：展开与否都是 ∨），
-            不传 `open` 就是静态指示；开合状态由 `aria-expanded` 表达 */}
-        <Chevron />
+            它不是折叠箭头，传 `open="static"` 就是静态指示；开合状态由 `aria-expanded` 表达 */}
+        <Chevron open="static" />
       </button>
 
       {open ? (

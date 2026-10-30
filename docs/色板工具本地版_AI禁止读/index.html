@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <script>window.module = undefined</script>
+  <title>色板工具</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/CSInterface.js"></script>
+</head>
+<body spellcheck="false">
+  <div class="main">
+    <!-- 最近使用 -->
+    <div id="div_ZuiJin" class="ffs1"></div>
+
+    <div class="fg ffs1"></div>
+
+    <!-- 自定义色板 -->
+    <div class="ff1" style="overflow: hidden;">
+      <div id="div_ZiDingYi"></div>
+
+      <img src="./img/1.png" id="btnAddFg" title="添加前景色" />
+      <img src="./img/4.png" id="btnAddLayer" title="添加当前图层颜色（支持文本、形状图层）" />
+
+      <hr color="#383838" size="1" />
+
+      <img src="./img/6.png" id="btnShape" title="点击去掉形状图层填充，shift+点击去掉形状图层线框" />
+      <img src="./img/7.png" id="btnSwap" title="交换线框和填充颜色，仅对形状图层有效" />
+    </div>
+
+    <!-- 底部工具 -->
+    <div class="ffs1" style="width: 100%;">
+      <!--
+        自动填充开关：三个圆圈（RGB 加色模型）。
+        未激活 = 灰色，激活 = 彩色。颜色全在 css/style.css 的 `#btnAutoFill` 里，
+        不用两张图、不用滤镜 —— 加色叠加靠 fill-opacity，重叠处自然混色。
+      -->
+      <svg id="btnAutoFill" viewBox="0 0 21 21" role="button">
+        <title>自动填充：点亮后，改 PS 前景色会自动填到选中图层</title>
+        <circle class="c1" cx="8" cy="8.5" r="5.6" />
+        <circle class="c2" cx="13" cy="8.5" r="5.6" />
+        <circle class="c3" cx="10.5" cy="13" r="5.6" />
+      </svg>
+      <img src="./img/3.png" id="btnLimit" title="设置最近使用颜色数量" />
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

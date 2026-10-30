@@ -79,8 +79,8 @@
 
 | 层 | 范本文件 | 说明 |
 |---|---|---|
-| 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `CONVENTIONS` §7 规则 12 |
-| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里 |
+| 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `docs/STYLE.md` §7 规则 12 |
+| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 |
@@ -137,8 +137,8 @@
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox |
-| 箭头 | `src/components/Chevron/index.tsx` | **全仓唯一箭头件**（2026-10-29 收敛）：**默认恒朝下，调用点不传 `open`**；唯一例外是字体面板的两处（`NumberField` 预设箭头、`DistributionHelp` 高级用法），收起朝右（`-90deg`）、展开朝下，这两处必须传 `open`；图标统一 `iconzhankaizhedie`；**没有 `arrowIcon` 参数**，要第二个箭头形状就是违规 |
-| 箭头样式 | `src/components/Chevron/chevron.css` | `--closed` 的 `rotate(-90deg)` 全仓只此一处（只有字体面板的两处箭头会命中）；`transition` 走 `--mm-dur-fast` |
+| 箭头 | `src/components/Chevron/index.tsx` | **全仓唯一箭头件**：`open` **必传** —— `open={开合状态}` 收起朝右（`-90deg`）/ 展开朝下（组头 / 抽屉标题 / 缩放行 / 标签展开）；`open="static"` 恒朝下、不表达开合（字体面板的 `NumberField` 预设箭头与 `DistributionHelp`「高级用法」、`SelectBox` 下拉 ∨）；图标统一 `iconzhankaizhedie`；**没有 `arrowIcon` / `size` 参数**，要第二个箭头形状就是违规 |
+| 箭头样式 | `src/components/Chevron/chevron.css` | `--closed` 的 `rotate(-90deg)` 全仓只此一处（只有 `open={false}` 会命中，`"static"` 恒朝下）；`transition` 走 `--mm-dur-fast` |
 | 图片取色弹层 | `src/features/style/components/ImgColorDialog.tsx` | 色圈 / 渐变条，左键应用右键删 |
 | 图片取色样式 | `src/features/style/components/img-color-dialog.css` | 对齐原版 imgColor |
 | PS 事件订阅 | `src/core/cep/ps-events.ts` | 注册 + JSON 回调 + setd 判据；`subscribeHostEvent` 返回 `Result<取消函数>`，非 CEP / 注册被拒都折成 `PS_UNREADY`，**不抛异常**；一次性等待用 `startHostEventWait`（订阅 / 超时 / 退订都在这里），调用方只递判据 |

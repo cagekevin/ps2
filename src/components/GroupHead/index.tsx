@@ -29,7 +29,7 @@ import './group-head.css';
 interface Props {
   /** 分组名（`titleSlot` 存在时忽略） */
   title: string;
-  /** 是否展开：只进 `aria-expanded`（箭头恒朝下，不随开合翻转） */
+  /** 是否展开：进 `aria-expanded`，同时决定箭头朝向（收起朝右 / 展开朝下） */
   open: boolean;
   /** 左键开合；编辑态（传了 `titleSlot`）时不生效 */
   onToggle: () => void;
@@ -58,7 +58,7 @@ export function GroupHead({
   data,
   className = ''
 }: Props) {
-  const chevron = <Chevron />;
+  const chevron = <Chevron open={open} />;
 
   return (
     <div className={`mm-group-head${className ? ` ${className}` : ''}`}>

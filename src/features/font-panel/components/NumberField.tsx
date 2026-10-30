@@ -90,7 +90,7 @@ export function NumberField({
             aria-expanded={presetOpen}
             onClick={onPreset}
           >
-            <Chevron open={presetOpen} />
+            <Chevron open="static" />
           </button>
         ) : null}
       </span>

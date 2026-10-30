@@ -33,6 +33,33 @@
 .mm-font__filter-chips{
   display: flex;
   flex-wrap: wrap;
+  gap: var(--mm-space-1);
+}
+
+.mm-font__filter-group{
+  padding-bottom: var(--mm-space-1);
+}
+
+.mm-font__filter-title{
+  font-size: var(--mm-font-xs);
+}
+
+/* 筛选 chip：面板落在**浅色浮层**里（规则 16），所以刻意不挂 `.mm-btn` ——
+   那个壳的文字色与 hover 底都是页面表面的深色值，落在白底上会变成灰字 / 黑块；
+   浮层专用的按钮表面属视觉重写范围，届时由 `.mm-btn` 的变体统一给。
+   选中**不用 accent**（用户 2026-10-30 定）：反白区分，只消费浮层那两个 token。 */
+.mm-font__filter-chip{
+  height: var(--mm-tag-strip-h);
+  padding: 0 var(--mm-space-2);
+  border-radius: var(--mm-radius-md);
+  color: inherit;
+  font-size: var(--mm-font-xs);
+  cursor: pointer;
+}
+
+.mm-font__filter-chip--on{
+  background: var(--mm-color-text-popover);
+  color: var(--mm-color-bg-popover);
 }
 
 .mm-font__preview-text{

@@ -1,8 +1,8 @@
 /**
  * 分布弹窗里的「高级用法」折叠块（原版 `app.v4.js:1321235`）
  *
- * 原版是 `f-baseX cursor` 的一行 + 箭头（`rotate-90` 收起 / `rotate0` 展开），
- * 点击切换；文案逐字照抄。
+ * 原版是 `f-baseX cursor` 的一行 + 箭头（`rotate-90` 收起 / `rotate0` 展开），点击切换；文案逐字照抄。
+ * 我方箭头**恒朝下**（`open="static"`）：字体页的箭头是「点我展开」的按钮，不随开合转（用户定案）。
  */
 
 import { useState } from 'react';
@@ -20,7 +20,7 @@ export function DistributionHelp() {
         onClick={() => setOpen((current) => !current)}
       >
         高级用法
-        <Chevron open={open} />
+        <Chevron open="static" />
       </button>
 
       {open ? (

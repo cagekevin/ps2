@@ -62,6 +62,7 @@
   并附上这两条条款的**实际内容要点**（照文件写，不许凭记忆复述）。没有这行确认，视为违规开工。
 - 两份文件冲突时以 `CONVENTIONS.md` 为准；两份都没覆盖的情况，先改 `CONVENTIONS.md`，再写代码（`GOVERNANCE.md` 第一节）。
 - 任务涉及 jsx / PS 通道 / 库文件数据契约时，追加读 `docs/PS-CHANNEL-NOTES.md`。
+- 任务涉及 UI 横切 / 样式 / 视觉 / css / token / 图标档位 / 间距时，追加读 `docs/STYLE.md`（界面规则的唯一出处，原 `CONVENTIONS` §6 / §7 / §14，**编号不变**）。
 - 要改动某个已有能力时，先读 `GOVERNANCE.md` §4.1 清单里对应的【范本】文件，照范本写。
 
 ---

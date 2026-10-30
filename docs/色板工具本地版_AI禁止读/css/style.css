@@ -1,0 +1,119 @@
+@charset "utf-8";
+
+body {
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    -webkit-user-select: none;
+    background: #535353;
+}
+
+/* 色块 */
+.AnNiuYanSe {
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    margin: 3px 1px 3px 2px;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0);
+    border-radius: 50%;
+    padding: 0;
+    outline: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.AnNiuYanSe:hover {
+    border: 1px solid #e5e5e5;
+}
+
+.AnNiuYanSeGL {
+    border: 1px solid #e5e5e5;
+}
+
+.AnNiuYanSe.dragging {
+    opacity: 0.4;
+}
+
+input {
+    outline: none;
+}
+
+hr {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.main img {
+    margin: 1px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* 自动填充开关：三个圆圈（RGB 加色模型）。
+   未激活 = 灰色，激活 = 彩色。一张 SVG 靠 class 换色，不用两张图、不用滤镜。
+   fill-opacity 让重叠处自然混色（红+绿=暗黄、红+蓝=紫、绿+蓝=青），与参考图一致。 */
+#btnAutoFill {
+    width: 21px;
+    height: 21px;
+    margin: 1px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+#btnAutoFill circle {
+    fill: #8a8a8a;
+    fill-opacity: 0.72;
+    transition: fill 0.15s ease;
+}
+
+#btnAutoFill.is-on .c1 {
+    fill: #e05252;
+}
+
+#btnAutoFill.is-on .c2 {
+    fill: #3fbf9f;
+}
+
+#btnAutoFill.is-on .c3 {
+    fill: #2f7fd0;
+}
+
+.fg {
+    margin: 15px 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.ffs1 {
+    flex-shrink: 0;
+}
+
+.ff1 {
+    flex-grow: 1;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}

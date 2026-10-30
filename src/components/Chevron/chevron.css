@@ -7,8 +7,8 @@
   transition: transform var(--mm-dur-fast) ease;
 }
 
-/* 收起 = 转成朝右。只有字体面板的预设 / 高级用法箭头会走到这里（那两处传 open），
-   其余调用点不传 open、恒朝下；旋转角度全仓只在这里给，别处不许再写 rotate */
+/* 收起 = 转成朝右。只有传 `open={false}` 的调用点会命中（`open="static"` 的按钮图标恒朝下）；
+   旋转角度全仓只在这里给，别处不许再写 rotate */
 .mm-chevron--closed{
   transform: rotate(-90deg);
 }

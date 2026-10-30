@@ -130,6 +130,9 @@ button{
   height: 100%;
   min-height: 0;
   padding: 0 var(--mm-page-pad-x);
+  /* 滚动条出现时不挤内容：常用页一开抽屉高度就变、滚动条随之出现，内容横向抖 8px（官方不抖）。
+     槽位恒定由这里给，页面只管 `overflow-y`；对不滚动的元素无副作用。 */
+  scrollbar-gutter: stable;
   /* 承载行的左右 padding 合计：抽屉底色靠它左右铺满（`IconPanel` 的 `__box::before`） */
   --mm-icon-panel-bleed: var(--mm-page-pad-x);
 }
@@ -139,6 +142,8 @@ button{
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* 同上：触底加载把滚动条挤出来时，列表文字不横移 */
+  scrollbar-gutter: stable;
 }
 
 .mm-bottom-bar__divider,

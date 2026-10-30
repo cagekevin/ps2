@@ -41,11 +41,11 @@
 }
 
 /* 当前文字颜色的色块：宽度占满剩余（官方 `color-preview ... f-full`，宽度走公共 `.mm-u-grow`），
-   色值由 TSX 注入 `--mm-swatch`（`CONVENTIONS` §14.1） */
+   色值由 TSX 注入 `--mm-swatch`（`CONVENTIONS` §14.1）。
+   直角（用户 2026-10-30 定）：色块是「颜色本身」，圆角会切掉四个角的色值。 */
 .mm-font-panel__swatch{
   height: var(--mm-control-h);
   border: var(--mm-border-w) solid var(--mm-color-border-control);
-  border-radius: var(--mm-radius-md);
   background: var(--mm-swatch, var(--mm-color-bg-input));
   cursor: pointer;
 }
