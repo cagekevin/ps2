@@ -11,6 +11,9 @@
   /* 上下 8（组间档）；左右为 0 —— 左右位置不动，通栏交给 `::before` 的底色层 */
   padding: var(--mm-space-2) 0;
   margin: var(--mm-space-2) 0;
+  /* 抽屉表面上的输入位比抽屉再深一档（`CONVENTIONS` §7 规则 15）：
+     表面声明、控件消费，输入框自己不判断落在哪儿 */
+  --mm-input-bg: var(--mm-color-bg-input-drawer);
 }
 
 /*

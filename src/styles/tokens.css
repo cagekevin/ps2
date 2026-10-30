@@ -1,8 +1,8 @@
 /*
  * 【范本】设计 Token —— px 的出处（结构层）
  *
- * 是什么：界面「结构」的出处——间距 / 尺寸 / 字号 / 圆角 / 层级 / 动效。
- *         颜色不在这里：骨架形态下界面没有颜色，色值 token 已全部删除（2026-10-29）。
+ * 是什么：界面「结构」与「颜色」的唯一出处——间距 / 尺寸 / 字号 / 圆角 / 层级 / 动效（§1–7）+ 颜色（§8）。
+ *         颜色按「角色」给（`--mm-color-<角色>`），不按页面给；同一角色只有一个值。
  * 谁在用：所有 src 下的 css。
  * 禁止：在本文件之外写 px；引用本文件没定义的变量（var() 引用未定义变量不会报错，
  *       会让整条声明静默失效）。
@@ -56,7 +56,9 @@
   --mm-tab-line-h: 20px;
   --mm-check-size: 12px;
   --mm-check-radius: 3px;
-  --mm-check-slot: 20px;
+  /* 图标槽：图标 12（`--mm-icon-xs`）+ 同行并列间距 6（`--mm-space-inline`）。
+     列表里「对号 + 文字」靠它左对齐：图标贴槽左、文字从槽后开始，间距恒为 6（§7 规则 17） */
+  --mm-check-slot: 18px;
 
   /* 字号：三档 */
   --mm-font-xs: 11px;
@@ -70,6 +72,9 @@
   --mm-radius-md: 4px;
   --mm-radius-pill: 999px;
   --mm-border-w: 1px;
+
+  /* 投影：只有浮层一档（浅色底在深色面板上靠投影与反差界定边界，不用描边） */
+  --mm-shadow-popover: 0 4px 12px rgba(0, 0, 0, 0.35);
 
   /* 动效时长：全仓一档 */
   --mm-dur-fast: 120ms;
@@ -175,8 +180,10 @@
   --mm-color-bg-active: #424242;                  /* 列表行 / 下拉项 hover */
   --mm-color-bg-raised: #4b4b4b;                  /* 按钮底 */
   --mm-color-bg-raised-hover: #575757;            /* 按钮 hover */
-  --mm-color-bg-input: #2c2c2c;                   /* 输入框底与边框 */
-  --mm-color-bg-overlay: rgba(64, 64, 64, 0.96);  /* 浮层 / 弹窗 / toast */
+  --mm-color-bg-input: #2c2c2c;                   /* 输入位底：页面表面（#363636）上，比表面深一档 */
+  --mm-color-bg-input-drawer: #000000;            /* 输入位底：抽屉表面（#222222）上，比表面深一档 */
+  --mm-color-bg-overlay: rgba(64, 64, 64, 0.96);  /* 弹窗 / toast */
+  --mm-color-bg-popover: #ffffff;                 /* 浮层 / 下拉面板底：浅色，与深色面板相反 */
   --mm-color-bg-nav: #535353;                     /* 侧边栏 */
   --mm-color-bg-bar: #545454;                     /* 底部工具条 */
   --mm-color-bg-header: #333333;                  /* 页头 */
@@ -191,7 +198,6 @@
   --mm-color-border: #2e2e2e;                          /* 暗线：页面 / 列表分隔 */
   --mm-color-border-control: #4b4b4b;                  /* 亮线：控件 / 勾选框 / 浮层外缘 */
   --mm-color-border-checked: #6e6e6e;                  /* 字重预览选中框 */
-  --mm-color-border-float: hsla(0, 0%, 100%, 0.1);     /* 浮层外边缘 */
   --mm-color-border-float-strong: hsla(0, 0%, 100%, 0.2); /* 图标按钮 hover 边 */
   --mm-color-border-icon-hover: #444444;
   --mm-color-border-dialog: #dddddd;
@@ -204,6 +210,7 @@
   --mm-color-text-dim: #9a9a9a;                    /* 次要 */
   --mm-color-text-faint: #8e8e8e;                  /* placeholder / 空态 / 计数 */
   --mm-color-text-inverse: #ffffff;                /* 蓝底反白 */
+  --mm-color-text-popover: #000000;                /* 浅色浮层上的文字与图标 */
   --mm-color-text-preview: #e0e0e0;                /* 字体预览 */
   --mm-color-text-name: #eaeaea;                   /* 无预览模式家族名 */
   --mm-color-text-chip: #c0c0c0;                   /* 字重芯片 */

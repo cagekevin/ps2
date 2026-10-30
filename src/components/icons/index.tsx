@@ -3,7 +3,10 @@
  * 由 tools/build-icons.mjs 从 assets/icons-sprite.svg 生成，不要手改。
  * 用法：<Icon name="icon-nav_mobanku" />
  *
- * 尺寸不传：width / height 固定 1em，等于**所在容器的 font-size**。
+ * 尺寸不传：width / height 固定 1em，等于 **svg 自己的 font-size**。
+ * 注意：`global.css` 的 `:where(.mm-icon)` 已经把 svg 的 font-size 钉在 `sm`(14)，
+ * 所以「给外层容器写 font-size」对图标**无效**（1em 取的是 svg 自己的字号）。
+ * 要换档就把类挂在 `<Icon className="…">` 上（类落在 svg），或用后代选择器命中 `.mm-icon`。
  * 档位只有四档（值在 tokens.css 的 --mm-icon-*），选哪档看「旁边有没有字」（CONVENTIONS §7 规则 14）：
  *   xs  12  小标记：勾选对号、删除、「+」、折叠箭头 —— 小于同排文字，属标记不属同排元素
  *   sm  14  与文字同排：行内图标、输入位、带文字的按钮行 —— 12 号字行高 16，图标正好 14（规则 7）

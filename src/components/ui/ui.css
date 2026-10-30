@@ -1,7 +1,7 @@
 /*
  * 【范本】UI 控件样式（Button / Input / Field）
  * 只给「壳」定结构与形状：尺寸 / 内边距 / 圆角 / 描边宽度 / 字号 / 状态描边。
- * **底色与前景色尚未定**（视觉重写时统一给）；页面与 feature 也不许自行补。
+ * 输入位的底色与前景色已定（`CONVENTIONS` §7 规则 15）；Button 的底色仍未定，页面与 feature 不许自行补。
  * 新增同类代码照此结构：一个壳一条规则块，状态用 `:disabled` / `:focus-visible`。
  */
 
@@ -41,6 +41,19 @@
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
   font-size: var(--mm-font-sm);
+  /* 输入位底色只有两档，由**所在表面**声明 `--mm-input-bg`（抽屉见 icon-panel.css），
+     没声明即页面档。调用点不许加 class / prop 选档，也不许自己写 background。 */
+  background: var(--mm-input-bg, var(--mm-color-bg-input));
+  color: var(--mm-color-text);
+}
+
+.mm-input::placeholder{
+  color: var(--mm-color-text-faint);
+}
+
+.mm-input:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* 校验失败只换描边，文字保持可读 */

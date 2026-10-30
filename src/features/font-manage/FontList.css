@@ -77,11 +77,13 @@
 .mm-font__weight-option{
   position: relative;
   width: 100%;
+  /* 图标槽：对号贴槽左、文字从槽后开始，间距恒为 6（§7 规则 17） */
+  padding-left: var(--mm-check-slot);
 }
 
 .mm-font__weight-check{
   position: absolute;
-  left: var(--mm-check-slot);
+  left: 0;
   top: var(--mm-space-1);
 }
 

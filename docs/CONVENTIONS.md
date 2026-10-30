@@ -715,11 +715,11 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
-| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background` |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分两档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
 | **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满** | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
-| 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（描边 / 圆角 / 底色 / 阴影）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
+| 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（浅色底 / 文字色 / 圆角 / 投影，**无描边**，见 §7 规则 16）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 （`hooks/input-method-enter` 里的 `enterSubmit`，判据 + `preventDefault` + 执行三件事一处）。
@@ -802,11 +802,13 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
    页边一律 `--mm-page-pad-x`(8)，五页同值，**没有横向例外**。
    （2026-10-29：旧的 `--mm-space-exact-*` 全套已删，20 也不再是间距档；原先「页内左右统一 10」的例外与实测不符，
    按现状改成 8。20 / 30 这类固定格宽（勾选位 `--mm-check-slot`、控件预留位 `--mm-control-reserve`）
-   进尺寸段，**不许当 padding / gap 用**——把尺寸值当间距，就是本规则要防的那种漂移。）
+   进尺寸段，**不许当通用 padding / gap 用**——把尺寸值当间距，就是本规则要防的那种漂移。
+   唯一例外是 `--mm-check-slot` 作为「图标槽」的行左缩进（规则 17）：那正是它的定义，不是拿它凑间距。）
 6. **同一组内**的元素间距不得大于该组图标的边长：14 图标旁最多 14。
    跨组、跨区块的分组留白不受此限——「留白比图标还大」只在同一组里判错
 7. **同排文字与图标视觉等大**：12 号字（行高 16）配 14 图标，13 号字（行高 18）配 16 图标。
-   对不上时**缩图标**，不许放大字号（字号一页只有 12 / 13 两档）
+   对不上时**缩图标**，不许放大字号（字号一页只有 12 / 13 两档）。
+   本条只管**行内文字旁**的图标；输入位 / 数字框的左图标按规则 14 的表取 `btn` 20
 8. **线条只有两档，同一角色只许一种**：颜色、粗细、长度来源唯一。
    页面分隔、列表行分隔、**输入位描边**（`.mm-input` / `.mm-input-surface`）用 `--mm-color-border`（暗线）；
    控件描边、勾选框、浮层外边缘用 `--mm-color-border-control`（亮线）。不许自造第三种线色。
@@ -843,13 +845,39 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     | 场景 | 档 | 落法 |
     |---|---|---|
     | 纯图标条：页头工具、对齐 / 样式 / 字重图标排、翻转、`IconPanel` 触发器 | `btn` 20 | `IconButton` 默认，什么都不写 |
+    | 输入位 / 数字框左图标（字号 / 行距 / 字距、搜索框这类框内左图标） | `btn` 20 | 类挂在 `<Icon>` 上，或后代选择器命中 `.mm-icon` |
     | 与文字同排：输入框右侧、带文字的分组行 / 预设行 / 间距行 | `sm` 14 | 按钮传 `className="mm-icon-btn--inline"`；普通图标走默认 |
     | **底栏**里的一切图标（sprite 与自定义 `<svg>` 图片都要） | `sm` 14 | 底栏外壳 `.mm-bottom-bar svg` 统一压，页面与 `BottomBarButton` 都不传 |
     | 小标记：勾选对号、删除、「+」、折叠箭头 | `xs` 12 | 容器类（`.mm-select-box__check` 等）或 `.mm-chevron` |
     | 导航主项 / 常用页格子 | `nav` 24 / `tile-icon` 32 | `nav-bar.css` / `tile-button.css` |
 
-    **判据**：同一排里图标不得大于该排文字（12 号字行高 16 → 图标 14，规则 7）；
+    **尺寸落在哪里**：`<Icon>` 的 `width/height` 是 `1em`，按 **svg 自己的 font-size** 算；
+    而 `global.css` 的 `:where(.mm-icon)` 已经把 svg 钉在 `sm`(14)，
+    所以**给外层容器写 font-size 对图标无效**。换档只有两种落法：把类挂在 `<Icon className="…">`
+    （类落在 svg 上），或写后代选择器命中 `.mm-icon`。
+
+    **判据**：分两类判，互不干扰 —— ①**行内文字旁**的图标不得大于该排文字（规则 7）；
+    ②**输入位 / 数字框的左图标**是控件结构的一部分，固定 `btn` 20，不参与 ① 的比较。
     同一层级出现第二种尺寸时，**那个少数派就是写错的**，往多数那档并，不许新增第五档。
+
+15. **输入位底色只有两档，按「落在哪个表面」选，不按页面选**：页面表面（`#363636`）上取
+    `--mm-color-bg-input`(#2c2c2c)，抽屉表面（`--mm-color-bg-drawer` #222）上取
+    `--mm-color-bg-input-drawer`(#000)。判据一句话：**输入位永远比所在表面深一档**（同向凹陷，
+    不出现「一处浮、一处凹」）。落地方式是**表面声明、控件消费**：表面写 `--mm-input-bg`，
+    `.mm-input` / `.mm-input-surface` 用 `background: var(--mm-input-bg, var(--mm-color-bg-input))`。
+    不许在调用点加 class 或 prop 选档，也不许给某个页面单独调底色。
+16. **浮层一律浅色（白底黑字），与面板的深色相反**：`.mm-popover` 一处给
+    `--mm-color-bg-popover`(#fff) + `--mm-color-text-popover`(#000) + `--mm-shadow-popover`，**无描边**。
+    下拉、右键菜单、标签弹层、筛选面板、字重下拉、描述浮层全部跟着变，不许给某一个浮层单独调底色；
+    浮层里的图标与对号跟文字同色（`currentColor`），不许在浮层内单独写深色文字。
+    浮层之间只允许两种差异：**宽度跟不跟触发器**（通栏 / 内容宽）、**贴左还是贴右**（`placement` 的
+    `start` / `end`）。除这两条之外的差异就是第三种下拉，先合并再谈样式。
+17. **图标与紧邻文字的间距只有一个值 `--mm-space-inline`(6)**，适用于勾选框 / 单选框 / 对号 /
+    删除 / 「+」/ 折叠箭头这类小标记（12 档）。落地只有一种结构：**图标槽 + 文字** ——
+    槽宽 `--mm-check-slot`(18) = 图标 12 + 间距 6；行容器给 `padding-left: var(--mm-check-slot)`，
+    图标 `position: absolute; left: 0`，文字不额外加 `padding` / `margin` / `gap`。
+    这样同一列表里**有没有对号的行，文字左边缘都对齐**（下拉页脚动作也一起对齐，不会被上一项的对号压住）。
+    禁止：用 `left: 20px` 这类裸值对位、给文字单独 `padding-left`、给每一项按有无图标给不同内边距。
 
 ---
 

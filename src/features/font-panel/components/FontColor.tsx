@@ -290,7 +290,7 @@ export function FontColor({
 
           <div className="mm-font-panel__gutter" />
 
-          <div className="mm-font-panel__half mm-font-panel__half--center">
+          <div className="mm-u-grow mm-font-panel__half mm-font-panel__half--center">
             <CheckBox
               label="文字视觉调整"
               title="设置两个字符间的字距为视觉"

@@ -108,19 +108,26 @@
   flex: 0 0 auto;
 }
 
+/* 输入位左图标固定取 `btn` 20（`CONVENTIONS` §7 规则 14 表里的一档，不是例外）。
+   必须命中 `.mm-icon`（svg 自身）：`width/height: 1em` 是按 **svg 自己的** font-size 算的，
+   而 `:where(.mm-icon)` 已经把 svg 的 font-size 钉在 14，写在外层 span 上不生效。 */
+.mm-font-panel__number-icon .mm-icon{
+  font-size: var(--mm-icon-btn);
+}
+
 .mm-font-panel__number-box{
   display: flex;
   flex: 1;
   min-width: 0;
-  height: 100%;
   align-items: center;
 }
 
+/* 高度不在这里写：`.mm-input` / `.mm-input-surface` 已经给了 `--mm-control-h`，
+   这里再写 `height: 100%` 会在「父级没有确定高度」时解析成 auto，框塌成一行文字高 */
 .mm-font-panel__number-input{
   flex: 1;
   width: 100%;
   min-width: 0;
-  height: 100%;
 }
 
 .mm-font-panel__number-suffix{

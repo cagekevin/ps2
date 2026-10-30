@@ -27,9 +27,12 @@ p{
   top: var(--floating-y, 0);
   left: var(--floating-x, 0);
   z-index: var(--mm-z-dropdown);
-  /* 浮层外形全仓一处：外缘与圆角；底色视觉重写时统一给 */
-  border: var(--mm-border-w) solid var(--mm-color-border-float);
+  /* 浮层外形全仓一处：浅色底 + 深色文字 + 投影，**无描边**（`CONVENTIONS` §7 规则 16）。
+     下拉 / 右键菜单 / 标签弹层 / 筛选 / 字重 / 描述浮层全部跟着变，不许单点改底色。 */
   border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-popover);
+  color: var(--mm-color-text-popover);
+  box-shadow: var(--mm-shadow-popover);
 }
 
 /* 面板整体不出现滚动条：滚动只发生在页面内部的列表容器上 */
@@ -84,6 +87,8 @@ button{
 .mm-radio{
   display: inline-flex;
   align-items: center;
+  /* 方框 / 圆点与文字的间距：全仓唯一值（§7 规则 17），与列表里的「对号槽」同一个 6 */
+  gap: var(--mm-space-inline);
   min-width: 0;
   max-width: 100%;
 }
