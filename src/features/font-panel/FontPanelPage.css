@@ -71,32 +71,25 @@
 
 /* 可伸缩走公共 `.mm-u-grow` */
 
+/* 一排 6 个：父容器 grid 定列数，子元素不写宽度（全仓「一排 N 个」只有这一种写法） */
 .mm-font-panel__levels{
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--mm-space-inline);
 }
 
-.mm-font-panel__level{
-  width: calc((100% - 5 * var(--mm-space-inline)) / 6);
-}
-
+/* 一排 6 个：与 `HIERARCHY_TITLES` 的六档一一对应（列数必须等于项数，别写 2） */
 .mm-font-panel__editor-row{
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--mm-space-1);
 }
 
-.mm-font-panel__preset-btn--half{
-  width: calc(50% - var(--mm-space-1));
-}
-
+/* 一排 2 个（项数不定时自动换行） */
 .mm-font-panel__split{
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.mm-font-panel__split-btn{
-  width: calc(50% - var(--mm-space-3));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mm-space-3);
 }
 
 .mm-font-panel__quick-grid{

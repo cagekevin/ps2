@@ -1,8 +1,9 @@
 /* 骨架：只留结构与定位，视觉待重写（03 §0.5：不写 margin / padding / gap） */
 
+/* 一排 3 个：9 个锚点正好 3×3（写 6 列会排成 6+3 两行） */
 .mm-common__anchors{
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .mm-common__anchor{

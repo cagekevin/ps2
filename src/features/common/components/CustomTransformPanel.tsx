@@ -138,11 +138,11 @@ export function CustomTransformPanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-u-row mm-common__panel-row">
-        <Button className="mm-common__panel-btn mm-common__panel-btn--half" onClick={submit}>
+      <div className="mm-common__panel-row mm-common__panel-row--pair">
+        <Button className="mm-common__panel-btn" onClick={submit}>
           生成变换
         </Button>
-        <Button className="mm-common__panel-btn mm-common__panel-btn--half" onClick={reset}>
+        <Button className="mm-common__panel-btn" onClick={reset}>
           重置参数
         </Button>
       </div>

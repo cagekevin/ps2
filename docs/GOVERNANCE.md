@@ -137,7 +137,7 @@
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 | ⚠️ 待真机 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） | ✅ 真机 |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox | ✅ 真机 |
-| 箭头 | `src/components/Chevron/index.tsx` | **全仓唯一箭头件**（2026-10-29 收敛）：开合传 `open`（收起转 `-90deg`）/ 弹层指示不传 `open`（恒朝下）；图标统一 `iconzhankaizhedie`；**没有 `arrowIcon` 参数**，要第二个箭头形状就是违规 | ⚠️ 待真机 |
+| 箭头 | `src/components/Chevron/index.tsx` | **全仓唯一箭头件**（2026-10-29 收敛，10-30 统一朝向）：**一律传 `open`** —— 未展开朝右（`-90deg`）、展开朝下；不传等于恒朝下，只可用于无开合语义的静态指示（当前 0 处）；图标统一 `iconzhankaizhedie`；**没有 `arrowIcon` 参数**，要第二个箭头形状就是违规 | ⚠️ 待真机 |
 | 箭头样式 | `src/components/Chevron/chevron.css` | `--closed` 的 `rotate(-90deg)` 全仓只此一处；`transition` 走 `--mm-dur-fast` | ⚠️ 待真机 |
 | 图片取色弹层 | `src/features/style/components/ImgColorDialog.tsx` | 色圈 / 渐变条，左键应用右键删 | ⚠️ 待真机 |
 | 图片取色样式 | `src/features/style/components/img-color-dialog.css` | 对齐原版 imgColor | ⚠️ 待真机 |

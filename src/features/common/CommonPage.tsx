@@ -115,7 +115,7 @@ function ZoomRow({
           >
             <Icon name={icon} />
             <span className="mm-common__zoom-label">{label}</span>
-            <Chevron />
+            <Chevron open={handlers.active} />
           </button>
         )}
         panel={(close) => (

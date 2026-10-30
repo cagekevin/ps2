@@ -64,15 +64,15 @@ export function ReferencePanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-u-row mm-common__panel-row">
+      <div className="mm-common__panel-row mm-common__panel-row--pair">
         <Button
-          className="mm-common__panel-btn mm-common__panel-btn--half"
+          className="mm-common__panel-btn"
           onClick={() => void run(clearGuide)}
         >
           清除参考线
         </Button>
         <Button
-          className="mm-common__panel-btn mm-common__panel-btn--half"
+          className="mm-common__panel-btn"
           onClick={() => void run(sliceByGuide)}
         >
           基于参考线切片

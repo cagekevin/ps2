@@ -163,8 +163,6 @@
      half 与父级 gap 12 配对：(100% - 12) / 2 = 50% - 6px。
      写成 50%-5px 时两个框加起来比容器宽 2px，右边的框会压出边界 */
   --mm-input-w-wide: 80px;
-  --mm-input-w-half: calc(50% - 6px);
-  --mm-btn-half: calc(50% - 6px);
 
   /* ---------- 8. 颜色 ----------
      值逐条取自仓外 Vue 工程的 src/styles/tokens.css；命名按 --mm-color-<角色>，

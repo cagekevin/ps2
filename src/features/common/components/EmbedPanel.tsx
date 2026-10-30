@@ -95,15 +95,15 @@ export function EmbedPanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-u-row mm-common__panel-row">
+      <div className="mm-common__panel-row mm-common__panel-row--pair">
         <Button
-          className="mm-common__panel-btn mm-common__panel-btn--half"
+          className="mm-common__panel-btn"
           onClick={() => void run(toLinkSmartObject, { tip: MSG.common.progressLinkSmart })}
         >
           转链接智能对象
         </Button>
         <Button
-          className="mm-common__panel-btn mm-common__panel-btn--half"
+          className="mm-common__panel-btn"
           onClick={() =>
             void run(linkSmartObjectToSmartObject, { tip: MSG.common.progressLinkBack })
           }

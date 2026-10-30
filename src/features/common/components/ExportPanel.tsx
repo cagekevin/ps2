@@ -335,15 +335,15 @@ export function ExportPanel() {
         }
       >
         <IconPanel id="batch" title={'批量导出功能'} trigger={sectionTrigger('批量导出功能')} panel={<>
-        <div className="mm-u-row mm-common__panel-row">
+        <div className="mm-common__panel-row mm-common__panel-row--pair">
           <Button
-            className="mm-common__panel-btn mm-common__panel-btn--half"
+            className="mm-common__panel-btn"
             onClick={() => void run(() => exportLayers(1), { tip: MSG.common.progressExportFirst })}
           >
             导出一级图层
           </Button>
           <Button
-            className="mm-common__panel-btn mm-common__panel-btn--half"
+            className="mm-common__panel-btn"
             onClick={() => void run(() => exportLayers(2), { tip: MSG.common.progressExportSecond })}
           >
             导出二级图层

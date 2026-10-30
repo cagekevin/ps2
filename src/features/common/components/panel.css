@@ -4,9 +4,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 7 个面板共用的凹陷底（官方 .embed-wrap / .export-wrap 等全是 #222）：
-     壳 IconPanel 明确不画背景，所以底色归这里一处，不按面板各写一份 */
-  background: var(--mm-color-bg-drawer);
+  /* 底色不在这里：7 个面板都是 IconPanel 抽屉的内容，抽屉壳 `__box::before` 已铺 #222 */
 }
 
 /* 横排两端铺满走公共 `.mm-u-row` */
@@ -19,6 +17,9 @@
   flex: 0 0 auto;
 }
 
-.mm-common__panel-btn--half{
-  flex: 1 1 var(--mm-btn-half);
+/* 一排 2 个按钮：父行 grid 定列数，按钮不再算宽度（全仓「一排 N 个」唯一写法） */
+.mm-common__panel-row--pair{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mm-space-3);
 }
