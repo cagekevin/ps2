@@ -424,8 +424,7 @@ components → hooks ──────→ core
 | jsx 协议 | `mm_layer_getState` 返回**类型 + 名字**（无 id）；`mm_layer_getSelection` 返回选中数 |
 | 探针 | `mm_layer_getState` 是 `CORE_REQUIRED` 唯一项（缺了整门不可用）；`mm_layer_getSelection` 缺失只影响 4 个多选能力 |
 
-**未决问题**（含各自的取舍与「回答它需要什么」）在 plan 12 的 §7 —— **Q1/Q2/Q3 只需一次真机点测**，
-在拿到数据前，「轮询留不留」「身份要不要换 id」都只是推测。
+**未决问题**（含各自的取舍与「回答它需要什么」）在 plan 12 的 §7。
 
 > **别再写「事件需要 jsx 侧 registerNotification」**——那是旧判断。官方走的是 CEP 的
 > `PhotoshopRegisterEvent` + `PhotoshopJSONCallback`，**全在 CEP 层**，`core/cep/ps-events.ts`
@@ -1015,7 +1014,7 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 - 只写 `src/**/*.test.ts`，只测纯逻辑（`core` 纯函数、`domain`、`repo`、`types`）
 - **TSX 一律不写测试**：页面、组件、hook 的渲染与交互都不测；禁止 `.test.tsx` / `.spec.tsx`
 - 禁止安装 `@testing-library/*`、`jsdom`、`happy-dom`；`vitest.config.ts` 保持 `environment: 'node'`、`include: ['src/**/*.test.ts']`
-- UI 里值得测的算法先迁到 `domain/` 或 `core/` 再测；UI 行为靠真机（CEP 面板）验证
+- UI 里值得测的算法先迁到 `domain/` 或 `core/` 再测
 - CEP 交互：mock `core/cep`，不在测试里真的调 PS
 
 ---

@@ -60,7 +60,7 @@ model: inherit
 
 范本影响：<是否需要更新范本，哪个>
 
-检查结果：typecheck / lint / lint:css（未跑就写"未验证"）
+检查结果：typecheck / lint / lint:css
 ```
 
 ## 判断示例

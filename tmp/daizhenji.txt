@@ -1,0 +1,83 @@
+﻿docs\plan\01-字体管理-2026-10-27.md:353: | 范本状态 | 4 个新范本填「⚠️ 待真机」；`core/ps/font.ts` 原有 `ys_*` 是 ✅ 真机，新增 `ztgl_*` 必须单独标「⚠️ 待真机」，不能笼统写 ✅ |
+docs\plan\01-字体管理-2026-10-27.md:366: | 5 | `GOVERNANCE.md` §4.1 四个范本状态更新为「✅ 真机 / ⚠️ 待真机」 |
+docs\plan\02-字体面板-2026-10-27.md:756: 结论：通过。待真机 1 项：VENDOR_FUNCS 新增的 zt_changeTextBranchMerge 是否为函数
+docs\plan\02-字体面板-2026-10-27.md:780: 结论：通过（P0 待真机，见体检报告）
+docs\plan\02-字体面板-2026-10-27.md:792: 4. `zt_changeTextBranchMerge` 是否为函数（P0，待真机）。
+docs\plan\02-字体面板-2026-10-27.md:1029: 结论：通过（运行时全部待真机，见 §11.4）
+docs\plan\02-字体面板-2026-10-27.md:1089: ### 11.4 真机验收（全部待真机）
+docs\plan\02-字体面板-2026-10-27.md:1091: `§7.2` 的 12 步一条都没跑过（本环境无 Photoshop）。**任何运行时结论一律「待真机」**，
+docs\plan\03-常用-2026-10-27.md:7: > 状态：本文件是**计划**，代码尚未开始。任何运行时结论一律「待真机」。
+docs\plan\03-常用-2026-10-27.md:28: | 本文标了**「待真机」** | jsx 返回结构、`zt_changeTextBranchMerge` 是否存在 |
+docs\plan\03-常用-2026-10-27.md:438: | `PS-CHANNEL-NOTES` §11.4（新增） | 26 个 jsx 表 + 三处拼写错误 + 派发 key→函数映射 + 参数个数（**均已核实**）；返回结构待真机 |
+docs\plan\03-常用-2026-10-27.md:927: | 2026-10-27 | **§0 定位调整**：从「动手前必读、先去看源码」改成「**默认照做，只在三种情况下回源码**（本文与清单冲突 / 本文标待真机 / 跑起来不对）」。理由：整理出来的计划就是为了不用每次啃 2.3MB 混淆代码；把回源写成必读等于让整理白做。权威顺序表保留为**仲裁**用 | docs |
+docs\plan\03-常用-2026-10-27.md:935: | 2026-10-27 | **体检 `REVIEW-2026-10-27-22`**（M0 + M1 合并一次，触发 §7.1 #1 + #3）：七项 5 通过 / 2 不通过（死代码是已知预留、文档漂移当场修完）；P0×1（`VENDOR_FUNCS` 全局探针）、P1×5、P2×3；修 8 项（jsx 计数口径、`init.ts` 文本属性数、`CONVENTIONS` §3 目录树、勾选/单选焦点、`TextField` 的 `title` 必填、`Collapse` 的 `aria-controls`、`FlipDirection` 转出、`reorder` 长度守卫）。**P0 待真机，P1 第 2 条随 M2 接入自动消失**，M2 可开工 | docs/review、components、commands、core/ps、CONVENTIONS |
+docs\plan\03-常用-2026-10-27.md:1194:     P0×1 待真机、P1×5、P2×4）
+docs\plan\04-批量改字-2026-10-27.md:5: > 状态：计划。代码未开始。运行时结论一律「待真机」。
+docs\plan\04-批量改字-2026-10-27.md:16: | 本文标「**待真机**」 | `suspendHistory` 嵌套、`textStyleRange` 行为 |
+docs\plan\05-动作-2026-10-28.md:18: | ② | 本文标 `UNVERIFIED` / 「待真机」 | `dz_getActionList` 的返回形状、`.dzx` 同名冲突的真实表现 |
+docs\plan\11-通道层与文档层-2026-10-28.md:427: | 判据未知，暂不判 | 1 | 常用页其余按钮的「必须有选中图层」 | `activeLayer` 永远存在，`-1` 是 vendor 自己的判断，待真机确认触发条件 |
+docs\plan\13-常用-V2-2026-10-28.md:7: > 状态：**计划，代码未开始**。所有运行时结论「待真机」，本文件不写「已实现」。
+docs\plan\13-常用-V2-2026-10-28.md:21: | `$psEvent.set` 在 `_property` 命中后回调参数的来源 | **已核**（分发中心 `handleKey`），但 CEP 侧载荷是否同形 **待真机** | §1.4 |
+docs\plan\13-常用-V2-2026-10-28.md:273: **待真机**：`1349280544` / `1885434740` / `1198682188` 三个 ID 从未注册过，注册能否成功未知；`eventData.null._path` 是否是拖入文件的绝对路径同样未验。
+docs\plan\STYLE-PANEL-GAP.md:13: 图例：✅ 真机通过 ｜ 🔧 已实现待真机确认 ｜ ❌ 未实现 ｜ — 不需要
+docs\review\REVIEW-2026-10-27-11.md:37: | 范本状态 | 新增 4 个范本全部「⚠️ 待真机」；`core/ps/font.ts` 因新增 `ztgl_*` 由「✅ 真机」改为「⚠️ 待真机」（`ys_*` 仍真机） |
+docs\review\REVIEW-2026-10-27-13.md:20: | 9 | 字体缺失 / 非文字层时点应用 | `ztgl_setFont` 返回错误 → toast；返回码形态仍待真机 |
+docs\review\REVIEW-2026-10-27-18.md:51:   `font-repo.test.ts` 覆盖，本体待真机。
+docs\review\REVIEW-2026-10-27-2.md:100: | 四个 hooks 仍是「待真机」 | `useDismiss` / `useFloatingPosition` / `useLongPressDrag` / `usePersisted` 都已接入页面，但还没在 PS 里验证过 |
+docs\review\REVIEW-2026-10-27-2.md:117: | 选中图层 | `app/layer-watcher` + `store/app` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-2.md:118: | 状态持久化 | `hooks/usePersisted` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-2.md:119: | 浮层关闭 | `hooks/useDismiss` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-2.md:120: | 浮层定位 | `hooks/useFloatingPosition` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-2.md:121: | 长按拖拽 | `hooks/useLongPressDrag` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-2.md:123: | 库文件读写 | `repo/style-repo` | ⚠️ 删除/重命名/拖拽待真机 |
+docs\review\REVIEW-2026-10-27-20.md:36:    「30 个函数全部登记」的硬规则）。**待真机。**
+docs\review\REVIEW-2026-10-27-20.md:85: | 范本状态 | 4 个新范本（`core/ps/text.ts`、`repo/font-set-repo.ts`、`store/text.ts`、`store/font-set.ts`）全部标「⚠️ 待真机」；没有把 `zt_*` 笼统写成 ✅ |
+docs\review\REVIEW-2026-10-27-21.md:76: | 范本状态 | 新增/修改的 5 个范本（`IconButton`、`IconPanel`、`InputDialog`、`SelectBox`、`IconPanel` 的 css）全部「⚠️ 待真机」；`SelectBox` 原有内容保持 ✅ 真机，新增的 `inset`/`onRemove`/`footer` 单独标「⚠️ 待真机」，不笼统沿用 ✅ |
+docs\review\REVIEW-2026-10-27-22.md:20: | `core/ps/vendor`（两条通道） | 新增范本 | 调度 ✅ 真机（沿用 `style`）/ 直调 ⚠️ 待真机 | `ps/style`、`ps/text`、`ps/common-use` |
+docs\review\REVIEW-2026-10-27-22.md:21: | `core/ps/common-use` | 新增范本 | ⚠️ 待真机（26 个 `cy_*`） | `commands/common-use` |
+docs\review\REVIEW-2026-10-27-22.md:22: | `core/prefs` | 既有 | ⚠️ 待真机（本轮首次有业务调用方） | `store/common-use`、`commands/common-use`（折叠态） |
+docs\review\REVIEW-2026-10-27-22.md:25: | `components/IconPanel`（受控） | 既有范本（本轮扩展） | ⚠️ 待真机 | 尚无页面调用（M2 起） |
+docs\review\REVIEW-2026-10-27-22.md:26: | `components/CheckBox` / `RadioButton` | 新增范本 | ⚠️ 待真机 | `features/font-panel`（3 处） |
+docs\review\REVIEW-2026-10-27-22.md:27: | `components/TextField` / `Collapse` | 新增范本 | ⚠️ 待真机 | 尚无调用（M2 起） |
+docs\review\REVIEW-2026-10-27-22.md:103: | 2 | 重复实现 | **通过（有 1 处登记）** | `runVendor` / `runDirect` 各只剩一份（`style.ts` / `text.ts` 私有副本已删）；裸 `checkbox\|radio` 只剩组件内部；`mutateJsonFile` 是唯一读改写入口；`.mm-font-panel__check*` / `__radio*` 死样式已删。唯一例外：`cy_distributedByPitch` 同一函数两条通道并存（P1 第 7 条，既有偏差，待真机统一） |
+docs\review\REVIEW-2026-10-27-22.md:113: - **范本状态**：新增 6 个范本全部标 ⚠️ 待真机；`core/ps/vendor.ts` 拆两半记
+docs\review\REVIEW-2026-10-27-22.md:114:   （调度 ✅ 真机沿用 `style`，直调 ⚠️ 待真机）。`4.1` 里没有把未验证的写成 ✅。
+docs\review\REVIEW-2026-10-27-3.md:112: | 选中图层 | `app/layer-watcher` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-3.md:118: | 库文件读写 | `repo/style-repo` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-3.md:119: | 拖拽排序 | `hooks/useLongPressDrag` + `domain/reorder` | ⚠️ 待真机 |
+docs\review\REVIEW-2026-10-27-7.md:27: | PS 事件订阅 | `core/cep/ps-events.ts` | ⚠️ 待真机（唯一动 PS 事件通道的） |
+docs\review\REVIEW-2026-10-27-7.md:28: | 图片解码 | `core/image/index.ts` | ⚠️ 待真机（jsdom 无 canvas，单测覆盖不到） |
+docs\review\REVIEW-2026-10-28-23.md:6: **本报告不判定运行时行为**：无 Photoshop，真机 10 步与各段「待真机」项全部未跑。
+docs\review\REVIEW-2026-10-28-23.md:19: | `core/ps/common-use` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 2 只登记） | ⚠️ 待真机 | `commands/common-use` |
+docs\review\REVIEW-2026-10-28-23.md:20: | `core/ps/vendor` | 两条通道唯一实现 | 调度 ✅ 真机 / 直调 ⚠️ 待真机 | `ps/style`、`ps/text`、`ps/common-use` |
+docs\review\REVIEW-2026-10-28-23.md:21: | `core/prefs` | `common.collapsed` | ⚠️ 待真机 | `store/common-use`、`commands/common-use` |
+docs\review\REVIEW-2026-10-28-23.md:23: | `repo/common-use-repo` | 2 个文件 / 17 键 | ⚠️ 待真机 | `store`、`commands` |
+docs\review\REVIEW-2026-10-28-23.md:27: | `hooks/useLongPressDrag` | 300ms 长按 + 落点判定 | ⚠️ 待真机 | 常用页网格 |
+docs\review\REVIEW-2026-10-28-23.md:28: | `components/IconPanel` | 受控 `openId` 跨行只开一个 | ⚠️ 待真机 | 常用页网格、字体面板 |
+docs\review\REVIEW-2026-10-28-23.md:29: | `components/{TextField,Collapse,CheckBox,RadioButton}` | 公共件 | ⚠️ 待真机 | 常用页、设置页、字体面板 |
+docs\review\REVIEW-2026-10-28-23.md:93:   `TextField`（扩展）`/`IconPanel`（扩展））全部 ⚠️ 待真机；
+docs\review\REVIEW-2026-10-28-24.md:6: **本报告不判定运行时行为**：无 Photoshop，PS 侧全部仍是「待真机」。
+docs\review\REVIEW-2026-10-28-24.md:33: | `core/ps/text` | 3 个读函数先判文字图层 | ⚠️ 待真机 | `store/text`、`commands/font-set` |
+docs\review\REVIEW-2026-10-28-24.md:34: | `core/ps/vendor` | `runDirect` 的 `err:1` 文案改为「宿主原话优先」 | ⚠️ 待真机 | `ps/text` 的 23 个写函数 |
+docs\review\REVIEW-2026-10-28-24.md:35: | `core/logger` | `clearLogText`（新增，返回 `Result<void>`） | ⚠️ 待真机 | 诊断页 |
+docs\review\REVIEW-2026-10-28-24.md:37: | `store/text` | 失败时保留旧值 + 旧值提示 | ⚠️ 待真机 | 字体面板属性区 |
+docs\review\REVIEW-2026-10-28-24.md:112:   的状态列未变（`text` / `font` / `vendor` 仍「⚠️ 待真机」，`raw` 仍「✅ 单测」，`logger` 仍「✅ 真机」，
+docs\review\REVIEW-2026-10-28-25.md:6: **本报告不判定运行时行为**：PS 侧全部仍是「待真机」。
+docs\review\REVIEW-2026-10-28-27.md:50: | `GOVERNANCE §4.1` 的 `auth` 写着「⚠️ 未使用」，实际 `core/http/client.ts` 在用 | 改为「⚠️ 待真机（`core/http/client.ts` 在用）」 |
+docs\review\REVIEW-2026-10-29-6.md:50: | 1 | **样式页分组头换了 DOM 结构**（整行 `button` → 外层 `div` + 内层 `button`），而样式页已交付、待真机。真机要复核三件事：长按拖拽的落点、点计数是否仍开合、右键菜单位置 | `StylePage.tsx:220/236`、`useStyleActions.ts:530` 的 `[data-group-head]` |
+docs\review\REVIEW-2026-10-29-9.md:58: | 8 | 样式页 `GroupHead` 的 DOM 变更（外层 `div` + 内层 `button`） | 样式页已交付待真机：长按拖拽、点计数开合、右键位置 |
+docs\CHANGELOG.md:33: | 2026-10-27 | 字体管理页仍待真机（`ztgl_*` 返回形态、`SysFont2.json` 首建、应用字面）；下一步 `REVIEW-2026-10-27-11` | docs |
+docs\CHANGELOG.md:50: | 2026-10-27 | 体检 `REVIEW-2026-10-27-20`（触发 §7.1 #3）：P0×1（`zt_changeTextBranchMerge` 存在性待真机）、P1×2（8 个 M2 未接入的孤儿模块、`store/font-set` 无失败通道）、P2×4；修复：`ime.ts` → `input-method-enter.ts`（三个字母读不出含义）、`panel-constants.ts` → `font-panel-constants.ts`、CONVENTIONS §3 `hooks/` 括注补两项 | docs/review、docs/CONVENTIONS、hooks、features |
+docs\CHANGELOG.md:60: | 2026-10-27 | 字面板 M4 验收（代码侧）：数字对账 9 组件 8/9（翻译未做）、36 文案 31 出现（5 条各有理由）、jsx 29、命令 20、数据文件 5；机器侧六道关全绿；**运行时全部待真机**。体检 `REVIEW-2026-10-27-21`（触发 §7.1 #1+#3）：P0×1（`zt_changeTextBranchMerge`）、P1×2（背景对齐 Shift 参数、`translate` 族无调用方）、P2×4；修复：删 `DEFAULT_APP_UNIT` 孤儿导出 | docs/plan、docs/review、domain |
+docs\CHANGELOG.md:79: | 2026-10-28 | 体检 `REVIEW-2026-10-28-24`（聚焦本轮 4 段改动）：§7.2 七项 7 通过、附加三项已给；P0×0、P1×2（当场修：保留旧值补「下方是上一次读到的值」、`clearLogText` 补 `recent.clear()`）、P1 未修 2（apply 前无结构守卫、`zt_changeTextBranchMerge` 待真机）、P2×6。真机三步未跑 | docs/review、store/text、core/logger |
+docs\CHANGELOG.md:93: | 2026-10-28 | 常用页 M4（验收）+ 体检 `REVIEW-2026-10-28-23`：数字对账 8 个口径（组件 5 / class 28+10 / 文案 50+5 / jsx 26 / 命令 17 全部有调用方 / 数据文件 2 / 公共件 5 / token 15，其中 class 与文案的差异已解释、token 计数由 18 改正为 15）；真机 10 步按实际入口修订（第 6 步走设置页、第 8 步 3 个按钮）；补 3 个「命令没有入口」的缺口 —— `setShow` → 设置页「显示的功能项」14 勾选、`resetAll` + `openDirectory` → 页头两个图标按钮；`setCollapsed` 改为只推 store 不再全量重读。**P0（`VENDOR_FUNCS` 60 项探测）仍待真机** | features/common、features/settings、docs |
+docs\CHANGELOG.md:97: | 2026-10-27 | 体检 `REVIEW-2026-10-27-22`（触发 §7.1 #1 + #3，范围 M0+M1）：七项 5 通过 / 2 不通过（死代码=已知预留、文档漂移=已修）；P0×1（`VENDOR_FUNCS` 一次 +25 的全局探针风险，待真机）、P1×5、P2×3。修复 9 项：jsx 计数口径 12/13 六处、`init.ts` 文本属性 27→26、`CONVENTIONS` §3 目录树补 5 项（prefs/clipboard/dialog/image/dev）、`CheckBox`/`RadioButton` 补 `:focus-visible`、`TextField` 的 `title` 改必填、`Collapse` 补 `aria-controls`、`FlipDirection` 从 commands 转出、`reorder` 队列内长度守卫、**通道口径纠错**（`cy_distributedByPitch` 原版两处都是 `jsxHistory`，§4.7 旧表与 §11.3 写成直调；代码统一登记 P1） | docs/review、components、commands、core/ps、CONVENTIONS、PS-CHANNEL-NOTES |
+docs\CHANGELOG.md:113: | 2026-10-28 | **前提盘点：50 行能力逐条定「要不要前置」**（计划新增 §A.7）。文字 28 行 + 形状 2 行（`applyShapeFill` / `applyBorderColor` 加 `requireShapeLayer`，孤儿导出 `requireShapeLayer` 转正）。**明确不判的 5 行**：`applyStyleColor`（jsx 按 kind 分四路）、`foregroundColor`、`setTool`、`applyGradient`、`applyStyle`——真机确认渐变与图层样式对**文字图层也有效**，加了前置反而挡住正常操作，用一条用例钉住「这五个不许有 `require`」。常用页 12 个的「必须有选中图层」在 PS 侧无判据（`activeDocument.activeLayer` 永远存在，`-1` 是 vendor 自己的判断），保持 `PS_REJECTED` 兜底，待真机确认 `-1` 触发条件。`PS-CHANNEL-NOTES` §十 补「适用图层」表 | core/ps、docs |
+docs\CHANGELOG.md:222: | 2026-10-29 | **体检 `REVIEW-2026-10-29-6`**（触发 §7.1 #1 + #3）：范围 = 折叠删除余波 + `GroupHead` 抽取 + 动作页 M0。结论 = 结构无分叉（分组头 3 → 1、命令零引用 0、页面无新增越界），**问题全在文档**：`05` 计划残留 10 处与现状冲突的断言（`Collapse` / `ActionGroupRow` / `--mm-collapse-h` / `--mm-select-h` / `SelectBox.light`）已当场改掉。P0 无；P1 两项（**样式页分组头换了 DOM 结构、已交付页需真机复核拖拽与开合**；`GroupHead.trailing` 目前 0 使用，为动作页预留）；P2 四项（`sectionTrigger` 与 `GroupHead` 视觉重复但语义不同、两个 `dz_*` 未经真机、两个 token 候选未落地、设置页重置文案偏离待真机确认）。数字：能力表 69 / `VENDOR_FUNCS` 67 / 探针字段 11 / 范本 111 / 单测 333 / 待还债 0。`npm run check` 全绿 | docs、daily |
+docs\CONVENTIONS.md:590:   `core/ps/text.ts` 目前仍按直调实现，属已登记 P1（待真机确认 `ps_onJsx` 能调 `cy_*` 后统一）
+docs\PS-CHANNEL-NOTES.md:386:    待真机确认 `ps_onJsx` 能调 `cy_*` 后统一成调度）。参数形态两处不同，见 §11.4 第 1 条。
+README.md:17: | 添加前景色到分组 | 🔧 待真机 |
+README.md:19: | 字体管理（系统字体列表 / 搜索 / 标签 / 评分 / 预览 / 应用 / 标签导入导出） | 🔧 已实现，待真机 |
+README.md:20: | 字体面板（拆分 / 生成按钮 / 粘贴 / 分布 / 快速吸色 / 层级预设 / 属性 / 翻译） | 🔧 已实现，待真机 |
+README.md:21: | 常用页（缩放区 / 翻转 / 14 项网格 / 拖拽排序 / 折叠 / 两块区域显隐 / 两个子面板） | 🔧 已实现，待真机 |
+README.md:22: | 设置（单位 / 常用页两块区域显隐 / 14 项显隐） | 🔧 已实现，待真机 |

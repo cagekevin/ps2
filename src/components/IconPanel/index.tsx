@@ -182,8 +182,7 @@ interface PanelProps {
  * 需要「一行标题开合一块内容」时传 `trigger={sectionTrigger('标题')}`，
  * 不要自己拼 `<button>` + `Chevron` + aria —— 那会在页面里长出第三个折叠实现。
  *
- * 收起时箭头转 `-90deg`（与抽屉默认触发器的「弹层指示恒朝下」刻意不同：
- * 这里是开合，那里是指示）。
+ * 箭头恒朝下（全仓统一）：开合状态由 `aria-expanded` 表达，不靠箭头方向。
  */
 export function sectionTrigger(title: string) {
   return (handlers: TriggerHandlers) => (
@@ -194,7 +193,7 @@ export function sectionTrigger(title: string) {
       aria-controls={handlers['aria-controls']}
       onClick={handlers.toggle}
     >
-      <Chevron open={handlers.active} />
+      <Chevron />
       <span className="mm-icon-panel__title-text">{title}</span>
     </button>
   );

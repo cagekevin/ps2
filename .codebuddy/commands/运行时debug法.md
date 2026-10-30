@@ -4,7 +4,7 @@
 > **核心思路**：debug 的本质是**先画出链路全景，再标清每一跳的契约（数据结构）与边界**；链路清楚了，断点自然一眼可定位。本文件的地图来自**真实代码与 ADR 取证**（标注 `文件` 或 ADR 编号）。
 > **通用思考底座**：步进式、防绕圈、无日志不推演见 `排查5步法.md`（管"怎么想"）；本文件管"这个项目**链路长什么样、契约是什么**"。
 > **不在本文件范围**：原版（官方面板）自身的 bug —— 那是官方资产，见 `线上 PS 应用缺陷（非本仓文档）`；我们要做的是"我方与原版的差异"。
-> **最高优先铁律**：改 bug **第一步先拿证据**（日志 / 断言 / 页面规格 / 原版源码），禁止没证据就翻代码猜根因改逻辑。**查不到的真机行为标 `UNVERIFIED`，不许要求用户去 PS 里点。**
+> **最高优先铁律**：改 bug **第一步先拿证据**（日志 / 断言 / 页面规格 / 原版源码），禁止没证据就翻代码猜根因改逻辑。**不许要求用户去 PS 里点。**
 
 ---
 
@@ -16,15 +16,15 @@
 | --- | --- | --- |
 | **应用级错误边界** | `src/components/ErrorBoundary.tsx` · `src/components/ToastHost.tsx` · `src/components/ConfirmHost.tsx` | 渲染是否被边界捕获（**没白屏** = 边界在起作用，不是没 bug） |
 | **日志** | `src/core/logger.ts`（统一入口，禁散写 `console.log`） | 运行时轨迹；调试埋点默认安静、可开关 |
-| **白屏体检** | 无（`render:check` 已不存在） | 只能 `npm test` 的组件用例；真实渲染进 PS 看，算 `UNVERIFIED` |
-| **单测 / 组件测** | `npm test`（vitest，`测试工具（maomao 为 React；AGENTS 禁止 @testing-library，UI 行为靠真机验证，逻辑走 src/domain 单测）`） | 逻辑 / 事件 / DOM 输出；**不启浏览器、不点 PS、不 fetch** |
+| **白屏体检** | 无（`render:check` 已不存在） | 只能 `npm test` 的组件用例 |
+| **单测 / 组件测** | `npm test`（vitest，`测试工具（maomao 为 React；AGENTS 禁止 @testing-library，逻辑走 src/domain 单测）`） | 逻辑 / 事件 / DOM 输出；**不启浏览器、不点 PS、不 fetch** |
 | **机器守卫** | `npm run lint` · `npm run lint:css` · `npm run typecheck` | 空 catch / 断言禁令 / 页面层越界 / 转型。样式与公共件分发**无守卫** |
 | **类型闸** | `npm run typecheck`（`src/**` 与 `tests/**` 两套 tsconfig） | 类型漂移、漏改引用 |
-| **原版结构** | `（本仓不维护原版页面规格；结构对照以线上 PS 应用为准，标 UNVERIFIED）`（结构树 + 全量 class + CSS 实测值） | 我方该长什么样 |
+| **原版结构** | `（本仓不维护原版页面规格；结构对照以线上 PS 应用为准）`（结构树 + 全量 class + CSS 实测值） | 我方该长什么样 |
 | **原版事件** | `线上 PS 应用源码（非本仓文档）` 的 render（看 `on:`） | 某个 class 有没有绑事件 |
-| **原版一手源码** | `线上 PS 应用源码（非本仓文档；jsx 签名以真机验证为准，标 UNVERIFIED）`（派发表行号随版本漂移，以真机核对为准） | 官方怎么调 / 什么参数 / 什么返回结构 |
+| **原版一手源码** | `线上 PS 应用源码（非本仓文档）`（派发表行号随版本漂移） | 官方怎么调 / 什么参数 / 什么返回结构 |
 | **引用面** | `grep -rn "<名>" src/ tests/ docs/ scripts/` + `npm run typecheck` | 谁引用它 + 字符串残留引用（改名/搬运后必跑） |
-| **真机行为** | 只能靠 PS：PS 是否回某事件、jsx 返回值取值 | **查不到就标 `UNVERIFIED` 并写进该页清单**，不猜、不外推 |
+| **真机行为** | 只能靠 PS：PS 是否回某事件、jsx 返回值取值 | **查不到就写进该页清单**，不猜、不外推 |
 
 > ⚠️ **禁 e2e / 浏览器自动化 / 截图回归**：不装 Playwright / Cypress / Puppeteer，不写自动点面板 / 跑浏览器流程 / 像素 diff 的脚本。
 > ⚠️ **本仓没有集中的 debug 开关** —— 所以**临时 `console.log` 一律不留**（`系统治理5步法` Step 7 会扫）。要留可观测，就先在 `src/core/logger.ts` 落一个**统一入口**。
@@ -168,7 +168,7 @@
 | 样式基线 | 无守卫（`style:guard` 已删） | 裸色值 / 裸字号靠 `src/styles/tokens.css` |
 | 断言禁令 | `npm run lint` | 断言缺失或过期 |
 | 引用面 | `grep -rn "<名>" src/ tests/ docs/ scripts/` + `npm run typecheck` | 改名 / 搬运后的引用漏改 |
-| 原版对照 | `（本仓不维护原版页面规格；结构对照以线上 PS 应用为准，标 UNVERIFIED）` · `线上 PS 应用源码（非本仓文档）` 的 render · `线上 PS 应用源码（非本仓文档）`（jsx 签名以真机验证为准，标 UNVERIFIED） | 结构 / 事件 / jsx 签名 |
+| 原版对照 | `（本仓不维护原版页面规格；结构对照以线上 PS 应用为准）` · `线上 PS 应用源码（非本仓文档）` 的 render · `线上 PS 应用源码（非本仓文档）` | 结构 / 事件 / jsx 签名 |
 | 判据 | `node scripts/adr.mjs search <关键词>` · `node scripts/adr.mjs refs --check` | 判据打架 / 断链 |
 
 ---
@@ -179,4 +179,4 @@
 - **State 2（提取证据）**：先按〇取证据；疑原版行为查 `线上 PS 应用源码（非本仓文档）` 与页面规格；疑事件绑定查 `线上 PS 应用源码（非本仓文档）` render 里的 `on:`。
 - **State 3（物理断点）**：**对照第一~六节链路地图，指"第几跳、哪个契约没守"**。
 - **State 4（靶向修复）**：守红线（`src/core` 唯一出口 / 命令唯一入口 / 写不可降级 / 错误原样透传 / domain 纯函数），最小改动。
-- **State 5（闭环验证）**：呼应 State 1 —— 跑 `npm run check`（六道关：typecheck→lint→lint:css→check:templates→check:nav→test）；真机相关写进该页清单并标 `UNVERIFIED`。
+- **State 5（闭环验证）**：呼应 State 1 —— 跑 `npm run check`（六道关：typecheck→lint→lint:css→check:templates→check:nav→test）。

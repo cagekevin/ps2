@@ -49,7 +49,7 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
               aria-expanded={open}
               onClick={() => setOpen((value) => !value)}
             >
-              <Chevron open={open} />
+              <Chevron />
             </button>
           ) : null}
         </div>
