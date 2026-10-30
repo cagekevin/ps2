@@ -300,9 +300,9 @@ components → hooks ──────→ core
 | 出口 | 文件 | import 方 | 说明 |
 |---|---|---|---|
 | **PS 出口** | `core/cep/bridge.ts` 的 `evalScript` | 调用方多在 `core/ps/*` 与 `core/cep/*` 内；另有 `commands/style.ts:65` 直连 `emitAppEvent`（广播不是 PS 调用，见 §3.1.5 第 4 条） | `callJsx` 是它的封装（串行 + 超时 + `EvalScript error.` 折算）。**唯一真正发起 PS 调用的地方**；`core/ps/init.ts` 的探针也用它（问「这个 jsx 函数在不在」） |
-| **落盘出口** | `core/storage/index.ts` 的 `writeTextAtomic` | `repo/json-file.ts`（库文件）、`repo/style-repo.ts` / `repo/ku-archive.ts`（`.ini` 索引与解包内层文件，非 JSON，`json-file` 不适用）、`core/prefs/index.ts`（`prefs.json`，独立文件）、`commands/font.ts`（**§3 授权例外**：用户选路径的整份归档） | 所有写入最终都经过它 |
+| **落盘出口** | `core/storage/index.ts` 的 `writeTextAtomic` | `repo/json-file.ts`（库文件）、`repo/style-repo.ts` / `repo/ku-archive.ts`（`.ini` 索引与解包内层文件，非 JSON，`json-file` 不适用）、`repo/action-repo.ts`（仓库文件与索引原文整包写回）、`core/prefs/index.ts`（`prefs.json`，独立文件）、`commands/font.ts`（**§3 授权例外**：用户选路径的整份归档） | 所有写入最终都经过它 |
 
-#### 3.1.2 五条链
+#### 3.1.2 六条链
 
 ```
 ① 读   features ─→ store ─→ repo ─→ json-file ─→ core/storage ─→ fs
@@ -310,11 +310,14 @@ components → hooks ──────→ core
 ③ PS   features ─→ commands ─→ core/ps ─→ capability ─→ core/cep/bridge ─→ evalScript ─→ jsx
 ④ 反馈 commands(结果) ─→ hooks/useRunCommand ─→ core/feedback(状态) ─→ components(渲染)
 ⑤ 轮询 app/layer-watcher ─→ core/ps/layer ─→ store/app
+⑥ 云   features ─→ commands/cloud ─→ core/http.postText ─→ GAS 网关
+                                 ↘ repo/cloud-repo ─→ style-repo / action-repo（原文收集 / 整包写回）
 ```
 
 - ②的写入按**文件名**串行：`json-file` 的队列 key = `mutate:<root>:<name>`，同文件 = 同一条队列。
 - ④的失败留痕在 `useRunCommand`（`log.warn(code, detail)` + toast）；读路径另有 `useReportFailure`。
 - ⑤每 800ms 一次，`document.hidden` 跳过、上一轮没回来就跳过这一轮（`inFlight`）。
+- ⑥只在设置页人工点按钮时走；上传前 pull 只为拿云端 `rev`，下载整包覆盖本地（`.bak` 兜底）。
 
 #### 3.1.3 真身清单（谁能读「真的那份」）
 
@@ -652,7 +655,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 横切 | 模块 | 对外签名 | 禁止 |
 |---|---|---|---|
 | 日志 | `core/logger` | `log.info/warn/error(msg, ctx?)` | 组件里 `console.*` |
-| 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>`；`jsonpGet(url, params, timeoutMs)` 只服务不支持 CORS 的第三方接口（百度翻译），业务代码经 `commands` 调 | feature 里写 `fetch` / 注入 `<script>` |
+| 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>`；`jsonpGet(url, params, timeoutMs)` 只服务不支持 CORS 的第三方接口（百度翻译）；`postText(url, body, opts)` 只服务 GAS 网关（云同步，地址即账号），只回状态码 + 正文，错误码映射由 `commands` 按协议做。三种业务代码都经 `commands` 调 | feature 里写 `fetch` / 注入 `<script>` |
 | 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
 | 存储 | `core/storage` | `readTextResult/writeTextAtomic`；导入导出用 `readTextAt/writeTextAtAtomic/copyFileAt` | 组件里直接用 `cep.fs` |
 | 官方设置文件 | `repo/*`（内部走 `repo/json-file` + `core/storage`） | `readXxx()` / `updateXxx()`，只改自己那几个键，未知键原样保留（`sj_commonFunction.json` 的根是**裸数组**，不是 `{ index, list }`） | 页面、命令、组件直接读写 `sj_*.json`；用 `core/prefs` 代管官方设置文件 |

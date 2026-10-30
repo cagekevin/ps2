@@ -27,6 +27,11 @@ export type PrefKey =
   | 'action.listColumns'
   /** 动作页「首次引导」是否已问过（点取消也算问过） */
   | 'action.guideDone'
+  /**
+   * 云同步台账（`CloudLedger`：上次成功同步的云端 rev 与时刻）。
+   * 形状校验在 `domain/cloud.decodeLedger`，坏值按「没同步过」处理。
+   */
+  | 'cloud.ledger'
 
 const FILE = 'prefs.json';
 

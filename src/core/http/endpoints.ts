@@ -57,3 +57,23 @@ export function resolveUrl(key: EndpointKey): string {
   const endpoint = ENDPOINTS[key];
   return `${HOSTS[endpoint.host]}${endpoint.path}`;
 }
+
+/**
+ * 云同步网关（Google Apps Script）。
+ *
+ * **地址不是凭证**（2026-10-30 实测，代理走本机 7897）：
+ *   POST `{"action":"pull_data"}` → `401` + `text/html`（标题「网页未找到」）
+ *   GET 同一地址 → `302` 到 `accounts.google.com/ServiceLogin?continue=<本地址>`
+ * 即：部署要求 **Google 登录态**。浏览器能拉下来是因为浏览器已登录；
+ * CEP 面板的 `fetch` 没有登录态，拿到的是 401，不是 JSON。
+ * 要让面板可用，得把部署权限改成「任何人」——这一步在 Google 侧，代码改不了。
+ *
+ * 不登记进 `ENDPOINTS`：那张表是「host + path + JSON 响应」，而这个网关是完整地址 +
+ * 文本请求体 + 正文由调用方解析（见 `postText`）。来源：`ps/src/config/cloud.ts` 的
+ * `CLOUD_SYNC_GAS_URL`。
+ *
+ * 仍然不要外传、不要打进公开构建、不要写进 README / 截图。
+ */
+export const CLOUD_SYNC_URL =
+  'https://script.google.com/macros/s/AKfycbyNJHgNZMci2kIY0jfhozriJYwPkw4phoUZh7nWwW1rw3ZlJaWg282EygOEnyxyka6X/exec';
+

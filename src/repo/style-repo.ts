@@ -26,15 +26,15 @@ import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 
-/** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录） */
-const INDEX_FILE = 'sj_kuStoreInfo.ini';
+/** 仓库索引文件名（原版 sj_kuStoreInfo.ini，位于 SheJiZhuLi 根目录）；云同步拼快照路径也 import 它 */
+export const STYLE_INDEX_FILE = 'sj_kuStoreInfo.ini';
 
 /** 样式库全部在官方数据根下（与 `font-repo` 同一个写法：根写一次，不在每个调用点重复字面量） */
 const ROOT: StorageRoot = 'legacy';
 
 /** 读仓库索引 */
 export function readIndex(): Result<StyleWarehouseIndex> {
-  const text = readTextResult(INDEX_FILE, ROOT);
+  const text = readTextResult(STYLE_INDEX_FILE, ROOT);
   if (text.status === 'error') return text;
 
   const parsed = parseJson(text.value, '仓库索引');
@@ -187,7 +187,7 @@ export async function mutateRawGroups(
  * 那会把文件里的未知键（官方客户端的字段）洗掉，上传一次就丢一次。
  */
 export function readIndexText(): Result<string> {
-  return readTextResult(INDEX_FILE, ROOT);
+  return readTextResult(STYLE_INDEX_FILE, ROOT);
 }
 
 /**
@@ -198,7 +198,7 @@ export function readIndexText(): Result<string> {
  * 走 `replaceJsonFile`：`.bak` + 串行 + 未知键保留（传入对象本身带全量键）。
  */
 export async function writeIndexRaw(next: Record<string, unknown>): Promise<Result<void>> {
-  return replaceJsonFile(INDEX_FILE, ROOT, next);
+  return replaceJsonFile(STYLE_INDEX_FILE, ROOT, next);
 }
 
 /* ---------------- 写：分组 ---------------- */

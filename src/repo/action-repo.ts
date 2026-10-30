@@ -36,6 +36,7 @@ import {
 } from '../domain/action-library';
 import { MSG } from '../types/messages';
 import type { Dropped } from '../types/decode-list';
+import { parseJson } from '../types/json';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 import {
   readJsonFile,
@@ -45,7 +46,9 @@ import {
 } from './json-file';
 
 const ROOT: StorageRoot = 'legacy';
-const INDEX_FILE = 'sj_dzStoreInfo.json';
+
+/** 索引文件名（官方 `sj_dzStoreInfo.json`）；云同步拼快照路径也 import 它，不另写一份字面量 */
+export const ACTION_INDEX_FILE = 'sj_dzStoreInfo.json';
 
 /**
  * 索引缺失时用的**确定性**文件名。
@@ -84,13 +87,22 @@ function decodeLibraryFile(raw: unknown): Result<LibraryRead> {
 
 export function readIndex(): Result<WarehouseIndex> {
   return readOrEmpty(
-    readJsonFile(INDEX_FILE, ROOT, '动作库索引', decodeIndexFile),
+    readJsonFile(ACTION_INDEX_FILE, ROOT, '动作库索引', decodeIndexFile),
     () => ok(defaultIndex(DEFAULT_FILE))
   );
 }
 
+/**
+ * 索引**原文**（云同步上传用）。
+ *
+ * 不 `readIndex()` 之后 `JSON.stringify`：那会洗掉官方未知键与键序，上传一次丢一次。
+ */
+export function readIndexText(): Result<string> {
+  return readTextResult(ACTION_INDEX_FILE, ROOT);
+}
+
 export function updateIndex(mutator: JsonMutator<WarehouseIndex>): Promise<Result<void>> {
-  return updateOrCreateJsonFile(INDEX_FILE, ROOT, '动作库索引', decodeIndexFile, mutator, {
+  return updateOrCreateJsonFile(ACTION_INDEX_FILE, ROOT, '动作库索引', decodeIndexFile, mutator, {
     missing: () => defaultIndex(DEFAULT_FILE)
   });
 }
@@ -208,6 +220,88 @@ export function readWarehouseText(fileName: string): Result<string> {
  */
 export function writeWarehouseFile(fileName: string, text: string): Promise<Result<void>> {
   return writeTextAtomic(fileName, text, ROOT);
+}
+
+/* ---------------- 整包（云同步的两个出入口） ---------------- */
+
+/**
+ * 一整份动作库：索引原文 + 索引列出的每个仓库文件原文。
+ *
+ * 全是**原文**（不是 re-serialize）：云同步只负责搬运，解析后的形状由下载端自己验。
+ */
+export interface ActionBundle {
+  indexText: string;
+  files: { name: string; text: string }[];
+}
+
+/**
+ * 收集整包：索引里列出几个仓库就读几个。
+ *
+ * **任一读不到就整体失败**（不拿默认值顶）：拿默认值上传会把云端的库洗成「默认分组」。
+ * 失败码原样透传（`NOT_FOUND` / `IO_ERROR`），`detail` 追加文件名。
+ */
+export function collectBundle(): Result<ActionBundle> {
+  const indexText = readIndexText();
+  if (indexText.status === 'error') return indexText;
+
+  const parsed = parseJson(indexText.value, '动作库索引');
+  if (parsed.status === 'error') return parsed;
+
+  const index = decodeIndexFile(parsed.value);
+  if (index.status === 'error') return index;
+
+  const files: { name: string; text: string }[] = [];
+  for (const entry of index.value.list) {
+    if (!entry.fileName) return failWithDetail('CORRUPT', MSG.corrupt, 'index.list.fileName');
+
+    const text = readWarehouseText(entry.fileName);
+    if (text.status === 'error') {
+      return failWithDetail(text.code, text.reason, `${text.detail} file:${entry.fileName}`);
+    }
+    files.push({ name: entry.fileName, text: text.value });
+  }
+
+  return ok({ indexText: indexText.value, files });
+}
+
+/**
+ * 整包写回（云同步下载）。
+ *
+ * 两类文件分开写，顺序固定：**先仓库文件、最后索引**（索引是入口，不能先指向不存在的文件）。
+ * 写之前**全量校验**：索引里的每个仓库文件都要在载荷里且能解码，一条不合格就一个文件都不写；
+ * 中途写失败即停（`.bak` 兜底已写的那几份），**不回滚、不删旧文件**。
+ */
+export async function applyBundle(bundle: ActionBundle): Promise<Result<void>> {
+  const parsed = parseJson(bundle.indexText, '动作库索引');
+  if (parsed.status === 'error') return parsed;
+
+  const index = decodeIndexFile(parsed.value);
+  if (index.status === 'error') return index;
+
+  const byName = new Map(bundle.files.map((file) => [file.name, file.text]));
+
+  const writes: { name: string; text: string }[] = [];
+  for (const entry of index.value.list) {
+    const text = byName.get(entry.fileName);
+    if (text === undefined) return failWithDetail('CORRUPT', MSG.corrupt, `missing:${entry.fileName}`);
+
+    const library = parseJson(text, `动作库「${entry.name}」`);
+    if (library.status === 'error') return library;
+
+    const decoded = decodeLibrary(library.value);
+    if (decoded.status === 'error') return decoded;
+
+    writes.push({ name: entry.fileName, text });
+  }
+
+  for (const file of writes) {
+    const written = await writeWarehouseFile(file.name, file.text);
+    if (written.status === 'error') {
+      return failWithDetail(written.code, written.reason, `${written.detail} file:${file.name}`);
+    }
+  }
+
+  return writeTextAtomic(ACTION_INDEX_FILE, bundle.indexText, ROOT);
 }
 
 /* ---------------- `.dzx`（用户选路径：`CONVENTIONS` §5 授权例外） ---------------- */

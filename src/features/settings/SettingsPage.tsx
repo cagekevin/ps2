@@ -17,16 +17,28 @@
 
 import { useEffect, useState } from 'react';
 import { CheckBox } from '../../components/CheckBox';
+import { useConfirm } from '../../components/Confirm/useConfirm';
 import { SelectBox } from '../../components/SelectBox';
 import { Button } from '../../components/ui';
 import { useRunCommand } from '../../hooks/useRunCommand';
+import { useToast } from '../../hooks/useToast';
+import { download, upload } from '../../commands/cloud';
 import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
 import { booleanOptionOf } from '../../domain/common-use-options';
 import { UNITS, unitIndexOf } from '../../domain/units';
+import { useCloudStore } from '../../store/cloud';
 import { useCommonUseStore } from '../../store/common-use';
 import { useFontSetStore } from '../../store/font-set';
+import { MSG } from '../../types/messages';
 import './SettingsPage.css';
+
+/** 台账时间只显示到分钟：秒没有信息量，还会让状态行抖动 */
+function formatSyncedAt(timestamp: number): string {
+  const date = new Date(timestamp);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function SettingsPage() {
   /* 设置项都是瞬时写：不转圈，失败留痕由 hook 负责 */
@@ -35,6 +47,13 @@ export default function SettingsPage() {
   const load = useFontSetStore((state) => state.load);
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
   const [saving, setSaving] = useState(false);
+
+  const confirm = useConfirm();
+  const toast = useToast();
+  const cloudLedger = useCloudStore((state) => state.ledger);
+  const cloudBusy = useCloudStore((state) => state.busy);
+  const setCloudBusy = useCloudStore((state) => state.setBusy);
+  const loadCloud = useCloudStore((state) => state.load);
 
   /*
    * 订阅派生布尔而不是整个 options：另外 15 个键变化与本页无关。
@@ -50,7 +69,8 @@ export default function SettingsPage() {
   useEffect(() => {
     load();
     loadOptions();
-  }, [load, loadOptions]);
+    loadCloud();
+  }, [load, loadOptions, loadCloud]);
 
   const current = UNITS[unitIndexOf(settings.appUnit)] ?? UNITS[0];
 
@@ -84,6 +104,44 @@ export default function SettingsPage() {
    */
   function toggleTile(id: string, visible: boolean): void {
     void run(() => setShow(id, visible), { spin: false });
+  }
+
+  /**
+   * 上传：全站唯一的一次确认在这里。
+   *
+   * 命令只回 `needs-confirm`（不弹窗）；确认后带 `force` 再调一次，`force` 只跳过那一处判定。
+   * 失败提示由 `useRunCommand` 出（`reason` 由命令给），成功提示在确认完成之后。
+   */
+  async function syncUpload(force: boolean): Promise<void> {
+    setCloudBusy('upload');
+    const result = await run(() => upload({ force }), { tip: MSG.cloud.syncing });
+    setCloudBusy(null);
+
+    if (result.status === 'error') return;
+
+    if (result.value.status === 'needs-confirm') {
+      const confirmed = await confirm({
+        title: MSG.cloud.overwriteAsk,
+        confirmText: MSG.cloud.overwrite
+      });
+      if (confirmed) await syncUpload(true);
+      return;
+    }
+
+    toast.info(MSG.cloud.done);
+    loadCloud();
+  }
+
+  /** 下载：不做比较，点了就覆盖本地（`.bak` 由 `core/storage` 留，不是这里加的防御） */
+  async function syncDownload(): Promise<void> {
+    setCloudBusy('download');
+    const result = await run(download, { tip: MSG.cloud.syncing });
+    setCloudBusy(null);
+
+    if (result.status === 'error') return;
+
+    toast.info(MSG.cloud.done);
+    loadCloud();
   }
 
   return (
@@ -149,6 +207,30 @@ export default function SettingsPage() {
         >
           重置常用功能
         </Button>
+
+        <div className="mm-settings__section">云同步</div>
+
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">上次同步</span>
+          <span className="mm-settings__status">
+            {cloudLedger
+              ? `${formatSyncedAt(cloudLedger.syncedAt)} · rev ${cloudLedger.rev}`
+              : MSG.cloud.never}
+          </span>
+        </div>
+
+        <div className="mm-u-row mm-settings__row">
+          <Button
+            variant="primary"
+            disabled={cloudBusy !== null}
+            onClick={() => void syncUpload(false)}
+          >
+            上传到云端
+          </Button>
+          <Button disabled={cloudBusy !== null} onClick={() => void syncDownload()}>
+            从云端下载
+          </Button>
+        </div>
       </div>
     </div>
   );
