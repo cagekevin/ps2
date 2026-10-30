@@ -46,8 +46,8 @@
 实际发出的两种形态：
 
 ```js
-mm_style_applyColor('{"name":"未命名","color":{...}}')   // ✓ 字符串
-mm_style_applyColor({"name":"未命名","color":{...}})     // ✗ 对象字面量
+mm_style_applyShapeFill('{"name":"未命名","color":{...}}')   // ✓ 字符串
+mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字面量
 ```
 
 **为什么不能传对象**：官方 jsx 内部按字符串处理（`.replace` / `JSON.parse`），拿到对象直接抛异常，表现就是 `EvalScript error.`。这条曾经绕了四轮才定位，不要「优化」成传对象。
@@ -195,45 +195,43 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 前端 `VALID_KINDS` 白名单再兜一层（`core/ps/layer.ts:12`），认不出的一律 `unknown`，不抛错。
 
-**选中数量是另一个 jsx**：`mm_layer_getSelection` 返回 `app.activeDocument.activeLayers.length`（`'3'`），没有文档返回 `no-doc`。不并进 `mm_layer_getState` 的理由：后者被 `layer-watcher` 每 800ms 调用，改它的返回协议一旦新旧 jsx 混用就会静默解析错；独立函数缺失时探测能直接发现（`init.ts` 的 core 探针已含它）。
+**选中数量是另一个 jsx**：`mm_layer_getSelection` 返回选中数（`'3'`），没有文档返回 `no-doc`。取数走 ActionManager 的 `targetLayers`（`list.count`），**不是** `app.activeDocument.activeLayers` —— 后者在部分 PS 版本上不存在（§10.2）。2026-10-30 真机已确认新实现返回 `'1'` 且不再抛「undefined 不是对象」。不并进 `mm_layer_getState` 的理由：后者被 `layer-watcher` 每 800ms 调用，改它的返回协议一旦新旧 jsx 混用就会静默解析错；独立函数缺失时探测能直接发现（`init.ts` 的 core 探针已含它）。
 
 ---
 
-## 十、颜色应用：移植版，不是 vendor
+## 十、颜色应用：只有 vendor 一条路
 
-`jsx/main.jsx:222` 的 `mm_style_applyColor`，移植自色板面板明文 jsx（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx`，819 行，未加密）。
+`core/ps/style.ts` 的 `applyStyleColor` → `ps_onJsx('{"f":"ys_useStyleColor","arr":[色值],"n":"智能填充颜色"}')`。
 
-**为什么不用 `ys_useStyleColor`**：它在「自动填充」关闭时只改前景色、不碰图层，返回 `1` 但图层没变。这个现象排查了两轮才定位。
+**单选、多选是同一个调用**：遍历所有选中图层在 vendor（`jsx/vendor.jsx`，加密 jsxbin）内部完成。官方 `app.v4.js:17894-17900` 也只发一项交给它；「色板工具本地版」（工作区外，真机验证过）走的就是这条路。
 
-分支行为：
+**不能照抄色板面板的明文 jsx**（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx`）：它
+`iTuCengGeShu = sb_DL_HuoQuDangQianTuCengShu(); if (iTuCengGeShu == 1)` 才上色（`main.jsx:32-33`），
+多选只设前景色。抄过来就是「界面提示成功、图层没变」，而且前端拿不到「没生效」的信号。
 
-| 图层 | 做法 |
-|---|---|
-| `NORMAL` | 锁定透明度 → 填充前景色 → 解锁（`finally` 保证解锁） |
-| `SOLIDFILL` | 有填充改填充色；只有描边时改描边色（`mm_style_setShapeColor`） |
-| `SMARTOBJECT` | 图层样式颜色叠加（`mm_style_overlayColor`） |
-| `TEXT` | `textItem.color = color` |
+参数形状：**扁平**色值 `{ hex, c, m, y, k }` + **顶层** `isFill: true`，不是库项
+（`{ name, color: {...} }` 是库文件里的形状，`commands/style.toAppColor` 负责拍平）。
+只给 hex 的调用方（`applyColorByHex`）用 `domain/image-color` 的 `hexToCmyk` 补齐 CMYK ——
+与官方前端 `toCMYK()` 是同一份公式。
 
-三个隐含行为，改之前必须知道：
+真机（2026-10-30）：对智能对象调用返回 `1`。**「返回 1 之后图层到底变了没有」没有截图证据**，仍按 UNVERIFIED 看待。
 
-1. **同色规避**：目标色 == 当前前景色时，先把前景色设成 `f0ebe2`，再设目标色。否则「填充前景色」不触发。
-2. **多选不处理**：`mm_style_countTargets() !== 1` 直接返回 `'ok'`（原版行为）。想支持多选是**新功能**，不是修 bug。
-3. **配置闸门只认显式 false**：`sj_interfaceSet.ini` 里 `img_cya4 === false` 才返回 `skipped`；文件缺失 / 解析失败都按「开启」处理。色板面板原注释：`if (lsObj.img_cya4 === false) return -1;`
+`cyAutoFillColor` 是**主面板前端**的分支开关
+（`if (cyAutoFillColor) ys_useStyleColor(...) else ys_setForegroundColor(...)`），
+vendor 内部不读它：我们直接发调度调用，不受它影响。
 
-`isFill` 字段：移植版**只读 `item.color`**，不认 `isFill`。vendor 那条链路要求 `isFill` 在顶层，两条通道的项形状不同，别互相抄。
+vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyleColor`），**不留本地降级实现**。
 
 **适用图层（2026-10-28 真机确认）**：
 
 | 能力 | 适用图层 | 前置 |
 |---|---|---|
-| `mm_style_applyColor`（点色块） | 任意（jsx 按 kind 分四路） | 不判 |
+| `ys_useStyleColor`（点色块） | 任意（vendor 内部按图层类型处理） | 不判 |
 | `mm_style_applyShapeFill`（ctrl+点）/ `mm_style_applyBorderColor`（shift+点） | **只对形状**，jsx 对其它返回 `not-shape` | `requireShapeLayer` |
 | `ys_useGradient`（应用渐变） | 任意，**含文字图层** | 不判 |
 | `ps_ysBtnUseStyle`（应用图层样式） | 任意，**含文字图层** | 不判 |
 
 后两条如果加图层前置，会把正常操作挡住——所以表里明确不加，`capability.test.ts` 有用例钉住。
-
-`cyAutoFillColor`：是**主面板前端**的开关（`if (cyAutoFillColor) ys_useStyleColor(...) else ys_setForegroundColor(...)`），不是 jsx 内部读的。所以它不影响我们这条移植版。
 
 ### 10.1 「多图层上色」到底是谁做的（2026-10-28 查清）
 
@@ -257,8 +255,8 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 | API | 结果 |
 |---|---|
-| `app.activeDocument.activeLayers.length` | **属性不存在**，读 `.length` 抛错（本仓 `mm_layer_getSelection` 在别的机器上可用 → 版本差异，不是通用写法） |
-| `targetLayers`（`getd` + `Prpr/targetLayers`）→ `list.count` | ✅ 与实际选中数一致 |
+| `app.activeDocument.activeLayers.length` | **属性不存在**，读 `.length` 抛错（版本差异，不是通用写法）。2026-10-30 在诊断页「执行代码」里跑 `typeof app.activeDocument.activeLayers` 仍是 `undefined`，`mm_layer_getSelection` 据此改成下面这条 |
+| `targetLayers`（`getd` + `Prpr/targetLayers`）→ `list.count` | ✅ 与实际选中数一致，`mm_layer_getSelection` 用的就是它 |
 | 引用上 `getObjectValue(stringIDToTypeID('layer'))` | ❌ 取不到图层对象 |
 | 引用上 `getIdentifier(charIDToTypeID('Lyr '))` | ❌ 取不到 id |
 | 引用上 `getIndex(charIDToTypeID('Lyr '))` | ✅ 返回数字 |
@@ -275,7 +273,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 | 事实 | 说明 |
 |---|---|
 | 填充 `Fl  `、形状样式 `contentLayer`/`Trgt`、图层样式 `Lefx` | 全部作用于**活动层** ⇒ 批量上色的循环体必须保证「目标层 = 活动层」 |
-| `SolidColor` 要按文档模式构造 | CMYK 文档只填 `cmyk.*`，否则只填 `rgb.hexValue`。rgb+cmyk 一起塞，在 CMYK 文档里会让赋值抛错（官方 `main.jsx:11-22`、本仓 `mm_style_applyColor` 都这么写） |
+| `SolidColor` 要按文档模式构造 | CMYK 文档只填 `cmyk.*`，否则只填 `rgb.hexValue`。rgb+cmyk 一起塞，在 CMYK 文档里会让赋值抛错（官方 `main.jsx:11-22`、本仓 `mm_style_parseColor` 都这么写） |
 | 图层样式里的**颜色叠加**会盖住内容颜色 | 有它时改字色/填充色看不见变化；**投影不盖内容颜色**（只有投影的文字层改字色是看得见的）。渐变/图案叠加不能替换成纯色 |
 | 批量写操作要包撤销组 | 不包就是每层一条历史记录，只能一层一层撤 |
 
@@ -473,7 +471,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 | 函数 | 通道 | 参数 | 说明 |
 |---|---|---|---|
 | `dz_callAction` | **调度**（`ps_onJsx`，官方 `case 96 → jsxHistoryNoCheck`） | `[{ group, name, alias? }]` **整个 item** | 只传 `name` 会执行到别的组（官方 `:1823179`）；`alias` 只在显示用，执行仍靠 `group + name` |
-| `dz_getActionList` | **直调**（`jsxNoCheck`） | 无参 | 返回形状 `UNVERIFIED`：Vue 版同时兜 `ActionGroup[]` 与 `{ info: ActionGroup[] }`；归一化在 `domain`，`core` 只 `passthrough` |
+| `dz_getActionList` | **直调**（`jsxNoCheck`） | 无参 | 返回**裸数组**（2026-10-30 真机）：`[{ name: <组名>, children: [{ name, isAdd }] }]`。`isAdd` 未用；`{ info: [...] }` 包装仍未见过，`mapPsActions` 继续兜着 |
 
 两条要点：
 
@@ -482,8 +480,9 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 2. **派发名不同**：官方 dispatch 的 `n` 是 `"动作-" + name`；我们静态写「动作」（`n` 只影响 PS 历史面板显示名）。
    若真机要求历史名带动作名，就得给 `CapabilitySpec` 加 `labelOf(args)`——那是新增形状，需先改约定。
 
-登记方式（2026-10-29 改判）：`05` 原要求先真机 `typeof` 探针再登记；无真机期间按用户指示**照抄可运行的 Vue 版实践**
-（`ps/src/cep/jsx/action.ts`）。探针已加进 `mm_diag_vendor`（`callAction` / `getActionList` 两个字段），真机时复核。
+登记与验证（2026-10-30 更新）：`05` 原要求先真机 `typeof` 探针再登记，无真机期间按用户指示照抄可运行的 Vue 版实践
+（`ps/src/cep/jsx/action.ts`）。**现在已真机确认**：两个函数都是 `function`，`dz_getActionList` 的返回结构与
+`domain/action-library.mapPsActions` 的解码一致。**只剩 `dz_callAction` 的实际执行没跑**（未跑不等于不成立）。
 
 ## 十二、库文件数据契约（抄错就丢用户数据）
 
@@ -586,3 +585,50 @@ base64 解出来是 **UTF-8 JSON**，必须用 Node `Buffer`（`atob` 直接转�
 | 图层类型显示 `unknown` | `%TEMP%\maomao-jsx.log` 里 `layer.kind` 原值 | 枚举名没覆盖 |
 | 样式库整片空 | 日志 `readText 失败` / `warehouses` 数量 | 路径或 Node fs 问题 |
 | 缩略图全破 | `userAssetUrl` 生成的实际 URL | `file:///` 或 `SheJiZhuLi` |
+
+---
+
+## 十六、AI 自测：一条命令拿全部 jsx 返回形状
+
+**`npm run probe:ps`**（`tools/probe-ps.mjs`）—— 用 Photoshop COM 的 `DoJavaScript` 批量问宿主「你到底返回什么」，AI 自己就能拿齐证据，**不用人反复点面板**。
+
+### 什么时候必须跑
+
+1. 新增/修改**解析器**（`core/ps/raw.ts`）之前：判据只能建立在真实返回上。
+2. 新增一个 `zt_*` / `ys_*` / `dz_*` 能力时：先拿一次真实返回，再决定 `parse` 用哪个。
+3. 真机报「假失败 / 假成功」时：先跑探针看宿主原文，别猜。
+
+### 用法
+
+```powershell
+npm run deploy                       # 探针读部署目录，必须先部署
+npm run probe:ps -- --ensure-text    # 文档没有文字图层时自动造一个
+npm run probe:ps -- --skip-slow      # 跳过 ztgl_initSystemList（扫全机字体，慢）
+npm run probe:ps -- --group=text     # 只跑某一组
+npm run probe:ps -- --json           # 附机器可读的 JSON
+```
+
+### 三条硬约束（踩过）
+
+1. **加载 + 注入 + 探测必须在同一次 `DoJavaScript` 里**。`jsx/vendor.jsx` 是 jsxbin，
+   它定义的函数**活不过一次调用** —— 上一次调用 `$.evalFile` 完 `ps_onJsx` 是 `function`，
+   下一次调用就 `Sys_setSystemEnvInfo 不是函数`。脚本已经按这个约束写成「一段脚本跑完」。
+2. **只收集，不判定**。输出是「函数 → 原始返回字符串」，不做成功/失败分类；
+   分类只在 `core/ps/raw.ts` 一处做，探针里再判一次就是第二套判据。
+3. **会改文档**：`zt_set*` 是真写。用测试文档跑。
+
+### 它不覆盖什么
+
+| 类别 | 为什么 | 怎么测 |
+|---|---|---|
+| `ys_useFont` / `ys_checkUseFont` | 参数必须先 `encodeText`（原版 `Xv`），v1 探针没做编码 | 手工构造编码后的字体项，或补探针 |
+| `zt_createButton` / `zt_setTranslateText` | 参数是对象，构造规则复杂 | 手工 |
+| `cy_distributedByPitch` | 需要多选 + 参数组合 | 手工 |
+| 文件对话框（导入/导出 `.kux`） | COM 会卡在系统弹窗 | 手工 |
+| 拖图 / 粘贴事件 | 需要真实鼠标 | 手工 |
+
+### 拿到证据之后
+
+把 raw 贴进对应的区域日志（`daily/架构日志/<NN>-*.md` 的「真机证据」段），
+再按「宿主明确说过的才认」定 `parse`：信封 `{"err":0}` / `{"code":"OK"}` / 无返回 / 裸 `0` 算成功，
+`{"err":1,"msg":…}` 算宿主拒绝，其余一律报「返回数据无法识别」并带原文，**两个方向都不猜**。

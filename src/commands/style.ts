@@ -10,6 +10,7 @@
  */
 
 import { openFile, saveFile } from '../core/dialog';
+import { isRecord } from '../types/guards';
 import { MSG } from '../types/messages';
 import { exportKuArchive, importKuArchive, kuArchiveDefaultName, type KuImportResult } from '../repo/ku-archive';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
@@ -22,7 +23,8 @@ import {
   getForegroundColor,
   getGradientInfo,
   saveLayerStyle,
-  setTool
+  setTool,
+  type AppColor
 } from '../core/ps/style';
 import {
   addKuGroup,
@@ -60,6 +62,7 @@ import { isForegroundSetd, startHostEventWait } from '../core/cep/ps-events';
 import {
   buildColorPairGradients,
   createGradientItem,
+  hexToCmyk,
   type GradientLibraryItem
 } from '../domain/image-color';
 import { updateSwatchItems } from '../repo/swatch-repo';
@@ -70,9 +73,36 @@ import type { DropPosition } from '../domain/reorder';
 import type { KuKind, StyleWarehouse } from '../domain/style-library';
 import { fail, failWithDetail, ok, type Result } from '../types/result';
 
-/** 把颜色应用到当前图层（按图层类型自动分流） */
+/**
+ * 库项 / 裸色值 → vendor 要的完整色值。
+ *
+ * 缺 `c/m/y/k` 的（老色板项只存过 hex、页面提取色只给 hex）用 `hexToCmyk` 派生 ——
+ * 那是确定性换算，不是猜。缺 `hex` 直接失败：没有 hex 就没有任何一路能还原颜色。
+ *
+ * 为什么放在命令层：`core/ps` 不许 import `domain`，`hexToCmyk` 在 `domain/image-color`。
+ * 这四个分量**必须补齐**：`JSON.stringify` 会删掉 `undefined` 的键，vendor 拿到残缺对象
+ * 既不报错也不上色。
+ */
+function toAppColor(item: Record<string, unknown>): Result<AppColor> {
+  const raw = isRecord(item.color) ? item.color : item;
+  const hex = typeof raw.hex === 'string' ? raw.hex.replace('#', '') : '';
+  if (!hex) return failWithDetail('VALIDATION', MSG.codeReason.VALIDATION, 'color.hex:missing');
+
+  const derived = hexToCmyk(hex);
+  return ok({
+    hex,
+    c: typeof raw.c === 'number' ? raw.c : derived.c,
+    m: typeof raw.m === 'number' ? raw.m : derived.m,
+    y: typeof raw.y === 'number' ? raw.y : derived.y,
+    k: typeof raw.k === 'number' ? raw.k : derived.k
+  });
+}
+
+/** 把颜色应用到当前图层：单选多选同一条路，遍历选中层在 vendor 内部完成 */
 export function applyColor(item: Record<string, unknown>): Promise<Result<void>> {
-  return applyStyleColor(item);
+  const color = toAppColor(item);
+  if (color.status === 'error') return Promise.resolve(color);
+  return applyStyleColor(color.value);
 }
 
 /** ctrl + 点：智能填充形状（只改填充色） */
@@ -378,11 +408,11 @@ export function exportKuCurrent(): Promise<Result<void>> {
 /**
  * 应用提取色（原版 `setColor` `:52909-52914`）。
  *
- * 原版在前端把 hex 转 CMYK 再发 vendor；我们走移植版 `mm_style_applyColor`，
- * CMYK 分流在 jsx 内部做——前端只发库项形状，CMYK 字段由库里已有项自带。
+ * 页面只有 hex，CMYK 由 `toAppColor` 用 `hexToCmyk` 补齐 —— 与官方前端
+ * `var n = e.toCMYK(); n.hex = ...` 同一口径，补全只在一个地方做。
  */
 export function applyColorByHex(hex: string): Promise<Result<void>> {
-  return applyStyleColor({ name: '未命名', color: { hex } });
+  return applyColor({ color: { hex } });
 }
 
 /** 应用提取的渐变对（原版 `setGrad` `:52905-52908`：createGradientItem → ys_useGradient） */

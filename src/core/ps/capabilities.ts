@@ -44,7 +44,6 @@ import {
   sentinelJson,
   strictData,
   strictPayload,
-  strictVoid,
   unwrapRaw
 } from './raw';
 
@@ -54,16 +53,21 @@ export const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个�
 export const CAP = {
   /* ---------------- 字体：应用与系统字体列表 ---------------- */
 
-  /** 字体管理页点字体：系统字体直调，明文参数（不要 `encodeText`） */
+  /**
+   * 字体管理页点字体：系统字体直调，明文参数（不要 `encodeText`）。
+   *
+   * 解析用 `lenientVoid`：真机里 `ztgl_setFont` 成功回 `{"code":"OK"}`，
+   * 认不出的结构一律原样转发、当成功 —— 宿主没给失败信号，我们不许自己编一个。
+   */
   setFont: {
     fn: 'ztgl_setFont', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: strictVoid(FONT_UNAVAILABLE)
+    require: requireTextLayer, parse: lenientVoid(FONT_UNAVAILABLE)
   },
 
-  /** 应用样式库字体：参数要先 `encodeText`，解析与 `setFont` 同一套严格判据 */
+  /** 应用样式库字体：参数要先 `encodeText`，解析与 `setFont` 同一套判据 */
   applyFont: {
     fn: 'ys_useFont', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: strictVoid(FONT_UNAVAILABLE)
+    require: requireTextLayer, parse: lenientVoid(FONT_UNAVAILABLE)
   },
 
   /** 扫全机字体：300s（不能按「读」的 30s）；哨兵 / 数组的判定在 `parseSystemFontList` */
@@ -471,10 +475,15 @@ export const CAP = {
     })
   },
 
-  /** 应用颜色：移植版只读 `item.color`，不认 `isFill` */
-  applyStyleColor: {
-    fn: 'mm_style_applyColor', gate: 'core', channel: 'direct', timeout: READ_TIMEOUT,
-    parse: unwrapRaw
+  /**
+   * 应用颜色：单选、多选**同一个调用**，遍历选中图层在 vendor 内部完成。
+   *
+   * 参数是**扁平**颜色对象 + 顶层 `isFill`（不是库项），并走调度通道 ——
+   * 与官方 `app.v4.js:17894-17900` 同一形状，「色板工具本地版」真机验过。
+   */
+  useStyleColor: {
+    fn: 'ys_useStyleColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    label: '智能填充颜色', parse: unwrapRaw
   },
 
   /** 智能填充形状（ctrl + 点色块）：jsx 对非形状返回 `not-shape`，这里提前到第一步 */

@@ -54,22 +54,51 @@
   flex-wrap: wrap;
 }
 
+/* 四类格子的宽高是**功能**不是装饰：没有宽高格子就塌成 0，色块点不中。
+   值全部来自 tokens.css 的既有 token，没有新造视觉。 */
 .mm-style__item{
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer;
 }
 
-.mm-style__item--font{
+.mm-style__item--color{
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+}
+
+.mm-style__item--gradient{
+  width: var(--mm-gradient-w);
+  height: var(--mm-gradient-h);
+  border-radius: var(--mm-radius-md);
+}
+
+.mm-style__item--font,
+.mm-style__item--editing{
+  width: var(--mm-font-card-w);
+  height: var(--mm-font-card-h);
   flex-direction: column;
   justify-content: flex-start;
+  border-radius: var(--mm-radius-md);
 }
 
+.mm-style__item--editing{
+  cursor: default;
+}
+
+.mm-style__item--style{
+  width: var(--mm-style-thumb);
+  height: var(--mm-style-thumb);
+}
+
+/* 颜色 / 渐变块的实际画面：值由 `ItemView` 注入 `--mm-swatch`（色值或渐变图 URL） */
 .mm-style__swatch{
   display: block;
   width: 100%;
   height: 100%;
+  background: var(--mm-swatch);
 }
 
 .mm-style__thumb{
@@ -101,6 +130,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+
+/* 「+」与同类格子同尺寸，否则四库里它是唯一一个贴不住网格的 */
+.mm-style__add--color{
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+}
+
+.mm-style__add--gradient{
+  width: var(--mm-gradient-w);
+  height: var(--mm-gradient-h);
+}
+
+.mm-style__add--font{
+  width: var(--mm-font-card-w);
+  height: var(--mm-font-card-h);
+}
+
+.mm-style__add--style{
+  width: var(--mm-style-thumb);
+  height: var(--mm-style-thumb);
 }
 
 /* 组末尾「+」：小标记档（12），与勾选对号同一档 */

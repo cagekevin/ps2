@@ -33,6 +33,14 @@
 
 import type { ErrorCode } from './result';
 
+/**
+ * 「宿主返回认不出」的唯一一句。
+ *
+ * 两处要用同一句话：`MSG.badPayload`（代码里直接取）与 `codeReason.PS_BAD_PAYLOAD`
+ * （`unwrapRaw` 按码查表）。字面量只写在这里，两处都引用它。
+ */
+const BAD_PAYLOAD = '返回数据无法识别';
+
 export const MSG = {
   /**
    * 文件结构认不出（索引 / 仓库 / `.dzx` / 常用项数组）。
@@ -45,7 +53,7 @@ export const MSG = {
    * 宿主（PS）返回的东西认不出：与 `corrupt` 分开——那个是**文件**坏了，这个是**通道**给错了，
    * 用户能做的事不同（前者去修文件，后者重试 / 检查 PS 状态）。
    */
-  badPayload: '返回数据无法识别',
+  badPayload: BAD_PAYLOAD,
 
   /** 数据在操作之间变了（下标过期、项已被删、库被外部改动）：一句通用，细节进 `detail` */
   stale: '数据已变化，请刷新后重试',
@@ -213,10 +221,11 @@ export const MSG = {
   home: {
     reachable: '接口可达',
     emptyLog: '（日志为空）',
-    cleared: '日志已清空',
-    clearTitle: '清空日志？',
-    clearMessage: '清空后无法恢复。',
-    clearConfirm: '清空',
+    logNotLoaded: '还没读取，点「查看日志」',
+    cleared: '日志已删除',
+    clearTitle: '删除日志？',
+    clearMessage: '删除后无法恢复。',
+    clearConfirm: '删除',
     nothingToCopy: '没有可复制的内容',
     layerLabel: '当前图层：',
     layerEmpty: '—',
@@ -230,6 +239,13 @@ export const MSG = {
     copiedLog: '已复制日志',
     sectionVendorFns: '官方 jsx 函数',
     sectionVendorConfig: '官方配置依赖',
+    sectionScript: '执行代码',
+    scriptPlaceholder: '输入 ExtendScript，回车执行',
+    runScript: '执行',
+    scriptEmpty: '先输入要执行的代码',
+    scriptNoOutput: '（无返回值）',
+    sectionScriptResult: '执行结果',
+    copiedScript: '已复制执行结果',
     sectionLog: '日志（%TEMP%\\maomao.log）',
     /* 诊断行标签：前半是官方函数名 / 文件名（标识符），括号里是它挂在哪条通道、给哪个页面用 */
     fnDispatch: 'ps_onJsx（调度入口）',
@@ -319,6 +335,7 @@ export const MSG = {
     PS_REJECTED: 'PS 拒绝执行，请确认已选中图层',
     PS_UNREADY: 'PS 还没准备好，请稍后重试',
     PS_ERROR: 'PS 执行失败',
+    PS_BAD_PAYLOAD: BAD_PAYLOAD,
     NETWORK: '网络请求失败',
     TIMEOUT: '等待超时',
     AUTH: '没有权限，请重新登录',

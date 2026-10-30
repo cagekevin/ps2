@@ -71,8 +71,7 @@ export const CORE_FUNCS = [
   /* 图层：类型 / 名称 / 选中数量 */
   'mm_layer_getState',
   'mm_layer_getSelection',
-  /* 样式：应用颜色 / 形状填充 / 线框色 / 取前景色 */
-  'mm_style_applyColor',
+  /* 样式：形状填充 / 线框色 / 取前景色（应用颜色走 vendor 的 ys_useStyleColor） */
   'mm_style_applyShapeFill',
   'mm_style_applyBorderColor',
   'mm_style_getForegroundColor',
@@ -93,6 +92,8 @@ export const CORE_REQUIRED: readonly string[] = ['mm_layer_getState'];
 
 export const VENDOR_FUNCS = [
   'ps_onJsx',
+  /* 应用颜色：单选多选同一个调用，遍历选中层在 vendor 内部（色板工具本地版实测通过） */
+  'ys_useStyleColor',
   'ys_useGradient',
   'ps_ysBtnUseStyle',
   'ys_checkUseFont',

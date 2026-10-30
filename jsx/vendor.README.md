@@ -30,6 +30,7 @@ jsxbin 加密但**能直接 `$.evalFile` 执行**，不需要解密。加载必�
 |---|---|---|
 | `Sys_setSystemEnvInfo` | 注入环境变量（必须先调） | 直调 |
 | `ps_onJsx` | 统一调度入口 `{ f, arr, n }` | 直调 |
+| `ys_useStyleColor` | 应用颜色（**单选多选同一个调用**，遍历在它内部） | 经 `ps_onJsx` |
 | `ys_useGradient` | 应用渐变 | 经 `ps_onJsx` |
 | `ps_ysBtnUseStyle` | 应用图层样式 | 经 `ps_onJsx` |
 | `ys_checkUseFont` | 字体可用性检查 | 直调（参数需 `encodeText`） |
@@ -37,7 +38,9 @@ jsxbin 加密但**能直接 `$.evalFile` 执行**，不需要解密。加载必�
 | `ztgl_initSystemList` | 读系统字体列表（字体管理页） | 直调（长超时 300s） |
 | `ztgl_setFont` | 应用系统字体（字体管理页） | 直调（三个明文参数） |
 
-**不再使用 `ys_useStyleColor`**。颜色应用已改为自有 `jsx/main.jsx` 的 `mm_style_applyColor`（移植自色板面板明文实现），原因：`ys_useStyleColor` 在「自动填充」关闭时只改前景色、不碰图层，返回 `1` 但图层没变。
+**`ys_useStyleColor` 是颜色应用的唯一实现**（`core/ps/style.ts` 的 `applyStyleColor`，经 `ps_onJsx` 调度）。单选、多选同一个调用，遍历选中图层在它内部完成。
+
+**别抄色板面板那份明文 jsx**（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx`）：它 `iTuCengGeShu == 1` 才上色，多选只设前景色 —— 抄过来就是「返回成功但图层没变」。
 
 `mm_diag_vendor` 里仍会探测 `ys_useStyleColor` / `ys_setForegroundColor` / `ys_useShapeFill`，那是诊断用途，不代表依赖。
 
@@ -71,7 +74,7 @@ jsxbin 加密但**能直接 `$.evalFile` 执行**，不需要解密。加载必�
 
 | 文件 | 影响 |
 |---|---|
-| `sj_set.json` | `cyAutoFillColor` 是**主面板前端**开关，不影响我们（我们不走 `ys_useStyleColor`） |
+| `sj_set.json` | `cyAutoFillColor` 是**主面板前端**的分支开关（开才发 `ys_useStyleColor`），vendor 内部不读；我们直接发调度调用，不受它影响 |
 | `sj_interfaceSet.ini` | `img_cya4 === false` 时跳过填充；**文件缺失按开启处理** |
 
 用 `/debug` 的「诊断官方能力」可探明：函数是否定义、配置文件是否存在、开关实际值。

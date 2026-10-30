@@ -5,7 +5,7 @@ import { callJsx, LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridg
 import { CAP } from './capabilities';
 import { callCapability, type CapabilitySpec } from './capability';
 import { requireShapeLayer, requireTextLayer } from './layer';
-import { parseSystemFontList, strictVoid } from './raw';
+import { lenientVoid, parseSystemFontList } from './raw';
 import { funcMissing, requireVendor } from './init';
 import type * as BridgeModule from '../cep/bridge';
 
@@ -26,7 +26,7 @@ const SPEC = {
   gate: 'vendor' as const,
   channel: 'direct' as const,
   timeout: 1000,
-  parse: strictVoid('兜底文案')
+  parse: lenientVoid('兜底文案')
 };
 
 beforeEach(() => {
@@ -136,7 +136,7 @@ describe('CapabilitySpec 类型闭合', () => {
       gate: 'core',
       channel: 'dispatch',
       timeout: 1000,
-      parse: strictVoid('兜底')
+      parse: lenientVoid('兜底')
     };
 
     expect(spec.gate).toBe('core');
@@ -227,7 +227,7 @@ describe('CAP', () => {
   });
 
   it('任意图层有效的能力不许加前置（真机：渐变与图层样式对文字图层也有效）', () => {
-    for (const spec of [CAP.applyStyleColor, CAP.foregroundColor, CAP.setTool, CAP.applyGradient, CAP.applyStyle]) {
+    for (const spec of [CAP.useStyleColor, CAP.foregroundColor, CAP.setTool, CAP.applyGradient, CAP.applyStyle]) {
       expect('require' in spec).toBe(false);
     }
   });

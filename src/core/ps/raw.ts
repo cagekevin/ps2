@@ -40,21 +40,45 @@ export function unwrapRaw(raw: string): Result<void> {
   return ok(undefined);
 }
 
+/* ---------------- 失败构造器（三个语义各一个，模块私有、不导出） ---------------- */
+
+/**
+ * 宿主返回认不出：信封不是我们认识的形状。
+ *
+ * 与 `malformed` 的分工：**信封坏**归这里，**信封对、载荷坏**归 `malformed`。
+ * 两个方向都不猜 —— 既不说成功（后续无从排查），也不编一个具体失败（会让人去修没坏的东西）。
+ */
+function unrecognized(raw: string): Result<never> {
+  return failWithDetail('PS_BAD_PAYLOAD', MSG.badPayload, `raw:${raw.trim().slice(0, 120)}`);
+}
+
+/** 宿主明确拒绝（`err:1`）：句子优先宿主原话，没给才用调用方兜底 */
+function hostRejected(value: unknown, raw: string, fallback: string): Result<never> {
+  return failWithDetail(
+    'VALIDATION',
+    envelopeMessage(value) || fallback,
+    `raw:${raw.trim().slice(0, 120)}`
+  );
+}
+
+/** 结构认得出、字段坏：`detail` 由调用方给字段路径 */
+function malformed(detail: string): Result<never> {
+  return failWithDetail('CORRUPT', MSG.corrupt, detail);
+}
+
+
+
 /**
  * raw 是 JSON → 解析。
  *
- * **不是合法 JSON 时用 `PS_ERROR` 而不是 `CORRUPT`**：
- * `CORRUPT` 是「数据不认识」（JSON 合法但结构不对，读文件时就是这个）；
- * 而「jsx 返回值不是 JSON」是**宿主这次没给出可解析的结果**——真机见过
- * `zt_getFontSimpleInfo` 返回 `undefined`（`callJsx` 把它转成字符串 `"undefined"`）。
- * 报 `CORRUPT` 会让人以为「文件/结构坏了」，实际是「这次没读到」。
+ * **不是合法 JSON = 宿主这次没给出可解析的结果** → `unrecognized`（`PS_BAD_PAYLOAD`）。
+ * 真机见过 `zt_getFontSimpleInfo` 返回 `undefined`，`callJsx` 把它转成字符串 `"undefined"`。
+ * 不报 `CORRUPT`：那是「文件/数据坏了」，会让人去修一个没坏的文件。
  */
 export function parseJsxRaw(raw: string): Result<unknown> {
   /* label 只进 `detail`（技术现场），不进 `reason`：core 不产中文文案 */
-  const parsed = parseJson(raw, '', 'PS_ERROR');
-  if (parsed.status === 'error') {
-    return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, parsed.detail);
-  }
+  const parsed = parseJson(raw, '', 'PS_BAD_PAYLOAD');
+  if (parsed.status === 'error') return unrecognized(raw);
   return parsed;
 }
 
@@ -74,7 +98,7 @@ export function parseFontFamily(raw: string): Result<string> {
   const family = isRecord(data.value) ? data.value.family : undefined;
   if (typeof family !== 'string' || !family) {
     /* 现场（哪个字段缺）进 `detail`；句子由生产者从表里取（消费者不补字） */
-    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `field:family raw:${raw.slice(0, 120)}`);
+    return malformed(`field:family raw:${raw.slice(0, 120)}`);
   }
   return ok(family);
 }
@@ -84,7 +108,7 @@ export function parseFontFamily(raw: string): Result<string> {
  * 目前只有 `ztgl_initSystemList` 返回它（数据写 `SysFont2.json`）。
  * 全仓判 `'ok'/'OK'` 只许在这里。
  */
-export function isOkSentinel(raw: string): boolean {
+function isOkSentinel(raw: string): boolean {
   const trimmed = raw.trim();
   return trimmed === 'ok' || trimmed === 'OK';
 }
@@ -107,7 +131,7 @@ export function parseSystemFontList(raw: string): Result<SystemFontListRaw> {
   if (parsed.status === 'error') return parsed;
 
   if (!Array.isArray(parsed.value)) {
-    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `shape:${typeof parsed.value}`);
+    return malformed(`shape:${typeof parsed.value}`);
   }
 
   return ok({ kind: 'list', value: parsed.value });
@@ -139,29 +163,28 @@ export function envelopeMessage(value: unknown): string {
 }
 
 /** 已解析的值 → err 字段（避免同一段 raw 解析两次） */
-export function errOf(value: unknown, raw: string): Result<number> {
+function errOf(value: unknown, raw: string): Result<number> {
   const err = isRecord(value) ? value.err : undefined;
-  if (typeof err !== 'number') {
-    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `field:err raw:${raw.slice(0, 120)}`);
-  }
+  if (typeof err !== 'number') return unrecognized(raw);
   return ok(err);
 }
 
 /**
- * 官方直调**读**函数（ys_getGradientInfo / ys_getFontInfo）的 data 信封。
+ * `{ err, data }` 双字段信封 → `data` 载荷（`zt_setFontColor` / `zt_getCurrentText`）。
  *
- * UNVERIFIED：这两个函数的真实返回形状未逐字段验证——可能是 `{ err, data }`
- * 双字段信封，也可能是裸载荷。这里兼容两种（有 `data` 字段就拆出来）；
- * 真机确认形状后删掉不用的分支，别让「两种都收」变成永久契约。
+ * 也兼容裸载荷（没有 `data` 字段就原样交出去）。
+ *
+ * **`err !== 0` 必须失败**：以前这里不看 `err`，宿主明确说「这次没成功」时仍把
+ * （可能不存在的）`data` 当结果返回，界面就显示成成功——与 `strictData` /
+ * `strictPayload` 同一条判据，只有这里漏了。
  */
 export function parseDataEnvelope(raw: string): Result<unknown> {
-  const parsed = parseJsxRaw(raw);
-  if (parsed.status === 'error') return parsed;
-  return ok(dataOf(parsed.value));
+  /* 「判 err 并交 data」只有 `strictData` 一处实现（刀 13）；这里只是不带兜底文案的入口 */
+  return strictData(MSG.codeReason.PS_REJECTED)(raw);
 }
 
 /** 已解析的值 → data 载荷（同一段 raw 只解析一次） */
-export function dataOf(value: unknown): unknown {
+function dataOf(value: unknown): unknown {
   if (isRecord(value) && 'data' in value) return value.data;
   return value;
 }
@@ -178,52 +201,52 @@ export type Parser<T> = (raw: string) => Result<T>;
 export const passthrough: Parser<string> = (raw) => ok(raw);
 
 /**
- * 宽松写：认不出结构按成功。
+ * 写操作的唯一解析器（`zt_*` / `layer_font_*` / `ztgl_setFont` / `ys_useFont` 全用它）。
  *
- * 这批直调函数可能返回裸 `1` / 空串（结构 UNVERIFIED），按严格判据会把正常操作全判成失败，
- * 所以沿用 `runDirect` 的历史妥协。**收紧必须单独一轮 + 真机证据**，不许在这里顺手改。
+ * 判据：**只认宿主明确说过的信号，两个方向都不许猜**。
+ *
+ * | 宿主返回 | 判 | 依据 |
+ * |---|---|---|
+ * | `no-doc` / `-1` / `not-shape` / `skipped` | 失败（对应码） | 约定值，`RAW_FAILURES` |
+ * | 空串 / `undefined` / `null` | 成功 | 真机：`layer_font_setFontSize` / `setLeading` 都这样且已生效 |
+ * | `0` | 成功 | 真机：`zt_setFontVision` 回 `0` 且生效 |
+ * | `1` | 成功 | 调度约定 `r != -1` 即成功 |
+ * | `{"code":"OK"}` | 成功 | 真机：`ztgl_setFont` 换好了字体就回这句 |
+ * | `{"err":0}` | 成功 | 官方信封 |
+ * | `{"err":1,"msg":…}` | 失败（宿主原话） | 官方信封 |
+ * | 其它 | 失败：`PS_ERROR` + 「返回数据无法识别」+ `detail` 带原文 | **认不出就说认不出** |
+ *
+ * 最后一条是重点：以前「认不出当成功」，宿主真失败时界面照样提示成功，后续无从排查；
+ * 反过来自己编一个「文件无法识别」也会让人去修没坏的东西。两条都不做——报「无法识别」，
+ * 原文进 `detail`，谁排查都能看到宿主到底回了什么。
  */
 export function lenientVoid(fallback: string): Parser<void> {
   return (raw) => {
     const guard = unwrapRaw(raw);
     if (guard.status === 'error') return guard;
 
-    const parsed = parseJsxRaw(raw);
-    if (parsed.status === 'error') return ok(undefined);
+    const text = raw.trim();
 
-    if (isRecord(parsed.value) && parsed.value.err === 1) {
-      return failWithDetail(
-        'VALIDATION',
-        envelopeMessage(parsed.value) || fallback,
-        `raw:${raw.slice(0, 120)}`
-      );
+    if (text === '' || text === 'undefined' || text === 'null' || text === '0' || text === '1') {
+      return ok(undefined);
     }
-    return ok(undefined);
-  };
-}
-
-/**
- * 严格写：信封不成立就是 `CORRUPT`（`ys_useFont` / `ztgl_setFont` 这一档）。
- *
- * 与 `lenientVoid` 的唯一区别在第 2 步：「解析不出来 = 当成功」是假成功——字体没换却提示成功。
- * 两个解析器并存是刻意的，用哪个由能力表决定，不设默认值。
- */
-export function strictVoid(fallback: string): Parser<void> {
-  return (raw) => {
-    const guard = unwrapRaw(raw);
-    if (guard.status === 'error') return guard;
 
     const parsed = parseJsxRaw(raw);
     if (parsed.status === 'error') return parsed;
 
-    const err = errOf(parsed.value, raw);
-    if (err.status === 'error') return err;
-    if (err.value === 1) {
-      return failWithDetail('VALIDATION', envelopeMessage(parsed.value) || fallback, `raw:${raw}`);
+    const value = parsed.value;
+    if (isRecord(value)) {
+      if (value.code === 'OK') return ok(undefined);
+      if (value.err === 0) return ok(undefined);
+      /* 与 `strictData` 同判据：`err` 只要是非 0 的数字就是宿主拒绝，不专挑 1 */
+      if (typeof value.err === 'number') return hostRejected(value, raw, fallback);
     }
-    return ok(undefined);
+
+    return unrecognized(raw);
   };
 }
+
+
 
 /**
  * 约定值先折失败，再当 JSON 解析（严格）：`mm_style_getForegroundColor` 这一档。
@@ -260,14 +283,10 @@ export function strictPayload<T>(opts: {
     if (value === false) return failWithDetail('VALIDATION', opts.whenFalse, `raw:${raw}`);
 
     const err = errOf(value, raw);
-    if (err.status === 'ok' && err.value === 1) {
-      return failWithDetail('PS_ERROR', envelopeMessage(value) || opts.whenFailed, `raw:${raw}`);
-    }
+    if (err.status === 'ok' && err.value === 1) return hostRejected(value, raw, opts.whenFailed);
 
     const accepted = opts.accept(dataOf(value));
-    if (accepted === null) {
-      return failWithDetail('PS_ERROR', opts.whenFailed, `raw:${raw}`);
-    }
+    if (accepted === null) return malformed(`field:payload raw:${raw.slice(0, 120)}`);
     return ok(accepted);
   };
 }
@@ -292,7 +311,7 @@ export function strictData(fallback: string): Parser<unknown> {
 
     const value = parsed.value;
     if (isRecord(value) && typeof value.err === 'number' && value.err !== 0) {
-      return failWithDetail('VALIDATION', envelopeMessage(value) || fallback, `err:${value.err}`);
+      return hostRejected(value, raw, fallback);
     }
     return ok(dataOf(value));
   };

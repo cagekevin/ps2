@@ -137,6 +137,7 @@ npm run new:feature
 | `docs/plan/STYLE-PANEL-GAP.md` | 样式面板现状与剩余缺口 | 排期 |
 | `docs/plan/01-字体管理-2026-10-27.md` | 字体管理页实施计划 | 做第一页 |
 | `docs/plan/02-字体面板-2026-10-27.md` | 字体面板实施计划（9 组件 / 25 个 jsx 契约） | 第二页 |
+| `docs/plan/14-失败语义收口-2026-10-30.md` | PS 失败语义：形状 / 契约 / 数据流 + 三步收口（`PS_BAD_PAYLOAD` 与三个构造器） | 改解析器 / 排「假失败」 |
 | `docs/review/REVIEW-2026-10-27*.md` | 十九次体检/审查报告 | 复盘 |
 | `docs/spec/` | 页面规格（编号 01/02/05，与参考工程 `docs/页面/` 对齐） | 开工前 |
 | `jsx/vendor.README.md` | 官方 jsx 副本来源与依赖 | 升级 vendor |
@@ -144,7 +145,7 @@ npm run new:feature
 
 ## 已知限制
 
-- 颜色应用只处理**单选图层**（原版行为）；多选是未实现的新功能
+- 颜色应用走 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部）；智能对象批量不上色、图层组不上色是官方行为
 - 样式库只支持本机 `groups` 明文形态的写入；`flat` / `container` 只读
 - 日志不轮转，长期使用会变大
 - 导入导出、发送色板、仓库管理未实现

@@ -5,7 +5,7 @@
  * 差异全在 CSS 的 `--color / --gradient / --font / --style` 修饰类里，
  * 这里只决定用哪个类、画什么内容。
  */
-import type { MouseEvent } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 import { InlineEdit } from '../../../components/InlineEdit';
 import { userAssetUrl } from '../../../core/paths';
 import { type KuItem, type KuKind } from '../../../domain/style-library';
@@ -109,10 +109,15 @@ export function ItemView({
     );
   }
 
+  /* 颜色与渐变共用一个色块，尺寸由修饰类决定。
+     目录名是 Gradient（大写 G），不是 kuGradient —— 原版 path.kuGradient 的值就是 'Gradient' */
+  const background = item.image ? `url(${userAssetUrl('Gradient', item.image)})` : item.swatch;
+
   return (
     <button
       type="button"
       className={`mm-style__item mm-style__item--${kind === 'gradient' ? 'gradient' : 'color'}`}
+      style={{ '--mm-swatch': background } as CSSProperties}
       title={item.name}
       data-group-index={groupIndex}
       data-item-index={itemIndex}

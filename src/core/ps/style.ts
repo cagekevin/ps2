@@ -1,18 +1,18 @@
 /**
  * 【范本】PS 样式应用能力
  *
- * 两条路径，各用已验证的实现：
+ * **颜色只有一条路**：vendor 的 `ys_useStyleColor`，走调度通道 `ps_onJsx`。
+ * 它一次处理**所有选中图层**，单选多选是同一个调用，前端不判数量、不循环 ——
+ * 官方 `app.v4.js:17894-17900` 也是只发一项交给它。
  *
- * **颜色** → 我们自己的 `mm_style_applyColor`（jsx/main.jsx）
- *   移植自色板面板的明文实现，按图层类型分四路（普通/形状/智能对象/文字）。
- *   不用 vendor 的 `ys_useStyleColor`：它在「自动填充」关闭时只改前景色、
- *   不碰图层，表现为「返回 1 但图层没变」。
+ * 不能照抄色板面板那份 jsx（`sb_cy_SheZhiQianJingSe`）：它 `iTuCengGeShu == 1` 才上色，
+ * 多选只设前景色，抄过来就是「界面提示成功、图层没变」。
  *
  * **渐变 / 图层样式** → vendor 的统一调度 `ps_onJsx`
  *   原版通过 `{ f, arr, n }` 调度（cep-events.js:156-165），不能直接调 `ys_*`，
  *   否则报「缺少必需值」。`n` 是日志标签，不传给 jsx 函数本身。
  *
- * 项必须是磁盘原始项（含 isFill 等未知键），isFill 加在**顶层**。
+ * 颜色参数是**扁平**对象 + 顶层 `isFill`，不是库项 —— vendor 只认这个形状。
  *
  * 门 / 通道 / 超时 / 解析都在能力表（`./capabilities.ts`）里，本文件只拼参数。
  * 只剩 `saveLayerStyle` 留在本文件（`err===1` 折 `PS_ERROR` 而不是 `VALIDATION`，且没有
@@ -28,15 +28,24 @@ import { CAP } from './capabilities';
 import { requireVendor } from './init';
 import { parseErrEnvelope } from './raw';
 
+/** 应用颜色要的完整色值：四个分量都必填 —— 缺一个，vendor 拿到残缺对象既不报错也不上色 */
+export interface AppColor {
+  hex: string;
+  c: number;
+  m: number;
+  y: number;
+  k: number;
+}
+
 /**
- * 应用颜色。
+ * 应用颜色：**单选、多选同一个调用**，遍历选中层在 vendor 内部完成。
  *
- * 走 `mm_style_applyColor`（移植自色板面板），按图层类型分别处理：
- * 普通图层填充、形状改填充/描边、智能对象加颜色叠加、文字改文字色。
+ * 入参**只收完整色值**，不收库项：`JSON.stringify` 会把 `undefined` 的键整个删掉，
+ * 传残缺对象的结果是「不报错、不上色」。库项 → 完整色值的拍平与补齐在
+ * `commands/style` 的 `toAppColor`（那里能 import `domain` 的 `hexToCmyk`）。
  */
-export function applyStyleColor(item: Record<string, unknown>): Promise<Result<void>> {
-  /* 移植版只读 item.color，不认 isFill——别照 vendor 的写法加这个键 */
-  return callCapability(CAP.applyStyleColor, [item]);
+export function applyStyleColor(color: AppColor): Promise<Result<void>> {
+  return callCapability(CAP.useStyleColor, [{ ...color, isFill: true }]);
 }
 
 /**

@@ -88,7 +88,7 @@
 | 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） | ✅ 真机 |
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 | ⚠️ 待真机 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） | ✅ 真机 |
-| 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用（真机）；`checkFontUsable` 不可用时返回**宿主原话**（「请选择文字图层!」/「字体缺失」），不再统一改写成「字体不可用」；`ztgl_*` 系统字体列表/应用（待真机）；`applyFont` / `getSystemFontList` 已进能力表 | ⚠️ 待真机 |
+| 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用（真机）；`checkFontUsable` 不可用时返回**宿主原话**（「请选择文字图层!」/「字体缺失」），不再统一改写成「字体不可用」；`ztgl_setFont` 真机成功返回 `{"code":"OK"}`（不是 `err` 信封；解析用 `lenientVoid`，认不出就原样转发当成功），系统字体列表 `ztgl_initSystemList` 仍未验；`applyFont` / `getSystemFontList` 已进能力表 | ⚠️ 待真机（列表未验） |
 | 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`（返回结构 UNVERIFIED）；25 个函数全部走能力表（`CAP.*`），前置写在表的 `require` 里（执行器第一步判定，不通过直接终止）：24 个带 `requireTextLayer`，`distributeByPitch` 带 `requireSelection(2)`（分布的对象是多个图层，不限于文字）；21 个写是 `lenientVoid` + 60s。依据是真机日志：非文字图层上这批写函数不报错、返回 `undefined`、什么都不做。`zt_changeTextBranchMerge` 已删（真机抛「没有这种元素」，是派发表 key 不是函数） | ⚠️ 待真机 |
 | PS 能力执行器 | `src/core/ps/capability.ts` | 唯一执行器：门（core / vendor）→ 前置 → 调用（直调 / 调度）→ 解析，四步固定；不认识任何 jsx 函数名与兜底文案，唯一认识的码是门失败的 `PS_UNREADY`；`gate` 与 `channel` 是判别联合，错组合编译不过 | ✅ 单测 |
 | PS 能力表 | `src/core/ps/capabilities.ts` | 一行一个能力（`fn`/`gate`/`channel`/`timeout`/`parse`/`require`）；严格度由 `parse` 的解析器决定，新增能力只加一行 | ✅ 单测 |
@@ -103,17 +103,17 @@
 | `.dzx` 编解码 | `src/domain/action-dzx.ts` | 外层字段名照抄官方 `arrFileData` / `store`；解码严格（不合格 `CORRUPT`）；`planImportFiles` 只算计划，写序在 repo | ⚠️ 待真机 |
 | 动作库读写 | `src/repo/action-repo.ts` | 索引（对象）+ 仓库文件（裸数组）两个入口；缺失读默认值**不写盘**；导入写序「先文件、最后索引」；`readWarehouseText` 取原文（不重新序列化） | ⚠️ 待真机 |
 | 动作库投影 | `src/store/action.ts` | 只读投影 + `columns`（prefs `action.listColumns`，坏值归 2）；不写文件、`Result` 原样进 `reasons` | ⚠️ 待真机 |
-| PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，返回不解码）。2026-10-29 按「照抄可运行的 Vue 版实践」登记，未经真机探针 | ⚠️ 待真机 |
+| PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，返回不解码）。2026-10-30 真机确认两条都是 `function`；`dz_getActionList` 返回**裸数组** `[{ name, children: [{ name, isAdd }] }]`，与 `domain/action-library.mapPsActions` 的解码一致。`dz_callAction` 的**实际执行**（选中某个动作跑一次）仍未跑 | ⚠️ 待真机（仅执行未验） |
 | PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（62 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` | ✅ 真机 |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） | ✅ 真机 |
-| PS 样式 | `src/core/ps/style.ts` | 颜色走自有移植版，渐变/样式走 `ps_onJsx` | ✅ 真机 |
-| PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖 | ✅ 真机 |
+| PS 样式 | `src/core/ps/style.ts` | 颜色 / 渐变 / 图层样式全部走 `ps_onJsx`；颜色用 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部），前端不判数量不循环 | ⚠️ 待真机 |
+| PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖；`runDebugScript` 把诊断页输入的一段 ExtendScript 原样发给宿主并回显结果——**唯一执行「页面递进来的代码」的入口**，只给 `/debug` 用，业务不许经它绕过 `core/ps` 建能力 | ✅ 真机 |
 | PS 环境 | `src/core/ps/env.ts` | 注入官方 jsx 所需环境变量 | ✅ 真机 |
 | 样式命令 | `src/commands/style.ts` | 颜色 / 渐变 / 字体 / 图层样式 / 修饰键 | ✅ 真机 |
 | 类型 | `src/types/result.ts` | 全仓唯一结果形状（status/code/reason/detail） | ✅ 单测 |
 | JSON 解析 | `src/types/json.ts` | 唯一的文本 → unknown 入口（label 必填） | ✅ 单测 |
 | 列表解码 | `src/types/decode-list.ts` | 唯一的「数组 → 逐项解码 + `dropped`」入口（`reject` / `filter` 两策略，`pathPrefix` 决定 `detail` 前缀）；**只用于读视图**，写路径必须读原始记录 | ✅ 单测 |
-| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值 / JSON / err 信封唯一解析处（表驱动）；信封 `msg`（失败原因）走 `envelopeMessage`；能力表的 `parse` 只许引用这里的具名解析器（`passthrough` / `unwrapRaw` / `lenientVoid` / `strictVoid` / `strictData` / `parseDataEnvelope`） | ✅ 单测 |
+| raw 协议解析 | `src/core/ps/raw.ts` | raw 约定值 / JSON / err 信封唯一解析处（表驱动）；信封 `msg`（失败原因）走 `envelopeMessage`；能力表的 `parse` 只许引用这里的具名解析器（`passthrough` / `unwrapRaw` / `lenientVoid` / `strictData` / `strictPayload` / `parseDataEnvelope`）。**判据：只认宿主明确说过的信号，两个方向都不猜** —— `{"err":0}` / `{"code":"OK"}` / 无返回 / 裸 `0` 算成功，`{"err":1}` 算宿主拒绝（`VALIDATION` + 宿主原话），约定值走 `RAW_FAILURES`，**其余一律 `PS_BAD_PAYLOAD` + 原文进 `detail`**（既不编失败，也不编成功）。`parseJsxRaw` / `unwrapRaw` **只许 `font.ts` / `style.ts` / `diag.ts` 的多步组合逻辑用**，单能力必须进能力表 —— 这两条是判据不是闸，评审时看 | ✅ 单测 |
 | 类型守卫 | `src/types/guards.ts` | isRecord / isArrayOf | ✅ 单测 |
 | 业务模型 | `src/domain/style-library.ts` | 纯归一化，实测换算 + kuListOf/kuEnsureListOf | ✅ 真实数据 |
 | 库格式 | `src/domain/ku-format.ts` | 三种库文件形态识别 + base64 | ✅ 单测 |
@@ -189,11 +189,12 @@
 | 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` | ⚠️ 待真机 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 | ✅ 真机 |
 | 组件样式 | `src/components/ui/ui.css` | 基础控件形状 | ✅ 编译 |
-| 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页 | ✅ 真机 |
+| 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） | ⚠️ 待真机 |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token | ✅ 真机 |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook | ✅ 真机 |
 | 样式动作 | `src/features/style/useStyleActions.ts` | 页面动作与交互状态收口 | ✅ 真机 |
 | 脚手架 | `tools/new-feature.mjs` | 新 feature 生成 | ✅ 使用中 |
+| PS 返回形状探针 | `tools/probe-ps.mjs` | `npm run probe:ps`：用 PS COM `DoJavaScript` 批量拿所有 jsx 的真实返回，**AI 自己测，不靠人点面板**。加载 + 注入 + 探测必须在同一次调用（jsxbin 函数活不过一次调用）；只收集不判定（分类只在 `raw.ts`）；会改文档，用测试文档。用法见 `PS-CHANNEL-NOTES` §十六 | ✅ 真机（PS 26.7.0） |
 | 范本自检 | `tools/check-templates.mjs` | 双向校验清单 | ✅ 使用中 |
 
 状态含义：

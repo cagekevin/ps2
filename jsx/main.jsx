@@ -33,13 +33,20 @@ function mm_safe(name, fn) {
 
 /* ---------------- 图层 ---------------- */
 
-/** 图层类型判定：唯一判定处，getKind / getState 共用，不各写一套 */
+/**
+ * 图层类型判定：唯一判定处，getKind / getState 共用，不各写一套。
+ *
+ * **组必须先按 `typename` 判**：`LayerSet` 没有 `kind` 属性，读出来是 `undefined`，
+ * `String(undefined)` = `"undefined"` 匹配不到任何分支 → 组永远落 `unknown:undefined`。
+ * 真机 2026-10-30 自建文档实测：`{"undefined":1,...}` 里那个 1 就是组。
+ */
 function mm_layer_kindOf(layer) {
+	if (layer.typename === "LayerSet") return "group";
+
 	var kindName = String(layer.kind);
 	if (kindName.indexOf("TEXT") >= 0) return "text";
 	if (kindName.indexOf("SOLIDFILL") >= 0) return "shape";
 	if (kindName.indexOf("SMARTOBJECT") >= 0) return "smartObject";
-	if (kindName.indexOf("GROUP") >= 0) return "group";
 	if (kindName.indexOf("NORMAL") >= 0) return "normal";
 	return "unknown:" + kindName;
 }
@@ -60,6 +67,14 @@ function mm_layer_getState() {
 /**
  * 当前选中的图层数量：'3'。
  *
+ * **逐字照抄官方明文实现** `sb_DL_HuoQuDangQianTuCengShu`
+ * （`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx:370-381`，色板面板 jsx）。官方取选中数走的
+ * 就是 `targetLayers`，那份 768 行的明文 jsx 里 `activeLayers` 出现 0 次 ——
+ * 旧实现用 `app.activeDocument.activeLayers.length`，本机该属性不存在（返回 `undefined`），
+ * 取 `.length` 必抛「undefined 不是对象」。
+ *
+ * 单选顶层图层时官方也没有 `targetLayers` 键，它按 `activeLayer.itemIndex` 计 1，这里同样返 1。
+ *
  * 为什么不并进 `mm_layer_getState`：那个被 `layer-watcher` 每 800ms 调用一次，
  * 改它的返回协议，新旧 jsx 混用时会静默解析错；单独一个函数缺失时探测能直接发现。
  * 「按间距分布」这类需要多选的能力用它当前置。
@@ -67,77 +82,30 @@ function mm_layer_getState() {
 function mm_layer_getSelection() {
 	return mm_safe("mm_layer_getSelection", function () {
 		if (!app.documents.length) return "no-doc";
-		return String(app.activeDocument.activeLayers.length);
-	});
-}
 
-/* ---------------- 样式：应用颜色 ---------------- */
-
-/**
- * 移植自色板面板的明文实现（fz.FengZi3Hao/jsx/main.jsx:6-84，819 行那份）。
- *
- * 为什么不用 vendor 的 ys_useStyleColor：
- * 它在「自动填充」开关关闭时只改前景色、不碰图层，表现为「返回 1 但图层没变」。
- * 色板面板这套按图层类型分四路，是长期验证过的行为。
- *
- * 参数：JSON 字符串，形如 {"name":"...","color":{"hex","c","m","y","k"},"isFill":true}
- */
-
-function mm_style_readFile(path) {
-	var file = new File(path);
-	if (!file.exists) return "";
-	file.open("r");
-	var text = file.read();
-	file.close();
-	return text;
-}
-
-/** 当前选中的图层数量；取不到按 1 处理 */
-function mm_style_countTargets() {
-	try {
 		var ref = new ActionReference();
 		var args = new ActionDescriptor();
 		ref.putProperty(mm_c("Prpr"), mm_s("targetLayers"));
 		ref.putEnumerated(mm_c("Dcmn"), mm_c("Ordn"), mm_c("Trgt"));
 		args.putReference(mm_c("null"), ref);
-		var result = executeAction(mm_c("getd"), args, DialogModes.NO);
-		return result.getList(mm_s("targetLayers")).count;
-	} catch (e) {
-		return 1;
-	}
+		var desc = executeAction(mm_c("getd"), args, DialogModes.NO);
+
+		if (!desc.hasKey(mm_s("targetLayers"))) return "1";
+		return String(desc.getList(mm_s("targetLayers")).count);
+	});
 }
 
-function mm_style_lockTransparency() {
-	var desc = new ActionDescriptor();
-	var ref = new ActionReference();
-	ref.putEnumerated(mm_c("Lyr "), mm_c("Ordn"), mm_c("Trgt"));
-	desc.putReference(mm_c("null"), ref);
-	var inner = new ActionDescriptor();
-	inner.putBoolean(mm_s("protectTransparency"), true);
-	desc.putObject(mm_s("layerLocking"), mm_s("layerLocking"), inner);
-	executeAction(mm_s("applyLocking"), desc, DialogModes.NO);
-}
+/* ---------------- 样式：形状填充 / 线框色 ---------------- */
 
-function mm_style_unlockTransparency() {
-	var desc = new ActionDescriptor();
-	var ref = new ActionReference();
-	ref.putEnumerated(mm_c("Lyr "), mm_c("Ordn"), mm_c("Trgt"));
-	desc.putReference(mm_c("null"), ref);
-	var inner = new ActionDescriptor();
-	inner.putBoolean(mm_s("protectNone"), true);
-	desc.putObject(mm_s("layerLocking"), mm_s("layerLocking"), inner);
-	executeAction(mm_s("applyLocking"), desc, DialogModes.NO);
-}
-
-/** 填充前景色 */
-function mm_style_fillForeground() {
-	var desc = new ActionDescriptor();
-	desc.putEnumerated(mm_c("Usng"), mm_c("FlCn"), mm_c("FrgC"));
-	desc.putUnitDouble(mm_c("Opct"), mm_c("#Prc"), 100);
-	desc.putEnumerated(mm_c("Md  "), mm_c("BlnM"), mm_c("Nrml"));
-	desc.putBoolean(mm_c("PrsT"), true);
-	executeAction(mm_c("Fl  "), desc, DialogModes.NO);
-}
+/*
+ * 应用颜色**不在这里**：走 vendor 的 `ys_useStyleColor`（见 `core/ps/style.ts` 的
+ * `applyStyleColor`），一次处理所有选中图层，单选多选同一个调用。
+ *
+ * 别在本文件再写一份上色：色板面板那份 jsx 只处理单选（`iTuCengGeShu == 1` 才上色），
+ * 抄过来多选就静默不上色，而且前端拿不到「没生效」的信号。
+ *
+ * 本段只留「形状填充 / 线框色」：它们只作用于活动层的形状，与选中数量无关。
+ */
 
 /**
  * 形状图层填充/描边色。
@@ -187,119 +155,6 @@ function mm_style_setShapeColor(bXian, bTian, iCuXi, xR, xG, xB, tR, tG, tB) {
 	executeAction(mm_c("setd"), d1, DialogModes.NO);
 }
 
-/** 图层样式颜色叠加（智能对象用） */
-function mm_style_overlayColor(r, g, b) {
-	var desc = new ActionDescriptor();
-	var ref = new ActionReference();
-	ref.putProperty(mm_c("Prpr"), mm_c("Lefx"));
-	ref.putEnumerated(mm_c("Lyr "), mm_c("Ordn"), mm_c("Trgt"));
-	desc.putReference(mm_c("null"), ref);
-
-	var scale = new ActionDescriptor();
-	scale.putUnitDouble(mm_c("Scl "), mm_c("#Prc"), 100);
-
-	var solid = new ActionDescriptor();
-	solid.putBoolean(mm_c("enab"), true);
-	solid.putBoolean(mm_s("present"), true);
-	solid.putBoolean(mm_s("showInDialog"), true);
-	solid.putEnumerated(mm_c("Md  "), mm_c("BlnM"), mm_c("Nrml"));
-
-	var rgb = new ActionDescriptor();
-	rgb.putDouble(mm_c("Rd  "), r);
-	rgb.putDouble(mm_c("Grn "), g);
-	rgb.putDouble(mm_c("Bl  "), b);
-	solid.putObject(mm_c("Clr "), mm_c("RGBC"), rgb);
-	solid.putUnitDouble(mm_c("Opct"), mm_c("#Prc"), 100);
-
-	scale.putObject(mm_c("SoFi"), mm_c("SoFi"), solid);
-	desc.putObject(mm_c("T   "), mm_c("Lefx"), scale);
-	executeAction(mm_c("setd"), desc, DialogModes.NO);
-}
-
-/**
- * 应用颜色：按图层类型分四路。
- * 返回 'ok' / 'no-doc' / 'skipped'（配置显式关闭）/ 'error:xxx'
- */
-function mm_style_applyColor(param) {
-	return mm_safe("mm_style_applyColor", function () {
-		if (!app.documents.length) return "no-doc";
-
-		var item = JSON.parse(param);
-		var src = item && item.color ? item.color : item;
-		if (!src) return "error:参数缺少 color";
-
-		var color = new SolidColor();
-		if (app.activeDocument.mode === DocumentMode.CMYK) {
-			color.cmyk.cyan = Number(src.c) || 0;
-			color.cmyk.magenta = Number(src.m) || 0;
-			color.cmyk.yellow = Number(src.y) || 0;
-			color.cmyk.black = Number(src.k) || 0;
-		} else {
-			color.rgb.hexValue = String(src.hex || "000000");
-		}
-
-		/* 同色规避：前景色没变化时「填充前景色」可能不触发 */
-		if (color.rgb.hexValue === app.foregroundColor.rgb.hexValue) {
-			var temp = new SolidColor();
-			temp.rgb.hexValue = "f0ebe2";
-			app.foregroundColor = temp;
-		}
-		app.foregroundColor = color;
-
-		/* 配置闸门：只有显式 false 才跳过，配置缺失按开启处理 */
-		var raw = mm_style_readFile(Folder.userData + "/SheJiZhuLi/sj_interfaceSet.ini");
-		var cfg = {};
-		try { cfg = JSON.parse(raw); } catch (e) { cfg = {}; }
-		if (cfg.img_cya4 === false) return "skipped";
-
-		/* 原版只在单选时处理，多选直接放过 */
-		if (mm_style_countTargets() !== 1) return "ok";
-
-		var layer = app.activeDocument.activeLayer;
-		var kind = layer.kind;
-
-		if (kind === LayerKind.NORMAL) {
-			mm_style_lockTransparency();
-			try {
-				mm_style_fillForeground();
-			} finally {
-				mm_style_unlockTransparency();
-			}
-		} else if (kind === LayerKind.SOLIDFILL) {
-			var hasFill = true;
-			var hasStroke = false;
-			/* 探测描边信息：老版本 PS / 非标准形状读不到 AGMStrokeStyleInfo，
-			   读不到时按「有填充无描边」的默认走，不能因此中断整个上色 */
-			try {
-				var ref = new ActionReference();
-				ref.putEnumerated(mm_s("contentLayer"), mm_s("ordinal"), mm_s("targetEnum"));
-				var info = executeActionGet(ref).getObjectValue(mm_s("AGMStrokeStyleInfo"));
-				hasStroke = info.getBoolean(mm_s("strokeEnabled"));
-				hasFill = info.getBoolean(mm_s("fillEnabled"));
-			} catch (e) { }
-
-			if (hasFill || !hasStroke) {
-				mm_style_setShapeColor(undefined, true, -1, -1, -1, -1,
-					Math.round(color.rgb.red), Math.round(color.rgb.green), Math.round(color.rgb.blue));
-			} else {
-				mm_style_setShapeColor(true, undefined, -1,
-					Math.round(color.rgb.red), Math.round(color.rgb.green), Math.round(color.rgb.blue), -1, -1, -1);
-			}
-		} else if (kind === LayerKind.SMARTOBJECT) {
-			mm_style_overlayColor(
-				app.foregroundColor.rgb.red,
-				app.foregroundColor.rgb.green,
-				app.foregroundColor.rgb.blue
-			);
-		} else if (kind === LayerKind.TEXT) {
-			/* 文字图层改色：锁定/关联文字（如缺失字体）会抛，抛了就保持原色，
-			   不能因为改色失败把前面的前景色设置回滚 */
-			try { layer.textItem.color = color; } catch (e) { }
-		}
-
-		return "ok";
-	});
-}
 
 /**
  * 解析颜色参数（项里的 color 字段，或直接的色值对象）。

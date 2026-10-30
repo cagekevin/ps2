@@ -18,10 +18,14 @@
  *   PS_WRONG_LAYER 选中的对象不满足前提（图层类型不对 / 选中数量不够）；换图层或多选就好，
  *                  不是故障。`reason` 必须写明「当前是什么，需要什么」，
  *                  `detail` 带 `kind:<类型>` 或 `selection:<数量>`
- *   PS_SKIPPED    官方配置显式关闭（sj_interfaceSet.ini 的 img_cya4 === false）
+ *   PS_SKIPPED    官方配置显式关闭（sj_interfaceSet.ini 的 img_cya4 === false）。
+ *                  **目前没有生产者**（颜色改走 vendor 后不再由我们判这个闸门），
+ *                  保留是因为 vendor 内部可能返回它 —— 见 `TD-01-26`
  *   PS_UNREADY    PS 能力未就绪（jsx 未加载 / 环境变量注入失败）
  *   PS_REJECTED   宿主拒绝执行（vendor 返回 -1，多为没选中图层）
- *   PS_ERROR      PS 脚本执行失败（EvalScript error / jsx 内部异常 / 返回格式不符）
+ *   PS_ERROR      PS 脚本执行失败（EvalScript error / jsx 内部异常）
+ *   PS_BAD_PAYLOAD 宿主返回的结构认不出（不是文件坏，也不是执行失败）：原文进 detail。
+ *                  与 CORRUPT 的分工：信封坏归这里，信封对、载荷坏归 CORRUPT
  *   NETWORK       网络请求失败（非 HTTP 状态码问题）
  *   TIMEOUT       请求超时
  *   AUTH          登录失效（401）
@@ -40,6 +44,7 @@ export type ErrorCode =
   | 'PS_UNREADY'
   | 'PS_REJECTED'
   | 'PS_ERROR'
+  | 'PS_BAD_PAYLOAD'
   | 'NETWORK'
   | 'TIMEOUT'
   | 'AUTH'

@@ -3,7 +3,6 @@ import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import {
   envelopeMessage,
-  isOkSentinel,
   lenientVoid,
   parseDataEnvelope,
   parseErrEnvelope,
@@ -13,7 +12,6 @@ import {
   passthrough,
   strictData,
   strictPayload,
-  strictVoid,
   unwrapRaw
 } from './raw';
 
@@ -49,15 +47,15 @@ describe('parseJsxRaw', () => {
     if (result.status === 'ok') expect(result.value).toEqual({ a: 1 });
   });
 
-  it('非 JSON → PS_ERROR（宿主没给出可解析的结果），detail 带原文', () => {
-    /* `CORRUPT` 是「数据不认识」；jsx 返回值不是 JSON = 宿主这次没给结果，
-       真机见过 `zt_getFontSimpleInfo` 返回 `undefined` → 报 CORRUPT 会让人以为是文件坏了 */
+  it('非 JSON → PS_BAD_PAYLOAD（宿主没给出可解析的结果），detail 带原文', () => {
+    /* 不是 `CORRUPT`（那是文件坏），也不是 `PS_ERROR`（那是执行失败）：
+       宿主这次没给结果 —— 真机见过 `zt_getFontSimpleInfo` 返回 `undefined` */
     const result = parseJsxRaw('not json');
     expect(result.status).toBe('error');
     if (result.status === 'error') {
-      expect(result.code).toBe('PS_ERROR');
+      expect(result.code).toBe('PS_BAD_PAYLOAD');
       /* 生产者自己从表里取句子（消费者只转发，不补字） */
-      expect(result.reason).toBe(MSG.codeReason.PS_ERROR);
+      expect(result.reason).toBe(MSG.codeReason.PS_BAD_PAYLOAD);
       expect(result.detail).toContain('not json');
     }
   });
@@ -69,16 +67,17 @@ describe('parseJsxRaw', () => {
   });
 });
 
-describe('isOkSentinel', () => {
-  it('ok / OK / 带空白都算哨兵', () => {
-    expect(isOkSentinel('ok')).toBe(true);
-    expect(isOkSentinel('OK')).toBe(true);
-    expect(isOkSentinel('  ok\n')).toBe(true);
+describe('parseSystemFontList 的哨兵分支', () => {
+  it('ok / OK / 带空白都算哨兵（数据已写 SysFont2.json）', () => {
+    for (const raw of ['ok', 'OK', '  ok\n']) {
+      expect(parseSystemFontList(raw)).toEqual(ok({ kind: 'sentinel' }));
+    }
   });
 
-  it('其它值不算哨兵', () => {
-    expect(isOkSentinel('1')).toBe(false);
-    expect(isOkSentinel('{"arr":[]}')).toBe(false);
+  it('不是哨兵时：数组当 list，其它一律失败', () => {
+    expect(parseSystemFontList('[1,2]')).toEqual(ok({ kind: 'list', value: [1, 2] }));
+    expect(parseSystemFontList('{"arr":[]}').status).toBe('error');
+    expect(parseSystemFontList('1').status).toBe('error');
   });
 });
 
@@ -104,24 +103,26 @@ describe('parseErrEnvelope', () => {
     if (parsed.status === 'ok') expect(parsed.value).toBe(1);
   });
 
-  it('没有 err 字段 → CORRUPT（不再有 null 通道）', () => {
+  it('没有 err 字段 → PS_BAD_PAYLOAD（信封不是我们认识的形状，不是文件坏）', () => {
     const parsed = parseErrEnvelope('{"data":1}');
     expect(parsed.status).toBe('error');
-    if (parsed.status === 'error') expect(parsed.code).toBe('CORRUPT');
+    if (parsed.status === 'error') expect(parsed.code).toBe('PS_BAD_PAYLOAD');
   });
 
-  it('不是 JSON → PS_ERROR（宿主没给出可解析的结果）', () => {
+  it('不是 JSON → PS_BAD_PAYLOAD（宿主没给出可解析的结果）', () => {
     const parsed = parseErrEnvelope('garbage');
     expect(parsed.status).toBe('error');
-    if (parsed.status === 'error') expect(parsed.code).toBe('PS_ERROR');
+    if (parsed.status === 'error') expect(parsed.code).toBe('PS_BAD_PAYLOAD');
   });
 });
 
 /* ---------------- 能力表用的具名解析器 ---------------- */
 
-/** 六种 raw 覆盖了目前观测到的全部形态，迁移时逐条对账 code + reason */
+/** 七种 raw 覆盖了目前观测到的全部形态，迁移时逐条对账 code + reason */
 const RAWS = {
   normal: '{"err":0}',
+  /* 真机 2026-10-30：`ztgl_setFont` 成功后宿主回这个，没有 `err` 字段 */
+  codeOk: '{"code":"OK"}',
   noDoc: 'no-doc',
   rejected: '-1',
   errMsg: '{"err":1,"msg":"请选择文字图层"}',
@@ -156,42 +157,42 @@ describe('lenientVoid', () => {
     expect(verdict(parse(RAWS.errBare))).toBe(`VALIDATION:${FALLBACK}`);
   });
 
-  it('解析不出结构按成功（UNVERIFIED 的历史妥协）', () => {
-    expect(verdict(parse(RAWS.garbage))).toBe('ok');
+  it('宿主明确说过的成功写法才当成功（每条都有真机依据）', () => {
     expect(verdict(parse(RAWS.normal))).toBe('ok');
-  });
-});
-
-describe('strictVoid', () => {
-  const parse = strictVoid(FALLBACK);
-
-  it('码与 reason 与 lenientVoid 相同', () => {
-    expect(verdict(parse(RAWS.noDoc))).toBe(`PS_NO_DOC:${MSG.codeReason.PS_NO_DOC}`);
-    expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
-    expect(verdict(parse(RAWS.errMsg))).toBe('VALIDATION:请选择文字图层');
-    expect(verdict(parse(RAWS.errBare))).toBe(`VALIDATION:${FALLBACK}`);
-    expect(verdict(parse(RAWS.normal))).toBe('ok');
+    /* `ztgl_setFont` 换好字体后回这句，没有 err 字段 */
+    expect(verdict(parse(RAWS.codeOk))).toBe('ok');
+    /* PS 写操作成功时常常什么都不回 */
+    for (const raw of ['undefined', '', 'null']) expect(verdict(parse(raw))).toBe('ok');
+    /* `zt_setFontVision` 回 0；调度约定 r != -1 即成功 */
+    for (const raw of ['0', '1']) expect(verdict(parse(raw))).toBe('ok');
   });
 
-  it('唯一区别：解析不出即失败（不许当成功）', () => {
-    const garbage = parse(RAWS.garbage);
-    expect(garbage.status).toBe('error');
-    if (garbage.status === 'error') expect(garbage.code).toBe('PS_ERROR');
-  });
-
-  it('是 JSON 但没有 err 字段也算 CORRUPT', () => {
-    const noErr = parse('{"data":1}');
-    expect(noErr.status).toBe('error');
-    if (noErr.status === 'error') expect(noErr.code).toBe('CORRUPT');
+  it('认不出就报 PS_BAD_PAYLOAD + 原文进 detail（两个方向都不猜）', () => {
+    for (const raw of [RAWS.garbage, '{"data":1}', '{"code":"NG"}']) {
+      const result = parse(raw);
+      expect(result.status).toBe('error');
+      if (result.status === 'error') {
+        expect(result.code).toBe('PS_BAD_PAYLOAD');
+        expect(result.reason).toBe(MSG.badPayload);
+        expect(result.detail).toContain('raw:');
+      }
+    }
   });
 });
 
 describe('strictData', () => {
   const parse = strictData(FALLBACK);
 
-  it('err !== 0 当失败，detail 带 err 值', () => {
-    expect(parse(RAWS.errMsg)).toEqual(failWithDetail('VALIDATION', '请选择文字图层', 'err:1'));
-    expect(parse(RAWS.errBare)).toEqual(failWithDetail('VALIDATION', FALLBACK, 'err:1'));
+  it('err !== 0 当失败：码 VALIDATION、句子取宿主原话、detail 带原文', () => {
+    const msg = parse(RAWS.errMsg);
+    expect(msg.status).toBe('error');
+    if (msg.status === 'error') {
+      expect(msg.code).toBe('VALIDATION');
+      expect(msg.reason).toBe('请选择文字图层');
+      expect(msg.detail).toContain('raw:');
+    }
+
+    expect(parse(RAWS.errBare)).toEqual(failWithDetail('VALIDATION', FALLBACK, 'raw:{"err":1}'));
   });
 
   it('err 为 0 时交 data 载荷（没有 data 字段就交整份）', () => {
@@ -206,27 +207,33 @@ describe('strictData', () => {
     expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
   });
 
-  it('非 JSON → PS_ERROR（宿主没给出可解析的结果）', () => {
+  it('非 JSON → PS_BAD_PAYLOAD（宿主没给出可解析的结果）', () => {
     const result = parse(RAWS.garbage);
     expect(result.status).toBe('error');
-    if (result.status === 'error') expect(result.code).toBe('PS_ERROR');
+    if (result.status === 'error') expect(result.code).toBe('PS_BAD_PAYLOAD');
   });
 });
 
 describe('parseDataEnvelope', () => {
-  it('拆 data，不判 err', () => {
-    expect(parseDataEnvelope('{"err":1,"data":{"a":1}}')).toEqual(ok({ a: 1 }));
-    expect(parseDataEnvelope(RAWS.errBare)).toEqual(ok({ err: 1 }));
-  });
+  it('拆 data；`err !== 0` 判失败（宿主说没成功就不能交载荷）', () => {
+    expect(parseDataEnvelope('{"err":0,"data":{"a":1}}')).toEqual(ok({ a: 1 }));
+    /* 裸载荷（没有 data 字段）原样交出去 */
+    expect(parseDataEnvelope('{"err":0}')).toEqual(ok({ err: 0 }));
 
-  it('no-doc / 非 JSON → PS_ERROR（不折约定值，但「不是 JSON」归宿主侧）', () => {
-    /* `parseDataEnvelope` 不折约定值（它只拆 data、不判 err）；但「不是合法 JSON」已经不是
-       「数据不认识」，而是宿主没给出可解析的结果 → `PS_ERROR` */
-    for (const raw of [RAWS.noDoc, RAWS.garbage]) {
+    for (const raw of ['{"err":1,"data":{"a":1}}', RAWS.errBare]) {
       const result = parseDataEnvelope(raw);
       expect(result.status).toBe('error');
-      if (result.status === 'error') expect(result.code).toBe('PS_ERROR');
+      if (result.status === 'error') expect(result.code).toBe('VALIDATION');
     }
+  });
+
+  it('委托 strictData：约定值折码，非 JSON 归宿主侧', () => {
+    /* 「判 err 并交 data」只有 `strictData` 一处实现（刀 13），所以这里也折约定值 */
+    expect(verdict(parseDataEnvelope(RAWS.noDoc))).toBe(`PS_NO_DOC:${MSG.codeReason.PS_NO_DOC}`);
+
+    const garbage = parseDataEnvelope(RAWS.garbage);
+    expect(garbage.status).toBe('error');
+    if (garbage.status === 'error') expect(garbage.code).toBe('PS_BAD_PAYLOAD');
   });
 });
 
@@ -242,23 +249,23 @@ describe('strictPayload', () => {
     expect(verdict(parse('false'))).toBe('VALIDATION:图层不适用');
   });
 
-  it('err:1 取宿主 msg，没给才用兜底', () => {
-    expect(verdict(parse(RAWS.errMsg))).toBe('PS_ERROR:请选择文字图层');
-    expect(verdict(parse(RAWS.errBare))).toBe('PS_ERROR:读取失败');
+  it('err:1 → VALIDATION（宿主拒绝，不是执行失败）：取宿主 msg，没给才用兜底', () => {
+    expect(verdict(parse(RAWS.errMsg))).toBe('VALIDATION:请选择文字图层');
+    expect(verdict(parse(RAWS.errBare))).toBe('VALIDATION:读取失败');
   });
 
-  it('载荷不合格（accept 返回 null）→ PS_ERROR', () => {
-    expect(verdict(parse('null'))).toBe('PS_ERROR:读取失败');
+  it('载荷不合格（accept 返回 null）→ CORRUPT（信封对、载荷坏）', () => {
+    expect(verdict(parse('null'))).toBe(`CORRUPT:${MSG.corrupt}`);
   });
 
   it('正常载荷 → ok，accept 拿到的是拆包后的 data', () => {
     expect(parse('{"err":0,"data":{"fonts":[1]}}')).toEqual(ok({ fonts: [1] }));
   });
 
-  it('非 JSON → PS_ERROR（不折约定值，但「不是 JSON」归宿主侧）', () => {
+  it('非 JSON → PS_BAD_PAYLOAD（不折约定值，但「不是 JSON」归宿主侧）', () => {
     const garbage = parse(RAWS.garbage);
     expect(garbage.status).toBe('error');
-    if (garbage.status === 'error') expect(garbage.code).toBe('PS_ERROR');
+    if (garbage.status === 'error') expect(garbage.code).toBe('PS_BAD_PAYLOAD');
   });
 });
 

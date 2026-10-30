@@ -23,11 +23,12 @@ import { useState, type ReactNode } from 'react';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../components/Toast';
-import { Button } from '../../components/ui';
+import { Button, Input } from '../../components/ui';
 import { copyText } from '../../core/clipboard';
 import { request } from '../../core/http/client';
 import { clearLogText, readLogText } from '../../core/logger';
-import { diagVendor, type VendorDiag } from '../../core/ps/diag';
+import { diagVendor, runDebugScript, type VendorDiag } from '../../core/ps/diag';
+import { enterSubmit } from '../../hooks/input-method-enter';
 import { useAppStore } from '../../store/app';
 import { LAYER_KIND_LABEL } from '../../types/layer';
 import { MSG } from '../../types/messages';
@@ -99,7 +100,10 @@ export default function HomePage() {
   const layerKind = useAppStore((state) => state.layerKind);
   const layerName = useAppStore((state) => state.layerName);
   const [diag, setDiag] = useState<VendorDiag | null>(null);
-  const [logText, setLogText] = useState('');
+  const [script, setScript] = useState('');
+  const [scriptOutput, setScriptOutput] = useState('');
+  /* null = 还没读过；`''` = 读过且现在是空的。两态分开，面板才能说清「空」是哪一种 */
+  const [logText, setLogText] = useState<string | null>(null);
 
   async function handlePing() {
     /* 诊断页要转圈（等接口），失败留痕由 hook 出 */
@@ -112,8 +116,23 @@ export default function HomePage() {
   }
 
   function handleLog() {
-    const text = readLogText();
-    setLogText(text || MSG.home.emptyLog);
+    setLogText(readLogText());
+  }
+
+  /**
+   * 把输入框里的脚本发给 PS，结果原地留在页面上。
+   *
+   * 不给 `success` 提示：结果本身就是要看的东西，弹一下再让用户去复制多一步。
+   * 失败也不只靠 toast：`reason` 是宿主原话（例如「undefined 不是对象」），
+   * 一闪就没了，而复制它才是排障的下一步。
+   */
+  async function handleRunScript() {
+    const result = await run(() => runDebugScript(script), { spin: false });
+    if (result.status === 'ok') {
+      setScriptOutput(result.value || MSG.home.scriptNoOutput);
+      return;
+    }
+    setScriptOutput(`${result.code}  ${result.reason}  ${result.detail}`.trim());
   }
 
   async function handleClearLog() {
@@ -127,8 +146,8 @@ export default function HomePage() {
     /* 同步命令也走统一入口：失败留痕与成功文案都由 hook 出 */
     const result = await run(async () => clearLogText(), { spin: false, success: MSG.home.cleared });
     if (result.status === 'error') return;
-    /* 清完留在原地显示空态：整块消失会让人以为按钮点错了 */
-    setLogText(MSG.home.emptyLog);
+    /* 删完留在原地显示空态：整块消失会让人以为按钮点错了 */
+    setLogText('');
   }
 
   async function handleCopy(text: string, success: string) {
@@ -142,6 +161,12 @@ export default function HomePage() {
   const layerText = layerKind
     ? `${LAYER_KIND_LABEL[layerKind]}${layerName ? `「${layerName}」` : ''}`
     : MSG.home.layerEmpty;
+
+  /*
+   * 三态分开写：没读过 / 读过是空的 / 有内容。
+   * 一律折成「（日志为空）」会让「还没读」看起来像「文件里确实没有」。
+   */
+  const logShown = logText === null ? MSG.home.logNotLoaded : logText || MSG.home.emptyLog;
 
   const copyButton = (text: string, success: string) => (
     <button type="button" className="mm-btn mm-home__link" onClick={() => void handleCopy(text, success)}>
@@ -165,6 +190,29 @@ export default function HomePage() {
       </div>
 
       <div className="mm-home__body">
+        <div className="mm-home__panel">
+          <PanelHead title={MSG.home.sectionScript} />
+          <div className="mm-u-row mm-home__script-row">
+            <Input
+              className="mm-home__script-input"
+              value={script}
+              placeholder={MSG.home.scriptPlaceholder}
+              onChange={(event) => setScript(event.target.value)}
+              onKeyDown={enterSubmit(() => void handleRunScript())}
+            />
+            <Button onClick={() => void handleRunScript()}>{MSG.home.runScript}</Button>
+          </div>
+          {scriptOutput ? (
+            <>
+              <div className="mm-u-row">
+                <span className="mm-home__key">{MSG.home.sectionScriptResult}</span>
+                {copyButton(scriptOutput, MSG.home.copiedScript)}
+              </div>
+              <div className="mm-home__log-body">{scriptOutput}</div>
+            </>
+          ) : null}
+        </div>
+
         {diag ? (
           <>
             <div className="mm-home__panel">
@@ -190,29 +238,28 @@ export default function HomePage() {
           </>
         ) : null}
 
-        {logText ? (
-          <div className="mm-home__panel mm-home__panel--grow">
-            <PanelHead
-              title={MSG.home.sectionLog}
-              actions={
-                <>
-                  {copyButton(logText, MSG.home.copiedLog)}
-                  <button type="button" className="mm-btn mm-home__link" onClick={handleLog}>
-                    {MSG.home.refresh}
-                  </button>
-                  <button
-                    type="button"
-                    className="mm-btn mm-home__link"
-                    onClick={() => void handleClearLog()}
-                  >
-                    {MSG.home.clear}
-                  </button>
-                </>
-              }
-            />
-            <div className="mm-home__log-body">{logText}</div>
-          </div>
-        ) : null}
+        {/* 面板常驻：删除 / 刷新随时可点，不必先「查看日志」把旧日志读上来 */}
+        <div className="mm-home__panel mm-home__panel--grow">
+          <PanelHead
+            title={MSG.home.sectionLog}
+            actions={
+              <>
+                {copyButton(logText ?? '', MSG.home.copiedLog)}
+                <button type="button" className="mm-btn mm-home__link" onClick={handleLog}>
+                  {MSG.home.refresh}
+                </button>
+                <button
+                  type="button"
+                  className="mm-btn mm-home__link"
+                  onClick={() => void handleClearLog()}
+                >
+                  {MSG.home.clear}
+                </button>
+              </>
+            }
+          />
+          <div className="mm-home__log-body">{logShown}</div>
+        </div>
       </div>
     </section>
   );

@@ -56,3 +56,13 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* 执行代码：`.mm-u-row` 已两端铺满，输入框吃掉剩余宽度，按钮留在右侧 */
+.mm-home__script-row{
+  gap: var(--mm-space-inline);
+}
+
+.mm-home__script-input{
+  flex: 1 1 auto;
+  min-width: 0;
+}

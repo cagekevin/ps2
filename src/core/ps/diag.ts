@@ -1,11 +1,19 @@
 /**
  * 【范本】PS 能力诊断
- * 只读探测：官方 jsx 的函数是否定义、官方配置是否存在、影响填充的开关值。
- * 用于区分「函数没加载」「函数执行失败」「配置导致跳过」三种情况。
+ *
+ * 两件事：
+ *   1. 只读探测：官方 jsx 的函数是否定义、官方配置是否存在、影响填充的开关值。
+ *      用于区分「函数没加载」「函数执行失败」「配置导致跳过」三种情况。
+ *   2. 诊断脚本：把一段 ExtendScript 原样发给宿主，看它返回什么。
+ *
+ * 第 2 条是**唯一**执行「页面递进来的代码」的入口，只给 `/debug` 用。
+ * 业务要 PS 能力就去 `core/ps` 建函数 + jsx 镜像（`GOVERNANCE` §一），不许经这里绕过。
  */
 
-import { callJsx } from '../cep/bridge';
-import { failWithDetail, ok, type Result } from '../../types/result';
+import { callJsx, evalScript } from '../cep/bridge';
+import { log } from '../logger';
+import { MSG } from '../../types/messages';
+import { fail, failWithDetail, ok, type Result } from '../../types/result';
 import { gateFailed } from './capability';
 import { ensurePsReady } from './init';
 import { parseJsxRaw } from './raw';
@@ -49,4 +57,46 @@ export async function diagVendor(): Promise<Result<VendorDiag>> {
   const parsed = parseJsxRaw(call.value);
   if (parsed.status === 'error') return parsed;
   return ok(parsed.value as VendorDiag);
+}
+
+/**
+ * 在 PS 里原样执行一段 ExtendScript，返回宿主输出。
+ *
+ * 为什么要有：真机问题的形态常常是「这台 PS 上某个 API 返不返回东西」，例如
+ * `typeof app.activeDocument.activeLayers`。走正规流程要先加 jsx 探针 → 改探测清单 →
+ * 重新部署，一次问答十分钟；这里直接把脚本发下去。
+ *
+ * 空脚本按 `VALIDATION` 拒绝：空 `evalScript` 的返回也是空串，与「执行成功但没有返回值」
+ * 分不开，显示出来会让人以为代码跑过了。
+ */
+export async function runDebugScript(script: string): Promise<Result<string>> {
+  const text = script.trim();
+  if (!text) return fail('VALIDATION', MSG.home.scriptEmpty);
+
+  /*
+   * 必须包一层 `eval` + try/catch，不能直接 `evalScript(text)`：
+   * 裸发脚本时，宿主一抛异常 CEP 只回一句 `EvalScript error.`，真实原因（未定义函数 /
+   * 属性不存在在第几行）全部丢失 —— 诊断页存在就是为了看这句真实原因。
+   * `eval` 让「表达式」和「语句」都能用：表达式回值，语句回空串但副作用照样生效。
+   */
+  const source = JSON.stringify(text)
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+  const wrapped =
+    `(function(){try{var __r=eval(${source});` +
+    `return (__r===undefined)?'':(typeof __r==='string'?__r:String(__r));}` +
+    `catch(e){return 'error:'+((e&&e.message)?e.message:String(e));}})()`;
+
+  const result = await evalScript(wrapped);
+  if (result.status === 'error') return result;
+
+  const raw = result.value;
+  if (raw.startsWith('error:')) {
+    log.warn('诊断脚本抛异常', { script: text.slice(0, 200), raw });
+    return failWithDetail('PS_ERROR', raw.slice(6), `raw:${raw}`);
+  }
+
+  /* 截断只影响日志：输入可能是几百行脚本，原文留在页面上给用户复制 */
+  log.info('诊断脚本已执行', { script: text.slice(0, 200), raw });
+  return ok(raw);
 }

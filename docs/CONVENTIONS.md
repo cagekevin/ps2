@@ -233,7 +233,7 @@ src/
 └─ app/           router、layout、providers、layer-watcher、common-use-watcher
 ```
 
-`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
+`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
 
 ### 依赖方向（只允许向下；**静态方向只写这一份**）
 
@@ -872,7 +872,7 @@ core/ps/
 约定：
 
 - 一个动作一个函数，动词在前：`getLayerState`、`applyStyleColor`
-- jsx 侧同名镜像：`mm_layer_getState`、`mm_style_applyColor`
+- jsx 侧同名镜像：`mm_layer_getState`、`mm_style_applyShapeFill`（应用颜色走 vendor 的 `ys_useStyleColor`，没有本地镜像）
 - **字体有两条通道，不要合并**：样式库字体项走 `ys_checkUseFont` / `ys_useFont`（参数 `encodeText`）；系统字体列表走 `ztgl_initSystemList` / `ztgl_setFont`（直调、明文参数）
 - **文本属性是第三条通道**：`zt_*` / `layer_font_*` / `cy_distributedByPitch` 全部直调 `jsx()`、明文参数、写操作 60s 超时，参数与返回见 `PS-CHANNEL-NOTES.md` §11.3。这些函数在 `vendor.jsx` 里已存在，**不写 `jsx/main.jsx` 镜像**（同 `ztgl_*` 的例外理由）
 - **常用页按钮是第四条，但不能一刀切**：`cy_*` 里一半走 `ps_onJsx`（原版 `jsxHistory*`）、一半直调（原版 `jsx` / `jsxNoCheck`），**逐个看原版调用点**，同一族也可能不同（`cy_zoom` 直调、`cy_transformPosition` 走调度）。两条通道的实现只有一份：`core/ps/capability.ts` 的 `DISPATCH` + `toWire`，逐条通道写在 `core/ps/capabilities.ts` 的 `channel` 字段里。清单与逐条通道见 `PS-CHANNEL-NOTES.md` §11.4
