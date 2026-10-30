@@ -5,7 +5,8 @@
  * 新增同类代码照此结构：一个壳一条规则块，状态用 `:disabled` / `:focus-visible`。
  */
 
-/* 唯一根类：全仓按钮都挂 `.mm-btn`；`--primary` 只是语义标记，实底等视觉重写时补 */
+/* 唯一根类：全仓按钮都挂 `.mm-btn`；`--primary` 只是语义标记，实底等视觉重写时补。
+   **底色按变体给**：默认无底色（普通文字按钮 / 底栏按钮），数值按钮走 `--numeric`。 */
 .mm-btn{
   display: inline-flex;
   align-items: center;
@@ -13,7 +14,24 @@
   height: var(--mm-control-h);
   padding: 0 var(--mm-space-2);
   border-radius: var(--mm-radius-md);
+  color: var(--mm-color-text);
   font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+/* hover 叠一档底色（不变蓝，规则 12） */
+.mm-btn:hover:not(:disabled){
+  background: var(--mm-color-bg-hover);
+}
+
+/* 数值按钮：一排 N 个的档位（缩放档位、字号 / 行距 / 字距 / 层级 / 边距预设）。
+   底 #535353、高 26 是设计稿实测；列数由父级 grid 给，不在这里写宽。 */
+.mm-btn--numeric{
+  background: var(--mm-color-bg-raised);
+}
+
+.mm-btn--numeric:hover:not(:disabled){
+  background: var(--mm-color-bg-raised-hover);
 }
 
 .mm-btn:disabled{

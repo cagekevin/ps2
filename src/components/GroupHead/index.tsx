@@ -1,5 +1,5 @@
 /**
- * 【唯一入口】分组头（整行「箭头 + 名称 + 计数」）—— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ * 【唯一入口】分组头（整行「箭头 + 名称」）—— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
  *
  * 【范本】分组头
  *
@@ -33,8 +33,6 @@ interface Props {
   open: boolean;
   /** 左键开合；编辑态（传了 `titleSlot`）时不生效 */
   onToggle: () => void;
-  /** 右侧项数；不传不渲染 */
-  count?: number;
   /** 右键菜单（调用方负责 `preventDefault` 与弹菜单） */
   onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
   /** 长按拖拽排序的起点 */
@@ -53,7 +51,6 @@ export function GroupHead({
   title,
   open,
   onToggle,
-  count,
   onContextMenu,
   onMouseDown,
   trailing,
@@ -62,9 +59,6 @@ export function GroupHead({
   className = ''
 }: Props) {
   const chevron = <Chevron open={open} />;
-  const countNode = count === undefined ? null : (
-    <span className="mm-group-head__count">{count}</span>
-  );
 
   return (
     <div className={`mm-group-head${className ? ` ${className}` : ''}`}>
@@ -73,7 +67,6 @@ export function GroupHead({
         <div className="mm-group-head__toggle">
           {chevron}
           {titleSlot}
-          {countNode}
         </div>
       ) : (
         <button
@@ -87,7 +80,6 @@ export function GroupHead({
         >
           {chevron}
           <span className="mm-group-head__title">{title}</span>
-          {countNode}
         </button>
       )}
 

@@ -9,7 +9,6 @@
  * 分组行用公共件 `GroupHead`（不新建 `ActionGroupRow`）。
  */
 
-import type { CSSProperties } from 'react';
 import { BottomBar, BottomBarButton } from '../../components/BottomBar';
 import { IconButton } from '../../components/IconButton';
 import { ContextMenu } from '../../components/ContextMenu';
@@ -72,7 +71,6 @@ export default function ActionPage() {
               <GroupHead
                 title={group.groupName}
                 open={group.show}
-                count={group.list.length}
                 onToggle={() => page.toggleGroup(groupIndex, !group.show)}
                 onContextMenu={(event) => page.openGroupMenu(event, groupIndex, group.groupName)}
                 onMouseDown={(event) => page.handleGroupMouseDown(event, groupIndex)}
@@ -90,15 +88,11 @@ export default function ActionPage() {
 
               {group.show ? (
                 group.list.length ? (
-                  <div
-                    className="mm-action__items"
-                    /* 列数是运行时值：只注入 CSS 变量，`grid-template-columns` 写在 ActionPage.css */
-                    style={{ '--mm-action-columns': String(page.columns) } as CSSProperties}
-                  >
+                  <div className="mm-action__items">
                     {group.list.map((item, itemIndex) => (
                       <Button
                         key={`${item.name}-${itemIndex}`}
-                        className="mm-action__item"
+                        className="mm-btn--numeric mm-action__item"
                         title={item.alias ?? item.name}
                         /* 拖拽落点靠这三个属性选节点（`[data-action-item]`），别改名 */
                         data-action-item=""

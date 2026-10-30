@@ -8,10 +8,29 @@
   justify-content: center;
   width: var(--mm-icon-btn-size);
   height: var(--mm-icon-btn-size);
+  /* 常态透明描边占位：hover 只换颜色，尺寸不动，避免整排抖动。
+     描边方框是**直角**（官方实拍），不加圆角。 */
+  border: var(--mm-border-w) solid transparent;
   color: var(--mm-color-icon);
+  cursor: pointer;
 }
 
-/* hover / 选中：底色与前景色视觉重写时统一给；这里只留状态的存在（类名已在 TSX 上） */
+/* hover / 选中：1px 直角描边 + 一层压暗底，图标颜色不变。
+   实拍值（26×26 方框）：边框 `#444444`、底 `#2b2b2b`(= 页底 #363636 叠 20% 黑)、图标 #c3c3c3。
+   两个值 tokens 里本来就有，注释也写着用途：`--mm-color-border-icon-hover`、`--mm-color-icon-hover`。 */
+.mm-icon-btn:hover:not(:disabled){
+  border-color: var(--mm-color-border-icon-hover);
+  background: var(--mm-color-icon-hover);
+}
+
+.mm-icon-btn--active{
+  border-color: var(--mm-color-border-icon-hover);
+  background: var(--mm-color-icon-hover);
+}
+
+.mm-icon-btn--active:hover:not(:disabled){
+  border-color: var(--mm-color-accent);
+}
 
 .mm-icon-btn:disabled{
   opacity: 0.4;
@@ -33,6 +52,13 @@
  */
 .mm-icon-btn--inline .mm-icon{
   font-size: var(--mm-icon-sm);
+}
+
+/* 点击区跟着图标一起降一档：26 - 同行并列 6 = 20（图标 14 外留 3）。
+   两档的「图标 → 底块」比例一致，hover 底块永远比图标大一圈。 */
+.mm-icon-btn--inline{
+  width: calc(var(--mm-icon-btn-size) - var(--mm-space-inline));
+  height: calc(var(--mm-icon-btn-size) - var(--mm-space-inline));
 }
 
 /*

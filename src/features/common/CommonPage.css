@@ -1,14 +1,18 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
+/* 滚动容器就是页面壳本身，与字体面板页（`.mm-font-panel`）同构：
+   抽屉底色靠 `__box::before` 左右各外扩 `--mm-icon-panel-bleed`(8) 铺到页边，
+   只有落在**壳自己的 padding** 里才不会被 `overflow` 裁掉。
+   壳不滚、让中间那层滚时，外扩的 8px 全在滚动容器之外，抽屉底色就差 8px 不通栏。 */
 .mm-common{
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .mm-common__body{
-  flex: 1 1 auto;
   display: flex;
+  /* 内容高度：滚动交给壳，这里再 `flex: 1` 会把溢出关在自己身上，壳就滚不动了 */
+  flex: 0 0 auto;
   flex-direction: column;
-  overflow: auto;
 }
 
 .mm-common__body > *{
@@ -20,17 +24,29 @@
 .mm-common__zoom-row{
   display: flex;
   flex-wrap: wrap;
+  gap: var(--mm-space-1);
   align-items: center;
+  padding: var(--mm-space-1) 0;
 }
 
 .mm-common__zoom-row > .mm-icon-panel__host{
   flex: 0 0 100%;
 }
 
+/* 官方 `inputcom1 mr5`：触发器定宽 + 图标/文字同排 */
 .mm-common__zoom-trigger{
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 0 var(--mm-common-zoom-trigger-w);
+  gap: var(--mm-space-1);
   align-items: center;
+  padding: 0 var(--mm-space-1);
+  border-radius: var(--mm-radius-md);
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+.mm-common__zoom-trigger:hover{
+  background: var(--mm-color-bg-hover);
 }
 
 .mm-common__zoom-label{
@@ -41,6 +57,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-wrap: nowrap;
+  gap: var(--mm-space-1);
   min-width: 0;
 }
 
@@ -49,13 +66,24 @@
   min-width: 0;
 }
 
+/* 缩放全部档位：一排 5 个，间距取同行并列档（设计稿实测 7，落回 6 这一档） */
 .mm-common__zoom-all{
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--mm-space-inline);
 }
 
+/* 官方 `hr.line theme-mt-row`：暗线一档 + 上下区块间留白 */
 .mm-common__divider{
   width: 100%;
+  height: var(--mm-border-w);
+  margin: var(--mm-space-2) 0;
+  background: var(--mm-color-border);
+}
+
+/* 翻转行：官方 `f-alignNone`，按钮之间同一档组内间距 */
+.mm-common__flips{
+  gap: var(--mm-space-1);
 }
 
 /* 纵向排列走公共 `.mm-u-col` */
@@ -63,6 +91,7 @@
 .mm-common__tile-row{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mm-space-1) 0;
 }
 
 .mm-common__tile-row > .mm-icon-panel__host{

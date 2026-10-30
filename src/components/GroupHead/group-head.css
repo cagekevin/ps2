@@ -21,7 +21,6 @@
   overflow: hidden;
 }
 
-.mm-group-head__count,
 .mm-group-head__trailing{
   flex: 0 0 auto;
 }

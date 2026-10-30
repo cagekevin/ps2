@@ -13,7 +13,7 @@ export function TagChip({ text, active = false, variant = 'filter', onClick, onC
   return (
     <button
       type="button"
-      className={`mm-font__tag mm-font__tag--${variant}${active ? ' mm-font__tag--active' : ''}`}
+      className={`mm-btn mm-btn--numeric mm-font__tag mm-font__tag--${variant}${active ? ' mm-font__tag--active' : ''}`}
       onClick={onClick}
       onContextMenu={onContextMenu}
     >

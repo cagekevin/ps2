@@ -6,11 +6,18 @@
   height: var(--mm-bottom-bar-h);
   /* 底栏通栏：页面壳统一给了左右页边，这里抵掉，底栏才能贴到面板左右边 */
   margin: 0 calc(-1 * var(--mm-page-pad-x));
+  background: var(--mm-color-bg-bar);
 }
 
 .mm-bottom-bar__btn{
   flex: 0 0 auto;
   width: var(--mm-bottom-btn-w);
+  cursor: pointer;
+}
+
+/* 底栏按钮 hover：纯底色、压暗一档、无描边（与图标按钮同一个 token，方向一致） */
+.mm-bottom-bar__btn:hover:not(:disabled){
+  background: var(--mm-color-icon-hover);
 }
 
 /*

@@ -1,12 +1,20 @@
 /* 骨架：只留结构与定位，视觉待重写 */
 
+/* 仓库条：官方是**通栏深色横条**（贴面板左右边、直角、高度更大），不是输入框。
+   SelectBox 组件不动，这里只覆盖这一处：通栏 + 高度 + 去掉输入位的描边/圆角/底色。 */
 .mm-style__warehouse{
-  flex: 0 0 auto;
-  width: 100%;
+  flex: 1 1 auto;
+  height: var(--mm-warehouse-h);
+  margin: 0 calc(-1 * var(--mm-page-pad-x));
+  padding: 0 var(--mm-page-pad-x);
+  border: 0;
+  border-radius: 0;
+  background: var(--mm-color-bg-drawer);
 }
 
 
 
+/* tab 条：四等分 + 段间 1px 竖线；整条**不加**底部分隔线（官方实拍没有） */
 .mm-style__tabs{
   display: flex;
   flex: 0 0 auto;
@@ -20,13 +28,28 @@
   align-items: center;
 }
 
+/* 未选中是次要色，选中**只换文字色为 accent**，不加下划线（官方实拍：蓝字，无横线）。
+   文字**居中**：`global.css` 的 `button{ text-align: inherit }` 会让它跟着 body 左对齐。 */
 .mm-style__tab{
   width: 100%;
   min-width: 0;
+  height: var(--mm-tab-line-h);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  text-align: center;
+  cursor: pointer;
 }
 
+.mm-style__tab--active{
+  color: var(--mm-color-accent);
+}
+
+/* 段间竖线用**亮线**档：暗线 `--mm-color-border`(#2e2e2e) 落在 #363636 上几乎看不见 */
 .mm-style__tab-line{
   flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-tab-line-h);
+  background: var(--mm-color-border-control);
 }
 
 .mm-style__describe{
@@ -48,10 +71,17 @@
 
 .mm-style__group,
 
-/* 横排与两端对齐走公共 `.mm-u-row`，这里只留撑满 */
+/* 官方格子的间距是**每格自带的固定右间距**（`mr5` / `mr6`）+ 行间距 `mt5/6/7`，
+   不是把一行拉满的 space-between —— 用 space-between 时最后一行不满，格子会被均匀撑开，
+   行内出现大小不一的缝（截图里那些黑块就是缝）。这里统一成固定间距 6（三库都并到这一档）。 */
 .mm-style__items{
   display: flex;
   flex-wrap: wrap;
+  gap: var(--mm-space-inline);
+}
+
+.mm-style__group{
+  padding: var(--mm-space-1) 0;
 }
 
 /* 四类格子的宽高是**功能**不是装饰：没有宽高格子就塌成 0，色块点不中。
@@ -75,22 +105,27 @@
   border-radius: var(--mm-radius-md);
 }
 
+/* 字体卡片：两行内容整体**居中**（水平 + 垂直），不是贴左上角 */
 .mm-style__item--font,
 .mm-style__item--editing{
   width: var(--mm-font-card-w);
   height: var(--mm-font-card-h);
   flex-direction: column;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   border-radius: var(--mm-radius-md);
+  text-align: center;
 }
 
 .mm-style__item--editing{
   cursor: default;
 }
 
+/* 样式库：26×26 缩略图，圆角 4（与渐变、字体卡片同一档圆角） */
 .mm-style__item--style{
   width: var(--mm-style-thumb);
   height: var(--mm-style-thumb);
+  border-radius: var(--mm-radius-md);
 }
 
 /* 颜色 / 渐变块的实际画面：值由 `ItemView` 注入 `--mm-swatch`（色值或渐变图 URL） */
@@ -101,15 +136,25 @@
   background: var(--mm-swatch);
 }
 
+/* 缩略图铺满格子且不拉伸变形 */
 .mm-style__thumb{
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
-/* 两端对齐走公共 `.mm-u-row`，这里只留撑满 */
+/* 字体卡片内部照官方 `block` 的两行结构：第一行「数量 + 字号」（都是 `f-size12`），
+   第二行「中文字」样例。卡片只有 70×44，三处文字都必须单行截断，否则会撑出格子。 */
 .mm-style__font-head{
+  display: flex;
+  /* 卡片内容居中；公共 `.mm-u-row` 默认两端铺满，会把「N点」推到卡片边上 */
+  justify-content: center;
+  gap: var(--mm-space-tight);
   width: 100%;
+  align-items: center;
+  font-size: var(--mm-font-sm);
+  white-space: nowrap;
 }
 
 .mm-style__font-dot{
@@ -119,17 +164,27 @@
 .mm-style__font-sample{
   width: 100%;
   overflow: hidden;
+  font-size: var(--mm-font-sm);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .mm-style__font-family{
   width: 100%;
   overflow: hidden;
+  font-size: var(--mm-font-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
+/* 「+」格子：与同类格子同尺寸，不加描边 */
 .mm-style__add{
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--mm-radius-md);
+  color: var(--mm-color-icon);
   cursor: pointer;
 }
 
@@ -154,7 +209,7 @@
   height: var(--mm-style-thumb);
 }
 
-/* 组末尾「+」：小标记档（12），与勾选对号同一档 */
+/* 组末尾「+」：官方是 `add-svg` 里的 `svg-14`，取 14 档 */
 .mm-style__add .mm-icon{
-  font-size: var(--mm-icon-xs);
+  font-size: var(--mm-icon-sm);
 }

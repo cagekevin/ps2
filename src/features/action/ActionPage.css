@@ -15,10 +15,10 @@
   overflow-y: auto;
 }
 
-/* 列数来自 prefs（1/2/3）：TSX 只注入 `--mm-action-columns`，栅格定义在这里 */
+/* 一排固定 3 个：父级 grid 定列数，子元素不写宽度（全仓「一排 N 个」唯一写法） */
 .mm-action__items{
   display: grid;
-  grid-template-columns: repeat(var(--mm-action-columns, 2), minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* 动作按钮：文字过长时截断，不撑破格子（05 §4.3 第 2 条） */

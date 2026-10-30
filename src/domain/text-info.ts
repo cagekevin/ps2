@@ -19,6 +19,11 @@ export interface RgbColor {
   b: number;
 }
 
+/** 把通道值拼成 css 颜色串（`--mm-swatch` 这类变量的唯一出处） */
+export function rgbCss(color: RgbColor): string {
+  return `rgb(${color.r}, ${color.g}, ${color.b})`;
+}
+
 export type Justification = 'left' | 'center' | 'right';
 
 export interface TextInfo {

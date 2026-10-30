@@ -74,6 +74,25 @@ button{
   z-index: var(--mm-z-drag);
 }
 
+/* 滚动条：全仓一处（宽度 `--mm-scrollbar-w`）。面板是深底，默认的浅色滚动条会整片发白 */
+::-webkit-scrollbar{
+  width: var(--mm-scrollbar-w);
+  height: var(--mm-scrollbar-w);
+}
+
+::-webkit-scrollbar-track{
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb{
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-color-bg-raised);
+}
+
+::-webkit-scrollbar-thumb:hover{
+  background: var(--mm-color-bg-raised-hover);
+}
+
 .mm-modal-mask{
   position: fixed;
   inset: 0;
@@ -91,6 +110,8 @@ button{
   gap: var(--mm-space-inline);
   min-width: 0;
   max-width: 100%;
+  /* 点文字也能切：整行是 label */
+  cursor: pointer;
 }
 
 /* 页面公共壳：撑满 + 页边。页面根不再各写 padding（§7 规则 5：五页同值，没有横向例外）。

@@ -2,8 +2,9 @@
  * 常用页的一个功能格（原版 `context-svg-wrap` + `context-text`）。
  *
  * 尺寸全部走 token：方块 50×50（`--mm-common-tile`）/ 圆角 `--mm-radius-md` /
- * 底色 `--mm-color-bg-raised`，hover 叠白、展开中才换 `--mm-color-bg-sunken`；
- * 内部 svg 32×32（`--mm-common-tile-icon`，在 tile-button.css 给），角标 3×3。
+ * 内部 svg 32×32（`--mm-common-tile-icon`）。
+ * 方块常态**不铺底色**（设计稿里格子就是图标 + 文字）；hover 换 `--mm-color-bg-raised-hover`，
+ * 展开中换 `--mm-color-bg-panel`（凹下去一档，规则 12「展开靠底色凹下去」）。
  * **不要复用 `IconButton`**：那是 26×26 的工具条按钮，形状不同。
  *
  * 图标名来自用户文件（`sj_commonFunction.json` 的 `svg`），所以必须过 `isIconName`——
@@ -78,7 +79,6 @@ export function TileButton({
             className="mm-common__tile-icon mm-common__tile-icon--filled"
           />
         ) : null}
-        {tile.ismark ? <span className="mm-common__mark" aria-hidden="true" /> : null}
       </span>
       <span className="mm-common__tile-name">{tile.name}</span>
     </button>

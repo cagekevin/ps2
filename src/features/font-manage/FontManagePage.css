@@ -4,6 +4,9 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  /* 搜索行 / 预览文案行 / 标签区之间同一档 */
+  gap: var(--mm-space-1);
+  padding: var(--mm-space-1) 0;
 }
 
 /* 搜索行：横排两端铺满走 `.mm-u-row`；放大镜与漏斗只留不收缩 */
@@ -62,20 +65,48 @@
 .mm-font__tag-list{
   display: flex;
   flex-wrap: wrap;
+  gap: var(--mm-space-1);
 }
 
 .mm-font__tag-list--collapsed{
+  max-height: var(--mm-tag-collapse-h);
   overflow: hidden;
 }
 
+/* 标签 chip 不是新元素：它就是 `.mm-btn--numeric`（同一个表面：圆角 4 / #535353 / hover 亮一档），
+   页面只覆盖高度到一行 22（`--mm-tag-strip-h`）与字号。
+   选中用 accent（规则 12「选中」）。 */
+.mm-font__tag{
+  height: var(--mm-tag-strip-h);
+  padding: 0 var(--mm-space-2);
+  font-size: var(--mm-font-xs);
+}
+
+.mm-font__tag--active{
+  background: var(--mm-color-accent);
+  color: var(--mm-color-text-inverse);
+}
+
+/* 计数行：11 号 + 次要色，与列表之间留一档 */
 .mm-font__list-head{
   display: flex;
   flex: 0 0 auto;
+  gap: var(--mm-space-1);
   align-items: center;
+  padding: var(--mm-space-1) 0;
+  color: var(--mm-color-text-muted);
+  font-size: var(--mm-font-xs);
 }
 
 .mm-font__list-count{
   flex: 1;
+}
+
+/* 「取消筛选」是可点动作，用 accent 文字（规则 12 第 4 类用法） */
+.mm-font__clear-tag{
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-xs);
+  cursor: pointer;
 }
 
 .mm-font__warnings{

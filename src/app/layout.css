@@ -16,10 +16,37 @@
   min-width: 0;
 }
 
-/* 横向排列与两端对齐走公共 `.mm-u-row`，这里只留自己不收缩 + 底色 */
+/* 横向排列与两端对齐走公共 `.mm-u-row`，这里只留自己不收缩 + 底色 + 页边 */
 .mm-layout__header{
   flex: 0 0 auto;
+  min-height: var(--mm-control-h);
+  padding: 0 var(--mm-page-pad-x);
   background: var(--mm-color-bg-header);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
+
+.mm-layout__title{
+  color: var(--mm-color-text);
+}
+
+/* 标题与右侧「诊断 / 版本」之间留一档组间间距，别贴在一起 */
+.mm-layout__actions{
+  gap: var(--mm-space-2);
+}
+
+/* 「诊断」是可点动作，用 accent 文字（规则 12 第 4 类用法） */
+.mm-layout__debug{
+  color: var(--mm-color-accent);
+  cursor: pointer;
+}
+
+.mm-layout__debug--active{
+  color: var(--mm-color-text-strong);
+}
+
+.mm-layout__version{
+  color: var(--mm-color-text-faint);
 }
 
 

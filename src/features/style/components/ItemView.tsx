@@ -91,10 +91,9 @@ export function ItemView({
       >
         {preview ? (
           <>
-            {/* 四件套（原版 render `:50956-50971`，对照清单 #24）：
-                字体数 + N点 + 5×5 色点 一行，「中文字」预览一行 */}
+            {/* 原版 render `:50956-50971` 有「字体数 + N点 + 色点」三件；
+                字体数（那个孤零零的 1）已去掉，只留「N点」+ 色点 */}
             <span className="mm-u-row mm-style__font-head">
-              <span className="mm-style__font-count">{preview.count}</span>
               <span className="mm-style__font-size">{preview.size}</span>
               {preview.color ? (
                 <span className="mm-style__font-dot" />

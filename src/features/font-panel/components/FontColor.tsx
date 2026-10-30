@@ -14,13 +14,13 @@
  * 本组件不发命令：所有动作都通过 props 交回页面，页面再调 `commands/font-set`。
  */
 
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { CheckBox } from '../../../components/CheckBox';
 import { IconButton } from '../../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../../components/IconPanel';
 import { SelectBox } from '../../../components/SelectBox';
 import type { FontItem } from '../../../domain/font-item';
-import type { TextInfo } from '../../../domain/text-info';
+import { rgbCss, type TextInfo } from '../../../domain/text-info';
 import { ALIGN_TIP, ALIGN_TITLES } from '../font-panel-constants';
 import { NumberField } from './NumberField';
 
@@ -141,7 +141,8 @@ export function FontColor({
         </span>
         <button
           type="button"
-          className="mm-font-panel__swatch"
+          className="mm-u-grow mm-font-panel__swatch"
+          style={{ '--mm-swatch': rgbCss(info.color) } as CSSProperties}
           title="设置颜色"
           aria-label="设置颜色"
           onClick={onColor}
@@ -207,7 +208,7 @@ export function FontColor({
                     <button
                       key={`size-${value}`}
                       type="button"
-                      className="mm-font-panel__preset"
+                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onSize(value)}
                     >
                       {value}
@@ -242,7 +243,7 @@ export function FontColor({
                     <button
                       key={`leading-${value}`}
                       type="button"
-                      className="mm-font-panel__preset"
+                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onLeading(value)}
                     >
                       {value}
@@ -277,7 +278,7 @@ export function FontColor({
                     <button
                       key={`tracking-${value}`}
                       type="button"
-                      className="mm-font-panel__preset"
+                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onTracking(value)}
                     >
                       {value}

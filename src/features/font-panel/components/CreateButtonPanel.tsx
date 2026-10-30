@@ -88,7 +88,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
           <button
             key={value}
             type="button"
-            className="mm-btn mm-font-panel__preset-btn"
+            className="mm-btn mm-btn--numeric mm-font-panel__preset-btn"
             title={`内边距 ${value}`}
             onClick={() => commitPadding(value)}
           >
@@ -102,7 +102,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
           <button
             key={value}
             type="button"
-            className="mm-btn mm-font-panel__quick-btn"
+            className="mm-btn mm-btn--numeric mm-font-panel__quick-btn"
             title={`预设样式${value}`}
             onClick={() => commitPadding(`自动生成${value}`)}
           >

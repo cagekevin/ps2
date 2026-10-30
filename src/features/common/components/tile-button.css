@@ -1,10 +1,36 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 常用页功能格：官方 `context-one-wrap` → `context-svg-wrap mb6` → `context-text`。
+   视觉全部落在已有 token 上，不新增数值（`CONVENTIONS` §7）。 */
 
 .mm-common__tile{
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
+  /* 官方 `mb6`：图标与标签之间 */
+  gap: var(--mm-space-inline);
+  padding: var(--mm-space-1) 0;
+  border-radius: var(--mm-radius-md);
+  color: var(--mm-color-text);
+  cursor: pointer;
+}
+
+/* hover 只换底色，不变蓝（规则 12） */
+.mm-common__tile:hover{
+  background: var(--mm-color-bg-raised-hover);
+}
+
+/* 展开中：底色凹下去一档，与 `IconPanel` 抽屉同语义 */
+.mm-common__tile--active{
+  background: var(--mm-color-bg-panel);
+}
+
+.mm-common__tile--disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-common__tile--disabled:hover{
+  background: none;
 }
 
 .mm-common__tile-box{
@@ -12,7 +38,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: var(--mm-common-tile);
+  height: var(--mm-common-tile);
+  border-radius: var(--mm-radius-md);
 }
 
 .mm-common__tile-icon--filled{
@@ -29,15 +57,12 @@
   display: inline-flex;
 }
 
-.mm-common__mark{
-  position: absolute;
-  top: var(--mm-common-mark-offset-y);
-  left: 50%;
-}
-
 .mm-common__tile-name{
   max-width: 100%;
   overflow: hidden;
+  font-size: var(--mm-font-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* 格子里的图标 32（原版实测）：格子是 50 的方块，图标比工具条大一档。

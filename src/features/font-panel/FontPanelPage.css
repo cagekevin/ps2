@@ -40,8 +40,14 @@
   flex: 0 0 auto;
 }
 
+/* 当前文字颜色的色块：宽度占满剩余（官方 `color-preview ... f-full`，宽度走公共 `.mm-u-grow`），
+   色值由 TSX 注入 `--mm-swatch`（`CONVENTIONS` §14.1） */
 .mm-font-panel__swatch{
-  flex: 0 0 auto;
+  height: var(--mm-control-h);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-swatch, var(--mm-color-bg-input));
+  cursor: pointer;
 }
 
 .mm-font-panel__metric{
@@ -60,9 +66,11 @@
   flex: 0 0 var(--mm-control-reserve);
 }
 
+/* 数值预设：一排 6 个，间距取同行并列档（设计稿实测 7，落回 6 这一档） */
 .mm-font-panel__presets{
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--mm-space-inline);
 }
 
 .mm-font-panel__hierarchy{
@@ -99,6 +107,8 @@
 
 .mm-font-panel__number{
   display: flex;
+  /* 图标与输入框之间的间距：官方 `baseSvg` 的 `ml4` */
+  gap: var(--mm-space-1);
   min-width: 0;
   align-items: center;
 }
@@ -108,11 +118,11 @@
   flex: 0 0 auto;
 }
 
-/* 输入位左图标固定取 `btn` 20（`CONVENTIONS` §7 规则 14 表里的一档，不是例外）。
+/* 输入位左图标取 `md` 16（官方 `baseSvg` 的 `svg-16`，`CONVENTIONS` §7 规则 14 表里的一档）。
    必须命中 `.mm-icon`（svg 自身）：`width/height: 1em` 是按 **svg 自己的** font-size 算的，
    而 `:where(.mm-icon)` 已经把 svg 的 font-size 钉在 14，写在外层 span 上不生效。 */
 .mm-font-panel__number-icon .mm-icon{
-  font-size: var(--mm-icon-btn);
+  font-size: var(--mm-icon-md);
 }
 
 .mm-font-panel__number-box{

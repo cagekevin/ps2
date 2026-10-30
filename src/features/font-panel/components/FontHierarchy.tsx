@@ -114,7 +114,7 @@ export function FontHierarchy({
           <button
             key={`${HIERARCHY_TITLES[index] ?? index}`}
             type="button"
-            className="mm-font-panel__level"
+            className="mm-btn mm-btn--numeric mm-font-panel__level"
             title={HIERARCHY_TITLES[index] ?? ''}
             onClick={() => onApplyLevel(level)}
           >
@@ -152,7 +152,7 @@ export function FontHierarchy({
           <div className="mm-u-row mm-font-panel__editor-actions">
             <button
               type="button"
-              className="mm-btn mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
+              className="mm-btn mm-btn--numeric mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
               title="替换当前层级"
               /* 保存到预设自己会写回层级，不再先 commitDraft（否则同一份值写两次盘） */
               onClick={() => onSavePreset(draftLevels())}
@@ -161,7 +161,7 @@ export function FontHierarchy({
             </button>
             <button
               type="button"
-              className="mm-btn mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
+              className="mm-btn mm-btn--numeric mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
               title="保存到新预设"
               onClick={() => setNameMode({ kind: 'create' })}
             >

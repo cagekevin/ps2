@@ -1,4 +1,113 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 字体列表项：家族名 + 操作区 / 预览 / 字重行。
+   视觉全部落在已有 token 上（`--mm-name-*`、`--mm-preview-*` 是字体管理页专有尺寸段）。 */
+
+/* 列表纵向排列。**不要 gap**：项之间一有空隙，hover 底色就在缝里断开，
+   而间隔线是连续的，两者面积对不上。项间距改由项自己的上下 padding 给，
+   相邻两项因此严丝合缝，hover 连成一片、线与线等距。
+   左右页边由列表自己承担：列表的 padding box 与面板同宽，
+   项的 hover 底色 / 间隔线左右外扩时落在 padding 里，不会被滚动容器裁掉。 */
+.mm-font__list{
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--mm-page-pad-x));
+  padding: 0 var(--mm-page-pad-x);
+}
+
+/* 项本身不带圆角、不铺底色：hover 与间隔线都是**通栏**的，靠伪元素左右外扩页边，
+   直角、贴到面板左右边（与抽屉底色同一套做法，见 `IconPanel` 的 `__box::before`）。 */
+.mm-font__item{
+  position: relative;
+  isolation: isolate;
+  /* 项间距就是这里的上下 padding：项与项紧贴，hover 与间隔线才连续 */
+  padding: var(--mm-space-2) 0;
+  cursor: pointer;
+}
+
+.mm-font__item::before{
+  position: absolute;
+  inset: 0 calc(-1 * var(--mm-page-pad-x));
+  z-index: -1;
+  content: '';
+}
+
+.mm-font__item:hover::before{
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-font__item--active::before{
+  background: var(--mm-color-bg-active);
+}
+
+/* 间隔线：项与项之间一条通栏暗线（规则 8：列表行分隔用 `--mm-color-border`） */
+.mm-font__item + .mm-font__item::after{
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--mm-page-pad-x));
+  left: calc(-1 * var(--mm-page-pad-x));
+  height: var(--mm-border-w);
+  background: var(--mm-color-border);
+  content: '';
+  pointer-events: none;
+}
+
+/* hover / 选中换底色，不变蓝（`CONVENTIONS` §7 规则 12） */
+.mm-font__item:hover{
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-font__item--active{
+  background: var(--mm-color-bg-active);
+}
+
+.mm-font__item--unavailable{
+  opacity: 0.4;
+}
+
+.mm-font__item:focus-visible{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+}
+
+/* 家族名按「有没有预览」分两档，别反过来写：
+   有预览时它是次要信息（12 / 16，正文色），预览才是主角；
+   无预览时名字当主角（16 / 22，`--mm-name-*` + `--mm-color-text-name`，token 注释就是按这个分的）。 */
+.mm-font__family{
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-16);
+  /* 有预览时家族名是次要信息：比正文更暗一档（官方实拍是灰的，不是白的） */
+  color: var(--mm-color-text-dim);
+}
+
+.mm-font__family--name-only{
+  font-size: var(--mm-name-size);
+  line-height: var(--mm-name-lh);
+  color: var(--mm-color-text-name);
+}
+
+/* 预览四档：字号 / 行高与 tokens 一一对应 */
+.mm-font__preview{
+  color: var(--mm-color-text-preview);
+  white-space: pre-wrap;
+}
+
+.mm-font__preview--small{
+  font-size: var(--mm-preview-sm);
+  line-height: var(--mm-preview-sm-lh);
+}
+
+.mm-font__preview--medium{
+  font-size: var(--mm-preview-md);
+  line-height: var(--mm-preview-md-lh);
+}
+
+.mm-font__preview--large{
+  font-size: var(--mm-preview-lg);
+  line-height: var(--mm-preview-lg-lh);
+}
+
+.mm-font__preview--extra-large{
+  font-size: var(--mm-preview-xl);
+  line-height: var(--mm-preview-xl-lh);
+}
 
 .mm-font__item-body{
   min-width: 0;
@@ -40,7 +149,19 @@
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
+  gap: var(--mm-space-tight);
   align-items: center;
+}
+
+/* 星星与旁边的标签图标同大（14 档），未选中用次要图标色，选中用 accent（规则 12「选中」） */
+.mm-font__star{
+  color: var(--mm-color-icon-muted);
+  font-size: var(--mm-icon-sm);
+  cursor: pointer;
+}
+
+.mm-font__star--on{
+  color: var(--mm-color-star);
 }
 
 .mm-font__preview{
@@ -56,22 +177,42 @@
 .mm-font__weight-list{
   display: flex;
   flex-direction: row;
+  gap: var(--mm-space-1);
   align-items: center;
   flex: 1;
   min-width: 0;
 }
 
+/* 字重徽章：边长 `--mm-weight-glyph`(18)。**默认无框**（官方实拍是一排裸字母），
+   只有当前字重加框并转亮；框用控件亮线，不用蓝（官方是灰框，蓝留给真正的选中/开启） */
 .mm-font__glyph{
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--mm-weight-glyph);
+  height: var(--mm-weight-glyph);
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-radius-sm);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+  cursor: pointer;
 }
 
+.mm-font__glyph--current{
+  border-color: var(--mm-color-border-control);
+  color: var(--mm-color-text-strong);
+}
+
+/* 字重数量：右端固定 18 宽（`--mm-weight-count`），11 号次要色 */
 .mm-font__weight-count{
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: var(--mm-weight-count);
+  color: var(--mm-color-text-muted);
+  font-size: var(--mm-font-xs);
+  cursor: pointer;
 }
 
 .mm-font__weight-option{

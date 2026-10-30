@@ -224,7 +224,6 @@ export default function StylePage() {
                       title={group.name}
                       open={isOpen}
                       onToggle={() => undefined}
-                      count={group.items.length}
                       titleSlot={
                         <InlineEdit
                           value={group.name}
@@ -239,7 +238,6 @@ export default function StylePage() {
                     <GroupHead
                       title={group.name}
                       open={isOpen}
-                      count={group.items.length}
                       onToggle={() => {
                         /* 刚拖完的那次 click 不算折叠 */
                         if (draggedRef.current) {

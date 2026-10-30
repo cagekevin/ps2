@@ -1,4 +1,5 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 勾选框：12×12 / 圆角 3 / 1px `--mm-color-border-control`（`CONVENTIONS` §6、§7 规则 8）。
+   选中态用 accent 实底 + 反白对号：官方是换 svg 图标，本仓换色，属已登记换皮肤（D-51）。 */
 
 .mm-check__box{
   position: relative;
@@ -10,17 +11,43 @@
   border-radius: var(--mm-check-radius);
 }
 
+/* 选中：accent 实底（规则 12「选中 / 开启」是蓝的合法用法之一） */
+.mm-check__input:checked + .mm-check__box,
+.mm-check__input:indeterminate + .mm-check__box{
+  border-color: var(--mm-color-accent);
+  background: var(--mm-color-accent);
+}
+
+/* 对号：两条边拼出来的勾，尺寸全部由 `--mm-check-size` 派生，不新增数值 */
 .mm-check__input:checked + .mm-check__box::after{
   position: absolute;
-  top: var(--mm-space-tight);
-  left: var(--mm-space-tight);
+  top: calc(var(--mm-check-size) / 6);
+  left: calc(var(--mm-check-size) / 4);
+  width: calc(var(--mm-check-size) / 4);
+  height: calc(var(--mm-check-size) / 2);
+  border: solid var(--mm-color-text-inverse);
+  border-width: 0 var(--mm-border-w) var(--mm-border-w) 0;
+  content: '';
+  transform: rotate(45deg);
+}
+
+/* 半选：一根横杠（与选中同一套底色） */
+.mm-check__input:indeterminate + .mm-check__box::after{
+  position: absolute;
+  top: 50%;
+  left: calc(var(--mm-check-size) / 4);
+  width: calc(var(--mm-check-size) / 2);
+  height: var(--mm-border-w);
+  background: var(--mm-color-text-inverse);
   content: '';
 }
 
-/* 半选：与选中同样的结构位（视觉重写时再给各自的图形，03 §0.5 不写颜色/尺寸档） */
-.mm-check__input:indeterminate + .mm-check__box::after{
-  position: absolute;
-  top: var(--mm-space-tight);
-  left: var(--mm-space-tight);
-  content: '';
+/* 焦点：键盘 Tab 到方框时描一圈，与输入框 focus 同一档 */
+.mm-check__input:focus-visible + .mm-check__box{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+}
+
+.mm-check--disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
 }

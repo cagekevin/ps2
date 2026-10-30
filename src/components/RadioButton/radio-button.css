@@ -1,10 +1,39 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/* 单选框：12×12 正圆 / 1px `--mm-color-border-control`（`CONVENTIONS` §6）。
+   选中态与勾选框同一套：accent 实底 + 反白点（换皮肤，已登记 D-51）。 */
 
 .mm-radio__dot{
+  position: relative;
   display: inline-flex;
   flex: 0 0 auto;
   width: var(--mm-check-size);
   height: var(--mm-check-size);
   border: var(--mm-border-w) solid var(--mm-color-border-control);
   border-radius: var(--mm-radius-pill);
+}
+
+.mm-radio__input:checked + .mm-radio__dot{
+  border-color: var(--mm-color-accent);
+  background: var(--mm-color-accent);
+}
+
+/* 内点：直径是圆的一半，居中 */
+.mm-radio__input:checked + .mm-radio__dot::after{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--mm-check-size) / 2);
+  height: calc(var(--mm-check-size) / 2);
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-color-text-inverse);
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+.mm-radio__input:focus-visible + .mm-radio__dot{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+}
+
+.mm-radio--disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
 }

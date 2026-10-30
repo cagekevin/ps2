@@ -89,7 +89,9 @@ export function SelectBox({
       >
         {icon ? <span className="mm-select-box__icon">{icon}</span> : null}
         <span className="mm-select-box__label">{current?.label ?? ''}</span>
-        <Chevron open={open} />
+        {/* 下拉触发器的箭头**恒朝下**（官方 `select` 实拍：展开与否都是 ∨），
+            不传 `open` 就是静态指示；开合状态由 `aria-expanded` 表达 */}
+        <Chevron />
       </button>
 
       {open ? (
