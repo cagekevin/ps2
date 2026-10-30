@@ -64,7 +64,7 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
       )}
 
       {weights.length ? (
-        <div className="mm-u-row mm-font-panel__quick-weights">
+        <div className="mm-u-row mm-icon-row">
           {weights.map((weight, position) => (
             <IconButton
               key={`${weight}-${position}`}

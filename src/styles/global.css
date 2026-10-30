@@ -33,6 +33,12 @@ p{
   background: var(--mm-color-bg-popover);
   color: var(--mm-color-text-popover);
   box-shadow: var(--mm-shadow-popover);
+  /* 浮层是**浅色表面**，里面的凹陷 / hover 两档由这里声明、控件只消费（`STYLE.md` §7 规则 19）：
+     叠白（`--mm-color-hover-1/2`）与深色输入位在白底上分别不可见 / 反差过头，
+     所以控件不许自己判断落在哪儿，改这三行就能改整片浮层。 */
+  --mm-input-bg: var(--mm-color-bg-input-popover);
+  --mm-input-color: var(--mm-color-text-popover);
+  --mm-hover-bg: var(--mm-color-hover-popover);
 }
 
 /* 面板整体不出现滚动条：滚动只发生在页面内部的列表容器上 */
@@ -43,12 +49,20 @@ body,
   overflow: hidden;
 }
 
-/* 基础字号与文字色：三档里的中档，行高配 12 号 */
+/*
+ * body：基础字号 / 文字色 / 底色，以及「面板文字不可选中」。
+ *
+ * 插件面板不是网页：文字不可被选中 / 拖出（右击菜单的「复制」「检查」入口就没了）。
+ * 真正的浏览器右键菜单由 `hooks/useNoContextMenu` 吃掉 —— CSS 挡不住右键菜单，只能挡选中。
+ * 输入控件恢复可选中：用户要能选自己的字、复制自己的输入。
+ */
 body{
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-16);
   color: var(--mm-color-text);
   background: var(--mm-color-bg-base);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /*
@@ -70,8 +84,16 @@ button{
   text-align: inherit;
 }
 
+/* 拖起来的那个元素：层级要盖过下拉与菜单（`useLongPressDrag` 的 `DRAG_FLOAT`） */
 .mm-drag-float{
   z-index: var(--mm-z-drag);
+}
+
+/* 拖拽占位克隆（`useLongPressDrag` 的 `DRAG_HIDDEN`）：不可见但仍然占位，
+   所以必须显式关掉命中测试 —— 否则它会挡在候选落点前面，拖过它时判定不到落点。
+   隐藏本身由克隆的内联 `opacity` 做（功能性 DOM，§14.1 豁免），这里只管命中。 */
+.mm-drag-hidden{
+  pointer-events: none;
 }
 
 /* 滚动条：全仓一处（宽度 `--mm-scrollbar-w`）。面板是深底，默认的浅色滚动条会整片发白 */
@@ -146,11 +168,6 @@ button{
   scrollbar-gutter: stable;
 }
 
-.mm-bottom-bar__divider,
-.mm-font-panel__divider{
-  flex: 0 0 auto;
-}
-
 .mm-check__input,
 .mm-radio__input{
   position: absolute;
@@ -191,13 +208,41 @@ button{
 }
 
 /*
- * 插件面板不是网页：文字不可被选中 / 拖出（右击菜单的「复制」「检查」入口就没了）。
- * 真正的浏览器右键菜单由 `hooks/useNoContextMenu` 吃掉 —— CSS 挡不住右键菜单，只能挡选中。
- * 输入控件恢复可选中：用户要能选自己的字、复制自己的输入。
+ * 组合层 · 布局类（`STYLE.md` §6.2）：多个元素组成的固定形状，横排仍然只有 `.mm-u-row` 一种。
+ * 所以这一层的**行类都是修饰符**：必须与 `.mm-u-row` 同挂（`class="mm-u-row mm-icon-row"`），
+ * 不自己写 `justify-content` —— 那样就第二个横排入口了（§6）。
+ * 独立成块的只有 divider 与 btn-grid（grid 不用 justify-content，不受那条约束）。
  */
-body{
-  -webkit-user-select: none;
-  user-select: none;
+
+/* 分隔线：线只有两档（§7 规则 8）—— 默认暗线（页面 / 列表分隔），`--strong` 亮线（控件外缘）。
+   线自己是 flex item，`align-self: stretch` 取满交叉轴，厚度走 `--mm-border-w`。
+   不许用 `border-top` 自绘：那条线不参与对齐，规则 10 / 11 判不准。 */
+.mm-divider{
+  flex: 0 0 auto;
+  height: var(--mm-border-w);
+  align-self: stretch;
+  background: var(--mm-color-border);
+}
+
+/* 竖线：同排元素之间的隔断（tab 段间、工具条分组间） */
+.mm-divider--vertical{
+  width: var(--mm-border-w);
+  height: auto;
+}
+
+/* 图标排（修饰符）：一排同尺寸图标按钮（对齐 / 分布 / 翻转 / 字重 / 样式）。
+   gap 取最小档：规则 6 —— 同一组内的间距不得大于该组图标的边长，官方实拍是紧贴。 */
+.mm-icon-row{
+  gap: var(--mm-space-1);
+}
+
+/* 按钮排 / 网格：≥2 个**等宽**按钮（缩放档位、字号预设、内边距预设、九宫格点阵）。
+   用 grid 不是 flex：等宽是对齐要求，flex 得靠百分比或 grow 凑，列数一变就不等宽。
+   列数是运行时值（页面按数据算），按 §14.1 走变量注入，这里不写字面量。 */
+.mm-btn-grid{
+  display: grid;
+  grid-template-columns: repeat(var(--mm-btn-grid-cols, 4), minmax(0, 1fr));
+  gap: var(--mm-space-1);
 }
 
 input,

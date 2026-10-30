@@ -1,15 +1,41 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 右键菜单样式 —— 壳是 `.mm-popover`（浅底深字 + 投影，无描边），
+ * 本文件按 `STYLE.md` §6 只给「宽 / 内边距」两样，不给底色与圆角。
+ *
+ * 菜单项的 hover 底**暂缺**：`--mm-color-hover-2` 是「叠白」，落在白底上看不见，
+ * token 里没有浅色表面的 hover 档（`TD-11-6`），不要在这里自造一个。
+ */
 
 .mm-menu{
   z-index: var(--mm-z-tooltip);
+  min-width: var(--mm-menu-min-w);
+  padding: var(--mm-space-1) 0;
 }
 
+/* 横排两端铺满走公共 `.mm-u-row`，这里只给行自身的尺寸与内边距 */
 .mm-menu__item{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   width: 100%;
+  height: var(--mm-control-h);
+  padding: 0 var(--mm-space-2);
+  cursor: pointer;
 }
+
+/* hover 底由**所在表面**声明（规则 19）：菜单挂在浅色浮层里，取的是叠黑那一档 */
+.mm-menu__item:hover:not(:disabled){
+  background: var(--mm-hover-bg, var(--mm-color-bg-hover));
+}
+
+/* 分隔线就是组合层的 `.mm-divider`（线只有两档，规则 8）；这里只给它在菜单里的上下留白 */
+.mm-menu__hr{
+  margin: var(--mm-space-1) 0;
+}
+
+/* 删除 / 清空这类不可逆动作：只给文字色，不给红底 ——
+   红底会把「可点的动作」变成一块警告牌，意图由菜单项自己的文字表达 */
+.mm-menu__item--danger{
+  color: var(--mm-color-danger);
+}
+
 /* 菜单项右侧的勾选对号：小标记档（12） */
 .mm-menu__check{
   font-size: var(--mm-icon-xs);

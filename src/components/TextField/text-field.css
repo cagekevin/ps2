@@ -1,8 +1,14 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 定宽输入框（三档 `variant`）+ 左图标 + Enter 提交。
+ *
+ * 输入位的表面（底 / 描边 / 圆角 / 字号）**不在本文件**：内部渲染的是 `ui.Input`，
+ * 表面由 `ui.css` 的 `.mm-input` 给（`STYLE.md` §6.1）。这里只给定宽容器的排列与图标档位。
+ */
 
 .mm-text-field{
   display: inline-flex;
   align-items: center;
+  gap: var(--mm-space-1);
   height: var(--mm-control-h);
   border-radius: var(--mm-radius-md);
 }

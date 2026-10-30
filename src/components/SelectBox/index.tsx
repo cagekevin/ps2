@@ -16,6 +16,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from '
 import { useDismiss } from '../../hooks/useDismiss';
 import { anchorRect, useFloatingPosition } from '../../hooks/useFloatingPosition';
 import { Chevron } from '../Chevron';
+import { Button } from '../ui';
 import { Portal } from '../Portal';
 import { Icon } from '../icons';
 import './select-box.css';
@@ -122,9 +123,9 @@ export function SelectBox({
                 ) : null}
                 <span className="mm-select-box__item-label">{option.label}</span>
                 {onRemove ? (
-                  <button
-                    type="button"
-                    className="mm-btn mm-select-box__remove"
+                  <Button
+                    variant="ghost"
+                    className="mm-select-box__remove"
                     title="删除"
                     aria-label={`删除 ${option.label}`}
                     onClick={(event) => {
@@ -138,7 +139,7 @@ export function SelectBox({
                     }}
                   >
                     <Icon name="iconshanchu" />
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ))}

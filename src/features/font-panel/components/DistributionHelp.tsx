@@ -24,7 +24,7 @@ export function DistributionHelp() {
       </button>
 
       {open ? (
-        <div className="mm-font-panel__help">
+        <div className="mm-u-col mm-font-panel__help">
           <div>固定间距：高度1，高度2，高度3</div>
           <div>如：20,30,40</div>
           <div>比例间距：高度=比例</div>

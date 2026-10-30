@@ -93,11 +93,11 @@ export function readIndex(): Result<WarehouseIndex> {
 }
 
 /**
- * 索引**原文**（云同步上传用）。
+ * 索引**原文**（`collectBundle` 内部用，不导出）。
  *
  * 不 `readIndex()` 之后 `JSON.stringify`：那会洗掉官方未知键与键序，上传一次丢一次。
  */
-export function readIndexText(): Result<string> {
+function readIndexText(): Result<string> {
   return readTextResult(ACTION_INDEX_FILE, ROOT);
 }
 

@@ -7,7 +7,7 @@
 
 import { CheckBox } from '../../../components/CheckBox';
 import { RadioButton } from '../../../components/RadioButton';
-import { Input } from '../../../components/ui';
+import { Button, Input } from '../../../components/ui';
 import { useDraft } from '../../../hooks/useDraft';
 import { enterSubmit } from '../../../hooks/input-method-enter';
 import type { CreateButtonConfig } from '../../../domain/font-set';
@@ -42,18 +42,18 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
   }
 
   return (
-    <div className="mm-u-col mm-font-panel__panel mm-font-panel__create">
+    <div className="mm-u-col mm-font-panel__create">
       <div className="mm-u-row mm-font-panel__row">
         <RadioButton
           label="圆角"
-          name="mm-font-panel-button-type"
+          name="font-panel-button-type"
           title="生成圆角矩形"
           checked={config.type === 1}
           onChange={() => pickType(1)}
         />
         <RadioButton
           label="直角"
-          name="mm-font-panel-button-type"
+          name="font-panel-button-type"
           title="生成直角矩形"
           checked={config.type === 2}
           onChange={() => pickType(2)}
@@ -66,12 +66,11 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-u-row mm-font-panel__row mm-font-panel__row--pad">
+      <div className="mm-u-row mm-font-panel__row--pad">
         <div className="mm-font-panel__label" title="形状内边距，10,5 表示 宽=10 高=5">
           自定义边距
         </div>
         <Input
-          variant="page"
           className="mm-u-grow mm-font-panel__input-grow"
           value={padding}
           placeholder="10,20"
@@ -85,29 +84,27 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
       <div className="mm-u-row mm-font-panel__row mm-font-panel__row--tight">
         <div className="mm-font-panel__label">预设</div>
         {CREATE_BUTTON_PADDINGS.map((value) => (
-          <button
+          <Button
             key={value}
-            type="button"
-            className="mm-btn mm-btn--numeric mm-font-panel__preset-btn"
+            
             title={`内边距 ${value}`}
             onClick={() => commitPadding(value)}
           >
             {value}
-          </button>
+          </Button>
         ))}
       </div>
 
-      <div className="mm-font-panel__quick-grid">
+      <div className="mm-btn-grid mm-font-panel__quick-grid">
         {CREATE_BUTTON_PRESETS.map((value) => (
-          <button
+          <Button
             key={value}
-            type="button"
-            className="mm-btn mm-btn--numeric mm-font-panel__quick-btn"
+            
             title={`预设样式${value}`}
             onClick={() => commitPadding(`自动生成${value}`)}
           >
             {value}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

@@ -94,7 +94,7 @@ export function ItemView({
             {/* 原版 render `:50956-50971` 有「字体数 + N点 + 色点」三件；
                 字体数（那个孤零零的 1）已去掉，只留「N点」+ 色点 */}
             <span className="mm-u-row mm-style__font-head">
-              <span className="mm-style__font-size">{preview.size}</span>
+              <span>{preview.size}</span>
               {preview.color ? (
                 <span className="mm-style__font-dot" />
               ) : null}

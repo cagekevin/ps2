@@ -1,7 +1,7 @@
 /** 自定义预览文案：字号图标 + 输入框 + 应用；空值按钮置灰 */
 import { useState } from 'react';
 import { Icon } from '../../../components/icons';
-import { Input } from '../../../components/ui';
+import { Button, Input } from '../../../components/ui';
 import { enterSubmit } from '../../../hooks/input-method-enter';
 
 interface Props {
@@ -29,14 +29,13 @@ export function PreviewText({ current, onApply }: Props) {
         onChange={(event) => setText(event.target.value)}
         onKeyDown={enterSubmit(apply)}
       />
-      <button
-        type="button"
-        className="mm-font__preview-text-btn"
+      <Button
+        
         disabled={!canApply}
         onClick={apply}
       >
         应用
-      </button>
+      </Button>
     </div>
   );
 }

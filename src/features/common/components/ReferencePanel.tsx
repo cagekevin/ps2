@@ -64,7 +64,7 @@ export function ReferencePanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-common__panel-row mm-common__panel-row--pair">
+      <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button
           className="mm-common__panel-btn"
           onClick={() => void run(clearGuide)}

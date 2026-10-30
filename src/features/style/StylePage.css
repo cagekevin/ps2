@@ -1,4 +1,9 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 样式页样式（`/style`）：仓库条 → 四段 tab → 四库格子列表。
+ *
+ * 页面根 `.mm-style` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组，这里只写本页差异。
+ * 描述浮层挂 `.mm-popover`，本文件只给它宽度与内边距（规则 16 / §6）。
+ */
 
 /* 仓库条：官方是**通栏深色横条**（贴面板左右边、直角、高度更大），不是输入框。
    SelectBox 组件不动，这里只覆盖这一处：通栏 + 高度 + 去掉输入位的描边/圆角/底色。 */
@@ -13,6 +18,18 @@
 }
 
 
+
+/* 仓库条那一行：仓库下拉吃掉宽度，右侧「读取中…」贴右端；同排控件取同行并列档 */
+.mm-style__toolbar{
+  gap: var(--mm-space-inline);
+}
+
+/* 「读取中…」：与 `.mm-state-hint` 同一档（次要色 + 11 号），不抢仓库条的位置 */
+.mm-style__loading{
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
 
 /* tab 条：四等分 + 段间 1px 竖线；整条**不加**底部分隔线（官方实拍没有） */
 .mm-style__tabs{
@@ -44,6 +61,11 @@
   color: var(--mm-color-accent);
 }
 
+/* tab 是按钮，hover 叠底；选中与否只由文字色表达（规则 12） */
+.mm-style__tab:hover{
+  background: var(--mm-color-bg-hover);
+}
+
 /* 段间竖线用**亮线**档：暗线 `--mm-color-border`(#2e2e2e) 落在 #363636 上几乎看不见 */
 .mm-style__tab-line{
   flex: 0 0 auto;
@@ -52,13 +74,12 @@
   background: var(--mm-color-border-control);
 }
 
+/* 描述浮层：表面 / 定位 / 层级全部由 `.mm-popover` 给（规则 16），
+   这里只给宽度与内边距 —— 少了内边距文字会贴着浮层边 */
 .mm-style__describe{
-  position: fixed;
-  top: var(--floating-y, 0);
-  left: var(--floating-x, 0);
-  z-index: var(--mm-z-dropdown);
   width: max-content;
-  pointer-events: none;
+  max-width: var(--mm-describe-max-w);
+  padding: var(--mm-space-2);
 }
 
 .mm-style__describe-name{
@@ -212,4 +233,8 @@
 /* 组末尾「+」：官方是 `add-svg` 里的 `svg-14`，取 14 档 */
 .mm-style__add .mm-icon{
   font-size: var(--mm-icon-sm);
+}
+
+.mm-style__add:hover{
+  background: var(--mm-color-bg-hover);
 }

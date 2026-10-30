@@ -138,7 +138,7 @@ export function CustomTransformPanel() {
 
       <div className="mm-common__panel-rule" />
 
-      <div className="mm-common__panel-row mm-common__panel-row--pair">
+      <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button className="mm-common__panel-btn" onClick={submit}>
           生成变换
         </Button>

@@ -215,9 +215,7 @@ export default function StylePage() {
               return (
                 <div
                   key={`${group.name}-${index}`}
-                  className={`mm-style__group${
-                    activeKind === 'gradient' || activeKind === 'style' ? ' mm-style__group--wide' : ''
-                  }`}
+                  className="mm-style__group"
                 >
                   {editing?.type === 'group' && editing.groupIndex === index ? (
                     <GroupHead
@@ -346,7 +344,7 @@ export default function StylePage() {
       {/* 悬停浮层：portal 到 body，位置走 useFloatingPosition（照 app 的 style-describe） */}
       {describeContent
         ? <Portal>
-            <div ref={describeRef} className="mm-style__describe">
+            <div ref={describeRef} className="mm-popover mm-style__describe">
               <div className="mm-style__describe-name">{describeContent.name}</div>
               <div className="mm-style__describe-meta">{describeContent.subtitle}</div>
               {describeContent.detail ? (

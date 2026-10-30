@@ -6,6 +6,7 @@
  */
 
 import { CheckBox } from '../../../components/CheckBox';
+import { Button } from '../../../components/ui';
 import type { PasteFontConfig } from '../../../domain/font-set';
 
 interface Props {
@@ -25,7 +26,7 @@ const FIELDS: ReadonlyArray<{ key: keyof PasteFontConfig; label: string }> = [
 
 export function PasteFontPanel({ keeps, onChange, onReset }: Props) {
   return (
-    <div className="mm-u-col mm-font-panel__panel mm-font-panel__paste">
+    <div className="mm-u-col mm-font-panel__panel">
       <div className="mm-u-row mm-font-panel__paste-row">
         {FIELDS.slice(0, 3).map((field) => (
           <CheckBox
@@ -46,9 +47,9 @@ export function PasteFontPanel({ keeps, onChange, onReset }: Props) {
           />
         ))}
       </div>
-      <button type="button" className="mm-font-panel__wide-btn" onClick={onReset}>
+      <Button className="mm-font-panel__wide-btn" onClick={onReset}>
         恢复默认
-      </button>
+      </Button>
     </div>
   );
 }

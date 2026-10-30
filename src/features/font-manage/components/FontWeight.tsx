@@ -46,7 +46,7 @@ export function FontWeight({ font, current, onSelect }: Props) {
 
   return (
     <div className="mm-font__weight" ref={rootRef}>
-      <div className="mm-u-row mm-font__weight-wrap">
+      <div className="mm-u-row">
         <div className="mm-font__weight-list">
           {previews.map((ps, index) => (
             <button

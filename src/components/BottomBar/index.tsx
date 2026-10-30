@@ -23,6 +23,7 @@
 
 import type { MouseEvent, ReactNode } from 'react';
 import { Icon, type IconName } from '../icons';
+import { Button } from '../ui';
 import './bottom-bar.css';
 
 interface BottomBarProps {
@@ -57,16 +58,16 @@ export function BottomBarButton({
   children
 }: BottomBarButtonProps) {
   return (
-    <button
-      type="button"
-      className="mm-btn mm-bottom-bar__btn"
+    <Button
+      variant="ghost"
+      className="mm-bottom-bar__btn"
       title={title}
       aria-label={title}
       disabled={disabled}
       onClick={onClick}
     >
       {children ?? (name ? <Icon name={name} /> : null)}
-    </button>
+    </Button>
   );
 }
 

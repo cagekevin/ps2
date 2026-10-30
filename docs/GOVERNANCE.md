@@ -75,18 +75,20 @@
 
 ### 4.1 范本清单
 
-> **2026-10-29**：全部样式文件已骨架化（只留结构与定位，视觉待重写），下表中 CSS 范本行的视觉描述**暂不成立**，重写时同步；设计 Token 未动，仍是尺寸唯一出处。
+> **2026-10-30**：2026-10-29 曾把全部样式文件骨架化（只留结构与定位，视觉待重写）——
+> **当日视觉稿已上线**（全仓 34 个 CSS 按 tokens 写回），下表中 CSS 范本行的视觉描述**重新成立**；
+> 设计 Token 未动，仍是颜色 / 尺寸唯一出处。新增 CSS 范本条目时写明三件事：**宽 / 皮 / 默认 path**。
 
 | 层 | 范本文件 | 说明 |
 |---|---|---|
 | 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `docs/STYLE.md` §7 规则 12 |
-| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
+| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；**组合层·布局**（`STYLE.md` §6.2）也在这里：`.mm-divider` / `.mm-icon-row` / `.mm-btn-grid`，三者都不带 `justify-content`（行类必须与 `.mm-u-row` 同挂）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 |
 | 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 + 清空入口（诊断页） |
 | 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） |
-| 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型 |
+| 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型；`savePref(key, value)` 是「写入并立即落盘」的唯一入口（失败只记日志、不阻断业务），`flushPrefs` 不导出 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） |
 | 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用；`checkFontUsable` 不可用时返回**宿主原话**（「请选择文字图层!」/「字体缺失」），不再统一改写成「字体不可用」；`ztgl_setFont` 成功返回 `{"code":"OK"}`（不是 `err` 信封；解析用 `lenientVoid`，认不出就原样转发当成功）；`applyFont` / `getSystemFontList` 已进能力表 |
 | 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`；25 个函数全部走能力表（`CAP.*`），前置写在表的 `require` 里（执行器第一步判定，不通过直接终止）：24 个带 `requireTextLayer`，`distributeByPitch` 带 `requireSelection(2)`（分布的对象是多个图层，不限于文字）；21 个写是 `lenientVoid` + 60s。非文字图层上这批写函数不报错、返回 `undefined`、什么都不做。`zt_changeTextBranchMerge` 已删（抛「没有这种元素」，是派发表 key 不是函数） |
@@ -133,6 +135,7 @@
 | UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-input-surface` |
 | 界面文案 | `src/types/messages.ts` | 唯一入口：`MSG.corrupt`（文件坏）/ `MSG.badPayload`（宿主返回认不出）/ `MSG.stale`（状态过期）+ 分域的官方逐字句；`fail` / `failWithDetail` 里**不许再写中文**，现场（字段路径 / 下标）一律进 `detail`。存量：`font`/`style` 约 99 处（`TD-09-6`）、`core/ps` 29 处（`TD-04-1`） |
 | 分组头 | `src/components/GroupHead/index.tsx` | 整行「箭头 + 名称 + 计数（可选）+ 行尾插槽（可选）」；内层 button 管开合 / 右键 / 拖拽，`data-*` 挂在它上面（拖拽落点靠它选节点）；`titleSlot` 为就地改名态（不渲染 button）。**与 `IconPanel`（触发器+面板）、已删的 `Collapse`（标题+内容）不同层**：这里没有面板、没有内容区 |
+| 段选样式 | `src/components/Segment/segment.css` | 未选中的底取输入位档（比所在表面深一档），选中项铺 accent 实底 + 反白 |
 | 段选 | `src/components/Segment/index.tsx` | 2–4 档并排互斥按钮组；高 `--mm-control-h`、圆角 `--mm-radius-md`、选中 `--mm-color-accent`；判据：**≤4 档且要并排看全 → 段选**，选项多 / 有列表语义 → `SelectBox`，逐项长文本 → `RadioButton` |
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 |
 | 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） |
@@ -150,7 +153,7 @@
 | Toast | `src/components/Toast/index.tsx` | 禁止 alert |
 | Loading | `src/components/Loading/index.tsx` | 全屏加载唯一入口，文案栈 |
 | Spin 转圈 | `src/components/Spin/index.tsx` | 裸圈 / 带文案 / 局部遮罩三模式（照原版 NewSpin） |
-| Spin 样式 | `src/components/Spin/spin.css` | 18px / 0.8s，token 化 |
+| Spin 样式 | `src/components/Spin/spin.css` | 18px / 0.8s，token 化；转圈那一道取 accent（规则 12「进行中」一档） |
 | 路由 | `src/app/router.tsx` | 页面懒加载 |
 | 外壳 | `src/app/layout.tsx` | 全局布局 |
 | Provider | `src/app/providers.tsx` | UI 横切挂载 |
@@ -173,6 +176,7 @@
 | 右键菜单 | `src/components/ContextMenu/index.tsx` | 定位走 hook，菜单项由调用方给 |
 | 输入弹窗 | `src/components/InputDialog/index.tsx` | 原版 `$inputBox`：位置 50vw-90/top30%、空值拦截、Enter 提交 |
 | 输入弹窗样式 | `src/components/InputDialog/input-dialog.css` | 对齐 `.input-box` / `.input-box-main` |
+| 页面底栏样式 | `src/components/BottomBar/bottom-bar.css` | 26 高、通栏（抵掉页边）、深底；按钮 30 宽、hover 纯底色无描边；底栏里**所有** svg 由外壳压到 14 |
 | 页面底栏 | `src/components/BottomBar/index.tsx` | 26 高深底 + 30 宽图标按钮（hover 纯底色无描边）+ 1×13 竖线；页面不再自绘底栏 |
 | 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 |
 | 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` |
@@ -188,7 +192,7 @@
 | 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口；前提类码（`PS_NO_DOC` / `PS_WRONG_LAYER`）灰字，不标红 |
 | 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
-| 组件样式 | `src/components/ui/ui.css` | 基础控件形状 |
+| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-badge` / `.mm-notice` / `.mm-modal`，都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |

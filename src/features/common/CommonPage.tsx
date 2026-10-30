@@ -14,6 +14,7 @@
 
 import type { ReactNode } from 'react';
 import { Chevron } from '../../components/Chevron';
+import { Button } from '../../components/ui';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { MSG } from '../../types/messages';
@@ -64,14 +65,9 @@ function toRows(tiles: CommonUseTile[]): CommonUseTile[][] {
 /** 一个缩放档位按钮：宽度由容器决定（行内 4 等分 / 抽屉里 5 列），自己不写宽 */
 function ZoomPreset({ value, onClick }: { value: number; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      className="mm-btn mm-btn--numeric mm-common__preset"
-      title={String(value)}
-      onClick={onClick}
-    >
+    <Button className="mm-common__preset" title={String(value)} onClick={onClick}>
       {value}
-    </button>
+    </Button>
   );
 }
 
@@ -124,7 +120,7 @@ function ZoomRow({
           </button>
         )}
         panel={(close) => (
-          <div className="mm-common__zoom-all">
+          <div className="mm-btn-grid mm-common__zoom-all">
             {all.map((value) => (
               <ZoomPreset
                 key={value}
@@ -166,7 +162,7 @@ export default function CommonPage() {
         ) : null}
         {page.dropped.length ? (
           <div
-            className="mm-common__warning"
+            className="mm-notice mm-notice--warn"
             title={page.dropped
               .slice(0, 3)
               .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
@@ -178,7 +174,7 @@ export default function CommonPage() {
 
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
-          <div className="mm-u-col mm-common__zoom">
+          <div className="mm-u-col">
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
@@ -203,7 +199,7 @@ export default function CommonPage() {
         ) : null}
 
         {page.showTransformation ? (
-          <div className="mm-u-row mm-u-row--wrap mm-common__flips">
+          <div className="mm-u-row mm-u-row--wrap mm-icon-row">
             {FLIP_ITEMS.map((item) => (
               <IconButton
                 key={item.direction}
@@ -215,7 +211,7 @@ export default function CommonPage() {
           </div>
         ) : null}
 
-        <div className="mm-common__divider" />
+        <div className="mm-divider mm-common__divider" />
 
         {visibleTiles.length ? (
           <div className="mm-u-col mm-common__grid" ref={page.gridRef}>
@@ -223,7 +219,7 @@ export default function CommonPage() {
                 <IconPanelGroup
                   /* key 用行首项的 id：顺序会变，用行号会让面板挂到错的组上 */
                   key={row[0]?.id ?? `row-${rowIndex}`}
-                  className="mm-common__tile-row"
+                  className="mm-btn-grid mm-common__tile-row"
                   exclusive
                   openId={page.expandedId}
                   onOpenChange={page.setExpandedId}

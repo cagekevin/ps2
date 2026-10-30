@@ -1,10 +1,45 @@
-/* 【范本】图片取色弹层样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】图片取色弹层样式 —— 新增同类代码照此结构。 */
 
-/* 弹层卡片的纵向排列走公共 `.mm-u-col`，外层遮罩已负责居中 */
+/* 卡片壳走组合层 `.mm-modal`（居中弹窗的底色 / 内边距 / 圆角 / 宽三档都在那里），
+   这里只覆盖宽度：这个弹层比默认的 260 宽，取它自己的档（仍在规则 4 的 200–360 内） */
+.mm-imgcolor{
+  width: var(--mm-imgcolor-w);
+}
+
+/* 分段标题（「提取的颜色」/「提取的渐变色」）：与设置页的分组标题同一组值 */
+.mm-imgcolor__title{
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
 
 .mm-imgcolor__row{
   display: flex;
   flex-wrap: wrap;
+  gap: var(--mm-space-1);
+}
+
+/* 色块：边长取样式页色块那一档（同页同类同尺寸，规则 9）。
+   色值由 TSX 注入 `--mm-swatch`：动态值只交变量、由 CSS 决定怎么用（§14.1） */
+.mm-imgcolor__swatch{
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+  border-radius: var(--mm-radius-sm);
+  background: var(--mm-swatch);
+  cursor: pointer;
+}
+
+/* 渐变条：比色块宽一倍，圆角取控件档 */
+.mm-imgcolor__grad{
+  width: var(--mm-imgcolor-grad-w);
+  height: var(--mm-imgcolor-grad-h);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-swatch);
+  cursor: pointer;
+}
+
+/* 分隔线就是组合层的 `.mm-divider`（线只有两档，规则 8）；这里只给它在卡片里的上下留白 */
+.mm-imgcolor__hr{
+  margin: var(--mm-space-1) 0;
 }
 
 .mm-imgcolor__btn{

@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { IconButton } from '../../../components/IconButton';
 import { InputDialog } from '../../../components/InputDialog';
 import { SelectBox } from '../../../components/SelectBox';
-import { Input } from '../../../components/ui';
+import { Button, Input } from '../../../components/ui';
 import type { HierarchyPreset } from '../../../domain/font-set';
 import { useDraft } from '../../../hooks/useDraft';
 import { HIERARCHY_TITLES } from '../font-panel-constants';
@@ -74,10 +74,10 @@ export function FontHierarchy({
   const current = presets[presetIndex];
 
   return (
-    <div className="mm-font-panel__hierarchy">
+    <div className="mm-u-col">
       <div className="mm-u-row mm-font-panel__row mm-font-panel__hierarchy-row">
         <SelectBox
-          className="mm-u-grow mm-font-panel__hierarchy-select"
+          className="mm-u-grow"
           options={presets.map((preset, index) => ({
             value: String(index),
             label: preset.name
@@ -109,17 +109,16 @@ export function FontHierarchy({
         />
       </div>
 
-      <div className="mm-font-panel__levels">
+      <div className="mm-btn-grid mm-font-panel__levels">
         {levels.map((level, index) => (
-          <button
+          <Button
             key={`${HIERARCHY_TITLES[index] ?? index}`}
-            type="button"
-            className="mm-btn mm-btn--numeric mm-font-panel__level"
+            
             title={HIERARCHY_TITLES[index] ?? ''}
             onClick={() => onApplyLevel(level)}
           >
             {level}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -129,7 +128,6 @@ export function FontHierarchy({
             {draftText.map((text, index) => (
               <Input
                 key={`level-input-${index}`}
-                variant="page"
                 className="mm-font-panel__editor-input"
                 type="text"
                 inputMode="decimal"
@@ -150,23 +148,19 @@ export function FontHierarchy({
           </div>
 
           <div className="mm-u-row mm-font-panel__editor-actions">
-            <button
-              type="button"
-              className="mm-btn mm-btn--numeric mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
+            <Button
               title="替换当前层级"
               /* 保存到预设自己会写回层级，不再先 commitDraft（否则同一份值写两次盘） */
               onClick={() => onSavePreset(draftLevels())}
             >
               保存到预设
-            </button>
-            <button
-              type="button"
-              className="mm-btn mm-btn--numeric mm-font-panel__preset-btn mm-font-panel__preset-btn--half"
+            </Button>
+            <Button
               title="保存到新预设"
               onClick={() => setNameMode({ kind: 'create' })}
             >
               新建预设
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

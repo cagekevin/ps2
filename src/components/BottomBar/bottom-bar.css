@@ -1,8 +1,17 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 【范本】页面底栏样式 —— 新增同类代码照此结构。
+ *
+ * 26 高、通栏（抵掉页边）、深底；按钮 30 宽、hover 只换底色（无描边）。
+ * 底栏里**所有** svg 由外壳压到 14，调用点与页面都不许再传尺寸。
+ */
 
 /* 居中与横排走公共 `.mm-btn`，这里只留不收缩 */
 /* 底栏高度与按钮宽取 token */
 .mm-bottom-bar{
+  /* 底栏是一排：按钮 / 竖线 / 页面塞进来的块都在同一行上居中；
+     没有这两条时子项按 block 流排，页面塞进来的块只能靠自己推位置 */
+  display: flex;
+  align-items: center;
   height: var(--mm-bottom-bar-h);
   /* 底栏通栏：页面壳统一给了左右页边，这里抵掉，底栏才能贴到面板左右边 */
   margin: 0 calc(-1 * var(--mm-page-pad-x));
@@ -13,6 +22,15 @@
   flex: 0 0 auto;
   width: var(--mm-bottom-btn-w);
   cursor: pointer;
+}
+
+/* 竖线 1×13：不挂 `.mm-divider--vertical` —— 那条是 `height: auto`，
+   在底栏（flex row + 居中）里会被压成 0；这里要的是「比 26 矮一截」的固定高度 */
+.mm-bottom-bar__divider{
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-verline-h);
+  background: var(--mm-color-border);
 }
 
 /* 底栏按钮 hover：纯底色、压暗一档、无描边（与图标按钮同一个 token，方向一致） */

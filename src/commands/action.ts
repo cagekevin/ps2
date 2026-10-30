@@ -10,8 +10,7 @@
  * 并已写进 `05` §3.6 的变更记录。
  */
 
-import { log } from '../core/logger';
-import { flushPrefs, getPref, setPref } from '../core/prefs';
+import { getPref, savePref } from '../core/prefs';
 import { decodeBase64, encodeBase64 } from '../core/cep/base64';
 import { callAction as callActionJsx, getActionList } from '../core/ps/action';
 import { decodeDzx, encodeDzx, planImportFiles } from '../domain/action-dzx';
@@ -103,11 +102,7 @@ export function canAskGuide(): boolean {
  * 写失败只记日志：偏好丢了最多再弹一次，不影响业务。
  */
 export async function markGuideDone(): Promise<Result<void>> {
-  setPref('action.guideDone', true);
-  const flushed = await flushPrefs();
-  if (flushed.status === 'error') {
-    log.warn('动作页引导标记写入失败', { code: flushed.code, detail: flushed.detail });
-  }
+  await savePref('action.guideDone', true);
   return ok(undefined);
 }
 
@@ -230,14 +225,9 @@ export function selectWarehouse(index: number): Promise<Result<void>> {
 
 /** 列数：只写本地偏好，**不重读文件**（`05` §3.10 D） */
 export async function setListColumns(columns: ActionColumns): Promise<Result<void>> {
-  setPref('action.listColumns', columns);
   useActionStore.getState().setColumns(columns);
-
-  const flushed = await flushPrefs();
-  if (flushed.status === 'error') {
-    /* 偏好丢了不影响业务：记日志、不抛（与折叠态同一策略） */
-    log.warn('动作页列数写入失败', { code: flushed.code, detail: flushed.detail });
-  }
+  /* 偏好丢了不影响业务：记日志、不抛（与折叠态同一策略） */
+  await savePref('action.listColumns', columns);
   return ok(undefined);
 }
 

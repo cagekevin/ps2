@@ -169,9 +169,9 @@ export default function HomePage() {
   const logShown = logText === null ? MSG.home.logNotLoaded : logText || MSG.home.emptyLog;
 
   const copyButton = (text: string, success: string) => (
-    <button type="button" className="mm-btn mm-home__link" onClick={() => void handleCopy(text, success)}>
+    <Button variant="ghost" className="mm-home__link" onClick={() => void handleCopy(text, success)}>
       {MSG.home.copy}
-    </button>
+    </Button>
   );
 
   return (
@@ -220,7 +220,7 @@ export default function HomePage() {
                 title={MSG.home.sectionVendorFns}
                 actions={copyButton(formatDiag(diag), MSG.home.copiedDiag)}
               />
-              <div className="mm-home__rows">
+              <div className="mm-u-col mm-home__rows">
                 {diagRows(diag).map((row) => (
                   <DiagRowView key={row.label} label={row.label} value={row.value} />
                 ))}
@@ -229,7 +229,7 @@ export default function HomePage() {
 
             <div className="mm-home__panel">
               <PanelHead title={MSG.home.sectionVendorConfig} />
-              <div className="mm-home__rows">
+              <div className="mm-u-col mm-home__rows">
                 {configRows(diag).map((row) => (
                   <DiagRowView key={row.label} label={row.label} value={row.value} />
                 ))}
@@ -245,16 +245,16 @@ export default function HomePage() {
             actions={
               <>
                 {copyButton(logText ?? '', MSG.home.copiedLog)}
-                <button type="button" className="mm-btn mm-home__link" onClick={handleLog}>
+                <Button variant="ghost" className="mm-home__link" onClick={handleLog}>
                   {MSG.home.refresh}
-                </button>
-                <button
-                  type="button"
-                  className="mm-btn mm-home__link"
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="mm-home__link"
                   onClick={() => void handleClearLog()}
                 >
                   {MSG.home.clear}
-                </button>
+                </Button>
               </>
             }
           />

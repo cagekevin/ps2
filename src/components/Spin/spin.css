@@ -1,4 +1,4 @@
-/* 【范本】Spin 转圈样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】Spin 转圈样式 —— 新增同类代码照此结构。 */
 
 .mm-spin{
   display: flex;
@@ -12,8 +12,21 @@
   inset: 0;
 }
 
+/* 转圈那一道用 accent（规则 12「焦点 / 进行中」一档）：全灰的圈看不出在转 */
 .mm-spin__ring{
   display: block;
+  width: var(--mm-spin-size);
+  height: var(--mm-spin-size);
+  border: var(--mm-border-w) solid var(--mm-color-bg-raised);
+  border-top-color: var(--mm-color-accent);
+  border-radius: var(--mm-radius-pill);
+  animation: mm-spin-rotate var(--mm-spin-duration) linear infinite;
+}
+
+@keyframes mm-spin-rotate{
+  to{
+    transform: rotate(360deg);
+  }
 }
 
 .mm-spin__tip{

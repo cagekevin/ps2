@@ -7,6 +7,7 @@
  * 页面只做组装：动作在 `useFontManage`，单项在 `components/FontListItem`。
  */
 import { StateHint } from '../../components/StateHint';
+import { Button } from '../../components/ui';
 import { FontListItem } from './components/FontListItem';
 import { CountRow } from './components/CountRow';
 import { PageFooter } from './components/PageFooter';
@@ -40,7 +41,7 @@ export default function FontManagePage() {
         />
 
         {page.showTextPanel ? (
-          <div className="mm-font__text-panel">
+          <div>
             <PreviewText
               current={page.previewText}
               onApply={(value) => {
@@ -67,23 +68,23 @@ export default function FontManagePage() {
         onClear={() => page.setActiveTag('')}
       />
 
-      <div className="mm-font__warnings">
+      <div className="mm-u-col mm-font__warnings">
         {page.dropped.length > 0 ? (
-          <div className="mm-font__warning">{page.dropped.length} 个字体项无法识别</div>
+          <div className="mm-notice mm-notice--warn">{page.dropped.length} 个字体项无法识别</div>
         ) : null}
         {page.tagsDropped.length > 0 ? (
-          <div className="mm-font__warning">{page.tagsDropped.length} 个标签无法识别</div>
+          <div className="mm-notice mm-notice--warn">{page.tagsDropped.length} 个标签无法识别</div>
         ) : null}
         {page.starsDropped.length > 0 ? (
-          <div className="mm-font__warning">{page.starsDropped.length} 个评分无法识别</div>
+          <div className="mm-notice mm-notice--warn">{page.starsDropped.length} 个评分无法识别</div>
         ) : null}
         {page.classificationError ? (
-          <div className="mm-font__warning">{page.classificationError}（分类筛选已禁用）</div>
+          <div className="mm-notice mm-notice--warn">{page.classificationError}（分类筛选已禁用）</div>
         ) : page.classificationEmpty ? (
-          <div className="mm-font__warning">没有分类数据（分类筛选已禁用）</div>
+          <div className="mm-notice mm-notice--warn">没有分类数据（分类筛选已禁用）</div>
         ) : null}
         {page.starsError ? (
-          <div className="mm-font__warning">
+          <div className="mm-notice mm-notice--warn">
             {page.starsError}：列表里的评分先按「未收藏」显示，不是你的评分丢了
           </div>
         ) : null}
@@ -101,9 +102,9 @@ export default function FontManagePage() {
         <div className="mm-font__state">
           <StateHint empty={page.hasFilter ? '没有匹配的字体' : '系统里没有可用字体'} />
           {page.hasFilter ? (
-            <button type="button" className="mm-font__retry" onClick={page.clearFilters}>
+            <Button className="mm-font__retry" onClick={page.clearFilters}>
               清除筛选
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : (

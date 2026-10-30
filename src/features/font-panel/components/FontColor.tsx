@@ -16,6 +16,7 @@
 
 import { useMemo, type CSSProperties } from 'react';
 import { CheckBox } from '../../../components/CheckBox';
+import { Button } from '../../../components/ui';
 import { IconButton } from '../../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../../components/IconPanel';
 import { SelectBox } from '../../../components/SelectBox';
@@ -149,7 +150,7 @@ export function FontColor({
         />
       </div>
 
-      <div className="mm-u-row mm-u-row--wrap mm-font-panel__styles">
+      <div className="mm-u-row mm-u-row--wrap mm-icon-row">
         <IconButton
           name="iconzihaodaxiao7"
           title="加粗"
@@ -169,7 +170,7 @@ export function FontColor({
           onClick={() => onStyle('caps', info.capitalization !== 'allCaps')}
         />
 
-        <span className="mm-font-panel__divider" />
+        <span className="mm-divider mm-divider--vertical" />
 
         {ALIGN_TITLES.map((title, index) => (
           <IconButton
@@ -187,7 +188,7 @@ export function FontColor({
       {/* 字号 / 行距的预设互不排斥：可以同时展开 */}
       <IconPanelGroup exclusive={false}>
         <div className="mm-font-panel__metric">
-          <div className="mm-u-grow mm-font-panel__half">
+          <div className="mm-u-grow">
             <IconPanel
               id="size-preset"
               title="字号预设"
@@ -203,16 +204,14 @@ export function FontColor({
                 />
               )}
               panel={
-                <div className="mm-font-panel__presets">
+                <div className="mm-btn-grid mm-font-panel__presets">
                   {defaults.size.map((value) => (
-                    <button
+                    <Button
                       key={`size-${value}`}
-                      type="button"
-                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onSize(value)}
                     >
                       {value}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               }
@@ -221,7 +220,7 @@ export function FontColor({
 
           <div className="mm-font-panel__gutter" />
 
-          <div className="mm-u-grow mm-font-panel__half">
+          <div className="mm-u-grow">
             <IconPanel
               id="leading-preset"
               title="行距预设"
@@ -238,16 +237,14 @@ export function FontColor({
                 />
               )}
               panel={
-                <div className="mm-font-panel__presets">
+                <div className="mm-btn-grid mm-font-panel__presets">
                   {defaults.leading.map((value) => (
-                    <button
+                    <Button
                       key={`leading-${value}`}
-                      type="button"
-                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onLeading(value)}
                     >
                       {value}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               }
@@ -258,7 +255,7 @@ export function FontColor({
 
       <IconPanelGroup exclusive={false}>
         <div className="mm-font-panel__metric">
-          <div className="mm-u-grow mm-font-panel__half">
+          <div className="mm-u-grow">
             <IconPanel
               id="tracking-preset"
               title="字距预设"
@@ -273,16 +270,14 @@ export function FontColor({
                 />
               )}
               panel={
-                <div className="mm-font-panel__presets">
+                <div className="mm-btn-grid mm-font-panel__presets">
                   {defaults.tracking.map((value) => (
-                    <button
+                    <Button
                       key={`tracking-${value}`}
-                      type="button"
-                      className="mm-btn mm-btn--numeric mm-font-panel__preset"
                       onClick={() => onTracking(value)}
                     >
                       {value}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               }
@@ -291,7 +286,7 @@ export function FontColor({
 
           <div className="mm-font-panel__gutter" />
 
-          <div className="mm-u-grow mm-font-panel__half mm-font-panel__half--center">
+          <div className="mm-u-grow mm-font-panel__half">
             <CheckBox
               label="文字视觉调整"
               title="设置两个字符间的字距为视觉"

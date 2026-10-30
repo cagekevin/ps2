@@ -61,7 +61,6 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
             <TagChip
               key={tag.text}
               text={tag.text}
-              variant="menu"
               active
               onClick={() => onToggle(tag.text)}
             />
@@ -75,7 +74,6 @@ export function TagMenu({ x, y, tags, active, onToggle, onCreate, onClose }: Pro
           <TagChip
             key={tag.text}
             text={tag.text}
-            variant="menu"
             onClick={() => onToggle(tag.text)}
           />
         ))}

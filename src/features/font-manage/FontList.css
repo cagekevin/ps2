@@ -71,6 +71,9 @@
    有预览时它是次要信息（12 / 16，正文色），预览才是主角；
    无预览时名字当主角（16 / 22，`--mm-name-*` + `--mm-color-text-name`，token 注释就是按这个分的）。 */
 .mm-font__family{
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
   font-size: var(--mm-font-sm);
   line-height: var(--mm-line-16);
   /* 有预览时家族名是次要信息：比正文更暗一档（官方实拍是灰的，不是白的） */
@@ -85,6 +88,7 @@
 
 /* 预览四档：字号 / 行高与 tokens 一一对应 */
 .mm-font__preview{
+  overflow: hidden;
   color: var(--mm-color-text-preview);
   white-space: pre-wrap;
 }
@@ -119,12 +123,7 @@
   align-items: center;
 }
 
-.mm-font__family{
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-}
-
+/* hover / 选中时给右侧操作区让出位置：家族名截断，不顶到按钮下面 */
 .mm-font__item:hover .mm-font__family,
 .mm-font__item--active .mm-font__family{
   max-width: calc(100% - var(--mm-name-reserve));
@@ -134,6 +133,8 @@
   position: absolute;
   right: 0;
   top: 50%;
+  /* 同上：不回拉就挂在家名行中线偏下的位置 */
+  transform: translateY(-50%);
   display: none;
   align-items: center;
 }
@@ -162,10 +163,6 @@
 
 .mm-font__star--on{
   color: var(--mm-color-star);
-}
-
-.mm-font__preview{
-  overflow: hidden;
 }
 
 .mm-font__weight{
@@ -203,6 +200,10 @@
   color: var(--mm-color-text-strong);
 }
 
+.mm-font__glyph:hover{
+  background: var(--mm-color-bg-hover);
+}
+
 /* 字重数量：右端固定 18 宽（`--mm-weight-count`），11 号次要色 */
 .mm-font__weight-count{
   flex: 0 0 auto;
@@ -215,6 +216,10 @@
   cursor: pointer;
 }
 
+.mm-font__weight-count:hover{
+  background: var(--mm-color-bg-hover);
+}
+
 .mm-font__weight-option{
   position: relative;
   width: 100%;
@@ -222,13 +227,16 @@
   padding-left: var(--mm-check-slot);
 }
 
+/* 字重列表的勾选对号：小标记档（12） */
 .mm-font__weight-check{
   position: absolute;
   left: 0;
   top: var(--mm-space-1);
+  font-size: var(--mm-icon-xs);
 }
 
-/* 字重列表的勾选对号：小标记档（12） */
-.mm-font__weight-check{
-  font-size: var(--mm-icon-xs);
+/* 触底哨兵：给 1px 高度，IntersectionObserver 才有可观测的矩形（高度为 0 时观察不稳定） */
+.mm-font__sentinel{
+  flex: 0 0 auto;
+  height: var(--mm-border-w);
 }

@@ -1,9 +1,17 @@
-/* 骨架：只留结构与定位，视觉待重写（`03` §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+/*
+ * 分组头：整行「箭头 + 名称 + 计数（可选）+ 行尾插槽（可选）」。
+ *
+ * 行高给的是**底线**（`--mm-group-head-h`）不是固定高：组头里可能混排 26 高的按钮。
+ * 内边距与 hover 暂未给 —— 组头挂在各页的列表容器里，间距由承载容器定档（§6.2：不建 `.mm-stack`）。
+ */
 
 .mm-group-head{
   display: flex;
   align-items: center;
   width: 100%;
+  /* 底线 22：写 `min-height` 而不是 `height` —— 行尾插槽里可能塞 26 高的按钮，
+     写死高度会把按钮压扁（要等高靠 `align-items`，不靠固定高） */
+  min-height: var(--mm-group-head-h);
 }
 
 /* 内层 button 撑满剩余宽度：点计数也算开合 */

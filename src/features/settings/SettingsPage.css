@@ -1,10 +1,31 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 设置页样式（`/settings`）。
+ *
+ * 页面根 `.mm-settings` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组，这里只写本页差异。
+ * 横排一律挂 `.mm-u-row`，本文件不出现 `justify-content`。
+ */
 
 .mm-settings{
   overflow-y: auto;
 }
 
-/* 横排两端铺满走公共 `.mm-u-row` */
+/* 纵向排列走公共 `.mm-u-col`，这里只给段间一档 ——
+   设置项挨得近，一页要看得全，所以取组间档而不是区块间 */
+.mm-settings__body{
+  gap: var(--mm-space-2);
+}
+
+/* 分组标题：比正文强一档、提一档字号。
+   它与下面各项之间由 `__body` 的 gap 给，自己不再加 margin（规则 11：相邻两块只留一处间距） */
+.mm-settings__section{
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
+
+/* 横排两端铺满走公共 `.mm-u-row`，同排控件之间取同行并列档 */
+.mm-settings__row{
+  gap: var(--mm-space-inline);
+}
 
 .mm-settings__label{
   flex: 0 0 auto;
@@ -12,9 +33,13 @@
 
 /* 可伸缩走公共 `.mm-u-grow`，这里不再声明 */
 
+/* 功能项两列：**勾选框**网格，不是按钮排 —— 所以不挂 `.mm-btn-grid`（那个组合件的判据是
+   「≥2 个等宽按钮」），这里自己写 grid 是有意的例外（REVIEW-2026-10-31 §4 P2-3）。
+   别把它抄成「一列 N 个」的通用写法：那种一律走 `.mm-btn-grid`。 */
 .mm-settings__tiles{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mm-space-2);
 }
 
 /* 云同步状态值（时间 + rev）：次要文字色，不另造组件 */

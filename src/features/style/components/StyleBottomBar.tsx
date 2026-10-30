@@ -25,7 +25,7 @@ function ColorSwatch() {
     <svg viewBox="0 0 14 14" aria-hidden="true">
       <defs>
         <linearGradient
-          id="mm-bottom-color"
+          id="style-bottom-color"
           x1="1"
           y1="0.612"
           x2="0"
@@ -42,7 +42,7 @@ function ColorSwatch() {
           <stop offset="1" stopColor="#f02b1f" />
         </linearGradient>
       </defs>
-      <rect width="14" height="14" rx="2" fill="url(#mm-bottom-color)" />
+      <rect width="14" height="14" rx="2" fill="url(#style-bottom-color)" />
     </svg>
   );
 }
@@ -53,7 +53,7 @@ function GradientSwatch() {
     <svg viewBox="0 0 14 14" aria-hidden="true">
       <defs>
         <linearGradient
-          id="mm-bottom-gradient"
+          id="style-bottom-gradient"
           y1="0.5"
           x2="1"
           y2="0.5"
@@ -63,7 +63,7 @@ function GradientSwatch() {
           <stop offset="1" stopColor="#a3d0fe" />
         </linearGradient>
       </defs>
-      <rect width="14" height="14" rx="2" fill="url(#mm-bottom-gradient)" />
+      <rect width="14" height="14" rx="2" fill="url(#style-bottom-gradient)" />
     </svg>
   );
 }

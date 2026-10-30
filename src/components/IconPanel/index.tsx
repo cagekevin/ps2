@@ -151,7 +151,8 @@ export function IconPanelGroup({
 
   return (
     <GroupContext.Provider value={value}>
-      <div className={`mm-icon-panel-group${className ? ` ${className}` : ''}`}>
+      {/* 组根只是「行 + 面板宿主」的容器，没有自己的视觉，所以不挂本组件的类名 */}
+      <div className={className || undefined}>
         {children}
         <div ref={setHost} className="mm-icon-panel__host" />
       </div>

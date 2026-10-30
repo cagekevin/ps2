@@ -1,4 +1,8 @@
-/* 骨架：只留结构与定位，视觉待重写。间距（padding / gap）按 03 §0.5 一律不写 */
+/*
+ * 常用页七个抽屉面板的公共部分：纵向排列 + 「标签 / 控件」行。
+ *
+ * 面板是 `IconPanel` 抽屉的内容，底色由 `__box::before` 铺 —— 本文件不写底色。
+ */
 
 .mm-common__panel{
   display: flex;
@@ -7,7 +11,10 @@
   /* 底色不在这里：7 个面板都是 IconPanel 抽屉的内容，抽屉壳 `__box::before` 已铺 #222 */
 }
 
-/* 横排两端铺满走公共 `.mm-u-row` */
+/* 横排两端铺满走公共 `.mm-u-row`，同排控件之间取同行并列档 */
+.mm-common__panel-row{
+  gap: var(--mm-space-inline);
+}
 
 .mm-common__panel-rule{
   width: 100%;
@@ -17,9 +24,17 @@
   flex: 0 0 auto;
 }
 
-/* 一排 2 个按钮：父行 grid 定列数，按钮不再算宽度（全仓「一排 N 个」唯一写法） */
+/* 一行只有一个按钮时，按钮**撑满整行** —— 原版截图里「打开所在目录」「批量优化文档」
+   都是通栏的灰底条，按内容宽会缩成一小块贴在左边。
+   行里还有输入框时（`Input + Button`）不命中 `:only-child`，按钮保持按内容宽，不跟输入框抢。 */
+.mm-common__panel-row > .mm-common__panel-btn:only-child{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 一排 2 个按钮：网格走组合层 `.mm-btn-grid`（只注入列数），
+   这里只覆写 gap —— 抽屉里这两个按钮要分得开，取区块内档 */
 .mm-common__panel-row--pair{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  --mm-btn-grid-cols: 2;
   gap: var(--mm-space-3);
 }

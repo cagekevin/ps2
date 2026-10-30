@@ -82,7 +82,7 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
   return (
     <div className="mm-modal-mask" role="dialog" aria-modal="true">
       <div className="mm-action-dialog">
-        <div className="mm-action-dialog__title">{'添加动作'}</div>
+        <div className="mm-modal__title">{'添加动作'}</div>
 
         <SelectBox
           options={groups.map((name, at) => ({ value: String(at), label: name }))}

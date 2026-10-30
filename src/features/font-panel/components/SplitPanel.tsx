@@ -4,6 +4,7 @@
  * 原版「先探一次再执行」的两步在 `commands/font-set.split` 里，页面只管发 mode。
  */
 
+import { Button } from '../../../components/ui';
 import { SPLIT_BUTTONS, SPLIT_TITLES } from '../font-panel-constants';
 
 const MODES = [1, 2, 3, 4] as const;
@@ -14,17 +15,15 @@ interface Props {
 
 export function SplitPanel({ onSplit }: Props) {
   return (
-    <div className="mm-u-col mm-font-panel__panel mm-font-panel__split">
+    <div className="mm-btn-grid mm-font-panel__split">
       {SPLIT_BUTTONS.map((text, index) => (
-        <button
+        <Button
           key={text}
-          type="button"
-          className="mm-font-panel__split-btn"
           title={SPLIT_TITLES[index]}
           onClick={() => onSplit(MODES[index] ?? 1)}
         >
           {text}
-        </button>
+        </Button>
       ))}
     </div>
   );

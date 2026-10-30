@@ -59,14 +59,14 @@ export function ContextMenu({ x, y, anchor, items, inside, onClose }: ContextMen
     <div className="mm-popover mm-menu" ref={floatingRef} role="menu">
       {items.map((item, index) =>
         item.separator ? (
-          <div key={`sep-${index}`} className="mm-menu__hr" />
+          <div key={`sep-${index}`} className="mm-divider mm-menu__hr" />
         ) : (
           <button
             key={`${item.label}-${index}`}
             type="button"
             role="menuitem"
             disabled={item.disabled}
-            className={`mm-menu__item${item.danger ? ' mm-menu__item--danger' : ''}`}
+            className={`mm-u-row mm-menu__item${item.danger ? ' mm-menu__item--danger' : ''}`}
             aria-checked={item.checked}
             onClick={() => {
               item.onSelect?.();

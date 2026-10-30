@@ -1,25 +1,48 @@
-/* 【范本】输入弹窗样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】输入弹窗样式 —— 新增同类代码照此结构。 */
 
+/* 遮罩用 faint 档（`STYLE.md` §6：输入弹窗走 faint）：
+   这个弹窗是「轻提示」，压暗比居中弹窗弱一档，点遮罩仍然关闭 */
 .mm-input-dialog{
   position: fixed;
   inset: 0;
   z-index: var(--mm-z-input-box);
+  background: var(--mm-color-mask-faint);
 }
 
+/* 纵向排列走公共 `.mm-u-col`，这里只给段间一档 */
 .mm-input-dialog__main{
   position: fixed;
   top: 30%;
   left: calc(50vw - var(--mm-dialog-offset-x));
+  /* 表面取值与组合层 `.mm-modal` 完全一致（同一语义就用同一组 token），
+     唯一差别是**位置**：原版这个弹窗不是屏幕居中而是 30% 高、左偏 90（`InputDialog` 文件头），
+     所以宽度也没有并用 `--mm-modal-w` —— 它是已知的例外，写在 `STYLE.md` §6.2。 */
+  width: var(--mm-dialog-w);
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-3);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-overlay);
+  color: var(--mm-color-text);
 }
 
-
-
-.mm-input-dialog__grow{
-  flex: 1;
-}
+/* head 的伸缩空位走组合层 `.mm-modal__grow`（`.mm-modal__head` 已给 gap） */
 
 .mm-input-dialog__input{
   width: 100%;
 }
 
+.mm-input-dialog__title{
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
 
+/* 校验提示：空值不让提交时的一行红字 */
+.mm-input-dialog__error{
+  color: var(--mm-color-danger);
+  font-size: var(--mm-font-xs);
+}
+
+/* 只有「确定」一个按钮：单元素靠右，不影响上面各段的两端对齐 */
+.mm-input-dialog__footer{
+  justify-content: flex-end;
+}

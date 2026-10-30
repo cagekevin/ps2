@@ -16,8 +16,7 @@
 
 import { CLOUD_SYNC_URL } from '../core/http/endpoints';
 import { httpFailure, postText } from '../core/http/client';
-import { log } from '../core/logger';
-import { flushPrefs, setPref } from '../core/prefs';
+import { savePref } from '../core/prefs';
 import {
   ACTION_UNIT,
   EMPTY_SNAPSHOT,
@@ -96,12 +95,8 @@ async function push(snapshot: CloudSnapshot): Promise<Result<void>> {
  * 落盘失败只记日志：台账只决定「下次要不要问一句覆盖」，丢了最多多问一次；
  * 同步本身已经成功，不能因为台账写不进去就报失败。
  */
-async function writeLedger(rev: number, syncedAt: number): Promise<void> {
-  setPref('cloud.ledger', { rev, syncedAt });
-  const flushed = await flushPrefs();
-  if (flushed.status === 'error') {
-    log.warn('云同步台账写入失败', { code: flushed.code, detail: flushed.detail });
-  }
+function writeLedger(rev: number, syncedAt: number): Promise<void> {
+  return savePref('cloud.ledger', { rev, syncedAt });
 }
 
 /** 文件换了 → 两个页面的投影必须重读（否则页面还显示旧库） */

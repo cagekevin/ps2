@@ -1,4 +1,9 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 常用页样式（`/common`）：缩放区 / 翻转 / 分隔线 / 功能格子。
+ *
+ * 页面根 `.mm-common` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组，这里只写本页差异。
+ * 一排 N 个等宽按钮一律挂组合层 `.mm-btn-grid`；七个抽屉面板的样式在 `components/panel.css`。
+ */
 
 /* 滚动容器就是页面壳本身，与字体面板页（`.mm-font-panel`）同构：
    抽屉底色靠 `__box::before` 左右各外扩 `--mm-icon-panel-bleed`(8) 铺到页边，
@@ -66,31 +71,25 @@
   min-width: 0;
 }
 
-/* 缩放全部档位：一排 5 个，间距取同行并列档（设计稿实测 7，落回 6 这一档） */
+/* 缩放全部档位：一排 5 个等宽按钮 —— 网格走组合层 `.mm-btn-grid`，这里只注入列数 */
 .mm-common__zoom-all{
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--mm-space-inline);
+  --mm-btn-grid-cols: 5;
 }
 
-/* 官方 `hr.line theme-mt-row`：暗线一档 + 上下区块间留白 */
+/* 区块间的分隔线就是组合层的 `.mm-divider`（线只有两档，规则 8），这里只给上下留白 */
 .mm-common__divider{
-  width: 100%;
-  height: var(--mm-border-w);
   margin: var(--mm-space-2) 0;
-  background: var(--mm-color-border);
 }
 
-/* 翻转行：官方 `f-alignNone`，按钮之间同一档组内间距 */
-.mm-common__flips{
+/* 功能格子：行组之间取组内档（行**内**的格子间距由 `__tile-row` 自己给） */
+.mm-common__grid{
   gap: var(--mm-space-1);
 }
 
-/* 纵向排列走公共 `.mm-u-col` */
-
+/* 功能格子：一排 3 个，网格走组合层 `.mm-btn-grid`（只注入列数）。
+   只覆写 gap：格子**横向贴紧**（列间距 0），连成一片才像九宫格 */
 .mm-common__tile-row{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  --mm-btn-grid-cols: 3;
   gap: var(--mm-space-1) 0;
 }
 

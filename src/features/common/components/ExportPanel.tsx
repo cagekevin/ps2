@@ -202,14 +202,14 @@ export function ExportPanel() {
           rightSlot={<IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择目录'} onClick={pickFolder} />}
         />
         <RadioButton
-          name="mm-common-path-type"
+          name="common-path-type"
           label={'桌面'}
           title={'保存到桌面'}
           checked={num(config.pathType) === 1}
           onChange={() => write('pathType', 1)}
         />
         <RadioButton
-          name="mm-common-path-type"
+          name="common-path-type"
           label={'文件所在目录'}
           title={'保存到文件所在目录'}
           checked={num(config.pathType) === 2}
@@ -243,13 +243,13 @@ export function ExportPanel() {
       <div className="mm-common__panel-rule" />
 
       <RadioButton
-        name="mm-common-save-type"
+        name="common-save-type"
         label={'使用导出Web方式(可以切片)'}
         checked={num(config.saveType) === 1}
         onChange={() => write('saveType', 1)}
       />
       <RadioButton
-        name="mm-common-save-type"
+        name="common-save-type"
         title={'与ctrl+shift+s保存一样'}
         label={'使用另存为方式(不压缩)'}
         checked={num(config.saveType) === 2}
@@ -335,7 +335,7 @@ export function ExportPanel() {
         }
       >
         <IconPanel id="batch" title={'批量导出功能'} trigger={sectionTrigger('批量导出功能')} panel={<>
-        <div className="mm-common__panel-row mm-common__panel-row--pair">
+        <div className="mm-btn-grid mm-common__panel-row--pair">
           <Button
             className="mm-common__panel-btn"
             onClick={() => void run(() => exportLayers(1), { tip: MSG.common.progressExportFirst })}

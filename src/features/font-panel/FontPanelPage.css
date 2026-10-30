@@ -1,4 +1,11 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 字体面板样式（`/font`）。
+ *
+ * 页面根 `.mm-font-panel` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组里，这里只写本页差异。
+ * 两条硬约束：横排一律挂 `.mm-u-row`、≥2 个等宽**按钮**排一律挂组合层 `.mm-btn-grid`（`STYLE.md` §6.2），
+ * 本文件因此不出现 `justify-content`，也不出现 `grid-template-columns`，只注入 `--mm-btn-grid-cols`。
+ * 唯一自写 grid 的是层级编辑的 6 个输入框（`__editor-row`）：它是输入位不是按钮，`.mm-btn-grid` 的判据不覆盖。
+ */
 
 .mm-font-panel{
   overflow-y: auto;
@@ -20,6 +27,7 @@
   width: 100%;
 }
 
+/* 快选下拉：与右侧「+」同排，占满剩余宽度；文字居中 —— 单个元素的居中不受「横排只有一种」约束 */
 .mm-font-panel__quick-select{
   flex: 1;
   min-width: 0;
@@ -50,14 +58,19 @@
   cursor: pointer;
 }
 
+/* 字号 / 字距两行：`[数字框] [固定宽空槽] [数字框 or 勾选框]`。
+   不用 `.mm-u-row`：两半必须严格等宽、中间是宽度固定的空槽，
+   而 `.mm-u-row` 的两端铺满会把空槽推散，两半分不到同样的宽度。
+   交叉轴取顶对齐：预设面板展开时半边会变高，另外半边不许跟着拉伸。 */
 .mm-font-panel__metric{
   display: flex;
   align-items: flex-start;
 }
 
-/* 可伸缩走公共 `.mm-u-grow` */
-
-.mm-font-panel__half--center{
+/* 字距行的右半：里面只有一个勾选框（16 高，同排数字框 26 高），垂直居中才与左边对得上。
+   只给这一个半边不加 `display` 的例外规则：其余半边一旦变成 flex，
+   里面的数字框会按内容收缩（flex item 的默认宽度是内容宽，不是 100%）。 */
+.mm-font-panel__half{
   display: flex;
   align-items: center;
 }
@@ -66,45 +79,34 @@
   flex: 0 0 var(--mm-control-reserve);
 }
 
-/* 数值预设：一排 6 个，间距取同行并列档（设计稿实测 7，落回 6 这一档） */
+/* 等宽按钮排 / 网格：形状由组合层 `.mm-btn-grid` 给，本页只注入列数。
+   列数必须等于实际项数（层级 6 档、内边距预设 8 个），改数据时一起改。 */
 .mm-font-panel__presets{
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--mm-space-inline);
+  --mm-btn-grid-cols: 6;
 }
 
-.mm-font-panel__hierarchy{
-  width: 100%;
-}
-
-/* 可伸缩走公共 `.mm-u-grow` */
-
-/* 一排 6 个：父容器 grid 定列数，子元素不写宽度（全仓「一排 N 个」只有这一种写法） */
 .mm-font-panel__levels{
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--mm-space-inline);
+  --mm-btn-grid-cols: 6;
 }
 
-/* 一排 6 个：与 `HIERARCHY_TITLES` 的六档一一对应（列数必须等于项数，别写 2） */
+.mm-font-panel__quick-grid{
+  --mm-btn-grid-cols: 8;
+}
+
+/* 拆分文本：2×2 大按钮，块与块之间要能分开看，取区块内档（比数值按钮排松一档） */
+.mm-font-panel__split{
+  --mm-btn-grid-cols: 2;
+  gap: var(--mm-space-3);
+}
+
+/* 层级编辑的 6 个输入框与上方 `.mm-font-panel__levels` 的 6 档一一对应，列数必须一致 */
 .mm-font-panel__editor-row{
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--mm-space-1);
 }
 
-/* 一排 2 个（项数不定时自动换行） */
-.mm-font-panel__split{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--mm-space-3);
-}
-
-.mm-font-panel__quick-grid{
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-}
-
+/* 数字框：图标 + 输入位外壳 + 后缀 + 预设箭头，只排内部，行高由所在行给 */
 .mm-font-panel__number{
   display: flex;
   /* 图标与输入框之间的间距：官方 `baseSvg` 的 `ml4` */
@@ -149,6 +151,103 @@
   flex: 0 0 auto;
 }
 
-.mm-font-panel__pin{
-  display: inline-flex;
+/* 属性区（字体行 / 字重行 / 颜色行）：组内贴合，与其它区块之间留一档 */
+.mm-font-panel__color{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+  padding: var(--mm-space-1) 0;
+}
+
+/* 同排控件之间一行高：一律取同行并列档，不许按区块给不同值（规则 9、10） */
+.mm-font-panel__color-row,
+.mm-font-panel__paste-row,
+.mm-font-panel__row{
+  gap: var(--mm-space-inline);
+  height: var(--mm-control-h);
+}
+
+.mm-font-panel__family,
+.mm-font-panel__weight{
+  min-width: 0;
+}
+
+.mm-font-panel__quick-row{
+  gap: var(--mm-space-inline);
+}
+
+/* IconPanel 抽屉里的内容排：`__box` 已给 padding 8，这里只给行间的组间距 */
+.mm-font-panel__panel{
+  gap: var(--mm-space-2);
+}
+
+/* 两档行：上一行要垫开一层，下一类行要贴紧 */
+.mm-font-panel__row--pad{
+  padding-top: var(--mm-space-1);
+}
+
+.mm-font-panel__row--tight{
+  gap: var(--mm-space-1);
+}
+
+.mm-font-panel__create{
+  gap: var(--mm-space-1);
+}
+
+.mm-font-panel__hierarchy-row{
+  gap: var(--mm-space-inline);
+}
+
+/* 层级编辑区：标题行 + 6 个输入框 + 动作行 */
+.mm-font-panel__editor{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+}
+
+.mm-font-panel__editor-input{
+  width: 100%;
+  min-width: 0;
+}
+
+.mm-font-panel__editor-actions{
+  gap: var(--mm-space-2);
+}
+
+.mm-font-panel__input-grow{
+  min-width: 0;
+}
+
+/* 第二排图标紧跟第一排，只留一档 —— 两排是同一个功能组（规则 6：同组间距不得大于图标边长） */
+.mm-font-panel__icon-row--after{
+  margin-top: var(--mm-space-1);
+}
+
+.mm-font-panel__icons{
+  gap: var(--mm-space-1);
+}
+
+/* ---- 分布弹窗里挂在本页的两个件（`InputDialog` 的 extra 插槽） ---- */
+
+/* 「高级用法」展开条：整行可点，文字取 accent —— §7 规则 12 的「需要被看见的动作文字」一档。
+   展开由图标与内容本身表达，颜色不跟着开合变（规则 12 禁止把展开做成变色）。
+   `margin-top` 是它与上方输入框之间的组间档；弹窗内部其余间距归 `input-dialog.css`。 */
+.mm-font-panel__advanced{
+  margin-top: var(--mm-space-2);
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-font-panel__advanced:hover{
+  color: var(--mm-color-accent-hover);
+}
+
+/* 「高级用法」的说明文字：逐行示例，比正文弱一档、字号取最小档；行间取贴合档
+   （它是一整块说明，行与行之间不该出现分组关系） */
+.mm-font-panel__help{
+  margin-top: var(--mm-space-1);
+  gap: var(--mm-space-tight);
+  color: var(--mm-color-text-faint);
+  font-size: var(--mm-font-xs);
 }

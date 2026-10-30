@@ -7,7 +7,7 @@
  * 颜色与渐变对都是本地 state（照原版 arrCol / arrGrads）：删一个色，含它的渐变对一起消失。
  * 落盘 / 应用通过回调交给页面。
  */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Button, stopClickPropagation } from '../../../components/ui';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import { buildColorPairGradients } from '../../../domain/image-color';
@@ -67,7 +67,7 @@ export function ImgColorDialog({
     <div className="mm-modal-mask" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-u-col mm-imgcolor"
+        className="mm-u-col mm-modal mm-imgcolor"
         role="dialog"
         aria-modal="true"
         aria-label="提取的颜色"
@@ -81,6 +81,7 @@ export function ImgColorDialog({
               key={`${hex}-${index}`}
               type="button"
               className="mm-imgcolor__swatch"
+              style={{ '--mm-swatch': hex } as CSSProperties}
               title="左键应用，右键删除"
               onClick={() => onApplyColor(hex)}
               onContextMenu={contextToRemove(() => removeColorAt(index))}
@@ -96,7 +97,7 @@ export function ImgColorDialog({
           </Button>
         </div>
 
-        <div className="mm-imgcolor__hr" />
+        <div className="mm-divider mm-imgcolor__hr" />
 
         <div className="mm-imgcolor__title">提取的渐变色</div>
         <div className="mm-imgcolor__row">
@@ -105,6 +106,7 @@ export function ImgColorDialog({
               key={css}
               type="button"
               className="mm-imgcolor__grad"
+              style={{ '--mm-swatch': css } as CSSProperties}
               title="左键应用，右键删除"
               onClick={() => onApplyGradient(pair)}
               onContextMenu={contextToRemove(() =>

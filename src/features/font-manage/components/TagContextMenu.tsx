@@ -1,9 +1,7 @@
 /**
  * 标签右键菜单：删除 / 重命名。
  *
- * 走公共 `components/ContextMenu`，不再自绘。
- * 自绘那一版（`.mm-font__tag-ctx`）是蓝底白字、无边框无圆角无阴影、宽 105 行高 20，
- * 和样式页 / 常用页的右键菜单完全不是同一种东西——CONVENTIONS §6 定死了右键菜单只有一个入口。
+ * 走公共 `components/ContextMenu`，不再自绘：右键菜单只有一个入口（`STYLE.md` §6）。
  */
 import { ContextMenu } from '../../../components/ContextMenu';
 

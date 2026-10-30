@@ -1,4 +1,8 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 区域遮罩：内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）。
+ *
+ * `__cover` 必须有底：没有底色就挡不住下面的内容，提示会和正文叠在一起。
+ */
 
 .mm-state-mask{
   position: relative;
@@ -10,4 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* 压暗走遮罩 strong 档（`STYLE.md` §6：区域不可用 = StateMask 的 strong 档）；
+     没有底色就挡不住下面的内容，提示会和正文叠在一起 */
+  background: var(--mm-color-mask);
 }

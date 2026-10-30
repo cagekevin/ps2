@@ -34,7 +34,7 @@ export function PreviewSetting({ mode, onMode, onToggleText }: Props) {
         ? <Portal>
             <div
               ref={cardRef}
-              className="mm-font__preview-card"
+              className="mm-popover mm-font__preview-card"
               role="dialog"
               aria-label="预览设置"
             >

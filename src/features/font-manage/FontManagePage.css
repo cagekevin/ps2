@@ -1,4 +1,10 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 字体管理页样式（`/font-manage`）。
+ *
+ * 页面根 `.mm-font` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组里，这里只写本页差异。
+ * 横排一律挂 `.mm-u-row`，本文件不出现 `justify-content`；浮层挂 `.mm-popover`，
+ * 本文件只给它们的「宽 / 内边距 / 最大高 / 滚动」四样（`STYLE.md` §6）。
+ */
 
 .mm-font__toolbar{
   flex: 0 0 auto;
@@ -9,24 +15,50 @@
   padding: var(--mm-space-1) 0;
 }
 
-/* 搜索行：横排两端铺满走 `.mm-u-row`；放大镜与漏斗只留不收缩 */
+/* 搜索行：横排两端铺满走 `.mm-u-row`，同排控件之间取同行并列档 */
+.mm-font__search-row{
+  gap: var(--mm-space-inline);
+}
+
+/* 搜索框与搜索输入框不用私有类：框占满剩余走 `.mm-u-grow`、放大镜不收缩走 `__search-icon` */
+
+/* 放大镜：框内右侧，不吃点击（`pointer-events: none`），点击仍落到输入框 */
 .mm-font__search-icon{
   flex: 0 0 auto;
   pointer-events: none;
 }
 
+/* 漏斗：行内工具按钮，图标取 `btn` 20（规则 14 的纯图标条一档）；
+   角标靠它定位，所以这里要给 `position`（`.mm-btn` 自己不带） */
 .mm-font__filter-btn{
+  position: relative;
   flex: 0 0 auto;
 }
 
-.mm-font__filter-badge{
-  position: absolute;
-  top: var(--mm-space-1);
-  right: var(--mm-space-tight);
+.mm-font__filter-btn .mm-icon{
+  font-size: var(--mm-icon-btn);
 }
 
-.mm-font__filter-panel{
+/* 筛选开启：漏斗转 accent —— 规则 12 的「选中 / 开启」里明确含「筛选开启」。
+   图标跟 currentColor，所以只写文字色，不写第二条规则。 */
+.mm-font__filter-btn--on{
+  color: var(--mm-color-accent);
+}
+
+/* 角标 = 组合层 `.mm-badge--count`，这里只给「贴在哪儿」 */
+.mm-font__filter-badge{
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* 筛选浮层：宽 / 内边距 / 最大高 / 滚动（`STYLE.md` §6：浮层各自只写这四样，表面由 `.mm-popover` 给）。
+   滚动区在浮层里，按规则 18 不留 `scrollbar-gutter` —— 宽度本身跟触发器绑，留槽白掉 8px。 */
+.mm-font__filter-float{
+  width: var(--mm-filter-panel-w);
   max-width: calc(100vw - var(--mm-filter-panel-max-w-gap));
+  max-height: var(--mm-filter-panel-max-h);
+  padding: var(--mm-space-2);
   overflow-y: auto;
 }
 
@@ -44,39 +76,31 @@
   font-size: var(--mm-font-xs);
 }
 
-/* 筛选 chip：面板落在**浅色浮层**里（规则 16），所以刻意不挂 `.mm-btn` ——
-   那个壳的文字色与 hover 底都是页面表面的深色值，落在白底上会变成灰字 / 黑块；
-   浮层专用的按钮表面属视觉重写范围，届时由 `.mm-btn` 的变体统一给。
-   选中**不用 accent**（用户 2026-10-30 定）：反白区分，只消费浮层那两个 token。 */
-.mm-font__filter-chip{
-  height: var(--mm-tag-strip-h);
-  padding: 0 var(--mm-space-2);
-  border-radius: var(--mm-radius-md);
-  color: inherit;
-  font-size: var(--mm-font-xs);
-  cursor: pointer;
-}
+/* 筛选 chip 与标签 chip 都直接挂组合层 `.mm-chip`：底 / 文字色 / hover 由所在表面声明（规则 19），
+   所以同一套 chip 在深色面板与浅色浮层里都能用，本页不再保留私有表面。 */
 
-.mm-font__filter-chip--on{
-  background: var(--mm-color-text-popover);
-  color: var(--mm-color-bg-popover);
-}
-
+/* 预览文案行：字号图标 + 输入框 + 「应用」。
+   图标是**输入位左图标**，取 `md` 16（规则 14），并垂直居中；
+   输入位因此要给左图标留 `--mm-control-reserve`，否则图标压在文字上。 */
 .mm-font__preview-text{
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   position: relative;
+  gap: var(--mm-space-inline);
 }
 
 .mm-font__preview-text-icon{
   position: absolute;
   left: var(--mm-space-3);
   top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--mm-icon-md);
 }
 
 .mm-font__preview-text-field.mm-input{
   flex: 1;
+  padding-left: var(--mm-control-reserve);
 }
 
 /* 横排两端铺满走公共 `.mm-u-row` */
@@ -85,9 +109,23 @@
   flex: 1;
 }
 
-/* 居中走公共 `.mm-btn` */
+/* 标签行右侧那一组：同组图标按钮贴紧（规则 6：同组间距不得大于图标边长） */
+.mm-font__tags-tools{
+  gap: var(--mm-space-1);
+}
 
-/* 居中走公共 `.mm-btn` */
+/* 「+」与折叠箭头：整块是按钮（`mm-btn` 的 26 控件高），点区补成正方 */
+.mm-font__tags-add,
+.mm-font__tags-toggle{
+  width: var(--mm-control-h);
+  padding: 0;
+}
+
+/* 展开态：底色凹下去一档表达，不变蓝也换图标色（规则 12 禁止把展开做成变色）；
+   折叠箭头本身已经在转，颜色不动。 */
+.mm-font__tags-toggle--open{
+  background: var(--mm-color-bg-input);
+}
 
 .mm-font__tag-list{
   display: flex;
@@ -100,19 +138,8 @@
   overflow: hidden;
 }
 
-/* 标签 chip 不是新元素：它就是 `.mm-btn--numeric`（同一个表面：圆角 4 / #535353 / hover 亮一档），
-   页面只覆盖高度到一行 22（`--mm-tag-strip-h`）与字号。
-   选中用 accent（规则 12「选中」）。 */
-.mm-font__tag{
-  height: var(--mm-tag-strip-h);
-  padding: 0 var(--mm-space-2);
-  font-size: var(--mm-font-xs);
-}
-
-.mm-font__tag--active{
-  background: var(--mm-color-accent);
-  color: var(--mm-color-text-inverse);
-}
+/* chip 的表面（高度 / 圆角 / 底色 / 选中态）已经上收到组合层 `.mm-chip`，这里不再声明；
+   `--active` 的 accent 底色也一并删掉 —— 选中态统一走 `.mm-chip--on` 的反白 */
 
 /* 计数行：11 号 + 次要色，与列表之间留一档 */
 .mm-font__list-head{
@@ -136,8 +163,16 @@
   cursor: pointer;
 }
 
+/* 蓝字动作的 hover 走 accent 的 hover 档（规则 12 允许该 token 只出现在 :hover 里） */
+.mm-font__clear-tag:hover{
+  color: var(--mm-color-accent-hover);
+}
+
 .mm-font__warnings{
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--mm-space-1);
 }
 
 .mm-font__state{
@@ -146,4 +181,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+/* 空态里的「清除筛选」：可点动作用 accent 文字（规则 12 第 4 类用法）。
+   `__state` 是居中容器不带 gap，所以与上方提示之间由这里给一档。 */
+.mm-font__retry{
+  margin-top: var(--mm-space-2);
+  color: var(--mm-color-accent);
+  font-size: var(--mm-font-sm);
+  cursor: pointer;
+}
+
+.mm-font__retry:hover{
+  color: var(--mm-color-accent-hover);
 }

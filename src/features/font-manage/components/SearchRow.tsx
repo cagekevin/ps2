@@ -6,7 +6,7 @@
  */
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../../components/icons';
-import { Input } from '../../../components/ui';
+import { Button, Input } from '../../../components/ui';
 import type { Category } from '../../../domain/classification';
 import type { FilterState } from '../../../domain/font-filter';
 import { useDismiss } from '../../../hooks/useDismiss';
@@ -48,9 +48,9 @@ export function SearchRow({
 
   return (
     <div className="mm-u-row mm-font__search-row">
-      <div className="mm-u-row mm-u-grow mm-font__search-box">
+      <div className="mm-u-row mm-u-grow">
         <Input
-          className="mm-u-grow mm-font__search-input"
+          className="mm-u-grow"
           value={keyword}
           placeholder="搜索"
           aria-label="搜索字体"
@@ -59,10 +59,9 @@ export function SearchRow({
         <Icon name="iconsousuo" className="mm-font__search-icon" />
       </div>
 
-      <button
+      <Button
         ref={triggerRef}
-        type="button"
-        className={`mm-btn mm-font__filter-btn${filterCount ? ' mm-font__filter-btn--on' : ''}`}
+        className={`mm-font__filter-btn${filterCount ? ' mm-font__filter-btn--on' : ''}`}
         aria-label="筛选"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -70,8 +69,10 @@ export function SearchRow({
         onClick={() => setOpen((value) => !value)}
       >
         <Icon name="iconguolv" />
-        {filterCount ? <span className="mm-font__filter-badge">{filterCount}</span> : null}
-      </button>
+        {filterCount ? (
+          <span className="mm-badge mm-badge--count mm-font__filter-badge">{filterCount}</span>
+        ) : null}
+      </Button>
 
       {trailing}
 

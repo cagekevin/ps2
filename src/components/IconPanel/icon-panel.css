@@ -1,4 +1,4 @@
-/* 【范本】图标 + 展开面板样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】图标 + 展开面板样式 —— 新增同类代码照此结构。 */
 
 /* 抽屉面板：通栏铺满宿主行。
    底色 / 直角 / 内边距在视觉重写时补；左右通栏靠承载行声明的 `--mm-icon-panel-bleed`，
@@ -34,11 +34,18 @@
   pointer-events: none;
 }
 
-/* 标题行触发器（`sectionTrigger`）：整行可点，箭头 + 标题。只给结构，视觉待重写（03 §0.5） */
+/* 标题行触发器（`sectionTrigger`）：整行可点的 button，箭头 + 标题从左往右排 */
 .mm-icon-panel__title{
   display: flex;
   align-items: center;
   width: 100%;
+  gap: var(--mm-space-1);
+  cursor: pointer;
+}
+
+/* 整行可点就要有反馈：hover 叠一档底（规则 12：hover 一律叠底，不变蓝） */
+.mm-icon-panel__title:hover{
+  background: var(--mm-color-bg-hover);
 }
 
 .mm-icon-panel__title-text{

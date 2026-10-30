@@ -51,7 +51,7 @@ export function WarehouseBar({ warehouses, currentIndex, onChange, onAdd, onRemo
           if (entry) onRemove(entry.name, value);
         }}
         footer={(close) => (
-          <div className="mm-action__warehouse-footer" onMouseDown={stop}>
+          <div className="mm-btn-grid mm-action__warehouse-footer" onMouseDown={stop}>
             {renaming ? (
               <InlineEdit
                 value={currentName}

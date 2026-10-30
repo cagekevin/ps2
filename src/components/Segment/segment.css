@@ -1,10 +1,17 @@
-/* 骨架：只留结构与定位，视觉待重写。间距（padding / gap）按 03 §0.5 一律不写 */
+/*
+ * 【范本】段选样式（2–4 档并排互斥）—— 新增同类代码照此结构。
+ *
+ * 选中项铺 accent 实底；未选中的底是「比所在表面深一档」的输入位档。
+ */
 
 .mm-segment{
   display: flex;
   align-items: center;
   height: var(--mm-control-h);
   border-radius: var(--mm-radius-md);
+  /* 未选中的底：比所在表面深一档（与输入位同一档）——
+     少了它整条段选只有选中那格有色，其余部分看不见边界 */
+  background: var(--mm-color-bg-input);
   /* 选中项底色要贴着圆角裁掉，否则直角方块会顶出圆角 */
   overflow: hidden;
 }

@@ -30,7 +30,7 @@ interface Props {
 
 export function AnchorGrid({ value, onChange }: Props) {
   return (
-    <div className="mm-common__anchors" role="radiogroup" aria-label={'锚点位置'}>
+    <div className="mm-btn-grid mm-common__anchors" role="radiogroup" aria-label={'锚点位置'}>
       {Array.from({ length: ANCHOR_COUNT }, (_, index) => {
         const selected = index === value;
         return (

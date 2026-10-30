@@ -4,7 +4,7 @@
 > §6（UI 横切：用哪个件、表面长什么样）、§7（视觉规范）、§14（样式），2026-10-30 拆分，正文里只留指针。
 >
 > **编号不变**：章节号与规则号沿用原号 —— 本文的「§6.1」「§7 规则 12」「§14.1」就是代码注释、评审报告、
-> `CHANGELOG` 里那些字面量，**不需要换算**。新增界面规则一律进本文，规则号按 1–18 继续往下编。
+> `CHANGELOG` 里那些字面量，**不需要换算**。新增界面规则一律进本文，规则号从 19 继续往下编。
 >
 > **谁在用**：改任何 css / token / 组件表面 / 图标档位 / 间距之前读本文；`CONVENTIONS.md` 只管「怎么写代码」，
 > 不管「长什么样、该用哪个件」。
@@ -29,6 +29,7 @@
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
+| 按钮 | `components/ui` 的 `Button`（**全仓唯一渲染入口**，支持 `ref`）。`variant` **闭合在类型里**，写错编译失败：<br>**不传 = 实心灰底**（`--mm-color-bg-raised`）—— 这是绝大多数：抽屉里的动作按钮、弹窗的取消/确定、数值档位、九宫格预设；<br>`ghost` = 透明无底 —— 只给**底栏图标按钮**与**行内小动作**（下拉项删除、「复制/清空」这类文字链）；<br>`primary` = 蓝底（一行里唯一的主操作）；<br>`danger` = 红字（不可逆动作的确认）。<br>判据：**原版截图里凡是成块的按钮都是灰底实心**，透明只出现在「它旁边已经有底」的场合 | 手写 `<button className="mm-btn …">`（那就是第二个入口，2026-10-31 已从 25 处收净）；页面写底色 / 圆角 / 字号；把本该实心的按钮挂成 `ghost`（会变成一段没有边界的文字） |
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分两档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
@@ -73,6 +74,53 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 - 复核方式：改完公共件或新增页面后，人工跑下面两条，结果里不该出现输入框 / 按钮：
   `rg "<input|<select|<textarea" src --glob '!src/components/ui/**' --glob '!src/components/CheckBox/**' --glob '!src/components/RadioButton/**'`
 
+---
+
+### 6.2 组合层（7 件）
+
+> **为什么有这一层**：§6 那张表是**单个控件**（Button / Input / Select），`global.css` 的 `.mm-u-*` 是**排列方向**。——
+> 中间缺一层：原版截图里反复出现、由多个控件组成的固定形状 一行图标、一排等宽按钮、一个标签片、一条数据健康提示、一个弹窗壳。
+> 2026-10-30 之前它们被各页面各自实现（同一条警告条有三份：`mm-common__warning` / `mm-font__warning` / `mm-action__warning`；
+> 弹窗壳三份：`Confirm` / `InputDialog` / `TagCreator`），视觉统一时必然漏页 —— 所以上收到这里。
+>
+> **这一层只有 CSS 契约，没有 TSX**：7 件都不带行为，页面挂类名即用。带行为的仍是 §6 的控件。
+>
+> **值不在这里**：§7 规则 1–18 照样生效（不许色值、不许 `px`、间距进六档）。本表只写「用哪一个、什么时候必须用」。
+
+| 组合件 | 类名 | 判据（命中就必须用它，不许自己写一份） | 实现位置 |
+|---|---|---|---|
+| 分隔线 | `.mm-divider`，竖线档 `.mm-divider--vertical` | 任何一条分隔线（线色只有暗线一档，规则 8；同排之间的隔断用 `--vertical`） | `global.css` |
+| 图标排 | `.mm-icon-row`（**修饰符**，与 `.mm-u-row` 同挂） | 一排 ≥2 个**同尺寸**图标按钮（对齐排 / 分布排 / 翻转 / 字重 / 样式排） | `global.css` |
+| 按钮排 | `.mm-btn-grid` | ≥2 个**等宽**按钮排或网格（缩放档位 / 字号预设 / 内边距预设 / 九宫格点阵）；列数由 `--mm-btn-grid-cols` 注入（§14.1 允许的运行时值） | `global.css` |
+| 标签片 | `.mm-chip`，选中态 `.mm-chip--on` | tag / chip：扁平的**可点小片**（筛选标签 / 最近使用 / 序列 / 动作项）。底 / 文字色 / hover 由**所在表面**声明（规则 19），所以同一个类在深色面板与浅色浮层里都能用，**没有第二个「浅色版」类** | `ui.css` |
+| 角标 | `.mm-badge`，语义档 `--count` | 贴在别的东西上的**小计数或标记**（筛选计数）。档位只在**有消费者**时才加（2026-10-31 删掉零消费者的 `--info` / `--warn` 两档） | `ui.css` |
+| 数据健康提示 | `.mm-notice`，语义档 `--warn` / `--error` | 「N 项无法识别」「分类筛选已禁用」这类**读到了但数据不全**的内联提示。档位只在**有消费者**时才加 | `ui.css` |
+| 弹窗壳 | `.mm-modal` + `__head` / `__title` / `__body` / `__actions` / `__grow`（后两个是 `.mm-u-row` 修饰符） | 居中的小弹窗（确认 / 输入 / 新建标签）；全屏加载走 `.mm-modal-mask` + `Loading`，不挂 `.mm-modal` | `ui.css` |
+
+**已知例外一处**：`InputDialog` 不挂 `.mm-modal` —— 它的位置是「30% 高 + 左偏 90」而不是屏幕居中（原版行为，
+理由写在 `InputDialog/index.tsx` 文件头）。它的表面值（`mm-input-dialog.css`）与 `.mm-modal` 取同一组 token，
+只有宽度与定位不同。改它的形状前先回头看原版，不要顺手「顺手居中」。
+
+#### 三条使用规则
+
+1. **组合层不许带行为**：这一层只出 CSS 契约。chip 要不要能删、notice 要不要能关，是上面一层控件的事 ——
+   有行为就建 TSX 组件并登记 `GOVERNANCE` §4.1，不许在组合层里塞 onClick。
+2. **`.mm-notice` 与 `StateHint` 是两回事，不许互相替代**：
+   `StateHint` 是「这块区域没内容 / 读失败了」（空态、失败态，占位整块），
+   `.mm-notice` 是「内容在，但数据不全」（一条黄条，挂在既有内容之上或之间）。
+   判据：**把提示拿掉，下面还剩不剩东西？** 剩 ⇒ `.mm-notice`；不剩 ⇒ `StateHint`。
+3. **命中判据就必须用**：上面 7 件都是 ≥2 处重复后收上来的（警告条三份、弹窗壳三份、chip 三份是实测）。
+   页面里出现第 8 种自绘形状前，先问「能不能把这 7 件之一改一改」；不能才新建，新建必须同步本表与 `GOVERNANCE` §4.1。
+   **反过来也成立**：建了却零消费者的一件要删（2026-10-31 删掉 `.mm-list-row` 与 `.mm-divider--strong` 就是这条）。
+
+#### 明确不建的四件（有人会想加，先写明为什么不加）
+
+| 候选 | 为什么不建 |
+|---|---|
+| `.mm-form-row`（标签 + 控件一行） | 与 `.mm-u-row` 角色重合 —— 后者已是横排唯一入口（§6）。标签与控件的间距属「间距」，按 §6.1 页面可以自己给 |
+| `.mm-stack`（纵向带间距） | 与 `.mm-u-col` 重合；`.mm-u-col` 只管方向不管间距是刻意的 —— 纵向间距按所在抽屉 / 区块定档，由承载容器给 |
+| `.mm-section`（标题 + 内容） | 已有 `GroupHead`（分组头）与 `IconPanel`（触发器 + 面板）两个带行为的件覆盖；纯静态区块用 `.mm-u-col` + `.mm-divider` 表达 |
+| `.mm-list-row`（列表里的一行） | 本仓没有「普通列表行」这个角色：字体项的 hover 要**通栏**（靠伪元素外扩页边，`FontList.css` 写了理由），动作项是等宽按钮网格 —— 2026-10-31 建了又零消费者，已删 |
 
 ---
 
@@ -105,6 +153,9 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 | selected | 边框 `--mm-color-accent` |
 
 ### 硬规则
+
+> 编号说明：本节的「规则 N」与章节号是两套编号 —— 说「规则 19」指本节第 19 条，
+> 说「§19」指文末的样式评审清单。规则号从 19 继续往下编（19 曾属一条已撤销的 min-height 规则，现复用）。
 
 1. 组件里不出现 `px` 字面量（`0` 除外）；`min-*` / `max-*` 与 `padding-*` / `margin-*` 这类**带后缀的属性也算**
    （`stylelint` 已改为前缀匹配，此前只匹配精确属性名，`min-width: 240px` 这类能过闸）
@@ -175,12 +226,14 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     ②**输入位 / 数字框的左图标**是控件结构的一部分，固定 `md` 16（官方 `svg-16`），不参与 ① 的比较。
     同一层级出现第二种尺寸时，**那个少数派就是写错的**，往多数那档并，不许新增第六档。
 
-15. **输入位底色只有两档，按「落在哪个表面」选，不按页面选**：页面表面（`#363636`）上取
+15. **输入位底色按「落在哪个表面」选，不按页面选**：页面表面（`#363636`）上取
     `--mm-color-bg-input`(#2c2c2c)，抽屉表面（`--mm-color-bg-drawer` #222）上取
-    `--mm-color-bg-input-drawer`(#000)。判据一句话：**输入位永远比所在表面深一档**（同向凹陷，
+    `--mm-color-bg-input-drawer`(#000)，浮层表面（`--mm-color-bg-popover` #fff）上取
+    `--mm-color-bg-input-popover`(见规则 20)。判据一句话：**输入位永远比所在表面深一档**（同向凹陷，
     不出现「一处浮、一处凹」）。落地方式是**表面声明、控件消费**：表面写 `--mm-input-bg`，
     `.mm-input` / `.mm-input-surface` 用 `background: var(--mm-input-bg, var(--mm-color-bg-input))`。
     不许在调用点加 class 或 prop 选档，也不许给某个页面单独调底色。
+    （档数跟着表面数走，不是固定两档 —— 以前只写两档，是因为当时浮层还没定成浅色。）
 16. **浮层一律浅色（白底黑字），与面板的深色相反**：`.mm-popover` 一处给
     `--mm-color-bg-popover`(#fff) + `--mm-color-text-popover`(#000) + `--mm-shadow-popover`，**无描边**。
     下拉、右键菜单、标签弹层、筛选面板、字重下拉、描述浮层全部跟着变，不许给某一个浮层单独调底色；
@@ -193,11 +246,27 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     图标 `position: absolute; left: 0`，文字不额外加 `padding` / `margin` / `gap`。
     这样同一列表里**有没有对号的行，文字左边缘都对齐**（下拉页脚动作也一起对齐，不会被上一项的对号压住）。
     禁止：用 `left: 20px` 这类裸值对位、给文字单独 `padding-left`、给每一项按有无图标给不同内边距。
-18. **滚动容器必须留稳定槽位**：任何 `overflow-y: auto` 的元素都要同时给
-    `scrollbar-gutter: stable`（Chromium 94+，CEP 12 可用）。滚动条一旦出现就吃掉
-    `--mm-scrollbar-w`(8)，内容横向抖一下、两端对齐当场失效 —— 官方面板不抖就是因为它不留这个变量。
-    落地只有两处：页面公共壳与 `.mm-font__list` / `.mm-style__list`（`global.css`）；
-    浮层里的滚动区（下拉面板 / 筛选面板）**不给**，那里宽度本身就跟触发器绑，留槽会白掉 8px。
+18. **宽度固定的滚动容器必须留稳定槽位**：`overflow-y: auto` 的元素，只要**外宽由外面定死**
+    （页面壳、页面内的列表、弹窗内的列表），就要同时给 `scrollbar-gutter: stable`（Chromium 94+，CEP 12 可用）。
+    滚动条一旦出现就吃掉 `--mm-scrollbar-w`(8)，内容横向抖一下、两端对齐当场失效 —— 官方面板不抖就是因为它不留这个变量。
+    **宽度跟内容 / 触发器走的滚动区不给**（下拉面板、筛选面板、标签弹层、字重下拉）：
+    它们的宽度本来就被滚动条影响，留槽等于白掉 8px。
+    判据一句话：**滚动条出现时，这个容器的外宽会不会变？** 不会 ⇒ 给；会 ⇒ 不给。
+19. **浅色浮层内部也要有「凹陷 / hover」两档，且由 `.mm-popover` 声明、控件消费**（2026-10-31 立）：
+    规则 16 把浮层定成白底黑字，但**叠白**（`--mm-color-hover-1` / `-2`）落在白底上不可见、
+    深色输入位落在白底上反差过头 —— 两者都不能直接搬到浮层里。
+    所以这两档另给一套，落地机制与规则 15 完全相同（**表面声明、控件消费**）：
+
+    | 变量（由表面声明） | 页面 / 抽屉表面的兜底 | 浅色浮层表面上的值 |
+    |---|---|---|
+    | `--mm-input-bg` | `--mm-color-bg-input` | `--mm-color-bg-input-popover` |
+    | `--mm-input-color` | `--mm-color-text` | `--mm-color-text-popover` |
+    | `--mm-hover-bg` | `--mm-color-bg-hover` | `--mm-color-hover-popover` |
+
+    `.mm-popover` 是这三个变量的唯一声明处；`.mm-input` / `.mm-input-surface` / `.mm-chip` /
+    菜单项 / 下拉项只消费。禁止：在浮层里给某个控件单独写 hover 底或输入位底；
+    给 chip / input 再造一个「浅色版」变体类（这是本条要防的那种漂移）。
+    判据一句话：**把控件挪进浮层，它的凹陷与 hover 还看得见吗？** 看不见 ⇒ 走这三个变量。
 
 ---
 
@@ -223,7 +292,10 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 - 判据：**删掉这行 JS，视觉会不会变？会 → 它属于本条，要进 css；只是把数据交给 css → 允许。**
 - 机器闸：`eslint.config.js` 的 `no-restricted-syntax` 两条（JSX `style` 里出现非 `--` 键、`element.style.xxx = `），命中即 error；豁免只给 `hooks/useLongPressDrag.ts` 与 `core/clipboard/index.ts` 两个功能模块，业务代码不许加 `eslint-disable`。
-- 已收敛：动作页列数 `--mm-action-columns`、下拉面板宽 `--mm-select-panel-w`、浮层坐标 `--floating-x/y`。
+- 现在只允许三种 JS → CSS 的通道，其余一律不许内联：
+  `--floating-x/y`（浮层坐标）、`--mm-select-panel-w`（面板宽 = 触发器宽）、`--mm-swatch`（运行时色值 / 渐变）。
+  这三样 CSS 都表达不了，所以只能由 JS 交变量、由 CSS 决定怎么用。
+  **等宽按钮排的列数是常量**，直接写 `--mm-btn-grid-cols`，不经 JS（曾有一个 `--mm-action-columns` 由 JS 注入，已随 `.mm-btn-grid` 收口删除）。
 - 理由：内联样式特异性最高、改 `tokens.css` 不生效、DevTools 里要跑到第二处找 —— 视觉出问题时排查不到根因。
 - **本条是视觉重写期的临时护栏，不是永久规则**：视觉定稿后连同 eslint 那两条一起删。债号 `TD-13-1`（`node scripts/debt.mjs show TD-13-1`）。
 
@@ -239,4 +311,5 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 - [ ] 图标档位按「旁边有没有字」选，调用点没传 size（规则 14）
 - [ ] 图标与文字之间只有 `--mm-space-inline`，走图标槽结构（规则 17）
 - [ ] 每个 `overflow-y: auto` 都带 `scrollbar-gutter: stable`（规则 18）
+- [ ] 浮层里的控件没有自己写 hover 底 / 输入位底，也没有再造「浅色版」变体类（规则 19）
 - [ ] 视觉值没有写在 JS 里（§14.1）

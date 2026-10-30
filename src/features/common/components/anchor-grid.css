@@ -1,9 +1,12 @@
-/* 骨架：只留结构与定位，视觉待重写（03 §0.5：不写 margin / padding / gap） */
+/*
+ * 九宫格锚点（常用页「对齐」抽屉）：3×3 网格走组合层 `.mm-btn-grid`，
+ * 本文件只给每个格子的形状与图标档位。
+ */
 
-/* 一排 3 个：9 个锚点正好 3×3（写 6 列会排成 6+3 两行） */
+/* 一排 3 个：9 个锚点正好 3×3（写 6 列会排成 6+3 两行）。
+   网格走组合层 `.mm-btn-grid`（九宫格点阵就是它的判据），这里只注入列数。 */
 .mm-common__anchors{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  --mm-btn-grid-cols: 3;
 }
 
 .mm-common__anchor{
@@ -11,6 +14,12 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+}
+
+/* 选中的锚点：图标转 accent（规则 12 的「选中」一档）——
+   不给它加底色或描边，九宫格里一次只该有一个蓝 */
+.mm-common__anchor--on{
+  color: var(--mm-color-accent);
 }
 
 /* 九宫格锚点：按钮档（20），与图标按钮、底栏同一档 */

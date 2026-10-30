@@ -1,4 +1,4 @@
-/* 【范本】下拉样式 —— 骨架：只留结构与定位，视觉待重写；新增同类代码照此结构。 */
+/* 【范本】下拉样式 —— 新增同类代码照此结构。 */
 
 .mm-select-box__trigger{
   display: flex;
@@ -39,12 +39,26 @@
   cursor: pointer;
 }
 
-/* hover / 当前项的底色视觉重写时统一给 */
+/* hover 底由**所在表面**声明（规则 19）：下拉面板挂在浅色浮层里，取的是叠黑那一档 */
+.mm-select-box__item:hover{
+  background: var(--mm-hover-bg, var(--mm-color-bg-hover));
+}
+
+/* 当前项：整行铺 accent 实底 + 反白文字。
+   `--mm-color-accent-solid` 的 token 注释就是「下拉选中项底」，是这个位置的专用档；
+   对号跟 currentColor，所以不必再单独给色（规则 12「下拉当前项的对号」）。
+   hover 底暂缺，原因与菜单相同（浅色浮层没有对应档位，`TD-11-6`）。 */
+.mm-select-box__item--active{
+  background: var(--mm-color-accent-solid);
+  color: var(--mm-color-text-inverse);
+}
 
 .mm-select-box__check{
   position: absolute;
   left: 0;
   top: 50%;
+  /* 必须回拉半个身位：`top: 50%` 只是把顶边放到中线，不回拉就对号偏下 6px */
+  transform: translateY(-50%);
   /* 小标记档（12）：与菜单、字重里的对号同一档 */
   font-size: var(--mm-icon-xs);
 }

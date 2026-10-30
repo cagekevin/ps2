@@ -4,6 +4,7 @@
  */
 import { useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { Chevron } from '../../../components/Chevron';
+import { Button } from '../../../components/ui';
 import type { FontTag } from '../../../domain/font-meta';
 import { TagChip } from './TagChip';
 
@@ -34,29 +35,28 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
   }, [tags]);
 
   return (
-    <section className="mm-font__tags">
+    <section>
       <div className="mm-u-row mm-font__tags-head">
         <span>我的标签</span>
         <div className="mm-u-row mm-font__tags-tools">
-          <button className="mm-btn mm-font__tags-add" type="button" aria-label="新建标签" onClick={onCreate}>
+          <Button className="mm-font__tags-add" aria-label="新建标签" onClick={onCreate}>
             +
-          </button>
+          </Button>
           {overflow ? (
-            <button
-              className={`mm-btn mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
-              type="button"
+            <Button
+              className={`mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
               aria-label="展开或收起标签"
               aria-expanded={open}
               onClick={() => setOpen((value) => !value)}
             >
               <Chevron open={open} />
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
 
       {error ? (
-        <div className="mm-font__tags-error">{error}（标签读取失败，字体列表不受影响）</div>
+        <div className="mm-notice mm-notice--error">{error}（标签读取失败，字体列表不受影响）</div>
       ) : (
         <div
           ref={listRef}

@@ -146,7 +146,6 @@
   /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
   --mm-common-tile: 50px;
   --mm-common-tile-icon: 32px;
-  --mm-common-tile-radius: var(--mm-radius-md);
   --mm-common-zoom-trigger-w: 72px;
 
   /* 弹层 / 浮层 */
@@ -182,6 +181,7 @@
   --mm-color-bg-raised-hover: #575757;            /* 按钮 hover */
   --mm-color-bg-input: #2c2c2c;                   /* 输入位底：页面表面（#363636）上，比表面深一档 */
   --mm-color-bg-input-drawer: #000000;            /* 输入位底：抽屉表面（#222222）上，比表面深一档 */
+  --mm-color-bg-input-popover: #ebebeb;           /* 输入位底：浮层表面（#ffffff）上，比表面深一档 */
   --mm-color-bg-overlay: rgba(64, 64, 64, 0.96);  /* 弹窗 / toast */
   --mm-color-bg-popover: #ffffff;                 /* 浮层 / 下拉面板底：浅色，与深色面板相反 */
   --mm-color-bg-nav: #535353;                     /* 侧边栏 */
@@ -215,7 +215,6 @@
   --mm-color-text-name: #eaeaea;                   /* 无预览模式家族名 */
   --mm-color-text-chip: #c0c0c0;                   /* 字重芯片 */
   --mm-color-text-muted: #b3b3b3;                  /* 计数 / 次要信息 */
-  --mm-color-text-on-chip: hsla(0, 0%, 100%, 0.95); /* 标签 chip 文字 */
   --mm-color-text-disabled: #7b7b7b;               /* 禁用文字 */
 
   /* 图标 */
@@ -241,20 +240,10 @@
 
   /* 遮罩 / 半透明层 */
   --mm-color-mask: rgba(0, 0, 0, 0.45);            /* 弹窗 / 全屏加载 */
-  --mm-color-mask-soft: rgba(0, 0, 0, 0.25);       /* 图标按钮 hover 底 */
   --mm-color-mask-faint: rgba(0, 0, 0, 0.1);       /* 输入弹窗遮罩 */
-  --mm-color-btn-muted: rgba(0, 0, 0, 0.2);        /* 旧版快捷按钮底 */
   --mm-color-icon-hover: rgba(0, 0, 0, 0.2);       /* 图标按钮 hover 底 */
   --mm-color-nav-hover: rgba(0, 0, 0, 0.9);        /* 导航悬停 */
-  --mm-color-hover-1: hsla(0, 0%, 100%, 0.06);     /* 叠白一档 */
-  --mm-color-hover-2: hsla(0, 0%, 100%, 0.1);      /* 叠白二档：菜单项 hover */
+  /* 叠黑一档：浅色浮层上的行 hover —— 叠白落在白底上不可见（STYLE.md §7 规则 19） */
+  --mm-color-hover-popover: rgba(0, 0, 0, 0.06);
 
-  /* 数据色：重命名页图层标记，是数据不是主题色 */
-  --mm-color-layer-1: #b0423f;
-  --mm-color-layer-2: #a5620a;
-  --mm-color-layer-3: #aa890a;
-  --mm-color-layer-4: #5f823c;
-  --mm-color-layer-5: #526f99;
-  --mm-color-layer-6: #7155a0;
-  --mm-color-layer-7: #6a6a6a;
 }

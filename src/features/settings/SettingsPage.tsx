@@ -147,13 +147,13 @@ export default function SettingsPage() {
   return (
     <div className="mm-settings">
       {/* 没有页头：导航上已写着「设置」，标题行白占 40 高（全站页面一致） */}
-      <div className="mm-settings__body">
+      <div className="mm-u-col mm-settings__body">
         <div className="mm-settings__section">使用设置</div>
 
         <div className="mm-u-row mm-settings__row">
           <span className="mm-settings__label">单位：</span>
           <SelectBox
-            className="mm-u-grow mm-settings__select"
+            className="mm-u-grow"
             options={UNITS.map((unit) => ({ value: unit.value, label: unit.label }))}
             value={current?.value ?? 'px'}
             onChange={changeUnit}
@@ -201,10 +201,7 @@ export default function SettingsPage() {
          * 句式保持官方原样、只删一个词。**这是登记的文案偏离**（`03` §4.5），别顺手改回官方原文，
          * 也别改成「恢复默认常用功能」（会与设置页的「恢复默认设置」混淆，那是重置整个客户端）。
          */}
-        <Button
-          className="mm-settings__reset"
-          onClick={() => void run(resetAll, { spin: false })}
-        >
+        <Button onClick={() => void run(resetAll, { spin: false })}>
           重置常用功能
         </Button>
 

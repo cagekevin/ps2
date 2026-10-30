@@ -28,8 +28,10 @@
   background: var(--mm-color-icon-hover);
 }
 
+/* 选中项 hover **不再换蓝**：规则 12 禁止「hover 才变蓝」——
+   选中态本身已经有底与框，hover 不该再借蓝来表达「你指到我了」 */
 .mm-icon-btn--active:hover:not(:disabled){
-  border-color: var(--mm-color-accent);
+  border-color: var(--mm-color-border-float-strong);
 }
 
 .mm-icon-btn:disabled{

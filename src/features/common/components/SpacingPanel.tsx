@@ -64,13 +64,13 @@ export function SpacingPanel() {
       <div className="mm-u-row mm-common__panel-row">
         <RadioButton
           label={'按图层排序'}
-          name="mm-common-spacing-sort"
+          name="common-spacing-sort"
           checked={sortMode === 1}
           onChange={() => setSortMode(1)}
         />
         <RadioButton
           label={'按坐标排序'}
-          name="mm-common-spacing-sort"
+          name="common-spacing-sort"
           checked={sortMode === 2}
           onChange={() => setSortMode(2)}
         />

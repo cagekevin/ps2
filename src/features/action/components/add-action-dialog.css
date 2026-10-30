@@ -1,8 +1,13 @@
-/* 骨架：只留结构与定位（03 §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+/*
+ * 「添加动作」弹窗：标题 → 分组下拉 → 全选 → 动作列表 → 底部两个按钮。
+ *
+ * 壳体走组合层 `.mm-modal`，本文件只给内部的排列、列表滚动与底部按钮的等分。
+ */
 
 .mm-action-dialog{
   display: flex;
   flex-direction: column;
+  gap: var(--mm-space-2);
   max-height: var(--mm-card-max-h);
 }
 
@@ -10,8 +15,11 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  gap: var(--mm-space-1);
   min-height: 0;
   overflow-y: auto;
+  /* 弹窗宽度固定，滚动条出现时不留槽就会左右抖（规则 18） */
+  scrollbar-gutter: stable;
 }
 
 .mm-action-dialog__footer{

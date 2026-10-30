@@ -19,7 +19,7 @@
 /* 横向排列与两端对齐走公共 `.mm-u-row`，这里只留自己不收缩 + 底色 + 页边 */
 .mm-layout__header{
   flex: 0 0 auto;
-  min-height: var(--mm-control-h);
+  height: var(--mm-control-h);
   padding: 0 var(--mm-page-pad-x);
   background: var(--mm-color-bg-header);
   color: var(--mm-color-text-dim);
@@ -39,6 +39,10 @@
 .mm-layout__debug{
   color: var(--mm-color-accent);
   cursor: pointer;
+}
+
+.mm-layout__debug:hover{
+  color: var(--mm-color-accent-hover);
 }
 
 .mm-layout__debug--active{

@@ -5,8 +5,10 @@
  * 新增同类代码照此结构：一个壳一条规则块，状态用 `:disabled` / `:focus-visible`。
  */
 
-/* 唯一根类：全仓按钮都挂 `.mm-btn`；`--primary` 只是语义标记，实底等视觉重写时补。
-   **底色按变体给**：默认无底色（普通文字按钮 / 底栏按钮），数值按钮走 `--numeric`。 */
+/* 唯一根类：全仓按钮都挂 `.mm-btn`。
+   **默认就是实心灰底** —— 原版截图里凡是成块的按钮（抽屉动作 / 弹窗取消确定 / 数值档位 /
+   九宫格预设 / 「应用」「生成变换」）都是灰底，**没有「透明文字按钮」这种东西**。
+   透明只出现在「旁边已经有底」的场合，那是 `--ghost`，不是默认。 */
 .mm-btn{
   display: inline-flex;
   align-items: center;
@@ -14,24 +16,54 @@
   height: var(--mm-control-h);
   padding: 0 var(--mm-space-2);
   border-radius: var(--mm-radius-md);
-  color: var(--mm-color-text);
+  /* 文字色**不写**：靠继承。页面表面继承 body 的 `--mm-color-text`，
+     浅色浮层里继承 `.mm-popover` 的 `--mm-color-text-popover` —— 写死成前者时，
+     浮层里的按钮（如下拉项右侧的删除）就是白底浅灰字，几乎看不见（规则 16 / 19）。 */
   font-size: var(--mm-font-sm);
+  /* 长文字不换行：26 高的按钮里一换行就溢出（动作名、面板标题都可能很长） */
+  white-space: nowrap;
   cursor: pointer;
-}
-
-/* hover 叠一档底色（不变蓝，规则 12） */
-.mm-btn:hover:not(:disabled){
-  background: var(--mm-color-bg-hover);
-}
-
-/* 数值按钮：一排 N 个的档位（缩放档位、字号 / 行距 / 字距 / 层级 / 边距预设）。
-   底 #535353、高 26 是设计稿实测；列数由父级 grid 给，不在这里写宽。 */
-.mm-btn--numeric{
   background: var(--mm-color-bg-raised);
 }
 
-.mm-btn--numeric:hover:not(:disabled){
+/* hover 压暗一档（不变蓝，规则 12）。实心按钮的 hover 走 raised 的 hover 档而不是叠白：
+   叠白盖在灰底上会发白，把按钮洗淡。 */
+.mm-btn:hover:not(:disabled){
   background: var(--mm-color-bg-raised-hover);
+}
+
+/* 幽灵按钮：无底、无边界，只有 hover 才叠一档。
+   只给**底栏图标按钮**与**行内小动作**（下拉项删除、「复制 / 清空」这类文字链）——
+   它们旁边已经有底，再加一块灰底就成了两个块。 */
+.mm-btn--ghost{
+  background: none;
+}
+
+.mm-btn--ghost:hover:not(:disabled){
+  background: var(--mm-color-bg-hover);
+}
+
+/* 主操作实底：**一行里唯一**要「被看见」的那个动作（规则 12「主操作实底」一档）。
+   实底蓝全仓只有这一档；hover 走 accent 的 hover 档，不用叠白
+   （叠白盖在实底上会发灰，把主按钮降级成普通按钮）。 */
+.mm-btn--primary{
+  background: var(--mm-color-accent);
+  color: var(--mm-color-text-inverse);
+}
+
+.mm-btn--primary:hover:not(:disabled){
+  background: var(--mm-color-accent-hover);
+}
+
+/* 危险按钮：删除 / 清空这类不可逆动作的确认按钮。
+   底仍走默认灰底，**只把文字转红** —— 红底会把「可点的动作」变成一块警告牌，
+   操作意图由标题与 `mm-modal` 的上下文表达，这里只做最后的强调。 */
+.mm-btn--danger{
+  color: var(--mm-color-danger);
+}
+
+.mm-btn--danger:hover:not(:disabled){
+  background: var(--mm-color-danger-a16);
 }
 
 .mm-btn:disabled{
@@ -59,10 +91,11 @@
   border: var(--mm-border-w) solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
   font-size: var(--mm-font-sm);
-  /* 输入位底色只有两档，由**所在表面**声明 `--mm-input-bg`（抽屉见 icon-panel.css），
-     没声明即页面档。调用点不许加 class / prop 选档，也不许自己写 background。 */
+  /* 输入位底色按**所在表面**走：页面 / 抽屉 / 浅色浮层三档，由表面声明 `--mm-input-bg`
+     与 `--mm-input-color`（抽屉见 icon-panel.css，浮层见 global.css 的 `.mm-popover`；
+     规则 15 + 规则 19）。没声明即页面档。调用点不许加 class / prop 选档，也不许自己写 background。 */
   background: var(--mm-input-bg, var(--mm-color-bg-input));
-  color: var(--mm-color-text);
+  color: var(--mm-input-color, var(--mm-color-text));
 }
 
 .mm-input::placeholder{
@@ -83,3 +116,136 @@
 .mm-input-surface:focus-visible{
   outline: var(--mm-border-w) solid var(--mm-color-accent);
 }
+
+/*
+ * 组合层 · 控件表面（`STYLE.md` §6.2）：多个元素组成的固定形状，不是单个控件。
+ * 只出 CSS 契约、不带行为；带行为的上建 TSX 组件并登记 `GOVERNANCE` §4.1。
+ * 行类同样是 `.mm-u-row` 的修饰符（理由见 `global.css` 组合层注释），这里不补 `justify-content`。
+ */
+
+/* 标签片：扁平可点小片（筛选标签 / 最近使用 / 序列 / 动作项）。
+   高度复用既有的标签条档（`--mm-tag-strip-h`）—— chip 与标签条是同一类东西，
+   同页同类同尺寸（规则 9）。 */
+.mm-chip{
+  display: inline-flex;
+  align-items: center;
+  height: var(--mm-tag-strip-h);
+  padding: 0 var(--mm-space-2);
+  border-radius: var(--mm-radius-md);
+  /* 底 / 文字色 / hover 全由**所在表面**声明（规则 19）：深色面板上取页面档，
+     浅色浮层上由 `.mm-popover` 换成浅档 —— 同一个类两处都能用，没有「浅色版」第二套类 */
+  background: var(--mm-input-bg, var(--mm-color-bg-input));
+  color: var(--mm-input-color, var(--mm-color-text-chip));
+  font-size: var(--mm-font-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* hover 只叠一档底色，文字色不动（状态表：hover = 叠底，不变蓝也不变亮） */
+.mm-chip:hover{
+  background: var(--mm-hover-bg, var(--mm-color-bg-hover));
+}
+
+/* 选中态反白而不是变蓝：`REVIEW-2026-10-30` §4.1 定的结论 ——
+   一排 chip 里有多个选中时，accent 会把「哪个是当前筛选」和「chip 自己的内容」混成一层 */
+.mm-chip--on{
+  background: var(--mm-color-text-popover);
+  color: var(--mm-color-bg-popover);
+}
+
+/* 角标：贴在别的东西上的小计数 / 标记（字重数量、授权标、筛选计数）。
+   尺寸复用既有的徽标档（`--mm-filter-badge`）；语义只有三档，
+   要第四种说明那不是「角标」，是另一个东西。 */
+.mm-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--mm-filter-badge);
+  height: var(--mm-filter-badge);
+  padding: 0 var(--mm-space-tight);
+  border-radius: var(--mm-radius-sm);
+  font-size: var(--mm-font-xs);
+  line-height: var(--mm-line-16);
+}
+
+.mm-badge--count{
+  background: var(--mm-color-bg-raised);
+  color: var(--mm-color-text-strong);
+}
+
+/* Field 的两段文字：label 是「这一项叫什么」，hint 是「填错了会怎样」。
+   两者都比正文弱一档，靠颜色而不是字号区分（字号全仓只有三档）。 */
+.mm-field__label{
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+}
+
+.mm-field__hint{
+  color: var(--mm-color-text-faint);
+  font-size: var(--mm-font-xs);
+}
+
+/* 数据健康提示：「读到了但数据不全」（N 项无法识别 / 分类筛选已禁用）。
+   与 `StateHint` 的分工写在 `STYLE.md` §6.2 规则 2 —— 拿掉提示下面还剩东西 ⇒ 用这里。
+   底用既有的半透明语义层，文字用对应语义色，不新增第四个语义色。 */
+.mm-notice{
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-inline);
+  min-height: var(--mm-control-h);
+  padding: 0 var(--mm-space-2);
+  border-radius: var(--mm-radius-md);
+  font-size: var(--mm-font-sm);
+}
+
+.mm-notice--warn{
+  background: var(--mm-color-warn-a18);
+  color: var(--mm-color-warn);
+}
+
+.mm-notice--error{
+  background: var(--mm-color-danger-a16);
+  color: var(--mm-color-danger);
+}
+
+/* 弹窗壳：居中弹窗（确认 / 输入 / 新建标签）共用的形状 —— 此前 `Confirm` / `InputDialog` /
+   `TagCreator` 各画一套，共 15 个类名零规则，现收到这里。
+   宽取既有三档（`--mm-modal-*`），落在规则 4 的 200–360 之间。
+   底是浮层档不是页面底：弹窗比页面浮起一档（规则 13）。
+   排列走公共 `.mm-u-col`，这里不给 `display`。 */
+.mm-modal{
+  width: var(--mm-modal-w);
+  min-width: var(--mm-modal-min-w);
+  max-width: var(--mm-modal-max-w);
+  padding: var(--mm-space-3);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-overlay);
+  color: var(--mm-color-text);
+}
+
+/* head 与 actions 都是行类修饰符，与 `.mm-u-row` 同挂：head 是「标题左 / 关闭右」，
+   actions 是两端铺满（取消左 / 确定右）—— 横排仍只有 `.mm-u-row` 一种（§6） */
+.mm-modal__head{
+  gap: var(--mm-space-2);
+}
+
+.mm-modal__title{
+  min-width: 0;
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
+
+/* head 里「标题 / 关闭」之间的空隙，替代各弹窗自己写的 spacer */
+.mm-modal__grow{
+  flex: 1;
+  min-width: 0;
+}
+
+.mm-modal__body{
+  min-width: 0;
+}
+
+.mm-modal__actions{
+  gap: var(--mm-space-2);
+}
+

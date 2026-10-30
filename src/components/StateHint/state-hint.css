@@ -1,6 +1,31 @@
-/* 骨架：只留结构与定位，视觉待重写 */
+/*
+ * 空态 / 失败提示样式 —— 与 `StateHint` 的三种输出一一对应。
+ *
+ * 横排与两端对齐走公共 `.mm-u-row`，这里只给文字色与字号：空态比正文弱一档。
+ */
 
-/* 横排与两端对齐走公共 `.mm-u-row`；这里只留重试按钮不收缩 */
+/*
+ * 空态 与「前提类码」（没开文档 / 图层类型不对 / 文件本来就没有）共用这一档 ——
+ * 它们都是「换一下就好」，标红会让人以为面板坏了（分支在 `index.tsx` 的 `soft`）。
+ */
+.mm-state-hint{
+  color: var(--mm-color-text-faint);
+  font-size: var(--mm-font-sm);
+}
+
+/* 真正的失败才标红：`soft` 那几类不会走到这个分支 */
+.mm-state-hint--error{
+  color: var(--mm-color-danger);
+}
+
+/* 「重试」是可点动作，用 accent 文字（规则 12 第 4 类用法）。
+   必须写在 `--error` 之后：否则会继承上一行的红色。 */
 .mm-state-hint__retry{
   flex: 0 0 auto;
+  color: var(--mm-color-accent);
+  cursor: pointer;
+}
+
+.mm-state-hint__retry:hover{
+  color: var(--mm-color-accent-hover);
 }

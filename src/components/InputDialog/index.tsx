@@ -71,22 +71,21 @@ export function InputDialog({
     <div className="mm-input-dialog" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-input-dialog__main"
+        className="mm-u-col mm-input-dialog__main"
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={stopClickPropagation}
         onKeyDown={onKeyDown}
       >
-        <div className="mm-u-row mm-input-dialog__head">
+        <div className="mm-u-row mm-modal__head">
           <span className="mm-input-dialog__title">{title}</span>
-          <span className="mm-input-dialog__grow" />
+          <span className="mm-modal__grow" />
           {extraHeader}
         </div>
 
         <Input
           ref={inputRef}
-          variant="page"
           className="mm-input-dialog__input"
           type="text"
           value={value}
@@ -101,7 +100,7 @@ export function InputDialog({
         {extra}
 
         <div className="mm-u-row mm-input-dialog__footer">
-          <Button className="mm-input-dialog__ok" onClick={submit}>
+          <Button variant="primary" onClick={submit}>
             确定
           </Button>
         </div>

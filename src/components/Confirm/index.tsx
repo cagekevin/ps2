@@ -10,6 +10,7 @@
 
 import { useDismiss } from '../../hooks/useDismiss';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { Button } from '../ui';
 
 interface ConfirmProps {
   open: boolean;
@@ -32,26 +33,20 @@ export function Confirm({ open, title, message, confirmText = '删除', onConfir
   return (
     <div className="mm-modal-mask">
       <div
-        className="mm-u-col mm-confirm"
+        className="mm-u-col mm-modal"
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onKeyDown={onKeyDown}
       >
-        <div className="mm-confirm__title">{title}</div>
-        {message ? <div className="mm-confirm__message">{message}</div> : null}
-        <div className="mm-u-row mm-confirm__actions">
-          <button type="button" className="mm-btn mm-confirm__btn" onClick={onCancel}>
-            取消
-          </button>
-          <button
-            type="button"
-            className="mm-btn mm-confirm__btn mm-confirm__btn--danger"
-            onClick={onConfirm}
-          >
+        <div className="mm-modal__title">{title}</div>
+        {message ? <div className="mm-modal__body">{message}</div> : null}
+        <div className="mm-u-row mm-modal__actions">
+          <Button onClick={onCancel}>取消</Button>
+          <Button variant="danger" onClick={onConfirm}>
             {confirmText}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

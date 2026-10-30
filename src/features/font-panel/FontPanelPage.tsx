@@ -10,7 +10,6 @@
  *   翻译 = 一直禁用（方案未定）
  */
 
-import { Icon } from '../../components/icons';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
@@ -90,7 +89,7 @@ export default function FontPanelPage() {
 
       <div className="mm-u-col mm-font-panel__icons">
         <IconPanelGroup exclusive>
-          <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row">
+          <div className="mm-u-row mm-u-row--wrap mm-icon-row">
             {TOP_ICONS_ONE.map((icon, index) => (
               <IconPanel
                 key={icon}
@@ -116,7 +115,7 @@ export default function FontPanelPage() {
               />
             ))}
 
-            <span className="mm-font-panel__divider" />
+            <span className="mm-divider mm-divider--vertical" />
 
             {TOP_ICONS_TWO.map((icon, index) => (
               <IconPanel
@@ -147,10 +146,10 @@ export default function FontPanelPage() {
         </IconPanelGroup>
       </div>
 
-      <div className="mm-font-panel__line mm-font-panel__line--set" />
+      <div className="mm-divider" />
 
       <div className="mm-u-col mm-font-panel__icons">
-        <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row">
+        <div className="mm-u-row mm-u-row--wrap mm-icon-row">
           {BOTTOM_ICONS_ONE.map((icon, index) => (
             <IconButton
               key={icon}
@@ -160,7 +159,7 @@ export default function FontPanelPage() {
             />
           ))}
 
-          <span className="mm-font-panel__divider" />
+          <span className="mm-divider mm-divider--vertical" />
 
           {BOTTOM_ICONS_TWO.map((icon, index) => (
             <IconButton
@@ -174,7 +173,7 @@ export default function FontPanelPage() {
           ))}
         </div>
 
-        <div className="mm-u-row mm-u-row--wrap mm-font-panel__icon-row mm-font-panel__icon-row--after">
+        <div className="mm-u-row mm-u-row--wrap mm-icon-row mm-font-panel__icon-row--after">
           {BOTTOM_ICONS_THREE.map((icon, index) => (
             <IconButton
               key={icon}
@@ -184,7 +183,7 @@ export default function FontPanelPage() {
             />
           ))}
 
-          <span className="mm-font-panel__divider" />
+          <span className="mm-divider mm-divider--vertical" />
 
           {BOTTOM_ICONS_FOUR.map((icon, index) => (
             <IconButton
@@ -201,7 +200,7 @@ export default function FontPanelPage() {
 
       {page.settings.ztShowCustom ? (
         <>
-          <div className="mm-font-panel__line" />
+          <div className="mm-divider" />
           <FontHierarchy
             levels={page.settings.ztHierarych}
             presets={page.hierarchy.list}
@@ -221,17 +220,12 @@ export default function FontPanelPage() {
         <InputDialog
           title={page.distribution.title}
           extraHeader={
-            <button
-              type="button"
-              className={`mm-font-panel__pin${
-                page.settings.ztDistributedIsFixed ? ' mm-font-panel__pin--on' : ''
-              }`}
+            <IconButton
+              name="icongudingxuanxiangye"
               title="固定弹窗"
-              aria-pressed={page.settings.ztDistributedIsFixed}
+              active={page.settings.ztDistributedIsFixed}
               onClick={() => page.onPinDistribution(!page.settings.ztDistributedIsFixed)}
-            >
-              <Icon name="icongudingxuanxiangye" />
-            </button>
+            />
           }
           extra={<DistributionHelp />}
           onSubmit={(value) => {

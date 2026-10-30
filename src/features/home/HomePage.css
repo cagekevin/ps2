@@ -1,5 +1,5 @@
 /*
- * 【范本】首页样式 —— 骨架：只留结构与定位，视觉待重写；新增页面样式照此结构：只用 token，不写原始色值与 px。
+ * 【范本】首页样式 —— 新增页面样式照此结构：只用 token，不写原始色值与 px。
  *
  * 页面根（`.mm-home`）与 `.mm-common` / `.mm-style` 等一起挂在 `global.css` 的页面根容器组里，
  * 这里只写本页自己的分层，不重复撑满与滚动那几条。
@@ -18,6 +18,8 @@
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  /* 宽度由页面壳定死，滚动条出现时不许挤内容（规则 18） */
+  scrollbar-gutter: stable;
 }
 
 /* 每块面板默认按内容高；只有日志块要吃掉剩余高度（`--grow`） */
@@ -38,6 +40,33 @@
   flex: 0 0 auto;
 }
 
+/* 面板标题：比正文强一档、提一档字号（与弹窗标题同一组值） */
+.mm-home__panel-title{
+  color: var(--mm-color-text-strong);
+  font-size: var(--mm-font-md);
+}
+
+/* 行组：纵向排列走公共 `.mm-u-col`，这里只给行间一档（§6.2：纵向间距由承载容器给） */
+.mm-home__rows{
+  gap: var(--mm-space-1);
+}
+
+/* 诊断值不是 function / true / false：只把「值」标红，名称保持正文色 ——
+   整行变红会把标签一起染了，读的人分不清是哪个不对 */
+.mm-home__row--bad .mm-home__value{
+  color: var(--mm-color-danger);
+}
+
+/* 复制 / 清空这类行内动作：可点动作用 accent 文字（规则 12 第 4 类用法），
+   不给实底 —— 它们不是这一行的主操作 */
+.mm-home__link{
+  color: var(--mm-color-accent);
+}
+
+.mm-home__link:hover:not(:disabled){
+  color: var(--mm-color-accent-hover);
+}
+
 /* 名称不压缩，值可压缩后截断：函数名永远看得全 */
 .mm-home__key{
   flex: 0 0 auto;
@@ -52,7 +81,11 @@
 .mm-home__log-body{
   flex: 1 1 auto;
   min-height: 0;
+  /* 日志再长也不吃掉整页：超过 `--mm-log-max-h` 就在自己里面滚 */
+  max-height: var(--mm-log-max-h);
   overflow: auto;
+  /* 同上：宽度固定，滚动条出现时不留槽会横向抖（规则 18） */
+  scrollbar-gutter: stable;
   white-space: pre-wrap;
   word-break: break-all;
 }

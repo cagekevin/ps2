@@ -35,25 +35,24 @@ export function TagCreator({ mode, initial = '', onSubmit, onClose }: Props) {
     <div className="mm-modal-mask" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-u-col mm-font__modal"
+        className="mm-u-col mm-modal"
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'create' ? '新建标签' : '重命名标签'}
         onKeyDown={onKeyDown}
         onClick={stopClickPropagation}
       >
-        <div className="mm-font__modal-title">{mode === 'create' ? '新建标签' : '重命名标签'}</div>
+        <div className="mm-modal__title">{mode === 'create' ? '新建标签' : '重命名标签'}</div>
         <TagInput
           value={text}
           onChange={setText}
           onEnter={() => void submit()}
-          variant="modal"
           placeholder="请输入标签名"
           maxLength={8}
           clearable={false}
           autoFocus
         />
-        <div className="mm-u-row mm-font__modal-actions">
+        <div className="mm-u-row mm-modal__actions">
           <Button disabled={submitting} onClick={onClose}>
             取消
           </Button>

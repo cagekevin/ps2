@@ -25,7 +25,7 @@ export function FilterPanel({ categories, state, onChange }: Props) {
   }
 
   return (
-    <div className="mm-font__filter-panel">
+    <div className="mm-u-col">
       {categories.map((group) => {
         const allOff = (state[group.key] ?? []).length === 0;
 
@@ -36,7 +36,7 @@ export function FilterPanel({ categories, state, onChange }: Props) {
               {group.extraTag ? (
                 <button
                   type="button"
-                  className={`mm-font__filter-chip${allOff ? ' mm-font__filter-chip--on' : ''}`}
+                  className={`mm-chip${allOff ? ' mm-chip--on' : ''}`}
                   onClick={() => onChange({ ...state, [group.key]: [] })}
                 >
                   全部
@@ -46,9 +46,7 @@ export function FilterPanel({ categories, state, onChange }: Props) {
                 <button
                   key={tag.id}
                   type="button"
-                  className={`mm-font__filter-chip${
-                    isOn(state, group.key, tag.id) ? ' mm-font__filter-chip--on' : ''
-                  }`}
+                  className={`mm-chip${isOn(state, group.key, tag.id) ? ' mm-chip--on' : ''}`}
                   onClick={() => toggle(group.key, tag.id)}
                 >
                   {label(tag)}

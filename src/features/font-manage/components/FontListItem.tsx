@@ -3,7 +3,7 @@
  * `memo`：列表 30+ 条时，父级菜单开关不应让每一行重渲染。
  */
 import { memo, type KeyboardEvent, type MouseEvent } from 'react';
-import { Icon } from '../../../components/icons';
+import { IconButton } from '../../../components/IconButton';
 import type { FontItem } from '../../../domain/font-item';
 import type { PreviewMode } from '../../../store/font';
 import { FontWeight } from './FontWeight';
@@ -64,17 +64,15 @@ function FontListItemInner({
             {font.family}
           </span>
           <div className="mm-font__actions">
-            <button
-              type="button"
-              className="mm-btn mm-font__act"
-              aria-label="管理标签"
+            <IconButton
+              name="iconbiaoqian"
+              title="管理标签"
+              className="mm-icon-btn--inline"
               onClick={(event) => {
                 event.stopPropagation();
                 onOpenTags(event, font.family);
               }}
-            >
-              <Icon name="iconbiaoqian" />
-            </button>
+            />
             <Rating selected={star} onRate={(value) => onRate(font.family, value)} />
           </div>
         </div>

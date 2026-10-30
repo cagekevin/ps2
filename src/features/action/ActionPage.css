@@ -1,4 +1,9 @@
-/* 骨架：只留结构与定位（03 §0.5：不写 margin / padding / gap / 颜色 / 尺寸档） */
+/*
+ * 动作页样式（`/action`）：仓库条 → 分组列表。
+ *
+ * 页面根 `.mm-action` 的撑满 / 页边 / 滚动条槽在 `global.css` 的页面根容器组，这里只写本页差异。
+ * 一排 3 个等宽动作按钮走组合层 `.mm-btn-grid`。
+ */
 
 .mm-action__body{
   display: flex;
@@ -13,12 +18,13 @@
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
+  /* 宽度由页面壳定死，滚动条出现时不许挤内容（规则 18） */
+  scrollbar-gutter: stable;
 }
 
-/* 一排固定 3 个：父级 grid 定列数，子元素不写宽度（全仓「一排 N 个」唯一写法） */
+/* 一排固定 3 个：网格走组合层 `.mm-btn-grid`，这里只注入列数 */
 .mm-action__items{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  --mm-btn-grid-cols: 3;
 }
 
 /* 动作按钮：文字过长时截断，不撑破格子（05 §4.3 第 2 条） */

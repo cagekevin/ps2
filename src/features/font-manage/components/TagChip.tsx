@@ -4,16 +4,15 @@ import type { MouseEvent } from 'react';
 interface Props {
   text: string;
   active?: boolean;
-  variant?: 'filter' | 'menu';
   onClick: () => void;
   onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function TagChip({ text, active = false, variant = 'filter', onClick, onContextMenu }: Props) {
+export function TagChip({ text, active = false, onClick, onContextMenu }: Props) {
   return (
     <button
       type="button"
-      className={`mm-btn mm-btn--numeric mm-font__tag mm-font__tag--${variant}${active ? ' mm-font__tag--active' : ''}`}
+      className={`mm-chip${active ? ' mm-chip--on' : ''}`}
       onClick={onClick}
       onContextMenu={onContextMenu}
     >

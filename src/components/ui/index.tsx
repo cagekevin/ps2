@@ -22,38 +22,64 @@ import './ui.css';
 
 /* ---------------- Button ---------------- */
 
+/**
+ * 按钮变体**闭合在类型里**：写错变体编译失败，不用去翻 `ui.css`。
+ *
+ * - **不传 = 实心灰底**（绝大多数：抽屉动作、弹窗取消/确定、数值档位、九宫格预设）
+ * - `ghost` = 透明无底，只给底栏图标按钮与行内小动作（旁边已经有底的场合）
+ * - `primary` = 蓝底，一行里唯一的主操作
+ * - `danger` = 红字，不可逆动作的确认
+ *
+ * 判据见 `STYLE.md` §6 的「按钮」行：原版截图里凡是成块的按钮都是灰底实心。
+ */
+export type ButtonVariant = 'ghost' | 'primary' | 'danger';
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost';
+  variant?: ButtonVariant;
 }
 
-export function Button({ variant = 'ghost', className = '', type = 'button', ...rest }: ButtonProps) {
-  return <button type={type} className={`mm-btn mm-btn--${variant} ${className}`.trim()} {...rest} />;
-}
+/**
+ * 全仓按钮的唯一渲染入口。
+ * `forwardRef` 是必须的：下拉触发器、弹出层锚点都要拿真实 DOM 节点算位置，
+ * 不支持 ref 时那些地方只能退回手写按钮标签 + 自己拼类名 —— 那就成了第二个入口。
+ */
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  { variant, className = '', type = 'button', ...rest },
+  ref
+) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      className={`mm-btn${variant ? ` mm-btn--${variant}` : ''} ${className}`.trim()}
+      {...rest}
+    />
+  );
+});
 
 /* ---------------- Input ---------------- */
 
 /**
- * 输入框形状，只两档：
- *   `default` 基础（24 高、页面底、边框 `--mm-color-border`）
- *   `page`    页内深色（26 高、`--mm-color-input-page` 底）——字体面板、输入弹窗、层级编辑共用
+ * 输入框形状只有一套：`ui.css` 的 `.mm-input` / `.mm-input-surface`（26 高、
+ * `--mm-color-bg-input` 底、`--mm-color-border` 描边）。
  *
- * 两档都只改「表面」，宽度与间距由调用方的布局类给，避免每个页面各画一套边框。
+ * **没有 `variant`**：底色 / 文字色按**所在表面**走，由表面声明 `--mm-input-bg` /
+ * `--mm-input-color`（页面 / 抽屉 / 浅色浮层三档，`STYLE.md` §7 规则 15 + 规则 19）。
+ * 原 `default` / `page` 两档共用同一套表面、`page` 档零规则，属没有视觉效果的开关，已删。
+ * 要分第二种表面先改 `ui.css`，调用点不许写边框 / 底色 / 圆角（`STYLE.md` §6.1）。
  */
-export type InputVariant = 'default' | 'page';
-
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
-  variant?: InputVariant;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { variant = 'default', invalid = false, className = '', ...rest },
+  { invalid = false, className = '', ...rest },
   ref
 ) {
   return (
     <input
       ref={ref}
-      className={`mm-input mm-input--${variant}${invalid ? ' mm-input--invalid' : ''} ${className}`.trim()}
+      className={`mm-input${invalid ? ' mm-input--invalid' : ''} ${className}`.trim()}
       {...rest}
     />
   );

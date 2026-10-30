@@ -67,7 +67,7 @@ export function setPref(key: PrefKey, value: unknown): void {
 }
 
 /** 立即落盘；失败原样上抛（writeTextAtomic 内部已记日志） */
-export async function flushPrefs(): Promise<Result<void>> {
+async function flushPrefs(): Promise<Result<void>> {
   if (flushTimer !== null) {
     window.clearTimeout(flushTimer);
     flushTimer = null;
@@ -85,4 +85,18 @@ function scheduleFlush(): void {
     flushTimer = null;
     void flushPrefs();
   }, 200);
+}
+
+/**
+ * 写一个偏好并**立即落盘**：全仓「马上生效」的唯一入口。
+ *
+ * 失败只记日志、不阻断：偏好丢了最多重来一次（多弹一次引导 / 多问一次覆盖），
+ * 不影响任何业务写入。命令里不要再写 `setPref + flushPrefs + log.warn` 三行。
+ */
+export async function savePref(key: PrefKey, value: unknown): Promise<void> {
+  setPref(key, value);
+  const flushed = await flushPrefs();
+  if (flushed.status === 'error') {
+    log.warn('偏好落盘失败', { key, code: flushed.code, detail: flushed.detail });
+  }
 }

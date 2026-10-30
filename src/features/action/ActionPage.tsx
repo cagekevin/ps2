@@ -45,7 +45,7 @@ export default function ActionPage() {
         ) : null}
         {page.dropped.length ? (
           <div
-            className="mm-action__warning"
+            className="mm-notice mm-notice--warn"
             /* 数量 + 首条现场：只给数量等于替数据层说「已处理」 */
             title={page.dropped
               .slice(0, 3)
@@ -67,7 +67,7 @@ export default function ActionPage() {
 
         <div className="mm-action__list" ref={page.listRef}>
           {page.groups.map((group, groupIndex) => (
-            <div key={`${group.groupName}-${groupIndex}`} className="mm-action__group">
+            <div key={`${group.groupName}-${groupIndex}`}>
               <GroupHead
                 title={group.groupName}
                 open={group.show}
@@ -88,11 +88,11 @@ export default function ActionPage() {
 
               {group.show ? (
                 group.list.length ? (
-                  <div className="mm-action__items">
+                  <div className="mm-btn-grid mm-action__items">
                     {group.list.map((item, itemIndex) => (
                       <Button
                         key={`${item.name}-${itemIndex}`}
-                        className="mm-btn--numeric mm-action__item"
+                        className="mm-action__item"
                         title={item.alias ?? item.name}
                         /* 拖拽落点靠这三个属性选节点（`[data-action-item]`），别改名 */
                         data-action-item=""
