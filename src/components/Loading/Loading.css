@@ -15,6 +15,8 @@
   align-items: center;
   justify-content: center;
   z-index: var(--mm-z-loading);
+  /* 官方 loading-main：全屏半透明黑底，盖住页面（此前 known gap 未补，直接用遮罩 token） */
+  background: var(--mm-color-mask);
 }
 
 /* 路由懒加载占位（`router.tsx` 的 Suspense fallback）：单个文案居中 */

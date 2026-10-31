@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>批量文字 Mockup（新建 / 改字）</title>
+<style>
+  /* token 值照抄 src/styles/tokens.css；本文件只是 mockup，src 内不许抄这段 */
+  :root{
+    --mm-space-1:4px; --mm-space-2:8px; --mm-space-3:12px; --mm-space-inline:6px;
+    --mm-control-h:26px; --mm-tab-line-h:20px;
+    --mm-font-xs:11px; --mm-font-sm:12px; --mm-font-md:13px; --mm-line-16:16px;
+    --mm-radius-md:4px; --mm-radius-lg:6px; --mm-border-w:1px;
+    --mm-color-bg-base:#363636; --mm-color-bg-hover:#3d3d3d; --mm-color-bg-raised:#535353;
+    --mm-color-bg-raised-hover:#575757; --mm-color-bg-input:#2c2c2c;
+    --mm-color-bg-overlay:rgba(64,64,64,.96); --mm-color-bg-bar:#545454; --mm-color-bg-header:#333;
+    --mm-color-border:#2e2e2e; --mm-color-border-control:#4b4b4b;
+    --mm-color-text:#c3c3c3; --mm-color-text-strong:#f5f5f5; --mm-color-text-dim:#9a9a9a;
+    --mm-color-text-faint:#8e8e8e; --mm-color-text-inverse:#fff;
+    --mm-color-accent:#006fff; --mm-color-accent-hover:#2a86ff; --mm-color-danger:#f14c4c;
+    --mm-color-mask:rgba(0,0,0,.45);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  [hidden]{display:none !important;}
+  body{background:#1a1a1a;color:var(--mm-color-text);min-height:100vh;
+    display:flex;gap:var(--mm-space-3);padding:var(--mm-space-3);align-items:flex-start;}
+
+  /* ===== 面板壳（模拟 CEP 面板） ===== */
+  .cep{position:relative;width:340px;height:600px;background:var(--mm-color-bg-base);
+    border-radius:8px;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  .cep__head{height:30px;flex:none;background:var(--mm-color-bg-header);display:flex;align-items:center;
+    padding:0 var(--mm-space-2);font-size:var(--mm-font-md);color:var(--mm-color-text-strong);}
+  .cep__body{padding:var(--mm-space-2);display:flex;flex-direction:column;gap:var(--mm-space-2);}
+  .cep__spacer{flex:1;}
+  .cep__foot{height:26px;flex:none;background:var(--mm-color-bg-bar);display:flex;align-items:center;
+    padding:0 var(--mm-space-2);font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .fake-field{height:var(--mm-control-h);background:var(--mm-color-bg-input);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    display:flex;align-items:center;padding:0 var(--mm-space-2);
+    font-size:var(--mm-font-sm);color:var(--mm-color-text-faint);}
+  .icon-row{display:flex;gap:var(--mm-space-1);}
+  .icon-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    border:none;border-radius:var(--mm-radius-md);background:none;color:var(--mm-color-text);
+    font-size:14px;cursor:pointer;}
+  .icon-btn:hover{background:var(--mm-color-bg-hover);}
+  .icon-btn:disabled{opacity:.35;cursor:not-allowed;}
+  .icon-btn--entry{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);}
+  .icon-btn--entry:hover{background:var(--mm-color-accent-hover);}
+
+  /* ===== 弹窗 ===== */
+  .mask{position:absolute;inset:0;background:var(--mm-color-mask);
+    display:flex;align-items:center;justify-content:center;z-index:50;}
+  /* 高度写死：新建 / 改字两个 tab 的内容不同，但面板不能跟着跳 */
+  .modal{display:flex;flex-direction:column;gap:var(--mm-space-3);
+    width:calc(100% - var(--mm-space-2));height:calc(100% - var(--mm-space-2));
+    padding:var(--mm-space-3);border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-overlay);box-shadow:0 4px 12px rgba(0,0,0,.35);}
+
+  /* 头部：左 tab（新建 / 改字），右动作（全部 / 读取）。高度钉死，切 tab 不跳 */
+  .head{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);
+    flex:0 0 auto;min-height:var(--mm-control-h);}
+  .acts{display:flex;align-items:center;gap:var(--mm-space-1);}
+  /* 右上角两个动作：实心按钮，尺寸压到和 tab 齐平（20 高），字号跟表格一致 */
+  .acts .btn{height:var(--mm-tab-line-h);padding:0 var(--mm-space-inline);
+    font-size:var(--mm-font-xs);}
+  .tabs{display:flex;align-items:center;flex:0 0 auto;width:88px;}
+  .tabs__cell{display:flex;flex:1;min-width:0;}
+  .tabs__tab{width:100%;height:var(--mm-tab-line-h);border:none;background:none;
+    color:var(--mm-color-text-dim);font-size:var(--mm-font-sm);text-align:center;cursor:pointer;}
+  .tabs__tab--on{color:var(--mm-color-accent);}
+  .tabs__tab:hover{background:var(--mm-color-bg-hover);}
+  .tabs__line{width:var(--mm-border-w);height:var(--mm-tab-line-h);background:var(--mm-color-border-control);}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:var(--mm-control-h);
+    padding:0 var(--mm-space-2);border:none;border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-raised);color:inherit;font-size:var(--mm-font-sm);
+    white-space:nowrap;cursor:pointer;}
+  .btn:hover:not(:disabled){background:var(--mm-color-bg-raised-hover);}
+  .btn--ghost{background:none;}
+  .btn--ghost:hover:not(:disabled){background:var(--mm-color-bg-hover);}
+  .btn--primary{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);}
+  .btn--primary:hover:not(:disabled){background:var(--mm-color-accent-hover);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* pane 吃满剩余高度，里面的 textarea 再吃满 pane —— 输入框能多大就多大 */
+  .pane{display:flex;flex-direction:column;gap:var(--mm-space-2);flex:1 1 auto;min-height:0;}
+
+  /* 表：行号 / 图层 / 原文，一行一层；当前行整行高亮 */
+  .table{display:flex;flex-direction:column;gap:var(--mm-space-1);flex:0 0 auto;}
+  .table__head,
+  .trow{display:flex;align-items:center;gap:var(--mm-space-1);padding:0 var(--mm-space-1);
+    width:100%;overflow:hidden;}
+  .table__head{height:var(--mm-line-16);border-bottom:var(--mm-border-w) solid var(--mm-color-border);
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  /* 只开 4 行窗口：光标在下面移动时，这一栏自己会滚到当前行，不需要一次摆完 */
+  .table__list{display:flex;flex-direction:column;height:72px;overflow-y:auto;
+    scrollbar-gutter:stable;border-radius:var(--mm-radius-md);}
+  /* 一行 18 高、11 号字：这栏只用来告诉用户「现在改的是哪一层」，不承担阅读 */
+  .trow{height:18px;border-radius:var(--mm-radius-sm,2px);
+    box-shadow:inset calc(var(--mm-border-w) * 2) 0 0 transparent;}
+  .trow--on{background:rgba(0,111,255,.14);box-shadow:inset calc(var(--mm-border-w) * 2) 0 0 var(--mm-color-accent);}
+  .col-no{flex:0 0 auto;width:16px;text-align:right;font-size:var(--mm-font-xs);
+    color:var(--mm-color-text-faint);}
+  .col-name{flex:0 0 auto;width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);}
+  /* 原文：排不完就省略号，全文挂在 title 上（悬停可看） */
+  .col-text{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .trow--on .col-name{color:var(--mm-color-text-strong);}
+  .trow--on .col-text{color:var(--mm-color-text);}
+
+  /* 编辑区：占满 pane 剩下的高度 */
+  .field{display:flex;flex-direction:column;gap:var(--mm-space-1);flex:1 1 auto;min-height:0;}
+  .lbl{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);flex:0 0 auto;}
+  textarea{width:100%;background:var(--mm-color-bg-input);color:var(--mm-color-text);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    padding:var(--mm-space-1);font-size:var(--mm-font-sm);line-height:var(--mm-line-16);
+    font-family:inherit;resize:none;flex:1 1 auto;min-height:96px;}
+  textarea:focus{outline:var(--mm-border-w) solid var(--mm-color-accent);border-color:transparent;}
+
+  .status{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);min-height:var(--mm-line-16);}
+  .status--err{color:var(--mm-color-danger);}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);}
+
+  /* ===== 说明（真实面板里没有这一列） ===== */
+  .notes{max-width:360px;font-size:var(--mm-font-sm);line-height:1.8;color:var(--mm-color-text);}
+  .notes b{color:var(--mm-color-text-strong);}
+  .notes p{margin:var(--mm-space-1) 0;}
+  .notes code{color:var(--mm-color-text-strong);}
+  .notes h3{margin:var(--mm-space-3) 0 var(--mm-space-1);font-size:var(--mm-font-sm);
+    color:var(--mm-color-text-strong);}
+  .notes ul{margin:0 0 0 var(--mm-space-3);padding-left:var(--mm-space-1);
+    border-left:var(--mm-border-w) solid var(--mm-color-border-control);}
+  .notes li{margin:var(--mm-space-1) 0;font-size:var(--mm-font-xs);line-height:1.7;list-style:none;}
+</style>
+</head>
+<body>
+
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body">
+      <div class="fake-field">字体　大小　行距　字距　颜色</div>
+      <div class="icon-row">
+        <button class="icon-btn" title="拆分文本">⇆</button>
+        <button class="icon-btn" title="生成按钮">▭</button>
+        <button class="icon-btn" title="翻译（禁用）" disabled>译</button>
+        <button class="icon-btn" title="复制文字属性">⧉</button>
+        <button class="icon-btn" title="粘贴文字属性">📋</button>
+        <button class="icon-btn" title="切换方向">⇅</button>
+        <button class="icon-btn icon-btn--entry" id="openBtn" title="批量文字">文</button>
+      </div>
+      <div class="fake-field">对齐　分布</div>
+    </div>
+    <div class="cep__spacer"></div>
+    <div class="cep__foot">点蓝色「文」打开 · Esc / 点遮罩关闭</div>
+
+    <div class="mask" id="mask" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="批量文字">
+
+        <div class="head">
+          <div class="tabs" id="modeTabs" role="tablist">
+            <div class="tabs__cell">
+              <button type="button" role="tab" class="tabs__tab tabs__tab--on" data-mode="create">新建</button>
+            </div>
+            <span class="tabs__line"></span>
+            <div class="tabs__cell">
+              <button type="button" role="tab" class="tabs__tab" data-mode="edit">改字</button>
+            </div>
+          </div>
+          <div class="acts" id="acts">
+            <button type="button" class="btn" data-read="all">全部</button>
+            <button type="button" class="btn" data-read="sel">读取</button>
+          </div>
+        </div>
+
+        <!-- 改字：全部 / 读取 → 逐行改 → 确定写回原层 -->
+        <div class="pane" id="editBlock" hidden>
+          <div class="table">
+            <div class="table__head">
+              <span class="col-no">#</span>
+              <span class="col-name">图层</span>
+              <span class="col-text">原文</span>
+            </div>
+            <div class="table__list" id="srcList"></div>
+          </div>
+          <div class="field">
+            <div class="lbl">替换（每行对应上面一层；留空 = 不改）</div>
+            <textarea id="dst" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- 新建：一行一层，排版按说明栏里那套默认方案 -->
+        <div class="pane" id="createBlock">
+          <div class="field">
+            <div class="lbl">每行一个文字图层</div>
+            <textarea id="fresh" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="foot">
+          <button type="button" class="btn" id="cancelBtn">取消</button>
+          <button type="button" class="btn btn--primary" id="okBtn">确定</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><b>新建</b>：一个输入框，一行一层 → 确定 → 文档里多出 N 个文字图层。排版按下面那套默认方案自动做，用户不满意再自己调。</p>
+    <p><b>改字</b>：「全部」读整个文档的文字层；「读取」读点按钮那一刻 PS 里选中的文字层（非文字层直接过滤）→ 下栏逐行改 → 确定写回原来那些层，位置样式都不动。</p>
+    <p><b>留空 = 不改。</b>行数必须等于读到的层数。</p>
+    <p><b>层内换行</b>显示成 <code>⏎</code>（读入转换、写回还原），所以「一行 = 一层」恒成立，段落层也能改。</p>
+    <p><b>蓝条 + 整行高亮</b> = 光标所在行对应的那一层。</p>
+
+    <h3>新建的默认排版（一套公式，行数任意）</h3>
+    <ul>
+      <li><b>首行</b>字号 = 层级第 1 档 <code>ztHierarych[0]</code>（默认 92），<b>末行</b> = 首行 × 0.5。</li>
+      <li><b>中间等比</b>：<code>r = 0.5 ^ (1 / (N-1))</code>，第 i 行 = 首行 × <code>r^(i-1)</code>；不足 6pt 按 6pt 兜底。</li>
+      <li><b>首末比 0.5 是唯一可调常量</b>（要更平就 0.6、更陡就 0.4），代码里只写这一个数，别再引第二套层级表。</li>
+      <li><b>顺序</b>：第 1 行在最上，向下堆叠。</li>
+      <li><b>对齐</b>：就是 PS 属性面板那三个按钮（左 / 居中 / 右），管的是<b>每个文字层自身的段落对齐</b>，跟画布无关。默认「左」，每层建好后调一次 <code>zt_setTextAlignment(0)</code>；所有层同一个值，不按层级区分。与官方默认 <code>align=0</code> 一致。</li>
+      <li><b>间隔</b>：自动，按上一行字号算（官方 <code>autoCountInterval</code> 默认开）。</li>
+      <li><b>字体</b>：思源黑体 CN / Regular —— 建层后逐层 <code>zt_setFontName('SourceHanSansCN-Regular', 'Source Han Sans CN Regular', 'Regular')</code> 应用。字体缺失就保留 PS 默认、状态行说一句，不阻断建层。来源：官方快捷字体默认第一项（<code>app.v4.js:40154</code>）。</li>
+      <li><b>颜色</b>：取字体面板当前设置。</li>
+      <li><b>落点</b>：整组垂直居中于当前视图中心，向下堆叠；每层左边缘从同一条竖线起排（这是图层定位，不是上面那个对齐按钮）。</li>
+      <li><b>历史</b>：一次确认 = 一步 <code>suspendHistory</code>。</li>
+    </ul>
+    <p><b>任意行数都成立</b>：3 行 → 92 / 65 / 46；6 行 → 92 / 80 / 70 / 61 / 53 / 46；20 行 → 92 一路平缓降到 46，每行只差 3~4%，不会突然断层。行数只决定步长，落差始终是 2:1。</p>
+    <p>依据：官方 <code>zt_smartTypesetting</code>（<code>app.v4.js:39921</code>）里 <code>type</code>（常规 / 强烈 / 接近 / 相同）就是控制落差强度的 —— 上表相当于「接近」那一档，不用官方的固定层级表（6 档 92→12 落差 7.7 倍，太陡，而且超过 6 行就没有第 7 档可用）。实现顺序：先 <code>npm run probe:ps</code> 探这个函数在不在 vendor 里，在就直接调它、参数照上表；探不到才自己算（行距 = 上一行字号 × 0.4）。</p>
+
+    <h3>做这一版时踩过的错，下一个 AI 别再犯</h3>
+    <ul>
+      <li><b>整份重写</b>：把用户要优化的 mockup 换成自己那套。只许在原文件上改，删错误逻辑，不删能力。</li>
+      <li><b>假业务样例</b>：拿「主标题 / 副标题 / ￥199」当数据，等于把适用范围缩到某个假想 PSD。图层名用 PS 真实命名，文字与图层名无关，界面不出现业务场景。</li>
+      <li><b>一行 = 一层</b>：段落层内部就有换行，按 <code>\n</code> 拆行会整体错位、把字写到别的层。层内换行用 <code>⏎</code> 占位。</li>
+      <li><b>替用户定落点</b>：编「第一行在最上 / 按行距向下堆叠 / 插入当前组内 / 用面板字号」。位置、样式、顺序交给 PS 原生。</li>
+      <li><b>把自由换成选项</b>：用「全部 / 选中 / 当前」三档代替用户在 PS 里自己多选。选择发生在 PS 里，面板只给「全部」「读取」两个按钮。</li>
+      <li><b>假按钮</b>：三档作用范围只换提示文案、数据一动不动。按钮必须真换数据，否则删掉。</li>
+      <li><b>一层一格输入框</b>：不能全选、不能整段粘贴、不能连着打字。用一个 textarea 逐行改。</li>
+      <li><b>多余的提示与流程</b>：跳过计数、结果页、二次确认、丢弃拦截、空态文案。非文字层直接过滤不提示；只在真会写错层时才报（行数不符、目标层已不存在）。</li>
+      <li><b>留空语义自相矛盾</b>：标签写「留空 = 不改」，校验却报「第 N 行是空的」。空行就是不改，不计改动。</li>
+      <li><b>没改动也能提交</b>：会把相同的字重写一遍、触发 PS 重排。改动数为 0 时确定禁用。</li>
+      <li><b>两模式共用一份内容</b>：切 tab 丢字、切回来行数对不上。两个模式数据不共享。</li>
+      <li><b>双向绑 scrollTop</b>：两栏高度不同，钳位后互相回写，textarea 自己跳回上面。只单向按光标行 <code>scrollIntoView</code>。</li>
+      <li><b>为了对齐硬把 textarea 设成不折行</b>：行号映射靠数 <code>\n</code>，跟折行无关；<code>wrap=off</code> 只是把长文本逼成横向滚动，白砍自由度。列表省略显示即可，textarea 正常折行。</li>
+      <li><b>凭样例推规则</b>：从「第 1 行是标题」反推通用行为。顺序只传递、不解释。</li>
+    </ul>
+  </div>
+
+<script>
+  /* 假数据：图层名照 PS 的真实命名（任意文档都长这样），文字内容与图层名无关 */
+  const ALL = [
+    { id: 11, name: '图层 12',       text: '这里是第一层的文字' },
+    { id: 12, name: '图层 12 拷贝',  text: '这一层是段落，内部有换行\n第二行在这' },
+    { id: 13, name: '图层 8',        text: '这里是第三层的文字' },
+    { id: 14, name: '图层 8 拷贝 2', text: '这里是第四层的文字' },
+    { id: 15, name: '文字层 5',      text: '这一层文字很长，用来验证排不完的时候是省略号，而不是把表格撑开或换行' },
+    { id: 16, name: '文字层 6',      text: '这里是第六层的文字' }
+  ];
+  /* 「读取」= 点按钮那一刻 PS 里选中的那几层，这里模拟成选中了第 1、3 层 */
+  const SELECTED = [ALL[0], ALL[2]];
+
+  const BREAK = '\u23CE';                 // ⏎：层内换行的占位符
+  const toLine = (t) => t.split('\n').join(BREAK);
+  const toText = (l) => l.split(BREAK).join('\n');
+
+  const $ = (id) => document.getElementById(id);
+  const mask = $('mask'), srcList = $('srcList'), dst = $('dst'), fresh = $('fresh');
+  const statusEl = $('status'), okBtn = $('okBtn'), acts = $('acts');
+  const editBlock = $('editBlock'), createBlock = $('createBlock');
+
+  let mode = 'create';
+  let layers = [];                        // 当前读到的图层 [{ id, name, text }]
+
+  /* 下栏按行拆；空字符串 = 0 行（否则 ''.split('\n') 会得到 1 个空行） */
+  const dstLines = () => (dst.value === '' ? [] : dst.value.split('\n'));
+  const freshLines = () => fresh.value.split('\n').filter((l) => l.trim() !== '');
+
+  function drawSrc() {
+    srcList.innerHTML = '';
+    layers.forEach((layer, i) => {
+      const row = document.createElement('div');
+      row.className = 'trow';
+      const no = document.createElement('span');
+      no.className = 'col-no';
+      no.textContent = String(i + 1);
+      const name = document.createElement('span');
+      name.className = 'col-name';
+      name.textContent = layer.name;
+      name.title = layer.name;
+      const text = document.createElement('span');
+      text.className = 'col-text';
+      text.textContent = toLine(layer.text);
+      /* 排不完只显示省略号，全文靠悬停看 */
+      text.title = layer.text;
+      row.appendChild(no);
+      row.appendChild(name);
+      row.appendChild(text);
+      srcList.appendChild(row);
+    });
+  }
+
+  /* 光标在第几行 → 高亮对应那一层，并把它滚进可视区（单向，不绑 scrollTop） */
+  function markLine() {
+    const pos = dst.selectionStart;
+    const line = (dst.value.slice(0, pos).match(/\n/g) || []).length;
+    const nodes = srcList.children;
+    for (let i = 0; i < nodes.length; i++) {
+      const on = i === line;
+      nodes[i].classList.toggle('trow--on', on);
+      if (on) nodes[i].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function refresh() {
+    const isEdit = mode === 'edit';
+    editBlock.hidden = !isEdit;
+    createBlock.hidden = isEdit;
+    acts.hidden = !isEdit;               // 全部 / 读取 只属于改字
+    statusEl.classList.remove('status--err');
+
+    if (!isEdit) {
+      const n = freshLines().length;
+      statusEl.textContent = '将生成 ' + n + ' 个文字图层';
+      okBtn.disabled = n === 0;
+      return;
+    }
+
+    if (layers.length === 0) {
+      statusEl.textContent = '点「全部」或「读取」读取文字图层';
+      okBtn.disabled = true;
+      return;
+    }
+
+    const want = dstLines();
+    /* 行数可能已经多出来了，layers[i] 会 undefined，不能直接取 .text */
+    const changed = want.filter((line, i) => {
+      const base = layers[i];
+      return line.trim() !== '' && (!base || toText(line) !== base.text);
+    }).length;
+
+    /* 逐行对应：行数必须等于层数，否则不知道该写到哪一层 */
+    const bad = want.length !== layers.length;
+    if (bad) {
+      statusEl.textContent = '行数 ' + layers.length + ' → ' + want.length + '，一行一层，不能增删行';
+      statusEl.classList.add('status--err');
+    } else {
+      statusEl.textContent = changed ? changed + ' 行已改' : '留空 = 不改';
+    }
+    okBtn.disabled = bad || changed === 0;
+    markLine();
+  }
+
+  /* 「全部」/「读取」：都是重新读一次，读到的结果替换列表与下栏 */
+  function read(scope) {
+    layers = (scope === 'all' ? ALL : SELECTED).map((l) => ({ id: l.id, name: l.name, text: l.text }));
+    drawSrc();
+    dst.value = layers.map((l) => toLine(l.text)).join('\n');
+    refresh();
+    dst.focus();
+    dst.setSelectionRange(0, 0);
+    markLine();
+  }
+
+  acts.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-read]');
+    if (btn) read(btn.dataset.read);
+  });
+
+  $('modeTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tabs__tab');
+    if (!btn) return;
+    mode = btn.dataset.mode;
+    Array.prototype.forEach.call($('modeTabs').querySelectorAll('.tabs__tab'), (x) => {
+      const on = x.dataset.mode === mode;
+      x.classList.toggle('tabs__tab--on', on);
+      x.setAttribute('aria-selected', String(on));
+    });
+    refresh();
+    (mode === 'edit' ? dst : fresh).focus();
+  });
+
+  dst.addEventListener('input', refresh);
+  dst.addEventListener('click', markLine);
+  dst.addEventListener('keyup', markLine);
+  dst.addEventListener('select', markLine);   // 鼠标拖选 / 双击选词也要跟上
+  fresh.addEventListener('input', refresh);
+
+  function openModal() {
+    mask.hidden = false;
+    mode = 'create';
+    Array.prototype.forEach.call($('modeTabs').querySelectorAll('.tabs__tab'), (x) => {
+      const on = x.dataset.mode === 'create';
+      x.classList.toggle('tabs__tab--on', on);
+      x.setAttribute('aria-selected', String(on));
+    });
+    layers = [];
+    dst.value = '';
+    fresh.value = '';
+    drawSrc();
+    refresh();
+    fresh.focus();
+  }
+  function closeModal() { mask.hidden = true; }
+
+  okBtn.addEventListener('click', closeModal);
+  $('cancelBtn').addEventListener('click', closeModal);
+  $('openBtn').addEventListener('click', openModal);
+  mask.addEventListener('click', (e) => { if (e.target === mask) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) closeModal(); });
+
+  drawSrc();
+  refresh();
+</script>
+</body>
+</html>

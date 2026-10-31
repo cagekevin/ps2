@@ -24,7 +24,6 @@ import {
   type CommonUseBooleanKey,
   type LinkObjectValue
 } from '../../../domain/common-use-options';
-import { MSG } from '../../../types/messages';
 import { useRunCommand } from '../../../hooks/useRunCommand';
 import { useCommonUseStore } from '../../../store/common-use';
 import './panel.css';
@@ -98,14 +97,14 @@ export function EmbedPanel() {
       <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button
           className="mm-common__panel-btn"
-          onClick={() => void run(toLinkSmartObject, { tip: MSG.common.progressLinkSmart })}
+          onClick={() => void run(toLinkSmartObject)}
         >
           转链接智能对象
         </Button>
         <Button
           className="mm-common__panel-btn"
           onClick={() =>
-            void run(linkSmartObjectToSmartObject, { tip: MSG.common.progressLinkBack })
+            void run(linkSmartObjectToSmartObject)
           }
         >
           转智能对象

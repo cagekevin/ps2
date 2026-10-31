@@ -76,5 +76,12 @@ export const TILE_COMMANDS: Record<string, () => Promise<Result<void>>> = {
   div_img_cya15: locationTrade
 };
 
+/**
+ * 秒级内单次 PS 变换的 tile：**不弹全屏遮罩**（官方同款操作不遮罩，弹了只是闪一下）。
+ * 其余 tile（嵌入 / 导入 / 优化 / 导出 / 图层替换 / 位置交换）保留遮罩——
+ * 其中嵌入/导入/优化/导出还会在命令层 `loading.show` 出带进度的遮罩。
+ */
+export const INSTANT_TILE_IDS = new Set(['div_img_cya5', 'div_img_cya6', 'div_img_cya12']);
+
 /** 网格第 4 项：切「智能填色」开关，返回切换后的值（提示文案在页面） */
 export const AUTO_FILL_TILE_ID = 'div_img_cya4';

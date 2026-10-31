@@ -116,7 +116,7 @@ export default function SettingsPage() {
    */
   async function syncUpload(force: boolean): Promise<void> {
     setCloudBusy('upload');
-    const result = await run(() => upload({ force }), { tip: MSG.cloud.syncing });
+    const result = await run(() => upload({ force }));
     setCloudBusy(null);
 
     if (result.status === 'error') return;
@@ -137,7 +137,7 @@ export default function SettingsPage() {
   /** 下载：不做比较，点了就覆盖本地（`.bak` 由 `core/storage` 留，不是这里加的防御） */
   async function syncDownload(): Promise<void> {
     setCloudBusy('download');
-    const result = await run(download, { tip: MSG.cloud.syncing });
+    const result = await run(download);
     setCloudBusy(null);
 
     if (result.status === 'error') return;

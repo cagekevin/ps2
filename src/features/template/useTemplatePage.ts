@@ -95,7 +95,7 @@ export function useTemplatePage() {
   }, [highlightId, clearHighlight]);
 
   const saveSelection = useCallback(async () => {
-    const result = await run(() => cmd.saveSelection(here), { tip: '存入模板' });
+    const result = await run(() => cmd.saveSelection(here));
     if (result.status === 'error') return;
 
     applyIndex(result.value);
@@ -106,9 +106,10 @@ export function useTemplatePage() {
   }, [applyIndex, here, index, markSaved, run]);
 
   /** 所有「改索引」的命令共用一个收尾：成功就回填，失败已经由 `useRunCommand` 提示过 */
+  /* 索引文件写盘秒级内，不弹遮罩（官方同款操作不遮罩）；成功回填 + 失败提示由 `run` 兜 */
   const withIndex = useCallback(
-    async (task: () => Promise<Result<TemplateIndex>>, tip: string) => {
-      const result = await run(task, { tip });
+    async (task: () => Promise<Result<TemplateIndex>>) => {
+      const result = await run(task, { spin: false });
       if (result.status === 'ok') applyIndex(result.value);
       return result;
     },
@@ -131,7 +132,7 @@ export function useTemplatePage() {
 
   const refreshThumb = useCallback(
     async (id: string) => {
-      const result = await run(() => cmd.refreshThumb(id), { tip: '更新预览图' });
+      const result = await run(() => cmd.refreshThumb(id));
       /* 覆盖的是同名 png：换一个地址才会重载（照原版加随机参数的做法） */
       if (result.status === 'ok') setImageVersion((version) => version + 1);
     },
@@ -140,14 +141,14 @@ export function useTemplatePage() {
 
   const removeItem = useCallback(
     async (id: string) => {
-      await withIndex(() => cmd.deleteItem(id), '删除模板');
+      await withIndex(() => cmd.deleteItem(id));
     },
     [withIndex]
   );
 
   const moveItem = useCallback(
     async (id: string, folderId: string | null) => {
-      await withIndex(() => cmd.moveItem(id, folderId), '移动中');
+      await withIndex(() => cmd.moveItem(id, folderId));
     },
     [withIndex]
   );
@@ -232,15 +233,15 @@ export function useTemplatePage() {
 
       const id = current.id;
       if (current.kind === 'renameItem' && id !== null) {
-        await withIndex(() => cmd.renameItem(id, value), '重命名中');
+        await withIndex(() => cmd.renameItem(id, value));
         return;
       }
       if (current.kind === 'createFolder') {
-        await withIndex(() => cmd.createFolder(id, value), '新建文件夹');
+        await withIndex(() => cmd.createFolder(id, value));
         return;
       }
       if (current.kind === 'renameFolder' && id !== null) {
-        await withIndex(() => cmd.renameFolder(id, value), '重命名中');
+        await withIndex(() => cmd.renameFolder(id, value));
       }
     },
     [dialog, withIndex]
@@ -248,7 +249,7 @@ export function useTemplatePage() {
 
   const removeFolder = useCallback(
     async (id: string) => {
-      await withIndex(() => cmd.deleteFolder(id), '删除文件夹');
+      await withIndex(() => cmd.deleteFolder(id));
     },
     [withIndex]
   );

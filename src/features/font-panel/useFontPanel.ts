@@ -14,7 +14,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLoading } from '../../components/Loading';
 import { useToast } from '../../components/Toast';
 import { MSG } from '../../types/messages';
 import { useRunCommand } from '../../hooks/useRunCommand';
@@ -56,7 +55,6 @@ interface Distribution {
 
 export function useFontPanel() {
   const toast = useToast();
-  const loading = useLoading();
   /* 本地那个 `run` 把它折成 `boolean`；提示与留痕都在这一个出口 */
   const runCommand = useRunCommand();
 
@@ -162,12 +160,12 @@ export function useFontPanel() {
     void run(() => copyFont(), '复制成功');
   }, [run]);
 
+  /* 字体应用秒级内：本地 run 已 spin:false，不再包 loading.run（那个才会弹全屏遮罩） */
   const onPasteFont = useCallback(() => {
-    void loading.run(async () => {
-      const applied = await run(() => pasteFont(settings.ztPasteFont), '应用字体设置');
-      if (applied) await refreshText();
-    }, '正在应用字体设置');
-  }, [loading, run, settings.ztPasteFont, refreshText]);
+    void run(() => pasteFont(settings.ztPasteFont), '应用字体设置').then((applied) => {
+      if (applied) void refreshText();
+    });
+  }, [run, settings.ztPasteFont, refreshText]);
 
   const onSwitchDirection = useCallback(() => {
     void run(() => switchDirection(), '切换文本方向');

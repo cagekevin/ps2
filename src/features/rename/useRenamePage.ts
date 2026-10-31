@@ -89,9 +89,7 @@ export function useRenamePage() {
 
   /** 发一条表达式（回填 / 回车 / 应用 / 点 chip 都走这里） */
   function runExpression(expression: string): void {
-    void run(() => batchNameCommand({ expression, filterChildren }), {
-      tip: MSG.rename.renaming
-    });
+    void run(() => batchNameCommand({ expression, filterChildren }));
   }
 
   /**

@@ -135,7 +135,8 @@ export function useActionPage() {
   async function deleteGroup(groupIndex: number, groupName: string): Promise<void> {
     const accepted = await confirm({ title: `删除分组「${groupName}」？` });
     if (!accepted) return;
-    void run(() => deleteGroupCommand(groupIndex), { success: MSG.action.doneDelete });
+    /* 动作库增删改秒级内，不弹遮罩 */
+    void run(() => deleteGroupCommand(groupIndex), { success: MSG.action.doneDelete, spin: false });
   }
 
   /* ---------------- 动作右键 ---------------- */
@@ -166,7 +167,7 @@ export function useActionPage() {
           label: '删除别名',
           /* 没有别名时不可点：原版也是灰的（官方 `$menu` 没有禁用态，我们照 `MenuItem.disabled`） */
           disabled: !item.alias,
-          onSelect: () => void run(() => deleteAliasCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete })
+          onSelect: () => void run(() => deleteAliasCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete, spin: false })
         },
         {
           label: '删除',
@@ -180,7 +181,7 @@ export function useActionPage() {
   async function deleteItem(groupIndex: number, itemIndex: number, name: string): Promise<void> {
     const accepted = await confirm({ title: `删除动作「${name}」？` });
     if (!accepted) return;
-    void run(() => deleteItemCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete });
+    void run(() => deleteItemCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete, spin: false });
   }
 
   /* ---------------- 导入导出 ---------------- */
@@ -242,14 +243,14 @@ export function useActionPage() {
     if (!current) return;
 
     if (current.kind === 'addGroup') {
-      void run(() => addGroupCommand(value, current.afterIndex));
+      void run(() => addGroupCommand(value, current.afterIndex), { spin: false });
       return;
     }
     if (current.kind === 'renameGroup') {
-      void run(() => renameGroupCommand(current.index, value));
+      void run(() => renameGroupCommand(current.index, value), { spin: false });
       return;
     }
-    void run(() => setAliasCommand(current.groupIndex, current.itemIndex, value));
+    void run(() => setAliasCommand(current.groupIndex, current.itemIndex, value), { spin: false });
   }
 
   /* ---------------- 拖拽（三处共用同一套 hook） ---------------- */
@@ -316,7 +317,7 @@ export function useActionPage() {
   /* ---------------- 添加动作（`listPsActions` 的唯一消费者） ---------------- */
 
   async function openAddAction(groupIndex: number): Promise<void> {
-    const listed = await run(listPsActions, { tip: MSG.action.readingActions });
+    const listed = await run(listPsActions);
     if (listed.status === 'error') return;
     if (!listed.value.length) {
       toast.error(MSG.action.emptyGroup);

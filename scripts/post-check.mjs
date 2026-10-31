@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `npm run check` 的最后一步：把那三问原样打给正在交付的人（或 AI）。
+ * `npm run check` 的最后一步：把那四问原样打给正在交付的人（或 AI）。
  *
  * 这是**提醒**，不是闸。所以：
  * - 读不到文件、截不到文案时静默跳过，**绝不让 check 变红** ——
@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 
 const START = '**绿 ≠ 对。**';
-const END = '回去删掉其中一条。**';
+const END = '把逻辑归到一处再交。**';
 
 let reminder = '';
 
@@ -26,7 +26,7 @@ try {
 }
 
 if (!reminder) {
-  console.log('（本次没有交付提醒：AGENTS.md 里那三问已改名或删除）');
+  console.log('（本次没有交付提醒：AGENTS.md 里那四问已改名或删除）');
   process.exit(0);
 }
 
@@ -38,7 +38,7 @@ const bar = '━'.repeat(64);
 
 console.log(`
 ${STYLE.red}${bar}${STYLE.reset}
-${STYLE.bold}${STYLE.red} check 全绿 ≠ 做完。把下面三问的答案写进你给用户的回答里：${STYLE.reset}
+${STYLE.bold}${STYLE.red} check 全绿 ≠ 做完。把下面四问的答案写进你给用户的回答里：${STYLE.reset}
 ${STYLE.red}${bar}${STYLE.reset}
 ${STYLE.yellow}${reminder}${STYLE.reset}
 ${STYLE.red}${bar}${STYLE.reset}

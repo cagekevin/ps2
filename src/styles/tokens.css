@@ -173,6 +173,8 @@
   --mm-imgcolor-grad-h: 22px;
   --mm-spin-size: 18px;
   --mm-spin-duration: 0.8s;
+  --mm-loading-spin-size: 36px;        /* 全屏遮罩内转圈：照官方 load8 */
+  --mm-loading-ring-w: 4px;            /* 同上：比内联小转圈（1px）粗 */
 
   /* ---------- 8. 颜色 ----------
      值逐条取自仓外 Vue 工程的 src/styles/tokens.css；命名按 --mm-color-<角色>，

@@ -32,3 +32,22 @@
 .mm-spin__tip{
   overflow: hidden;
 }
+
+/* 全屏遮罩内的转圈：照官方 load8（白圈 + 黑底），与内联小转圈（accent）区分。
+   仅作用于 .mm-loading__mask 内部；按钮 / 列表里的内联 Spin 保持 accent 色。 */
+.mm-loading__mask .mm-spin__ring{
+  width: var(--mm-loading-spin-size);
+  height: var(--mm-loading-spin-size);
+  border: var(--mm-loading-ring-w) solid var(--mm-color-border-float-strong);
+  border-top-color: var(--mm-color-text-inverse);
+  border-radius: var(--mm-radius-pill);
+  animation: mm-spin-rotate 1.1s linear infinite;
+}
+
+.mm-loading__mask .mm-spin__tip{
+  overflow: visible;
+  margin-top: var(--mm-space-3);
+  color: var(--mm-color-text-inverse);
+  font-size: var(--mm-font-md);
+  letter-spacing: 1px;
+}

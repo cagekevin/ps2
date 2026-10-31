@@ -139,17 +139,28 @@ export function useStyleActions() {
    */
   const STYLE_RUN: RunOptions = { quiet: ['CANCELLED'] };
 
+  /**
+   * 样式库操作（应用颜色/描边/渐变/字体/样式、入库、增删改、发送到/追加到色板、吸色）
+   * 都是秒级内：按 `useRunCommand` 的遮罩约定统一**不弹遮罩**——下面调用处给 `runWithFeedback` /
+   * `runWithToast` 的第三个参数（即 `spin`）传 `false`。
+   * 只有 ku 导入/导出（`handleImportKu*` / `handleExportKu*`）可能慢，保留遮罩（不传 `spin`）。
+   */
   /** 只提示不刷新（应用类：改的是 PS 图层，不是库文件） */
-  async function runWithToast(task: () => Promise<Result<void>>, successText: string): Promise<void> {
-    await run(task, { ...STYLE_RUN, success: successText });
+  async function runWithToast(
+    task: () => Promise<Result<void>>,
+    successText: string,
+    spin = true
+  ): Promise<void> {
+    await run(task, { ...STYLE_RUN, success: successText, spin });
   }
 
   /** 写库类动作的统一反馈：loading + 成功提示 + 重读列表（成败都重读，与原实现一致） */
   async function runWithFeedback(
     task: () => Promise<Result<void>>,
-    successText: string
+    successText: string,
+    spin = true
   ): Promise<void> {
-    await run(task, { ...STYLE_RUN, success: successText, after: () => void load() });
+    await run(task, { ...STYLE_RUN, success: successText, after: () => void load(), spin });
   }
 
   /**
@@ -191,7 +202,7 @@ export function useStyleActions() {
         return addFontFromLayer(warehouse, activeKind, groupIndex);
       }
       return addStyleFromLayer(warehouse, activeKind, groupIndex);
-    }, activeKind === 'color' ? MSG.style.doneAddedForeground : MSG.style.doneAdded);
+    }, activeKind === 'color' ? MSG.style.doneAddedForeground : MSG.style.doneAdded, false);
   }
 
   /** 底栏「添加×分组」：切到对应 tab 再弹输入（原版四个按钮各管一个库） */
@@ -209,7 +220,8 @@ export function useStyleActions() {
 
     await runWithFeedback(
       () => addGroupToLibrary(warehouse, activeKind, name, afterIndex === -1 ? undefined : afterIndex),
-      MSG.style.doneGroupCreated
+      MSG.style.doneGroupCreated,
+      false
     );
   }
 
@@ -243,7 +255,7 @@ export function useStyleActions() {
           ? applyBorderColorToLayer
           : applyColor;
 
-      await runWithToast(() => task(raw.value), `已应用「${name}」`);
+      await runWithToast(() => task(raw.value), `已应用「${name}」`, false);
       return;
     }
 
@@ -254,13 +266,13 @@ export function useStyleActions() {
         toast.error(MSG.style.gradientNoData);
         return;
       }
-      await runWithToast(() => applyGradientToLayer(gradient), `已应用「${name}」`);
+      await runWithToast(() => applyGradientToLayer(gradient), `已应用「${name}」`, false);
       return;
     }
 
     if (activeKind === 'font') {
       /* 字体走直接调用通道，不走 ps_onJsx */
-      await runWithToast(() => applyFontToLayer(raw.value), `已应用「${name}」`);
+      await runWithToast(() => applyFontToLayer(raw.value), `已应用「${name}」`, false);
       return;
     }
 
@@ -271,7 +283,7 @@ export function useStyleActions() {
       return;
     }
 
-    await runWithToast(() => applyLayerStyle(raw.value, groupId.value), `已应用「${name}」`);
+    await runWithToast(() => applyLayerStyle(raw.value, groupId.value), `已应用「${name}」`, false);
   }
 
   /**
@@ -349,7 +361,8 @@ export function useStyleActions() {
 
     await runWithFeedback(
       () => sendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
-      MSG.style.doneToSwatch
+      MSG.style.doneToSwatch,
+      false
     );
   }
 
@@ -360,7 +373,8 @@ export function useStyleActions() {
 
     await runWithFeedback(
       () => appendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
-      MSG.style.doneAppendSwatch
+      MSG.style.doneAppendSwatch,
+      false
     );
   }
 
@@ -369,7 +383,7 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => sendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneToSwatch);
+    await runWithFeedback(() => sendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneToSwatch, false);
   }
 
   /** 追加到色板（整组逐项 push） */
@@ -377,7 +391,7 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => appendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneAppendSwatch);
+    await runWithFeedback(() => appendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneAppendSwatch, false);
   }
 
   /* ---------------- 导入 / 导出 ---------------- */
@@ -409,7 +423,7 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => pickColorToGroup(warehouse, activeKind, groupIndex), MSG.style.donePickToGroup);
+    await runWithFeedback(() => pickColorToGroup(warehouse, activeKind, groupIndex), MSG.style.donePickToGroup, false);
   }
 
   /** 删除分组或项：先确认，再写库 */
@@ -429,7 +443,8 @@ export function useStyleActions() {
         target.type === 'group'
           ? deleteKuGroup(warehouse, activeKind, target.groupIndex)
           : deleteKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex),
-      MSG.style.doneDelete
+      MSG.style.doneDelete,
+      false
     );
   }
 
@@ -445,7 +460,8 @@ export function useStyleActions() {
         target.type === 'group'
           ? renameKuGroup(warehouse, activeKind, target.groupIndex, name)
           : renameKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex, name),
-      MSG.style.doneRename
+      MSG.style.doneRename,
+      false
     );
   }
 
@@ -495,7 +511,8 @@ export function useStyleActions() {
           to: { group: toGroup, index: to },
           position
         }),
-      MSG.style.doneReorder
+      MSG.style.doneReorder,
+      false
     );
   }
 
@@ -530,7 +547,8 @@ export function useStyleActions() {
 
     await runWithFeedback(
       () => moveGroupInLibrary(warehouse, activeKind, from, to, position),
-      MSG.style.doneReorderGroup
+      MSG.style.doneReorderGroup,
+      false
     );
   }
 

@@ -17,7 +17,7 @@ import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { useCommonUseStore } from '../../store/common-use';
-import { AUTO_FILL_TILE_ID, TILE_COMMANDS } from './common-constants';
+import { AUTO_FILL_TILE_ID, INSTANT_TILE_IDS, TILE_COMMANDS } from './common-constants';
 
 /** 拖拽落点候选的选择器：功能格自己（长按拖的是格子） */
 const TILE_SELECTOR = '.mm-common__tile';
@@ -53,12 +53,14 @@ export function useCommonPage() {
     load();
   }, [load]);
 
+  /* 缩放秒级内，不弹遮罩（官方同款操作不遮罩） */
   function zoomTo(scale: number): void {
-    void run(() => zoom(scale));
+    void run(() => zoom(scale), { spin: false });
   }
 
+  /* 翻转秒级内，不弹遮罩 */
   function flipTo(direction: FlipDirection): void {
-    void run(() => flip(direction));
+    void run(() => flip(direction), { spin: false });
   }
 
   /**
@@ -76,7 +78,8 @@ export function useCommonPage() {
 
     const command = TILE_COMMANDS[tile.id];
     if (!command) return;
-    void run(command);
+    /* 瞬时 tile 不弹遮罩；批量类（嵌入/导出/优化）保留遮罩（INSTANT_TILE_IDS 见 common-constants） */
+    void run(command, { spin: !INSTANT_TILE_IDS.has(tile.id) });
   }
 
   /**
@@ -99,7 +102,8 @@ export function useCommonPage() {
         if (!result.dragged || !result.target) return;
         const to = Number(result.target.dataset.index);
         if (!Number.isInteger(to) || to === from) return;
-        void run(() => reorder(from, to, result.position));
+        /* 格子重排是纯文件写盘，秒级内，不弹遮罩 */
+        void run(() => reorder(from, to, result.position), { spin: false });
       }
     });
   }
