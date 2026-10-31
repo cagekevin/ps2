@@ -6,12 +6,10 @@
  * 图层类型的唯一判定处在 jsx（`mm_layer_kindOf`），这里的 VALID_KINDS 只是白名单兜底。
  */
 
-import { callJsx } from '../cep/bridge';
+import { callDirect } from './capability';
 import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import { LAYER_KIND_LABEL, type LayerKind } from '../../types/layer';
-import { gateFailed } from './capability';
-import { funcMissing, requireCore } from './init';
 import { unwrapRaw } from './raw';
 
 const VALID_KINDS: LayerKind[] = ['normal', 'shape', 'text', 'smartObject', 'group', 'unknown'];
@@ -28,27 +26,19 @@ export interface LayerState {
  * （非文字图层上 PS 会直接抛错，见 `text.ts` 文件头第 3 条）。
  */
 export async function getLayerState(): Promise<Result<LayerState>> {
-  if (!(await requireCore())) return gateFailed('core');
-
-  /* 轮询专用：不记 info，避免日志被刷屏 */
-  const call = await callJsx('mm_layer_getState', [], { silent: true });
+  /* **不进能力表**：它是本域的**内部基础设施**（`requireSelection` / `requireLayerKind` 的输入），
+     页面/命令从不直接触发它。进表会让 `layer` 反向 import `capabilities` —— 那正是 2026-10-31
+     解掉的那个环的成因（环是症状，职责错位才是病：域内查询被当成了对外能力）。 */
+  const call = await callDirect('mm_layer_getState', [], { gate: 'core', silent: true });
   if (call.status === 'error') return call;
 
-  const guard = unwrapRaw(call.value);
-  if (guard.status === 'error') return guard;
+  const parsed = layerStateRaw(call.value);
+  if (parsed.status === 'error') return parsed;
 
-  const raw = call.value;
-
-  /* 名称里可能含 '|'，只切第一个 */
-  const index = raw.indexOf('|');
-  if (index < 0) return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${raw}`);
-
-  const kindRaw = raw.slice(0, index);
-  const name = raw.slice(index + 1);
-  /* 白名单查表：查不到就是 `unknown`，不给「硬转成联合类型」留口子 */
-  const kind = VALID_KINDS.find((item) => item === kindRaw) ?? 'unknown';
-
-  return ok({ kind, name });
+  /* 白名单查表：查不到就是 `unknown`，不给「硬转成联合类型」留口子。
+     切分 `kind|name` 是结构，归 `raw.layerStateRaw`；这里只判「这个 kind 认不认识」。 */
+  const kind = VALID_KINDS.find((item) => item === parsed.value.kind) ?? 'unknown';
+  return ok({ kind, name: parsed.value.name });
 }
 
 /**
@@ -95,24 +85,10 @@ export function requireShapeLayer(): Promise<Result<void>> {
  * （新旧 jsx 混用会静默解析错）；这个只在「需要多选」的能力点击时调，低频。
  */
 export async function getSelectionCount(): Promise<Result<number>> {
-  if (!(await requireCore())) return gateFailed('core');
-
-  /* 函数没加载（旧 jsx）就如实报，不要让它去调一个不存在的函数变成 EvalScript error */
-  if (await funcMissing('mm_layer_getSelection')) {
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'fn:mm_layer_getSelection');
-  }
-
-  const call = await callJsx('mm_layer_getSelection', []);
+  /* 同上：域内基础设施，不进表 */
+  const call = await callDirect('mm_layer_getSelection', [], { gate: 'core' });
   if (call.status === 'error') return call;
-
-  const guard = unwrapRaw(call.value);
-  if (guard.status === 'error') return guard;
-
-  const count = Number(call.value.trim());
-  if (!Number.isInteger(count) || count < 0) {
-    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `shape:notInt raw:${call.value}`);
-  }
-  return ok(count);
+  return selectionCountRaw(call.value);
 }
 
 /**
@@ -134,4 +110,50 @@ export async function requireSelection(min: number): Promise<Result<void>> {
     );
   }
   return ok(undefined);
+}
+
+/*
+ * ---------------- 本域私有的两个解析器 ----------------
+ *
+ * **为什么写在 `layer.ts` 而不是 `raw.ts`**：它们各自只服务**一个**能力，
+ * 而且解的是图层域的私有协议（`kind|name`、选中数量）。放进 `raw.ts` 的公共清单，
+ * 等于让每个"加能力的人"都要多认两个名字，而他一辈子用不上 —— 负担是别人付的。
+ *
+ * 判据：`raw.ts` 只放**通用骨架**（≥2 个能力会用，或纯结构工具）；
+ * 一个能力专用的解析器就近写在自己的域模块里，只被本域的 CAP 行引用。
+ */
+
+/**
+ * `mm_layer_getState` 的 `kind|name`：**只切第一个 `|`**（图层名里可能含它）。
+ *
+ * 只做结构切分，**不判 kind 合不合法** —— 白名单是语义，在 `getLayerState` 里查
+ * （`VALID_KINDS`）。
+ */
+export function layerStateRaw(raw: string): Result<{ kind: string; name: string }> {
+  const guard = unwrapRaw(raw);
+  if (guard.status === 'error') return guard;
+
+  const index = raw.indexOf('|');
+  if (index < 0) return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${raw}`);
+
+  return ok({ kind: raw.slice(0, index), name: raw.slice(index + 1) });
+}
+
+/**
+ * `mm_layer_getSelection` 的选中数量：单个非负整数。
+ *
+ * 空串必须单独判：`Number('')` 是 **0**，不判就会被当成「选中 0 个」静默通过。
+ */
+export function selectionCountRaw(raw: string): Result<number> {
+  const guard = unwrapRaw(raw);
+  if (guard.status === 'error') return guard;
+
+  const text = raw.trim();
+  if (text === '') return failWithDetail('PS_BAD_PAYLOAD', MSG.badPayload, 'raw:<empty>');
+
+  const value = Number(text);
+  if (!Number.isInteger(value) || value < 0) {
+    return failWithDetail('CORRUPT', MSG.codeReason.CORRUPT, `shape:notInt raw:${text}`);
+  }
+  return ok(value);
 }

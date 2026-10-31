@@ -18,13 +18,11 @@
  * 两条通道服务不同数据（样式库字体项 vs 系统字体列表），不要合并。
  */
 
-import { callJsx } from '../cep/bridge';
 import { encodeText } from '../cep/text-codec';
 import { isRecord } from '../../types/guards';
 import { failWithDetail, ok, type Result } from '../../types/result';
-import { callCapability, gateFailed } from './capability';
+import { callCapability, callDirect } from './capability';
 import { CAP, FONT_UNAVAILABLE } from './capabilities';
-import { requireVendor } from './init';
 import { envelopeMessage, parseJsxRaw, type SystemFontListRaw } from './raw';
 
 /**
@@ -37,10 +35,9 @@ import { envelopeMessage, parseJsxRaw, type SystemFontListRaw } from './raw';
  * 信封不成立（返回结构未公开）时按可用处理，不阻断正常流程；UNVERIFIED。
  */
 export async function checkFontUsable(item: Record<string, unknown>): Promise<Result<void>> {
-  if (!(await requireVendor())) return gateFailed('vendor');
-
   const payload = encodeText(JSON.stringify(item));
-  const call = await callJsx('ys_checkUseFont', [payload]);
+  /* 门与函数存在性交给 `callDirect`：缺函数时报 `PS_UNREADY`，不会变成 `EvalScript error.` */
+  const call = await callDirect('ys_checkUseFont', [payload], { gate: 'vendor' });
   if (call.status === 'error') return call;
 
   const parsed = parseJsxRaw(call.value);

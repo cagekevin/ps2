@@ -144,6 +144,19 @@ describe('CapabilitySpec 类型闭合', () => {
 });
 
 describe('CAP', () => {
+  /**
+   * `mm_*` 是**我们自写**的 jsx（`jsx/main.jsx`），只能走 `core` 门。
+   * 反过来不成立：官方那批前缀很杂（`ys_ / zt_ / ztgl_ / cy_ / cmm_ / dz_ / Fs_ / ps_mb* / mb_ / Layer_ / Tool_ / layer_ / ps_ys*`），
+   * 里面也有 `layer_` / `Layer_` 这种看着像自写的 —— 所以只能单向卡。
+   */
+  it('mm_ 开头的函数必须走 core 门', () => {
+    const wrong = Object.entries(CAP)
+      .filter(([, spec]) => spec.fn.startsWith('mm_') && spec.gate !== 'core')
+      .map(([name]) => name);
+
+    expect(wrong).toEqual([]);
+  });
+
   it('setFont：直调 + 写超时 + 文字图层前置', () => {
     expect(CAP.setFont.fn).toBe('ztgl_setFont');
     expect(CAP.setFont.gate).toBe('vendor');
@@ -186,19 +199,30 @@ describe('CAP', () => {
     }
   });
 
-  it('调度通道默认 30s；长任务例外必须点名（白名单只有 callAction）', () => {
+  it('调度通道默认 30s；长任务例外由能力自己标记（全仓只许一个）', () => {
     /**
      * 例外**只许一个**：`callAction` 执行的是 PS 动作，可能跑几分钟（Vue 版同样给长超时）。
-     * 30s 会先报超时、而 PS 还在执行——那比多等更糟。新增例外必须同时改这张表和这条断言。
+     * 30s 会先报超时、而 PS 还在执行——那比多等更糟。
+     *
+     * 例外标记在能力上（`longTask: true`），**不在测试里维护名字清单**：
+     * 两份真相迟早漂，而「标了就长、没标就 30s」这条判据一处就能验完。
      */
-    const LONG_RUN_DISPATCH = new Set(['callAction']);
-
     const dispatches = Object.entries(CAP).filter(([, spec]) => spec.channel === 'dispatch');
+
+    /*
+     * `'longTask' in spec` 不是多余的窄化：`Object.entries(CAP)` 的元素类型是**逐行字面量的联合**
+     * （74 个成员），只有标了 `longTask` 的那行才有这个属性 —— 直接写 `spec.longTask` 会 TS2339。
+     */
+    const isLongTask = (spec: (typeof dispatches)[number][1]): boolean =>
+      'longTask' in spec && spec.longTask === true;
 
     expect(dispatches.length).toBeGreaterThan(0);
     for (const [name, spec] of dispatches) {
-      expect(spec.timeout, name).toBe(LONG_RUN_DISPATCH.has(name) ? LONG_TIMEOUT : READ_TIMEOUT);
+      expect(spec.timeout, name).toBe(isLongTask(spec) ? LONG_TIMEOUT : READ_TIMEOUT);
     }
+
+    /* 例外只许一个，且必须点名 —— 多了说明有人在偷偷给自己开长超时 */
+    expect(dispatches.filter(([, spec]) => isLongTask(spec)).map(([name]) => name)).toEqual(['callAction']);
   });
 
   it('多选类能力共用同一个前置（位置对换 / 颜色互换 / 元素替换 / 两个分布形态）', () => {

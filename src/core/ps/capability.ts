@@ -17,24 +17,41 @@
  *
  * ## 不进表的 6 个调用（二档：抄不错，不是一档「写不出来」）
  *
- * 它们**直调 `callJsx`**，不经过本执行器。全仓就这 6 处，新增第 7 处前先问「能不能写成表里一行」：
+ * 它们走 **`callDirect`**（本文件导出，只封「门 → 函数存在性 → 调用」三步），不经过能力表。
+ * 全仓就这 6 处，新增第 7 处前先问「能不能写成表里一行」——
+ * **这条由 `npm run check:jsx` 守着**（`tools/check-jsx-entry.mjs`：任何以字面量名字直调的地方，
+ * 名字必须在它的白名单里；白名单多了少了都红）。以前这里只是一张注释表，没人拦第 5 个。
  *
- * | 函数 | jsx | 为什么不进表 |
+ * 判据有两条（**第二条更硬**）：
+ *   1. 进表就得给公共解析器开一个只有它在用的口子 → 不值得
+ *   2. **它是不是「对外动作」** —— 若只被域内别的函数消费（前置判断的输入这类），
+ *      进表会让那个域**反向 import 能力表**，成环（2026-10-31 踩过：`layer` 的两个查询）
+ *
+ * | 函数 | jsx | 那个「独有口子」是什么 |
  * |---|---|---|
- * | `font.checkFontUsable` | `ys_checkUseFont` | `err===1` 要带宿主 `msg`，且**不折失败**（按可用处理），与任何解析器都不同 |
- * | `style.saveLayerStyle` | `ys_AddStyle` | `err===1` 折 `PS_ERROR` 而非 `VALIDATION`，且没有 `false` 分支 |
- * | `layer.getLayerState` | `mm_layer_getState` | 返回 `LayerState` 域类型；被 800ms 轮询，`silent` |
- * | `layer.getSelectionCount` | `mm_layer_getSelection` | 返回数字，且要 `Number.isInteger` 校验 |
- * | `diag.diagVendor` | `mm_diag_vendor` | 诊断专用，返回诊断报告而不是业务值 |
- * | `env.injectEnv` | `Sys_setSystemEnvInfo` | 装配期注入，不在业务调用链上 |
+ * | `font.checkFontUsable` | `ys_checkUseFont` | `err===1` 要带宿主 `msg`，且**信封认不出时按可用处理**（不折失败）—— 现有解析器都是「失败就失败」 |
+ * | `style.saveLayerStyle` | `ys_AddStyle` | `err===1` 折 `PS_ERROR`，而 `hostRejected` 固定折 `VALIDATION` |
+ * | `diag.diagVendor` | `mm_diag_vendor` | 门失败要区分「探测本身失败 / 门未就绪」，执行器的门失败只有一种形状，`parse` 拿不到 `probeFailure` |
+ * | `env.injectEnv` | `Sys_setSystemEnvInfo` | **是门的前置** —— 进表就是「门 → injectEnv → 门」死循环 |
  *
- * 原本 8 个，`getFontInfo` / `getGradientInfo` 已收进表：它们是同一个骨架
+ * **曾经有 6 个**：`layer.getLayerState` / `layer.getSelectionCount` 当初的理由是「返回域类型 / 返回数字」，
+ * 但那只是**缺两个解析器**（`layer.layerStateRaw` / `layer.selectionCountRaw`，**写在 layer 域里、没进 raw.ts**）——
+ * 解析写在薄函数里本身就是错的，而「为一个能力往公共清单加一个名字」是另一种错（负担转嫁给后来者）。
+ * 2026-10-31 收进表（`CAP.layerState` / `CAP.selectionCount`），`kind` 的白名单校验仍留在 `core/ps/layer`。
+ * 所以判据要反过来读：**「解析形状特殊」不是理由，「要给公共解析器开独有开关」才是。**
+ *
+ * 更早还有两个也收进表了（`getFontInfo` / `getGradientInfo`）：它们是同一个骨架
  * （`false` → `VALIDATION`、`{err:1}` → `PS_ERROR`、载荷校验 → `ok`），只差文案与载荷判定，
  * 现在共用 `raw.strictPayload`。**同一骨架两个函数 = 两处实现**，不算「形态各自唯一」。
  *
- * **但这 8 个的门失败必须走 `gateFailed`**：门只有两扇，失败只有一种形状。以前它们各写一遍
- * `fail('PS_UNREADY', '官方 PS 能力未就绪')`（`detail` 空串）或手拼 `'core:false'`，
+ * **门失败只有一种形状**（`gateFailed`）：门只有两扇，`detail` 分别是 `core:false` / `vendor:false`。
+ * 以前它们各写一遍 `fail('PS_UNREADY', '官方 PS 能力未就绪')`（`detail` 空串）或手拼 `'core:false'`，
  * 同一个事件两种 detail，排障时分不清是哪扇门。
+ *
+ * **2026-10-31 收口**：这几处原本各自手抄「门 → funcMissing → callJsx」，而且抄得不一样 ——
+ * 当时 4 处里有 3 处（`checkFontUsable` / `getLayerState` / `saveLayerStyle`）**漏了 `funcMissing`**，
+ * 缺函数时报 `EvalScript error.`（`PS_ERROR`）而不是 `PS_UNREADY` + `detail: fn:xxx`。
+ * 现在统一走 `callDirect`，全部获得同一条失败语义。
  */
 
 import { callJsx } from '../cep/bridge';
@@ -67,6 +84,13 @@ interface SpecBase<T> {
   readonly require?: () => Promise<Result<void>>;
   /** 轮询类不记 info 日志 */
   readonly silent?: boolean;
+  /**
+   * 长任务例外：**只有它才允许 `dispatch` 用 `LONG_TIMEOUT`**（默认一律 `READ_TIMEOUT`）。
+   *
+   * 标记放在能力上而不是测试里 —— 例外跟着能力走，不用在两处同步一份名字清单
+   * （`capability.test` 断言「全仓只有一个 longTask，且它必须是 callAction」）。
+   */
+  readonly longTask?: true;
 }
 
 /**
@@ -90,7 +114,7 @@ const GATE: Record<Gate, { ready: () => Promise<boolean>; message: string }> = {
 /**
  * 门失败的**唯一形状**：`PS_UNREADY` + 门自己的文案 + `detail: '<门>:false'`。
  *
- * 不进表的 6 个调用（见文件头）也必须用它。以前它们各写一遍：
+ * 不进表的 4 个调用（见文件头）也必须用它。以前它们各写一遍：
  * `fail('PS_UNREADY', '官方 PS 能力未就绪')`（`detail` 是空串）与
  * `failWithDetail(..., 'core:false')` 并存——同一个事件两种 detail，排障时看不出是哪扇门。
  */
@@ -138,4 +162,33 @@ export async function callCapability<T>(
   if (call.status === 'error') return call;
 
   return spec.parse(call.value);
+}
+
+/**
+ * 直调一个 jsx 函数 —— **只给文件头那 6 个「不进表」的调用用**。
+ *
+ * 把执行器的前三步（门 → 函数存在性 → 调用）封在这里，调用方只做自己的解析。
+ *
+ * 为什么要有它：这四行以前是各处手抄的，而且**抄得不一样** —— `checkFontUsable` /
+ * `getLayerState` / `saveLayerStyle` 三处漏了 `funcMissing`，缺函数时报
+ * `EvalScript error.`（`PS_ERROR`）而不是 `PS_UNREADY` + `detail: fn:xxx`，
+ * 排查时会以为是脚本崩了，实际是旧 jsx 没这个函数（2026-10-31 收口）。
+ *
+ * 不进 `callCapability` 的原因：那 6 个的**解析各不一样**（有的要带宿主 msg 且不折失败、
+ * 有的返回域类型、有的是数字、有的在装配期），硬塞进表就要给 `parse` 开一堆口子。
+ * 但「门 + 函数存在性」这两步没有任何理由各写一遍，所以只收这一段。
+ */
+export async function callDirect(
+  fn: string,
+  args: unknown[] = [],
+  options: { gate: Gate; timeout?: number; silent?: boolean } = { gate: 'core' }
+): Promise<Result<string>> {
+  const gate = GATE[options.gate];
+  if (!(await gate.ready())) return gateFailed(options.gate);
+
+  if (await funcMissing(fn)) {
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `fn:${fn}`);
+  }
+
+  return callJsx(fn, args, { timeout: options.timeout, silent: options.silent });
 }

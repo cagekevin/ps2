@@ -24,6 +24,9 @@ import { LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
 import { isRecord } from '../../types/guards';
 import { MSG } from '../../types/messages';
 import type { CapabilitySpec } from './capability';
+/* `require*` 是本域的前置判断，给别的能力当 `spec.require` 用。
+   `layer` 自己的两个查询（图层状态 / 选中数）**不进表** —— 它们是域内基础设施，
+   进表会让 `layer` 反向依赖本文件（环）。详见 `layer.ts` 里那两个函数的注释。 */
 import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 /* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */
 import type { AddedTemplate } from './template';
@@ -488,6 +491,10 @@ export const CAP = {
    * 白名单写在 `capability.test.ts` 里（`LONG_RUN_DISPATCH`），新增例外必须同时改那处。
    */
   callAction: {
+    /* `longTask`：动作在 PS 侧可能跑几分钟，30s 会先报超时而 PS 还在执行（比多等更糟）。
+       这个标记就是**例外本身** —— `capability.test` 断言「只有标了 longTask 的才许用 LONG_TIMEOUT，
+       且全仓只有一个」，所以例外跟着能力走，不再在测试里维护第二份名字清单。 */
+    longTask: true,
     fn: 'dz_callAction', gate: 'vendor', channel: 'dispatch', timeout: LONG_TIMEOUT,
     label: '动作', parse: unwrapRaw
   },

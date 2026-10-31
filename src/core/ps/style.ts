@@ -19,13 +19,12 @@
  * `false` 分支，与 `strictVoid` / `strictPayload` 都不同档）。
  */
 
-import { callJsx, WRITE_TIMEOUT } from '../cep/bridge';
+import { WRITE_TIMEOUT } from '../cep/bridge';
 import { ROOTS } from '../storage';
 import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
-import { callCapability, gateFailed } from './capability';
+import { callCapability, callDirect } from './capability';
 import { CAP } from './capabilities';
-import { requireVendor } from './init';
 import { parseErrEnvelope } from './raw';
 
 /** 应用颜色要的完整色值：四个分量都必填 —— 缺一个，vendor 拿到残缺对象既不报错也不上色 */
@@ -94,13 +93,11 @@ export function getGradientInfo(): Promise<Result<unknown>> {
  * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后前端重读一次。
  */
 export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
-  if (!(await requireVendor())) return gateFailed('vendor');
-
   /* envDir 是原版 jsxbin 写 PSD 时的目录名，与数据根同值——别在这里再写一份字面量 */
-  const call = await callJsx(
+  const call = await callDirect(
     'ys_AddStyle',
     [{ delArr: [], groupId, envDir: ROOTS.legacy }],
-    { timeout: WRITE_TIMEOUT }
+    { gate: 'vendor', timeout: WRITE_TIMEOUT }
   );
   if (call.status === 'error') return call;
 

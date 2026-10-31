@@ -34,6 +34,23 @@ describe('VENDOR_FUNCS', () => {
   });
 });
 
+describe('CORE_FUNCS', () => {
+  /**
+   * 与上面 vendor 那条**对称**：以前只对账 vendor，core 侧没有 ——
+   * 新加一个 `gate: 'core'` 的能力、函数名写错，没有测试会红，
+   * 要到真机点下去才由 `funcMissing` 报出来（而且只影响那一个能力，很难注意到）。
+   */
+  it('覆盖表里每一个 core 能力（表里加一行，这里必须同时加）', () => {
+    const probed: readonly string[] = CORE_FUNCS;
+    const missing = Object.values(CAP)
+      .filter((spec) => spec.gate === 'core')
+      .map((spec) => spec.fn)
+      .filter((fn) => !probed.includes(fn));
+
+    expect(missing).toEqual([]);
+  });
+});
+
 describe('必需 / 可选分级', () => {
   it('必需清单必须是探测清单的子集（写错名字等于永不触发）', () => {
     for (const fn of CORE_REQUIRED) expect(CORE_FUNCS).toContain(fn);
