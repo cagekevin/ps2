@@ -8,8 +8,10 @@
  *   拆分 = 左键开面板
  *   生成按钮 / 粘贴文字属性 = 左键执行，右键开设置面板
  *   翻译 = 一直禁用（方案未定）
+ *   批量文字 = 普通按钮，点开弹窗（不展开面板；原来这个位置是「调整文本方向」，已删）
  */
 
+import { useState } from 'react';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
@@ -23,6 +25,7 @@ import { FontHierarchy } from './components/FontHierarchy';
 import { FontQuick } from './components/FontQuick';
 import { PasteFontPanel } from './components/PasteFontPanel';
 import { SplitPanel } from './components/SplitPanel';
+import { TextBatchDialog } from './components/TextBatchDialog';
 import {
   BOTTOM_ICONS_FOUR,
   BOTTOM_ICONS_ONE,
@@ -37,12 +40,15 @@ import {
   TOP_ICONS_ONE,
   TOP_ICONS_TWO,
   TOP_TITLES_ONE,
-  TOP_TITLES_TWO
+  TOP_TITLES_TWO,
+  TEXT_BATCH_ICON
 } from './font-panel-constants';
 import './FontPanelPage.css';
 
 export default function FontPanelPage() {
   const page = useFontPanel();
+  /* 弹窗开关只在这一处：进弹窗读、关掉即弃，不建 store */
+  const [batchOpen, setBatchOpen] = useState(false);
 
   return (
     <div className="mm-font-panel">
@@ -127,9 +133,7 @@ export default function FontPanelPage() {
                 onPrimary={
                   index === 0
                     ? () => page.onCopyFont()
-                    : index === 1
-                      ? (event) => (event.ctrlKey ? page.onCtrlClick() : page.onPasteFont())
-                      : () => page.onSwitchDirection()
+                    : (event) => (event.ctrlKey ? page.onCtrlClick() : page.onPasteFont())
                 }
                 panel={
                   index === 1 ? (
@@ -142,6 +146,15 @@ export default function FontPanelPage() {
                 }
               />
             ))}
+
+            {/* 批量文字：替换掉原来的「调整文本方向」。普通图标按钮，不展开面板；
+                与同排同尺寸（26 格 / 20 档 / 同 hover），没有 active、没有蓝底 */}
+            <IconButton
+              className="mm-font-panel__text-batch"
+              name={TEXT_BATCH_ICON}
+              title={'批量文字'}
+              onClick={() => setBatchOpen(true)}
+            />
           </div>
         </IconPanelGroup>
       </div>
@@ -234,6 +247,14 @@ export default function FontPanelPage() {
             if (!page.settings.ztDistributedIsFixed) page.closeDistribution();
           }}
           onClose={page.closeDistribution}
+        />
+      ) : null}
+
+      {/* 批量文字：首行字号取层级第 1 档（新建排版用），弹窗自己读、自己写 */}
+      {batchOpen ? (
+        <TextBatchDialog
+          baseSize={page.settings.ztHierarych[0] ?? 92}
+          onClose={() => setBatchOpen(false)}
         />
       ) : null}
     </div>

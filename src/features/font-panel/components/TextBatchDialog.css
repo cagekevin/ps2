@@ -1,0 +1,141 @@
+/* 批量文字弹窗：整块编辑区，尺寸按内容区百分比给（95% × 70%），不写死 px。
+   高度用百分比而不是 max-height：新建 tab 只有一个输入框、改字 tab 多一张原文表，
+   max-height 会让高度跟着内容走，切 tab 就跳；百分比是确定值，不跳。
+
+   **必须同时重置 min/max-width**：这个弹窗挂的是公共壳 `.mm-modal`，它把宽度钉在
+   240–320（`--mm-modal-min-w` / `--mm-modal-max-w`）。只写 `width` 时会被 `max-width: 320`
+   截住 —— 之前"再宽一点"改了几轮都没生效，就是卡在这里，不是选择器优先级的问题。 */
+.mm-text-batch{
+  width: 85%;
+  height: 70%;
+  min-width: 0;
+  max-width: none;
+  /* 描边：面板底与弹窗底同色系，没有亮线就分不出"这是一个独立界面"。
+     用控件亮线那一档（#4b4b4b），不用更暗的普通描边。 */
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  /* 不透明：`.mm-modal` 的 overlay 底是 rgba(.96)，整屏弹窗会透出下面的列表 */
+  background: var(--mm-color-bg-base);
+  gap: var(--mm-space-2);
+  /* 高度定了之后内容可能顶出去（面板被拉到很矮时），这里兜住，滚动交给里面的 textarea */
+  overflow: hidden;
+}
+
+/* tab 条按内容宽靠左：右边还要放「全部 / 读取」 */
+.mm-text-batch__tabs{
+  width: var(--mm-batch-tabs-w);
+  flex: 0 0 auto;
+}
+
+.mm-text-batch__tools{
+  gap: var(--mm-space-1);
+  flex: 0 0 auto;
+}
+
+/* 原文表：只用来指出「现在改的是哪一层」，所以一行 18 高、11 号字，不承担阅读 */
+.mm-text-batch__table{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+  flex: 0 0 auto;
+}
+
+.mm-text-batch__row{
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  width: 100%;
+  padding: 0 var(--mm-space-1);
+  overflow: hidden;
+}
+
+.mm-text-batch__row--head{
+  height: var(--mm-line-16);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-text-batch__list{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-tight);
+  height: var(--mm-batch-list-h);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.mm-text-batch__list .mm-text-batch__row{
+  height: var(--mm-batch-row-h);
+  border-radius: var(--mm-radius-sm);
+}
+
+/* 当前行：整行淡蓝底 + 左侧蓝条（规则 12「需要被看见的标记」） */
+.mm-text-batch__row--active{
+  background: var(--mm-color-accent-a14);
+  box-shadow: inset calc(var(--mm-border-w) * 2) 0 0 var(--mm-color-accent);
+}
+
+.mm-text-batch__no{
+  flex: 0 0 auto;
+  width: var(--mm-batch-no-w);
+  text-align: right;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-text-batch__name{
+  flex: 0 0 auto;
+  width: var(--mm-batch-name-w);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+/* 原文：排不完就省略号，全文在 title 上 */
+.mm-text-batch__text{
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-text-batch__row--active .mm-text-batch__name{
+  color: var(--mm-color-text-strong);
+}
+
+.mm-text-batch__row--active .mm-text-batch__text{
+  color: var(--mm-color-text);
+}
+
+.mm-text-batch__empty{
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-text-batch__create{
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: var(--mm-space-1);
+}
+
+.mm-text-batch__label{
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+/* 输入框能多大就多大：占满弹窗剩下的高度 */
+.mm-text-batch__draft{
+  flex: 1 1 auto;
+  min-height: var(--mm-batch-draft-min-h);
+}
+
+.mm-text-batch__status{
+  min-height: var(--mm-line-16);
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}

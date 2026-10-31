@@ -112,6 +112,38 @@
   border-color: var(--mm-color-danger);
 }
 
+/* 多行输入：表面与 `.mm-input` 同一套（同一组 `--mm-input-bg` / `--mm-input-color`），
+   **高度与 resize 不在这里** —— 多行框能多高、能不能拉，由承载它的弹窗决定。 */
+.mm-textarea{
+  width: 100%;
+  padding: var(--mm-space-1);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-input-bg, var(--mm-color-bg-input));
+  color: var(--mm-input-color, var(--mm-color-text));
+  font-family: inherit;
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-16);
+  resize: none;
+}
+
+.mm-textarea::placeholder{
+  color: var(--mm-color-text-faint);
+}
+
+.mm-textarea:focus{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+}
+
+.mm-textarea:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mm-textarea--invalid{
+  border-color: var(--mm-color-danger);
+}
+
 .mm-input:focus,
 .mm-input-surface:focus-visible{
   outline: var(--mm-border-w) solid var(--mm-color-accent);

@@ -52,7 +52,7 @@ const VENDOR_FILE = 'jsx/vendor.jsx';
  * 判断依据不是「是不是 ys_ / zt_ / cy_ 开头」，而是原版前端用 jsxHistory 还是 jsx：
  * 同为 `cy_*`，`cy_zoom` 直调而 `cy_transformPosition` 走调度。
  *
- * 文本属性 25 个见 `docs/PS-CHANNEL-NOTES.md` §11.3、常用页 26 个见 §11.4，返回结构全部 UNVERIFIED。
+ * 文本属性见 `docs/PS-CHANNEL-NOTES.md` §11.3（条数以那张表为准，别在这写数字）、常用页见 §11.4，返回结构全部 UNVERIFIED。
  * `zt_changeTextBranchMerge` 已确认为派发表 key、不是函数（真机一调就抛「没有这种元素」），
  * 已从本清单与能力表移除——**别再登记**，否则一调就整页报错。
  */
@@ -75,6 +75,10 @@ export const CORE_FUNCS = [
   'mm_style_applyShapeFill',
   'mm_style_applyBorderColor',
   'mm_style_getForegroundColor',
+  /* 批量文字：读全部 / 批量写回 / 新建 N 层（三个都是对外动作，进表） */
+  'mm_text_readAll',
+  'mm_text_writeAll',
+  'mm_text_createAll',
   /* 诊断：官方能力探测 */
   'mm_diag_vendor'
 ] as const;
@@ -132,7 +136,6 @@ export const VENDOR_FUNCS = [
   'cy_distributedByPitch',
   'zt_textBranchMerge',
   'zt_createButton',
-  'zt_switchFontDirection',
   'zt_setTranslateText',
   /* 常用页 26（`docs/PS-CHANNEL-NOTES.md` §11.4）：v1 覆盖 11（12 条命令）+ 2 只登记，其余 13 条排 v2；
      按真实函数名登记，三处原版拼写照抄（Bacth / 大写 L / 大写 E）。

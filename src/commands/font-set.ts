@@ -36,7 +36,6 @@ import {
   setTextUpDownAlign,
   setTracking as setTrackingJsx,
   setTranslateText,
-  switchFontDirection as switchFontDirectionJsx,
   textBranchMerge,
   setVerticalCenter
 } from '../core/ps/text';
@@ -210,10 +209,7 @@ export async function pasteFont(keeps: PasteFontConfig): Promise<Result<void>> {
   return applyFont(clone);
 }
 
-/** 切换文本方向 */
-export function switchDirection(): Promise<Result<void>> {
-  return switchFontDirectionJsx();
-}
+
 
 /* ---------------- 翻译 ---------------- */
 

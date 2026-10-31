@@ -18,7 +18,6 @@ export type FontSetCommandName =
   | 'createButton'
   | 'copyFont'
   | 'pasteFont'
-  | 'switchDirection'
   | 'fontSize'
   | 'leading'
   | 'tracking'
@@ -73,12 +72,6 @@ export const LEGACY_FONT_ACTIONS: readonly LegacyFontAction[] = [
     command: 'pasteFont',
     payload: { fields: ['keeps'] },
     panel: { text: '粘贴文本', icon: 'iconniantiewenziyangshi', option: 'ztPasteFont' }
-  },
-  {
-    key: 'zt_switchFontDirection',
-    command: 'switchDirection',
-    payload: { fields: [] },
-    panel: { text: '切换文本方向', icon: 'icongenggaiwenbenfangxiang', option: null }
   },
   { key: 'zt_setFontSize', command: 'fontSize', payload: { fields: ['value'] } },
   { key: 'zt_setFontLeading', command: 'leading', payload: { fields: ['value'] } },

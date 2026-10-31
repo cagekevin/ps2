@@ -1,5 +1,5 @@
 /**
- * 【唯一入口】基础控件（Button / Input / Field） —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
+ * 【唯一入口】基础控件（Button / Input / Textarea / Field） —— 全仓只许这一处；页面与 feature 一律 import 这里，禁止在别处再写一份。
  *
  * 【范本】基础 UI 组件
  * 唯一 UI 出口。页面不要自己写按钮/输入框样式，直接用这里。
@@ -16,7 +16,8 @@ import { forwardRef } from 'react';
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
-  ReactNode
+  ReactNode,
+  TextareaHTMLAttributes
 } from 'react';
 import './ui.css';
 
@@ -80,6 +81,32 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     <input
       ref={ref}
       className={`mm-input${invalid ? ' mm-input--invalid' : ''} ${className}`.trim()}
+      {...rest}
+    />
+  );
+});
+
+/* ---------------- Textarea ---------------- */
+
+/**
+ * 多行输入的唯一渲染入口。
+ *
+ * 表面与 `Input` 同一套（`--mm-input-bg` / `--mm-input-color`，按所在表面走），
+ * **高度不在这里定**：多行框能多高由承载它的弹窗决定，页面用局部类给 `flex` 或固定高。
+ * `resize` 也不在这里开：拉伸与否属于那个页面的交互，不属于控件形状。
+ */
+interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  invalid?: boolean;
+}
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { invalid = false, className = '', ...rest },
+  ref
+) {
+  return (
+    <textarea
+      ref={ref}
+      className={`mm-textarea${invalid ? ' mm-textarea--invalid' : ''} ${className}`.trim()}
       {...rest}
     />
   );

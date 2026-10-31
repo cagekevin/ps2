@@ -91,7 +91,7 @@
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型；`savePref(key, value)` 是「写入并立即落盘」的唯一入口（失败只记日志、不阻断业务），`flushPrefs` 不导出 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） |
 | 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用；`checkFontUsable` 不可用时返回**宿主原话**（「请选择文字图层!」/「字体缺失」），不再统一改写成「字体不可用」；`ztgl_setFont` 成功返回 `{"code":"OK"}`（不是 `err` 信封；解析用 `lenientVoid`，认不出就原样转发当成功）；`applyFont` / `getSystemFontList` 已进能力表 |
-| 文本属性 | `src/core/ps/text.ts` | `zt_*` 直调 26 个（3 读 + 23 写）；写只认约定值与 `{err:1}`；25 个函数全部走能力表（`CAP.*`），前置写在表的 `require` 里（执行器第一步判定，不通过直接终止）：24 个带 `requireTextLayer`，`distributeByPitch` 带 `requireSelection(2)`（分布的对象是多个图层，不限于文字）；21 个写是 `lenientVoid` + 60s。非文字图层上这批写函数不报错、返回 `undefined`、什么都不做。`zt_changeTextBranchMerge` 已删（抛「没有这种元素」，是派发表 key 不是函数） |
+| 文本属性 | `src/core/ps/text.ts` | `zt_*` 全部直调、**条数以能力表为准**（本行曾写 26/25/24/21 四个数字，每删一个能力就漂一次）；写只认约定值与 `{err:1}`；除读函数外都走能力表（`CAP.*`），前置写在表的 `require` 里（执行器第一步判定，不通过直接终止）：绝大多数带 `requireTextLayer`，`distributeByPitch` 带 `requireSelection(2)`（分布的对象是多个图层，不限于文字）；写一律 `lenientVoid` + 60s。非文字图层上这批写函数不报错、返回 `undefined`、什么都不做。`zt_changeTextBranchMerge` 已删（抛「没有这种元素」，是派发表 key 不是函数）；`zt_switchFontDirection` 已删（入口被「批量文字」替换，2026-10-31）。批量文字的三个 `mm_text_*` 在 `core/ps/text-batch.ts`，**不是范本**（未登记本表），解析器在同目录 `text-batch-raw.ts` —— 放回 `text-batch.ts` 会形成 `capabilities ↔ text-batch` 运行时环 |
 | PS 能力执行器 | `src/core/ps/capability.ts` | 唯一执行器：门（core / vendor）→ 前置 → 调用（直调 / 调度）→ 解析，四步固定；不认识任何 jsx 函数名与兜底文案，唯一认识的码是门失败的 `PS_UNREADY`；`gate` 与 `channel` 是判别联合，错组合编译不过 |
 | PS 能力表 | `src/core/ps/capabilities.ts` | 一行一个能力（`fn`/`gate`/`channel`/`timeout`/`parse`/`require`）；严格度由 `parse` 的解析器决定，新增能力只加一行 |
 | PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄 |
@@ -110,7 +110,7 @@
 | 重命名预设读写 | `src/repo/rename-repo.ts` | `sj_cmmRename.ini`（后缀 `.ini`、内容是裸数组）：缺失 = 种子不写盘 / 改动 = `updateOrCreateJsonFile` / `.cmm` 导入 = 整份替换；写路径只写预设本体，不写 `dropped` |
 | 重命名预设投影 | `src/store/rename.ts` | 只读投影：读失败**保留上一份** + 失败臂进 `failure`（单源 store 与 `store/text` 同名）；`dropped` 记账后由页面显示「N 项无法识别」；另存两个界面偏好的**归一化后**值（`normalizeMode` 是唯一判据，落盘在 `commands/rename` 的 `setMode` / `setColorSignOpen`，键的唯一拼写在 `RENAME_PREF_KEYS`） |
 | PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，返回不解码）。两条都是 `function`；`dz_getActionList` 返回**裸数组** `[{ name, children: [{ name, isAdd }] }]`，与 `domain/action-library.mapPsActions` 的解码一致 |
-| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（64 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` |
+| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS` / `VENDOR_FUNCS`（**条数不写在这里**，随能力增删变；要数直接读 `init.ts` 的数组），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） |
 | PS 样式 | `src/core/ps/style.ts` | 颜色 / 渐变 / 图层样式全部走 `ps_onJsx`；颜色用 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部），前端不判数量不循环 |
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖；`runDebugScript` 把诊断页输入的一段 ExtendScript 原样发给宿主并回显结果——**唯一执行「页面递进来的代码」的入口**，只给 `/debug` 用，业务不许经它绕过 `core/ps` 建能力 |
@@ -136,7 +136,7 @@
 | 字面板切片 | `src/store/font-set.ts` | 设置/快捷字体/层级/最近字体只读投影；设置本地先生效 |
 | 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源的失败臂在 `failures: { tiles, options }`（与 `store/action` 同名同形） |
 | 状态 | `src/store/app.ts` | 切片写法 |
-| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（**没有 `variant`**，表面按所在表面走，见 `STYLE.md` 规则 15 / 19；其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-input-surface` |
+| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（**没有 `variant`**，表面按所在表面走，见 `STYLE.md` 规则 15 / 19；其余只覆盖布局）；`Textarea` 是**全仓唯一多行输入入口**（同一套表面契约，**高度与 `resize` 归调用方**，控件不给档位）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 与 `.mm-textarea` 三处，下拉触发器与复合数字框外壳挂 `mm-input-surface` |
 | 界面文案 | `src/types/messages.ts` | 唯一入口：`MSG.corrupt`（文件坏）/ `MSG.badPayload`（宿主返回认不出）/ `MSG.stale`（状态过期）+ 分域的官方逐字句；`fail` / `failWithDetail` 里**不许再写中文**，现场（字段路径 / 下标）一律进 `detail`。存量：`font`/`style` 约 99 处（`TD-09-6`）、`core/ps` 29 处（`TD-04-1`） |
 | 分组头 | `src/components/GroupHead/index.tsx` | 整行「箭头 + 名称 + 计数（可选）+ 行尾插槽（可选）」；内层 button 管开合 / 右键 / 拖拽，`data-*` 挂在它上面（拖拽落点靠它选节点）；`titleSlot` 为就地改名态（不渲染 button）。**与 `IconPanel`（触发器+面板）、已删的 `Collapse`（标题+内容）不同层**：这里没有面板、没有内容区 |
 | 段选样式 | `src/components/Segment/segment.css` | 整条定宽 `--mm-segment-w`(100，两块各 50)、圆角 `--mm-radius-lg`(6)；未选中的底取输入位档（比所在表面深一档），选中项铺 accent 实底 + 反白 |

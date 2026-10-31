@@ -110,12 +110,14 @@ mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字
 ```
 
 - 能力分两档：`core`（自有）失败 = 全部不可用；`vendor` 失败 = 只有应用类不可用，读图层照常。
-- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-31 起 **64 项**：62 + 重命名页的 `cmm_batchName` / `cmm_setLayerColor`，见 §11.6；`core/ps/init.test.ts` 会校验「能力表里每个 vendor 能力都在清单里」；`CORE_FUNCS` 同理，7 项）：
+- `VENDOR_FUNCS` 是**实际在用**的函数清单（含重命名页的 `cmm_batchName` / `cmm_setLayerColor`，见 §11.6；`core/ps/init.test.ts` 会校验「能力表里每个 vendor 能力都在清单里」）。
+  **条数不写在这里**：它随能力增删变，写成数字必漂（本节曾写 35 / 64 两个版本，实际都不是）。要数就 `node -e` 读数组，或看 `init.ts` 本身：
   通道 1（`ps_onJsx`）+ 渐变 1（`ys_useGradient`）+ 图层样式 1（`ps_ysBtnUseStyle`）+ 环境 1（`Sys_setSystemEnvInfo`）
   + 系统字体 2（`ztgl_initSystemList` / `ztgl_setFont`）+ 字体检查/应用/复制 3（`ys_checkUseFont` / `ys_useFont` / `ys_getFontInfo`）
   + 工具切换 1（`Tool_set`，样式页快速吸色）
-  + 文本属性 25（`src/core/ps/text.ts`，逐个列在 §11.3 表里；`zt_getTypeUnits` 已取消、`zt_changeTextBranchMerge` 已移除）
+  + 文本属性（`src/core/ps/text.ts`，逐个列在 §11.3 表里，条数以那张表为准；`zt_getTypeUnits` 已取消、`zt_changeTextBranchMerge` 已移除、`zt_switchFontDirection` 已移除）
   + 常用页 25（`src/core/ps/common-use.ts` 的 26 条里 `cy_distributedByPitch` 与文本属性共用，已在上一行计过）。
+- `CORE_FUNCS` 是**自有 jsx** 的同一张账（`mm_*`），批量文字的 `mm_text_readAll` / `mm_text_writeAll` / `mm_text_createAll` 记在那里，不进 `VENDOR_FUNCS`。
 - 删掉任何 jsx 函数，必须同步改 `VENDOR_FUNCS` / core 探测列表，否则会出现「函数没了 → 能力永远不可用」的假故障（已发生过一次）。
 - **探测分两级，别再往「必需」里加**：`CORE_REQUIRED` 只有 `mm_layer_getState`、`VENDOR_REQUIRED` 只有 `ps_onJsx` + `Sys_setSystemEnvInfo`——缺了它们整门确实没意义。其余 60 多项缺了只记进 `PsCapability.missing`，由执行器按 `spec.fn` 报 `PS_UNREADY` + `detail: fn:<名字>`，**不会牵连其它页面**。以前「缺一个整门变红」的坑（`Tool_set` / `mm_diag_vendor` 那种）不会再出现。
 
@@ -341,8 +343,9 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 
 ### 11.3 文本属性（字体面板页，第三条直调通道）
 
-清单共 **29 个在用 jsx 函数**：新增 26（3 读 + 23 写），复用 3（`ys_getFontInfo` / `ys_checkUseFont` / `ys_useFont`）。
-`zt_getTypeUnits` 于 2026-10-27 取消（面板不显示单位后缀，读者不需要知道单位），表格保留该行并标注，便于追溯。
+**条数以表为准，本文不写总数**：这张表每次能力增删都会变，写成数字必漂（曾经写过 29 / 26 / 27 三个版本）。
+已移除的行保留并划掉（`zt_getTypeUnits` 2026-10-27 取消、`zt_switchFontDirection` 2026-10-31 移除），便于追溯。
+另有 3 个复用的 `ys_*`（`ys_getFontInfo` / `ys_checkUseFont` / `ys_useFont`）在表尾。
 **全部 `UNVERIFIED`**：返回结构没有真机验证过。`core/ps/text.ts` 的读函数只把 raw 交给 `domain` 宽松归一，写函数只认 `{err:number}` 信封与 `raw.ts` 的约定值表——**不许在能力函数里写字符串比较，也不许声称「已验证」**。
 
 | # | jsx | 参数 | 语义 |
@@ -372,7 +375,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 | 23 | ~~`zt_changeTextBranchMerge`~~ | — | **已移除**：真机一调就抛「没有这种元素」，是派发表 key 不是函数（见本节第 7 条） |
 | 24 | `zt_textBranchMerge` | `[mode]` | 拆分/合并真正执行；`1` 分行 / `2` 分为单个 / `3` 合并 / `4` 合并为段落 |
 | 25 | `zt_createButton` | `[{ type, isLine, padding }]` | 生成按钮；`type` 1 圆角 / 2 直角 |
-| 26 | `zt_switchFontDirection` | 无 | 切换文本方向 |
+| 26 | ~~`zt_switchFontDirection`~~ | 无 | **已移除（2026-10-31）**：入口被「批量文字」替换，能力表 / `VENDOR_FUNCS` / `core/ps/text` 三处同批删净 |
 | 27 | `zt_setTranslateText` | `[data, replace]` | 写回译文；`replace` 为真 = 覆盖原文 |
 | 28 | `ys_getFontInfo` | 无 | 复制文字属性，复用 `core/ps/font.getFontInfo` |
 | 29 | `ys_checkUseFont` | `[payload]` | 参数先 `encodeText`，复用 `core/ps/font.checkFontUsable` |
@@ -380,7 +383,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 
 判定与坑：
 
-1. **通道**：这 27 个新函数里 26 个直调 `jsx()`（原版 `jsx` / `jsxWrite`），不要包 `ps_onJsx`；包错的表现是 `error:缺少必需值`。
+1. **通道**：这批函数里除 `cy_distributedByPitch` 外全部直调 `jsx()`（原版 `jsx` / `jsxWrite`），不要包 `ps_onJsx`；包错的表现是 `error:缺少必需值`。
    **例外是 `cy_distributedByPitch`**：原版在文本属性面板用的是 `jsxHistory`（`:1441105`），
    即调度通道；`core/ps/text.ts` 现在按直调实现，属已登记 P1（与常用页的同一函数两种通道并存，
    待真机确认 `ps_onJsx` 能调 `cy_*` 后统一成调度）。参数形态两处不同，见 §11.4 第 1 条。

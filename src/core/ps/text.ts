@@ -186,11 +186,6 @@ export function createButton(config: {
   return callCapability(CAP.createButton, [config]);
 }
 
-/** 切换文本方向（`zt_switchFontDirection`） */
-export function switchFontDirection(): Promise<Result<void>> {
-  return callCapability(CAP.switchFontDirection);
-}
-
 /** 写回译文（`zt_setTranslateText`）：`replace` 为真 = 覆盖原文 */
 export function setTranslateText(data: unknown, replace: boolean): Promise<Result<void>> {
   return callCapability(CAP.setTranslateText, [data, replace]);

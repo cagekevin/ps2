@@ -117,7 +117,10 @@ button{
 
 .mm-modal-mask{
   position: fixed;
-  inset: 0;
+  /* 遮罩只盖「右侧正文区」，不盖左侧导航：弹窗是页面里的东西，居中基准必须是正文区。
+     写 `inset: 0` 时居中基准是整窗口，dev（浏览器）里弹窗会整体偏左，且导航也被压暗。
+     CEP 面板里导航同样存在（40px），所以这里在两种环境里语义一致。 */
+  inset: 0 0 0 var(--mm-nav-w);
   z-index: var(--mm-z-tooltip);
   display: flex;
   align-items: center;

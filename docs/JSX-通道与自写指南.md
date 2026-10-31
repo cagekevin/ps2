@@ -49,9 +49,9 @@ Photoshop ExtendScript                      ← vendor.jsx（官方副本）/ ma
 
 **为什么 `core` 不许 `dispatch`** —— 这是硬约束，不是风格：
 
-`ps_onJsx` 这个调度函数**本身就在 `VENDOR_FUNCS` 里**（`init.test.ts:30` 有断言：`VENDOR_FUNCS` 必须含 `ps_onJsx`）。我们自写的 `jsx/main.jsx` 里**没有**它。
+`ps_onJsx` 这个调度函数**本身就在 `VENDOR_FUNCS` 里**（`init.test.ts:32` 有断言：`VENDOR_FUNCS` 必须含 `ps_onJsx`）。我们自写的 `jsx/main.jsx` 里**没有**它。
 
-而 `core` 门只看 `capability.core`，**完全不看 `capability.vendor`** —— 两扇门是分开探的（`init.ts:219` 起）。
+而 `core` 门只看 `capability.core`，**完全不看 `capability.vendor`** —— 两扇门是分开探的（`init.ts:223` 起）。
 vendor 侧可能因四种原因没开（见 §5.1），其中「环境变量注入失败」跟 `main.jsx` 加没加载毫无关系。
 
 ⇒ core 能力若走 dispatch，等于去调一个**可能不存在**的函数；而且 `funcMissing` 也拦不住它 ——
@@ -61,7 +61,7 @@ vendor 侧可能因四种原因没开（见 §5.1），其中「环境变量注�
 **怎么一眼分清自写和 vendor**：
 
 1. **能力行的 `gate` 字段** —— 唯一权威，其它都只是辅助
-2. **探测清单**：`CORE_FUNCS`（`init.ts:70`，探 `jsx/main.jsx`）/ `VENDOR_FUNCS`（`init.ts:93`，探 `jsx/vendor.jsx`）
+2. **探测清单**：`CORE_FUNCS`（`init.ts:70`，探 `jsx/main.jsx`）/ `VENDOR_FUNCS`（`init.ts:97`，探 `jsx/vendor.jsx`）
 3. **名字前缀**（辅助，**不完整**）：自写一律 `mm_*`；官方那批前缀很多 —— `ys_ / zt_ / ztgl_ / cy_ / cmm_ / dz_ / Fs_ / ps_mb* / mb_ / Layer_ / Tool_ / layer_ / ps_ys*`，
    而且以后还会遇到新的。**别拿前缀当判据**，只当"扫一眼大概是谁的"。
 
@@ -81,7 +81,7 @@ vendor 侧可能因四种原因没开（见 §5.1），其中「环境变量注�
 
 `dispatch` 的 `n` **只是日志标签**（会进 PS 日志面板），不传给 jsx 函数本身。原版里它叫 `jsxHistoryNoCheck`，`ps_onJsx` 调度器会自己把这次调用包成一个撤销组 —— **所以我们不在 jsx 里写 `suspendHistory`**（写了就是第二套撤销语义）。
 
-`gate` 与 `channel` 是**判别联合**（`capability.ts:103`）：
+`gate` 与 `channel` 是**判别联合**（`capability.ts:106`）：
 
 ```ts
 export type CapabilitySpec<T> = SpecBase<T> &
@@ -161,7 +161,7 @@ export function applyTemplate(payload: TemplateUsePayload): Promise<Result<void>
 
 关键点：**函数名写错不会静默**。`funcMissing` 会把名字放进 `detail`，只禁这一个能力，不会让整个面板变红。
 
-### 5.1 门关的四种原因（`init.ts:219-290`）
+### 5.1 门关的四种原因（`init.ts:210-290`）
 
 「门未就绪」不是只有「jsx 没加载」一种，`PS_UNREADY` 背后有四种可能：
 
@@ -172,14 +172,14 @@ export function applyTemplate(payload: TemplateUsePayload): Promise<Result<void>
 | 3 | **必需清单**缺函数（`CORE_REQUIRED` / `VENDOR_REQUIRED`） | 整门关 | 整门关 |
 | 4 | `injectEnv()` 失败（`Sys_setSystemEnvInfo`） | — | **✓ 只在 vendor** |
 
-第 4 条最隐蔽：**不注入环境变量，`ys_*` 内部拼路径会抛异常**（`init.ts:269` 的注释原话，调用在 `:270`）。所以 vendor 门 = 「jsx 加载成功」+「必需函数齐全」+「环境变量注入成功」三件都成立。
+第 4 条最隐蔽：**不注入环境变量，`ys_*` 内部拼路径会抛异常**（`init.ts:273` 的调用与其注释）。所以 vendor 门 = 「jsx 加载成功」+「必需函数齐全」+「环境变量注入成功」三件都成立。
 
 第 3 条与第 2 步（`funcMissing`）的分工要分清：
 
 - **必需清单**缺一个 → 整门关，这个门下的**所有**能力都不能用
 - **可选清单**（`VENDOR_FUNCS` / `CORE_FUNCS` 里除必需项外的）缺一个 → 门照常开，只有**那一个能力**报 `PS_UNREADY` + `detail: fn:xxx`
 
-`probe` 的做法（`init.ts:207`）是**一次 `evalScript` 查全部**：拼 `typeof fn1,typeof fn2,…`，不是 `function` 的进 `missing`。这也解释了为什么**新函数必须先登记进清单**——没登记就永远不会被探到，`funcMissing` 也就永远说它"在"。
+`probe` 的做法（`init.ts:210`）是**一次 `evalScript` 查全部**：拼 `typeof fn1,typeof fn2,…`，不是 `function` 的进 `missing`。这也解释了为什么**新函数必须先登记进清单**——没登记就永远不会被探到，`funcMissing` 也就永远说它"在"。
 
 ---
 
@@ -207,7 +207,7 @@ templateAdd: {
 | 1 | 加一行能力 | `src/core/ps/capabilities.ts`（照邻居逐字段抄） |
 | 2 | 名字登记进「在用清单」 | `src/core/ps/init.ts` 的 `VENDOR_FUNCS`（官方函数）或 `CORE_FUNCS`（自写函数） |
 | 3 | 写薄函数（两行） | `src/core/ps/<域>.ts`：`return callCapability(CAP.xxx, [参数])` |
-| 4 | 对账 | `init.test.ts:19` 会校验「`CAP` 里每个 `gate:'vendor'` 的 `fn` 都在 `VENDOR_FUNCS` 里」（差集必须为空），漏了即红；另外 `ps_onJsx` / `Sys_setSystemEnvInfo` 必须常驻清单 |
+| 4 | 对账 | `init.test.ts:22` 会校验「`CAP` 里每个 `gate:'vendor'` 的 `fn` 都在 `VENDOR_FUNCS` 里」（差集必须为空），漏了即红；另外 `ps_onJsx` / `Sys_setSystemEnvInfo` 必须常驻清单 |
 | 5 | 真机点一次 | 名字错了会报 `PS_UNREADY` + `detail: fn:xxx` |
 
 ### 6.3 参数形状从哪查
@@ -399,7 +399,7 @@ export async function callDirect(
 | `lenientVoid(文案)` | 只关心成败的写操作 | `''` / `'undefined'` / `'0'` / `'1'` / `{err:0}` / `{code:'OK'}` 都算成功；`{err:N≠0}` 算宿主拒绝 |
 | `strictPayload({ whenFalse, whenFailed, accept })` | 返回 `{err, data}` 且要校验字段 | `false` → `VALIDATION`（前提不满足）；`err===1` → `hostRejected`（`VALIDATION`，句子优先宿主 `msg`）；`accept(data)` 返 `null` → **`CORRUPT`**（`malformed`，detail 给字段路径 + 原文前 120 字） |
 | `strictData(文案)` | 只要 `data`，不要字段校验 | `err≠0` 当失败，其余交 `data` |
-| `passthrough` | 返回结构**未实测**，原样交出 | `(raw) => ok(raw)`。按 JSON 解析会把裸路径判成坏数据时用它；**结构一旦实测就换成具名解析器 —— 它是缺口，不是常态**（`raw.ts:199`） |
+| `passthrough` | 返回结构**未实测**，原样交出 | `(raw) => ok(raw)`。按 JSON 解析会把裸路径判成坏数据时用它；**结构一旦实测就换成具名解析器 —— 它是缺口，不是常态**（`raw.ts:201`） |
 | `sentinelJson` | jsx 返回的是哨兵字符串（`'ok'` / `'no-doc'`） | 先折哨兵再解析 |
 
 **这 5 个就是全部。** 表里配不上这 5 个的时候，**不要往 `raw.ts` 加第 6 个** —— 那会让每个后来者多认一个他一辈子用不上的名字。正确做法是**写在你自己的域模块里**（`Parser<T>` 是个类型，不挑位置）：
@@ -435,7 +435,7 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
 
 1. **对象参数不会自动变对象** —— `toJsxArg` 会把它 `JSON.stringify` 成文本，jsx 侧收到的是**字符串**（§3）。官方函数按自己的格式解，格式对不上时**抛异常或静默不生效**。
 2. **`undefined` 参数会被拒** —— `callJsx` 主动抛 `jsx 参数第 N 个是 undefined`，空值给 `''`。
-3. **函数名写错不静默** —— `funcMissing` 查的是探测结果里的 `missing` 清单（`init.ts:314`），命中就报 `PS_UNREADY` + `detail: fn:xxx`。**忘了登记 `VENDOR_FUNCS`** 则 `init` 根本不探这个名字 ⇒ 它不在 `missing` 里 ⇒ 门是绿的、调用直接落到 `EvalScript error.`（`PS_ERROR`），排查方向会跑偏。这就是第 4 步对账存在的理由。
+3. **函数名写错不静默** —— `funcMissing` 查的是探测结果里的 `missing` 清单（`init.ts:317`），命中就报 `PS_UNREADY` + `detail: fn:xxx`。**忘了登记 `VENDOR_FUNCS`** 则 `init` 根本不探这个名字 ⇒ 它不在 `missing` 里 ⇒ 门是绿的、调用直接落到 `EvalScript error.`（`PS_ERROR`），排查方向会跑偏。这就是第 4 步对账存在的理由。
 4. **`dispatch` 通道超时只有 30s** —— 例外要在能力行标 `longTask: true`（`capability.ts:93`），`capability.test` 断言「全仓只许一个，且必须是 `callAction`」。**例外跟着能力走，不在测试里维护名字清单**（以前是两份真相）。
 5. **超时不代表 PS 没在执行** —— 超时只是队列放行（`bridge.ts:80`，定时器在 `:73`），大 PSD 应用可能还在跑。
 6. **`evalScript` 是串行队列** —— 一次一条，别指望并发；两个写操作不会交错，但也别在循环里逐条发（几百次会慢，改成 jsx 内部循环）。

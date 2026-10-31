@@ -34,7 +34,6 @@ import {
   setStyle,
   setTracking,
   split as splitCommand,
-  switchDirection,
   textAlign
 } from '../../commands/font-set';
 import type { AlignAxis } from '../../commands/font-set';
@@ -166,10 +165,6 @@ export function useFontPanel() {
       if (applied) void refreshText();
     });
   }, [run, settings.ztPasteFont, refreshText]);
-
-  const onSwitchDirection = useCallback(() => {
-    void run(() => switchDirection(), '切换文本方向');
-  }, [run]);
 
   /* ---------- 底部：对齐 / 分布 ---------- */
 
@@ -442,7 +437,6 @@ export function useFontPanel() {
     onApplyCreateButton,
     onCopyFont,
     onPasteFont,
-    onSwitchDirection,
     onAlign,
     openDistribution,
     closeDistribution,

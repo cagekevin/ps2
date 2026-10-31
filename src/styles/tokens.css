@@ -147,6 +147,14 @@
   --mm-dialog-w: 220px;
   --mm-dialog-offset-x: 90px;
 
+  /* 批量文字弹窗（字体面板顶部入口） */
+  --mm-batch-tabs-w: 88px;      /* 模式 tab 条：两个 tab 各 44 */
+  --mm-batch-list-h: 108px;     /* 原文列表：6 行 × 18 */
+  --mm-batch-row-h: 18px;       /* 原文列表一行：这栏只当「现在改的是哪层」的指示条，不承担阅读 */
+  --mm-batch-no-w: 16px;        /* 行号列 */
+  --mm-batch-name-w: 60px;      /* 图层名列（超出省略号） */
+  --mm-batch-draft-min-h: 120px;/* 输入框最小高；正常情况它吃满弹窗剩余高度 */
+
   /* 字体面板页 */
   --mm-preview-card-w: 180px;
   --mm-preview-card-left: 43px;
@@ -228,6 +236,7 @@
   --mm-color-star: #f5c518;                        /* 收藏星标（评分专用，不是警告色） */
   --mm-color-warn: #dcdcaa;
   --mm-color-danger-a16: rgba(241, 76, 76, 0.16);
+  --mm-color-accent-a14: rgba(0, 111, 255, 0.14);  /* 当前行底色：整行淡蓝，配左侧蓝条 */
   --mm-color-warn-a18: rgba(220, 220, 170, 0.18);
 
   /* 遮罩 / 半透明层 */

@@ -54,9 +54,13 @@
     display:flex;align-items:center;justify-content:center;z-index:50;}
   /* 高度写死：新建 / 改字两个 tab 的内容不同，但面板不能跟着跳 */
   .modal{display:flex;flex-direction:column;gap:var(--mm-space-3);
-    width:calc(100% - var(--mm-space-2));height:calc(100% - var(--mm-space-2));
+    /* 占内容区 85% × 70%：面板拉宽拉窄都跟着走，不写死 px */
+    width:85%;height:70%;
     padding:var(--mm-space-3);border-radius:var(--mm-radius-md);
-    background:var(--mm-color-bg-overlay);box-shadow:0 4px 12px rgba(0,0,0,.35);}
+    border:var(--mm-border-w) solid var(--mm-color-border-control);
+    /* 不透明：overlay 是 rgba(.96)，整屏弹窗会透出下面的列表 */
+    background:var(--mm-color-bg-base);box-shadow:0 4px 12px rgba(0,0,0,.35);
+    overflow:hidden;}
 
   /* 头部：左 tab（新建 / 改字），右动作（全部 / 读取）。高度钉死，切 tab 不跳 */
   .head{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);

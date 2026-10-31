@@ -237,6 +237,219 @@ function mm_style_getForegroundColor() {
 	});
 }
 
+/* ---------------- 批量文字：新建 / 改字 ---------------- */
+
+/*
+ * 两个入口各自一次 evalScript，循环全在 jsx 内（`CONVENTIONS` §8：批量不许前端循环调用）。
+ * 撤销组用 `suspendHistory`，参数走 `$.global` —— 第二个参数只能是脚本字符串。
+ *
+ * 两个「一条历史」的写函数把补丁/配置放全局，再由 `mm_text_doWrite` / `mm_text_doCreate`
+ * 在历史组里执行；执行完把报告写回全局，外层函数取出来 return。
+ *
+ * 【待核实】写这段的机器上没装 PS，整段运行时行为一次都没跑过。四条按 `docs/plan/04`
+ * §6.2 的真机清单验：
+ *   1. `mm_text_selectedIndexes` 的 `getIndex` 与 `mm_text_walkLayers` 的摊平下标是否同序
+ *      （不同序的表现：选 2 层却读出别的层 —— 越界时这里返回空表，宁可空也不猜）
+ *   2. `suspendHistory` 的字符串参数能不能访问 `$.global` 上的补丁与报告
+ *      （不行的表现：报告永远是 null → 返回 `{ ok: 0 }`，但图层其实已经改了）
+ *   3. 第一层不设 `position` 时到底落在哪、相对堆叠的 1.6 倍行距够不够
+ *   4. `item.font` 设不上时是抛异常还是静默（现在只 catch 并置 `fontMissing`）
+ */
+
+/** 深度优先摊平：组自己先入列，再进子层（顺序 = 图层面板从上到下） */
+function mm_text_walkLayers(parent, out) {
+	var layers = parent.layers;
+	for (var i = 0; i < layers.length; i++) {
+		var layer = layers[i];
+		out.push(layer);
+		if (layer.typename === "LayerSet") mm_text_walkLayers(layer, out);
+	}
+}
+
+/**
+ * PS 里当前选中的图层序号。
+ *
+ * 只用 `getIndex`（§10.2 实测可用）；`getIdentifier` 在本机取不到 id，不要换。
+ * 返回的序号与 `mm_text_walkLayers` 的摊平下标是否一致 **UNVERIFIED**，
+ * 所以调用方对越界一律当「没读到」处理，绝不猜。
+ */
+function mm_text_selectedIndexes() {
+	var ref = new ActionReference();
+	ref.putProperty(mm_c("Prpr"), mm_s("targetLayers"));
+	ref.putEnumerated(mm_c("Dcmn"), mm_c("Ordn"), mm_c("Trgt"));
+	var args = new ActionDescriptor();
+	args.putReference(mm_c("null"), ref);
+	var desc = executeAction(mm_c("getd"), args, DialogModes.NO);
+	if (!desc.hasKey(mm_s("targetLayers"))) return [];
+
+	var list = desc.getList(mm_s("targetLayers"));
+	var out = [];
+	for (var i = 0; i < list.count; i++) {
+		out.push(list.getReference(i).getIndex(mm_c("Lyr ")));
+	}
+	return out;
+}
+
+/**
+ * 读文字层：`scope` 为 `"selection"` 时只取选中集合里的文字层，其它层静默过滤。
+ * → `{ layers: [{ id, name, text, locked }] }`；没文档返回 `no-doc`，空表返回空数组。
+ */
+function mm_text_readAll(scope) {
+	return mm_safe("mm_text_readAll", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var all = [];
+		mm_text_walkLayers(app.activeDocument, all);
+
+		var picked = null;
+		if (scope === "selection") {
+			var indexes = mm_text_selectedIndexes();
+			if (!indexes.length) return { layers: [] };
+			for (var k = 0; k < indexes.length; k++) {
+				if (indexes[k] < 0 || indexes[k] >= all.length) return { layers: [] };
+			}
+			picked = indexes;
+		}
+
+		var layers = [];
+		for (var i = 0; i < all.length; i++) {
+			if (picked && !mm_text_hasIndex(picked, i)) continue;
+			var layer = all[i];
+			if (mm_layer_kindOf(layer) !== "text") continue;
+			layers.push({
+				id: String(layer.id),
+				name: layer.name,
+				text: layer.textItem.contents,
+				locked: layer.allLocked === true
+			});
+		}
+		return { layers: layers };
+	});
+}
+
+function mm_text_hasIndex(list, value) {
+	for (var i = 0; i < list.length; i++) {
+		if (list[i] === value) return true;
+	}
+	return false;
+}
+
+/** 历史组里真正写字的那一步（只碰 `contents`，样式一个都不动） */
+function mm_text_doWrite() {
+	var patches = $.global.__mm_textPatches || [];
+	var all = [];
+	mm_text_walkLayers(app.activeDocument, all);
+
+	var failed = [];
+	for (var p = 0; p < patches.length; p++) {
+		var target = null;
+		for (var i = 0; i < all.length; i++) {
+			if (String(all[i].id) === String(patches[p].id)) {
+				target = all[i];
+				break;
+			}
+		}
+		if (!target || mm_layer_kindOf(target) !== "text" || target.allLocked === true) {
+			failed.push({ id: patches[p].id, reason: "missing-or-locked" });
+			continue;
+		}
+		try {
+			target.textItem.contents = patches[p].text;
+		} catch (e) {
+			failed.push({ id: patches[p].id, reason: e.message });
+		}
+	}
+	$.global.__mm_textReport = { ok: patches.length - failed.length, failed: failed };
+}
+
+/** 批量写回：`[{ id, text }]` → `{ ok, failed: [{ id, reason }] }`，一条历史 */
+function mm_text_writeAll(patchesJson) {
+	return mm_safe("mm_text_writeAll", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var patches = JSON.parse(patchesJson);
+		if (!patches || !patches.length) return { ok: 0, failed: [] };
+
+		$.global.__mm_textPatches = patches;
+		$.global.__mm_textReport = null;
+		app.activeDocument.suspendHistory("批量文字", "mm_text_doWrite()");
+
+		var report = $.global.__mm_textReport || { ok: 0, failed: [] };
+		$.global.__mm_textPatches = null;
+		$.global.__mm_textReport = null;
+		return report;
+	});
+}
+
+/**
+ * 历史组里真正建层的那一步。
+ *
+ * 落点：**第一层不设坐标**，用 PS 新建文字层的默认位置（用户实测：拖入图片就落在视图正中，
+ * 新建文字同理）；后面的层相对第一层按字号往下排。这样不用去猜「视图中心」怎么算。
+ * 字号序列由前端算好传进来（`domain/text-batch.createSizes`），jsx 不再算第二份公式。
+ */
+function mm_text_doCreate() {
+	var cfg = $.global.__mm_textCreate;
+	var doc = app.activeDocument;
+	var report = { ok: 0, fontMissing: false };
+	var startX = 0;
+	var lastY = 0;
+
+	for (var i = 0; i < cfg.lines.length; i++) {
+		var layer = doc.artLayers.add();
+		layer.kind = LayerKind.TEXT;
+		var item = layer.textItem;
+		item.kind = TextType.POINTTEXT;
+		item.contents = cfg.lines[i];
+		item.size = UnitValue(cfg.sizes[i], "pt");
+		item.justification = mm_text_justification(cfg.align);
+
+		if (cfg.font && cfg.font.hjm) {
+			try {
+				item.font = cfg.font.hjm;
+			} catch (e) {
+				report.fontMissing = true;
+			}
+		}
+
+		if (i === 0) {
+			startX = item.position[0];
+			lastY = item.position[1];
+		} else {
+			/* 上一行字号 × 1.6（1.2 行高 + 0.4 间隔）就是下一行的基线 */
+			lastY = lastY + cfg.sizes[i - 1] * 1.6;
+			item.position = [startX, lastY];
+		}
+		report.ok += 1;
+	}
+	$.global.__mm_textCreateReport = report;
+}
+
+function mm_text_justification(align) {
+	if (align === 1) return Justification.CENTER;
+	if (align === 2) return Justification.RIGHT;
+	return Justification.LEFT;
+}
+
+/** 新建 N 层：`{ lines, sizes, font: { hjm }, align }` → `{ ok, fontMissing }`，一条历史 */
+function mm_text_createAll(configJson) {
+	return mm_safe("mm_text_createAll", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var cfg = JSON.parse(configJson);
+		if (!cfg || !cfg.lines || !cfg.lines.length) return { ok: 0, fontMissing: false };
+
+		$.global.__mm_textCreate = cfg;
+		$.global.__mm_textCreateReport = null;
+		app.activeDocument.suspendHistory("批量文字：新建", "mm_text_doCreate()");
+
+		var report = $.global.__mm_textCreateReport || { ok: 0, fontMissing: false };
+		$.global.__mm_textCreate = null;
+		$.global.__mm_textCreateReport = null;
+		return report;
+	});
+}
+
 /* ---------------- 诊断 ---------------- */
 
 /**

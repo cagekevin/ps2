@@ -379,7 +379,6 @@ export const MSG = {
     spacingDistribute: '当前图层不支持按间距分布',
     splitMerge: '当前图层不支持拆分或合并',
     createButton: '当前图层无法生成按钮',
-    textDirection: '当前图层不支持切换文本方向',
     writeBack: '当前图层不支持写回译文',
     scale: '当前图层不支持缩放',
     clearGuide: '清除参考线失败',
@@ -389,6 +388,14 @@ export const MSG = {
     optimizeDoc: '优化文档失败',
     batchName: '批量重命名失败',
     layerColor: '设置图层颜色失败'
+  },
+
+  /** 批量文字（新建 / 改字）：弹窗底部的状态行与写回失败 */
+  textBatch: {
+    lineCountMismatch: '行数与图层数不一致，不能增删行',
+    writePartial: '有图层没写成（已锁定或已删除）',
+    fontMissing: '字体缺失，已改用 PS 默认字体',
+    emptyDraft: '还没有输入文字'
   },
 
   codeReason: {

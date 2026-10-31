@@ -99,7 +99,16 @@ const TARGETS = [
   { group: 'text', need: 'TEXT', call: 'zt_setBackrgoudAlign(3)' },
   { group: 'text', need: 'TEXT', call: 'zt_alignHorizontal()' },
   { group: 'text', need: 'TEXT', call: 'zt_textBranchMerge(1)' },
-  { group: 'text', need: 'TEXT', call: 'zt_switchFontDirection()' },
+
+  /* 批量文字（自写 jsx）：只探存在性与返回形状。参数全是空数组 / 空配置，
+     所以不动文档内容，也不需要 need —— 没有文字层的文档也能跑。 */
+  { group: 'text', call: 'mm_text_readAll("all")' },
+  { group: 'text', call: 'mm_text_readAll("selection")' },
+  { group: 'text', call: 'mm_text_writeAll(JSON.stringify([]))' },
+  {
+    group: 'text',
+    call: 'mm_text_createAll(JSON.stringify({lines:[],sizes:[],font:{},align:0}))'
+  },
 
   { group: 'font', need: 'TEXT', call: 'ys_useFont("ArialMT")' },
   { group: 'font', need: 'TEXT', call: 'ys_checkUseFont("ArialMT")' },

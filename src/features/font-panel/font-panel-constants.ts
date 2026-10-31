@@ -11,11 +11,19 @@ import type { IconName } from '../../components/icons';
 export const TOP_ICONS_ONE: readonly IconName[] = ['iconfanyi', 'iconchaifen', 'iconanniu'];
 export const TOP_ICONS_TWO: readonly IconName[] = [
   'iconfuzhiwenziyangshi',
-  'iconniantiewenziyangshi',
-  'icongenggaiwenbenfangxiang'
+  'iconniantiewenziyangshi'
 ];
 export const TOP_TITLES_ONE = ['翻译', '拆分文本', '创建按钮'] as const;
-export const TOP_TITLES_TWO = ['复制文字属性', '粘贴文字属性', '调整文本方向'] as const;
+export const TOP_TITLES_TWO = ['复制文字属性', '粘贴文字属性'] as const;
+
+/**
+ * 批量文字的入口图标：**替换掉原来的「调整文本方向」**（那个功能不用了）。
+ *
+ * 用 `iconpiliangwenzi`：与 nav 的 `icon-nav_piliangtaoban` 同形，但 sprite 里另存了一份
+ * viewBox 收紧到图形包围盒的版本 —— nav 那个四周留白是按导航格留的，塞进 20 档工具排会小一号。
+ * 两个 symbol 各自服务各自的位置，**不要合并**，也不要靠 CSS transform 去补。
+ */
+export const TEXT_BATCH_ICON: IconName = 'iconpiliangwenzi';
 
 /** 顶部带角标的按钮下标：组一 0/2、组二 1（角标 = 可加入自由面板，v1 仅展示） */
 export const TOP_BADGES_ONE: readonly number[] = [0, 2];

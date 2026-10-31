@@ -28,6 +28,9 @@ import type { CapabilitySpec } from './capability';
    `layer` 自己的两个查询（图层状态 / 选中数）**不进表** —— 它们是域内基础设施，
    进表会让 `layer` 反向依赖本文件（环）。详见 `layer.ts` 里那两个函数的注释。 */
 import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
+/* 批量文字的私有解析器：单独一个文件，**不能**从 `./text-batch` 引 —— 那个文件 import 本文件的
+   `CAP`，反过来引就是运行时环（`check:cycles` 会红） */
+import { createReportRaw, layersRaw, writeReportRaw } from './text-batch-raw';
 /* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */
 import type { AddedTemplate } from './template';
 
@@ -247,15 +250,35 @@ export const CAP = {
     require: requireTextLayer, parse: lenientVoid(MSG.coreOps.createButton)
   },
 
-  switchFontDirection: {
-    fn: 'zt_switchFontDirection', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.textDirection)
-  },
-
   /** 写回译文：`replace` 为真 = 覆盖原文 */
   setTranslateText: {
     fn: 'zt_setTranslateText', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
     require: requireTextLayer, parse: lenientVoid(MSG.coreOps.writeBack)
+  },
+
+  /* ---------------- 批量文字（自写 jsx，`core` 门只能直调） ---------------- */
+
+  /**
+   * 读文字层：入参 `'all'` / `'selection'`。
+   *
+   * 不加 `require`：没选中就是空表，不是「图层不对」——前置判断会把空表变成红字。
+   * 解析是本域私有的 `text-batch.layersRaw`（只服务这一个能力，不进 `raw.ts`）。
+   */
+  textReadAll: {
+    fn: 'mm_text_readAll', gate: 'core', channel: 'direct', timeout: READ_TIMEOUT,
+    parse: layersRaw
+  },
+
+  /** 批量写回：入参是 `[{ id, text }]`，一次调用一条历史 */
+  textWriteAll: {
+    fn: 'mm_text_writeAll', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: writeReportRaw
+  },
+
+  /** 新建 N 个文字层：字号序列由前端算好传进来 */
+  textCreateAll: {
+    fn: 'mm_text_createAll', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: createReportRaw
   },
 
   /* ---------------- 常用页（§11.4：通道按原版调用点分，不按前缀猜） ---------------- */
