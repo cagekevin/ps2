@@ -187,7 +187,10 @@ export function toLocalPath(uri: string): string {
   let text: string;
   try {
     text = decodeURI(uri);
-  } catch {
+  } catch (error) {
+    /* 降级必须留痕（`TD-01-27`）：路径里有无结尾的 `%` 时 `decodeURI` 抛 URIError，
+       回落到原文是唯一能继续的走法，但必须记一笔——否则「为什么这个文件路径找不到」查不出来 */
+    log.warn('路径解码失败，按原文使用', { detail: String(error) });
     text = uri;
   }
 

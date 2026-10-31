@@ -122,7 +122,6 @@ export function CustomTransformPanel() {
           {row.map((field) => (
             <TextField
               key={field.key}
-              variant="half"
               title={field.title}
               placeholder={field.title}
               icon={field.icon}

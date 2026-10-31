@@ -446,6 +446,29 @@ export const CAP = {
     label: '智能参考线', parse: unwrapRaw
   },
 
+  /* ---------------- 重命名页（06）：两条 jsx，都直调、都只发不读 ---------------- */
+
+  /**
+   * 批量重命名：`[表达式, 是否过滤子图层]`。
+   *
+   * **求值在 PS 侧**（`%n` / `###` 怎么展开由 jsx 决定），我们只拼串、只发不读。
+   * 通道照参考实现走**直调**：官方派发表里它是 `jsxHistory` 那条（自由面板用），
+   * 参考实现却直调，我们跟参考实现；真机若报「缺少必需值」，改这一行 `channel: 'dispatch'` 即可。
+   *
+   * 不写 `require`：它对**当前选中图层**操作，但「没选中时是 `-1`、抛错还是静默 no-op」未知，
+   * 先不判；真机看到静默 no-op 再加（与文字属性那批同一判据）。
+   */
+  batchName: {
+    fn: 'cmm_batchName', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid(MSG.coreOps.batchName)
+  },
+
+  /** 图层颜色标记：`[0..7]`，0 = 清除。同样只发不读。 */
+  setLayerColor: {
+    fn: 'cmm_setLayerColor', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid(MSG.coreOps.layerColor)
+  },
+
   /* ---------------- 样式：颜色走自有 jsx（gate core），渐变 / 图层样式走调度 ---------------- */
 
   /**

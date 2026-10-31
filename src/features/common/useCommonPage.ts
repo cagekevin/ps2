@@ -25,7 +25,7 @@ const TILE_SELECTOR = '.mm-common__tile';
 export function useCommonPage() {
   const tiles = useCommonUseStore((state) => state.tiles);
   const dropped = useCommonUseStore((state) => state.dropped);
-  const reasons = useCommonUseStore((state) => state.reasons);
+  const failures = useCommonUseStore((state) => state.failures);
   const load = useCommonUseStore((state) => state.load);
   /*
    * 显隐键默认开：判据走 `booleanOptionOf`（官方默认表里这两键就是 `true`），
@@ -107,7 +107,7 @@ export function useCommonPage() {
   return {
     tiles,
     dropped,
-    reasons,
+    failures,
     showZoom,
     showTransformation,
     expandedId,

@@ -37,11 +37,11 @@ export default function ActionPage() {
     <div className="mm-action">
       {/* 没有页头：导航上已写着「动作管理」，标题行白占 40 高（与字体管理、常用功能一致） */}
       <div className="mm-action__body">
-        {page.reasons.index ? (
-          <StateHint result={page.reasons.index} onRetry={page.reload} />
+        {page.failures.index ? (
+          <StateHint result={page.failures.index} onRetry={page.reload} />
         ) : null}
-        {page.reasons.library ? (
-          <StateHint result={page.reasons.library} onRetry={page.reload} />
+        {page.failures.library ? (
+          <StateHint result={page.failures.library} onRetry={page.reload} />
         ) : null}
         {page.dropped.length ? (
           <div

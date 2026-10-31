@@ -50,7 +50,7 @@ import { useCallback } from 'react';
 import { log } from '../core/logger';
 import { useLoading } from './useLoading';
 import { useToast } from './useToast';
-import type { ErrorCode, Result } from '../types/result';
+import type { ErrorCode, Failure, Result } from '../types/result';
 
 export interface RunOptions {
   /** 成功时提示的话；不给 = 成功静默（执行类命令默认不喧哗） */
@@ -82,7 +82,7 @@ export interface RunOptions {
  * 两处各写一遍 `log.warn` + `toast.error` 就是一份重复实现，而且读路径那份通常忘了写日志。
  */
 function announce(
-  failure: Extract<Result<unknown>, { status: 'error' }>,
+  failure: Failure,
   options: RunOptions,
   toast: { error: (message: string) => void },
   label: string

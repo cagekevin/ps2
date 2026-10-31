@@ -171,7 +171,11 @@ export const VENDOR_FUNCS = [
      **照抄可运行的 Vue 版实践**（Vue 用同名函数、调用方式一致）⇒ 直接登记。
      风险：我们这份 vendor 副本若缺这两个函数，只有动作页失效（`funcMissing` 分级后不再整片不可用）。 */
   'dz_callAction',
-  'dz_getActionList'
+  'dz_getActionList',
+  /* 重命名页（06）：两条都直调，只发不读。`cmm_batchName` 官方派发表里是 `jsxHistory`
+     那条（自由面板用），参考实现直调，我们跟参考实现；缺失只影响重命名页（`funcMissing` 分级） */
+  'cmm_batchName',
+  'cmm_setLayerColor'
 ] as const;
 
 /**

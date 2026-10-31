@@ -12,22 +12,6 @@
   font-size: var(--mm-font-md);
 }
 
-.mm-imgcolor__row{
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-1);
-}
-
-/* 色块：边长取样式页色块那一档（同页同类同尺寸，规则 9）。
-   色值由 TSX 注入 `--mm-swatch`：动态值只交变量、由 CSS 决定怎么用（§14.1） */
-.mm-imgcolor__swatch{
-  width: var(--mm-swatch-w);
-  height: var(--mm-swatch-h);
-  border-radius: var(--mm-radius-sm);
-  background: var(--mm-swatch);
-  cursor: pointer;
-}
-
 /* 渐变条：比色块宽一倍，圆角取控件档 */
 .mm-imgcolor__grad{
   width: var(--mm-imgcolor-grad-w);
@@ -37,8 +21,7 @@
   cursor: pointer;
 }
 
-/* 色块与渐变条的 hover：**描边不叠底**（叠底会盖住色值本身），描边用暗线 —— 只是提醒边界，不是重点 */
-.mm-imgcolor__swatch:hover,
+/* 渐变条的 hover：**描边不叠底**（色块本体的 hover 已在 `.mm-swatch` 里，这里只剩渐变条） */
 .mm-imgcolor__grad:hover{
   outline: var(--mm-border-w) solid var(--mm-color-border);
 }

@@ -42,23 +42,23 @@ interface DiagRow {
 /** 官方 jsx 函数：每个值是 typeof 的结果，'function' 才算可用 */
 function diagRows(diag: VendorDiag): DiagRow[] {
   return [
-    { label: MSG.home.fnDispatch, value: diag.dispatch },
-    { label: MSG.home.fnUseStyleColor, value: diag.useStyleColor },
-    { label: MSG.home.fnUseGradient, value: diag.useGradient },
-    { label: MSG.home.fnBtnUseStyle, value: diag.btnUseStyle },
-    { label: MSG.home.fnSetForegroundColor, value: diag.setForegroundColor },
-    { label: MSG.home.fnUseShapeFill, value: diag.useShapeFill },
-    { label: MSG.home.fnCallAction, value: diag.callAction },
-    { label: MSG.home.fnGetActionList, value: diag.getActionList }
+    { label: 'ps_onJsx（调度入口）', value: diag.dispatch },
+    { label: 'ys_useStyleColor', value: diag.useStyleColor },
+    { label: 'ys_useGradient', value: diag.useGradient },
+    { label: 'ps_ysBtnUseStyle', value: diag.btnUseStyle },
+    { label: 'ys_setForegroundColor', value: diag.setForegroundColor },
+    { label: 'ys_useShapeFill', value: diag.useShapeFill },
+    { label: 'dz_callAction（动作页）', value: diag.callAction },
+    { label: 'dz_getActionList（动作页）', value: diag.getActionList }
   ];
 }
 
 /** 官方配置依赖：值只有 true / false 两种，缺了就是 false */
 function configRows(diag: VendorDiag): DiagRow[] {
   return [
-    { label: MSG.home.cfgSet, value: String(diag.configSet) },
-    { label: MSG.home.cfgInterface, value: String(diag.configInterface) },
-    { label: MSG.home.cfgAutoFillColor, value: String(diag.autoFillColor) }
+    { label: 'sj_set.json', value: String(diag.configSet) },
+    { label: 'sj_interfaceSet.ini', value: String(diag.configInterface) },
+    { label: 'cyAutoFillColor', value: String(diag.autoFillColor) }
   ];
 }
 
@@ -66,8 +66,8 @@ function formatDiag(diag: VendorDiag): string {
   const section = (title: string, rows: DiagRow[]): string =>
     [title, ...rows.map((row) => `${row.label}    ${row.value}`), ''].join('\n');
   return (
-    section(MSG.home.sectionVendorFns, diagRows(diag)) +
-    section(MSG.home.sectionVendorConfig, configRows(diag))
+    section('官方 jsx 函数', diagRows(diag)) +
+    section('官方配置依赖', configRows(diag))
   );
 }
 
@@ -170,42 +170,42 @@ export default function HomePage() {
 
   const copyButton = (text: string, success: string) => (
     <Button variant="ghost" className="mm-home__link" onClick={() => void handleCopy(text, success)}>
-      {MSG.home.copy}
+      复制
     </Button>
   );
 
   return (
     <section className="mm-home">
       <div className="mm-u-row mm-home__status">
-        <span className="mm-home__key">{MSG.home.layerLabel}</span>
+        <span className="mm-home__key">当前图层：</span>
         <span className="mm-home__value">{layerText}</span>
       </div>
 
       <div className="mm-u-row mm-home__actions">
-        <Button onClick={handleDiag}>{MSG.home.diagVendor}</Button>
-        <Button onClick={handleLog}>{MSG.home.viewLog}</Button>
+        <Button onClick={handleDiag}>诊断官方能力</Button>
+        <Button onClick={handleLog}>查看日志</Button>
         <Button variant="primary" onClick={handlePing}>
-          {MSG.home.testApi}
+          测试接口
         </Button>
       </div>
 
       <div className="mm-home__body">
         <div className="mm-home__panel">
-          <PanelHead title={MSG.home.sectionScript} />
+          <PanelHead title="执行代码" />
           <div className="mm-u-row mm-home__script-row">
             <Input
               className="mm-home__script-input"
               value={script}
-              placeholder={MSG.home.scriptPlaceholder}
+              placeholder="输入 ExtendScript，回车执行"
               onChange={(event) => setScript(event.target.value)}
               onKeyDown={enterSubmit(() => void handleRunScript())}
             />
-            <Button onClick={() => void handleRunScript()}>{MSG.home.runScript}</Button>
+            <Button onClick={() => void handleRunScript()}>执行</Button>
           </div>
           {scriptOutput ? (
             <>
               <div className="mm-u-row">
-                <span className="mm-home__key">{MSG.home.sectionScriptResult}</span>
+                <span className="mm-home__key">执行结果</span>
                 {copyButton(scriptOutput, MSG.home.copiedScript)}
               </div>
               <div className="mm-home__log-body">{scriptOutput}</div>
@@ -217,7 +217,7 @@ export default function HomePage() {
           <>
             <div className="mm-home__panel">
               <PanelHead
-                title={MSG.home.sectionVendorFns}
+                title="官方 jsx 函数"
                 actions={copyButton(formatDiag(diag), MSG.home.copiedDiag)}
               />
               <div className="mm-u-col mm-home__rows">
@@ -228,7 +228,7 @@ export default function HomePage() {
             </div>
 
             <div className="mm-home__panel">
-              <PanelHead title={MSG.home.sectionVendorConfig} />
+              <PanelHead title="官方配置依赖" />
               <div className="mm-u-col mm-home__rows">
                 {configRows(diag).map((row) => (
                   <DiagRowView key={row.label} label={row.label} value={row.value} />
@@ -241,19 +241,19 @@ export default function HomePage() {
         {/* 面板常驻：删除 / 刷新随时可点，不必先「查看日志」把旧日志读上来 */}
         <div className="mm-home__panel mm-home__panel--grow">
           <PanelHead
-            title={MSG.home.sectionLog}
+            title="日志（%TEMP%\\maomao.log）"
             actions={
               <>
                 {copyButton(logText ?? '', MSG.home.copiedLog)}
                 <Button variant="ghost" className="mm-home__link" onClick={handleLog}>
-                  {MSG.home.refresh}
+                  刷新
                 </Button>
                 <Button
                   variant="ghost"
                   className="mm-home__link"
                   onClick={() => void handleClearLog()}
                 >
-                  {MSG.home.clear}
+                  清空
                 </Button>
               </>
             }

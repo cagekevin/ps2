@@ -16,7 +16,7 @@
  *   2. 名字：文件名、默认分组名、未命名、提取颜色组；
  *   3. 协议值：`fn: 'cy_xxx'`、翻转方向 `'左右'`、PS 历史名 `CapabilitySpec.label`；
  *   4. 官方数据表：语言下拉、`font-panel-constants` 的按钮名。
- *   （历史上有一批 label 键被搬进来，属遗留；**不要再照抄新增**，改到哪页顺手退回该页。）
+ *   （2026-10-31 起全仓已无遗留：最后一批在 `MSG.home`，已退回该页。）
  *
  * 分层：顶层 = 跨页通用（`corrupt` / `badPayload` / `stale` / `badArgument` / `freePanelOffline` / `droppedSummary`…）；
  * `codeReason` = 错误码 → 话（**生产者**自己取，消费者不查表补字）；
@@ -99,6 +99,34 @@ export const MSG = {
     guideTitle: '欢迎首次使用',
     guideAsk: '是否导入自带动作预设？含有修图 / 新建文档等功能',
     guideImport: '导入'
+  },
+
+  /**
+   * 重命名页（`06`）：只收「系统告诉用户发生了什么」的话 —— 输入校验、模型层守卫、进度、成功、空态、确认。
+   *
+   * **控件标题 / 菜单项 / 选项名 / placeholder 不在这里**（按钮叫「应用」、字段叫「重命名图层」、
+   * 菜单项叫「创建新组」都不是「发生了什么」），按 `CONVENTIONS` §12 的判据就近写在
+   * `features/rename` 的调用点。`MSG` 文件头那句「不收界面文字」说的就是这件事。
+   */
+  rename: {
+    /* 输入校验（官方逐字） */
+    expressionEmpty: '不能输入空字符哦',
+    needGroupName: '请输入组名',
+    needNewGroupName: '请输入新组名',
+    needPresetText: '请输入预设文本',
+    needReplaceBoth: '替换前后两段文字都要填',
+
+    /* 模型层守卫（第 0 组由程序写） */
+    groupLocked: '「最近使用」不可改名、删除或加项',
+
+    /* 进度 / 成功 / 空态 */
+    renaming: '正在批量重命名',
+    doneExport: '导出成功',
+    doneImport: '导入成功',
+    emptyPreset: '还没有重命名预设',
+
+    /* 确认 */
+    confirmDeleteGroup: '删除分组'
   },
 
   /** 云同步（手动上传 / 下载）：只收失败 / 进度 / 成功 / 空态，按钮与区块标题就近写在设置页 */
@@ -235,12 +263,22 @@ export const MSG = {
 
     /* repo 层：文件名（进 `${label}不是合法 JSON`）、索引缺登记的提示、新建分组默认名 */
     noLibraryFile: '索引里没有登记这个库的文件名',
+    /* repo 层：`.kux` 导入的四条校验（现场一律进 `detail`：`name:` / `file:`） */
+    kuBadFileName: '导入文件名不合法',
+    kuDuplicateFileName: '导入文件名重复',
+    kuMissingFile: '索引引用的库文件不在包里',
+    kuInnerBroken: '导入文件内层结构不认识',
 
     /* 命令层：默认名、新建组名、吸色结果、文件对话框标题 */
     pickTimeout: '吸色超时（60 秒内没有取色）',
   },
 
-  /** 诊断页（`features/home`）：页头、分区标题、确认句、成功提示 */
+  /**
+   * 诊断页（`features/home`）：只收「系统告诉用户发生了什么」——确认句、成功提示、空态、校验。
+   *
+   * 按钮名 / 分区标题 / 字段 label / placeholder / 诊断行标签是**界面文字**（`CONVENTIONS` §12），
+   * 已就地写回 `features/home/HomePage.tsx`（`TD-04-2` 已结）。
+   */
   home: {
     reachable: '接口可达',
     emptyLog: '（日志为空）',
@@ -250,38 +288,12 @@ export const MSG = {
     clearMessage: '删除后无法恢复。',
     clearConfirm: '删除',
     nothingToCopy: '没有可复制的内容',
-    layerLabel: '当前图层：',
     layerEmpty: '—',
-    diagVendor: '诊断官方能力',
-    viewLog: '查看日志',
-    testApi: '测试接口',
-    copy: '复制',
-    refresh: '刷新',
-    clear: '清空',
     copiedDiag: '已复制诊断结果',
     copiedLog: '已复制日志',
-    sectionVendorFns: '官方 jsx 函数',
-    sectionVendorConfig: '官方配置依赖',
-    sectionScript: '执行代码',
-    scriptPlaceholder: '输入 ExtendScript，回车执行',
-    runScript: '执行',
     scriptEmpty: '先输入要执行的代码',
     scriptNoOutput: '（无返回值）',
-    sectionScriptResult: '执行结果',
-    copiedScript: '已复制执行结果',
-    sectionLog: '日志（%TEMP%\\maomao.log）',
-    /* 诊断行标签：前半是官方函数名 / 文件名（标识符），括号里是它挂在哪条通道、给哪个页面用 */
-    fnDispatch: 'ps_onJsx（调度入口）',
-    fnUseStyleColor: 'ys_useStyleColor',
-    fnUseGradient: 'ys_useGradient',
-    fnBtnUseStyle: 'ps_ysBtnUseStyle',
-    fnSetForegroundColor: 'ys_setForegroundColor',
-    fnUseShapeFill: 'ys_useShapeFill',
-    fnCallAction: 'dz_callAction（动作页）',
-    fnGetActionList: 'dz_getActionList（动作页）',
-    cfgSet: 'sj_set.json',
-    cfgInterface: 'sj_interfaceSet.ini',
-    cfgAutoFillColor: 'cyAutoFillColor'
+    copiedScript: '已复制执行结果'
   },
 
   /** 字体域（`commands/font-set`、字体面板、字体管理页）的失败与提示 */
@@ -344,7 +356,9 @@ export const MSG = {
     sliceByGuide: '按参考线切片失败',
     openFolder: '打开所在目录失败',
     relink: '转链接智能对象失败',
-    optimizeDoc: '优化文档失败'
+    optimizeDoc: '优化文档失败',
+    batchName: '批量重命名失败',
+    layerColor: '设置图层颜色失败'
   },
 
   codeReason: {

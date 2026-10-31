@@ -12,6 +12,13 @@
  *   `mutateJsonFile`         —— 文件必须存在；读不到就是失败（库文件）
  *   `updateJsonFile`         —— 不存在 = 空值继续（色板这类「不存在=空」的文件）
  *   `updateOrCreateJsonFile` —— 不存在 = 首次创建（先确认不存在，不产生 `.bak`）
+ *
+ * **整份替换有两个入口，按内容形态分**（值 vs 原文，别合并）：
+ *   `replaceJsonFile`        —— 给**值**，内部 `JSON.stringify`（导入标签/评分）
+ *   `replaceFileText`        —— 给**原文**，一个字节都不改（云同步搬运、导入写库文件）
+ *
+ * 全仓所有写盘都这两个/上面三个之一；直接 `writeTextAtomic` 会绕开「读改写 ↔ 整份替换」
+ * 之间的排队（2026-10-31 收到这里：`action-repo` 两处、`ku-archive` 一处）。
  */
 
 import { log } from '../core/logger';
@@ -175,6 +182,21 @@ export function replaceJsonFile<T>(
   value: T
 ): Promise<Result<void>> {
   return enqueue(name, root, () => writeTextAtomic(name, JSON.stringify(value), root));
+}
+
+/**
+ * 整份替换为**原文**：内容不解析、不序列化，调用方给什么字节就写什么。
+ *
+ * 与 `replaceJsonFile` 的区别只有一个——值还是文本。**两个都要有**，不许并成一个
+ * 收 `string | T` 的联合：那样每个调用点都要自己判「这个 string 是原文还是要序列化的值」，
+ * 判错一次就是把 `"{...}"` 双序列化一次（云同步搬运算与导入写库是最容易踩的两处）。
+ *
+ * 走同一条文件队列（`mutate:<root>:<name>`）：`writeTextAtomic` 自带的是 `write:<absPath>`
+ * 队列，只保证「两次写不交错」；**读改写与整份替换之间**的排队靠这一层，
+ * 否则「读到旧值 → 整份替换 → 读改写把旧值写回」会静默丢掉替换。
+ */
+export function replaceFileText(name: string, root: StorageRoot, text: string): Promise<Result<void>> {
+  return enqueue(name, root, () => writeTextAtomic(name, text, root));
 }
 
 /**

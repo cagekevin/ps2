@@ -82,7 +82,7 @@
 | 层 | 范本文件 | 说明 |
 |---|---|---|
 | 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `docs/STYLE.md` §7 规则 12 |
-| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；**组合层·布局**（`STYLE.md` §6.2）也在这里：`.mm-divider` / `.mm-icon-row` / `.mm-btn-grid`，三者都不带 `justify-content`（行类必须与 `.mm-u-row` 同挂）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
+| 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；**组合层·布局**（`STYLE.md` §6.2）也在这里：`.mm-divider` / `.mm-icon-row` / `.mm-btn-grid` / `.mm-tabs`（文字 tab 条，`--start` 为按内容宽靠左档）/ `.mm-u-tiles`（贴左换行排，与 `.mm-u-row--wrap` 的两端铺满分方向），除 `.mm-u-tiles` 与 `.mm-tabs` 外都不带 `justify-content`（行类必须与 `.mm-u-row` 同挂）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它 |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 |
@@ -103,10 +103,14 @@
 | 接口登记 | `src/core/http/endpoints.ts` | 标注来源与验证状态 |
 | 动作库形状 | `src/domain/action-library.ts` | 7 形状里的 4 个 + 解码（结构 reject / 项 filter）+ 11 个纯编辑函数；`group` 执行必带、别名空串 = 删别名、删分组补「默认分组」 |
 | `.dzx` 编解码 | `src/domain/action-dzx.ts` | 外层字段名照抄官方 `arrFileData` / `store`；解码严格（不合格 `CORRUPT`）；`planImportFiles` 只算计划，写序在 repo |
-| 动作库读写 | `src/repo/action-repo.ts` | 索引（对象）+ 仓库文件（裸数组）两个入口；缺失读默认值**不写盘**；导入写序「先文件、最后索引」；`readWarehouseText` 取原文（不重新序列化） |
-| 动作库投影 | `src/store/action.ts` | 只读投影 + `columns`（prefs `action.listColumns`，坏值归 2）；不写文件、`Result` 原样进 `reasons` |
+| 动作库读写 | `src/repo/action-repo.ts` | 索引（对象）+ 仓库文件（裸数组）两个入口；缺失读默认值**不写盘**；导入写序「先文件、最后索引」；`readWarehouseText` 取原文（不重新序列化）。**读/写解码分开**：读用 `decodeLibraryFile`（带 `dropped` 记账），写用 `decodeLibraryGroups`（只要裸数组）——混用会把库文件写成 `{groups,dropped}`（`TD-03-3`，单测钉住） |
+| 动作库投影 | `src/store/action.ts` | 只读投影 + `columns`（prefs `action.listColumns`，坏值归 2）；不写文件，**失败只存失败臂**：多源用 `failures: { <来源>: Failure }`、单源用 `failure`（`Result` 不进 store，`TD-05-2`） |
+| PS 重命名 | `src/core/ps/rename.ts` | 两条 jsx 都**直调 + 只发不读**：`cmm_batchName([表达式, 是否过滤子图层])` / `cmm_setLayerColor([0..7])`；表达式求值在 PS 侧，前端只拼串 |
+| 重命名预设模型 | `src/domain/rename.ts` | 裸数组 `RenameGroup[]`；第 0 组「最近使用」由程序写（`isGroupEditable` 一处守）；删标记按 `%%nn→%%n→%nn→%n=→%n` 全删；`.cmm` 只认 JSON，坏结构 `CORRUPT` |
+| 重命名预设读写 | `src/repo/rename-repo.ts` | `sj_cmmRename.ini`（后缀 `.ini`、内容是裸数组）：缺失 = 种子不写盘 / 改动 = `updateOrCreateJsonFile` / `.cmm` 导入 = 整份替换；写路径只写预设本体，不写 `dropped` |
+| 重命名预设投影 | `src/store/rename.ts` | 只读投影：读失败**保留上一份** + 失败臂进 `failure`（单源 store 与 `store/text` 同名）；`dropped` 记账后由页面显示「N 项无法识别」；另存两个界面偏好的**归一化后**值（`normalizeMode` 是唯一判据，落盘在 `commands/rename` 的 `setMode` / `setColorSignOpen`，键的唯一拼写在 `RENAME_PREF_KEYS`） |
 | PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，返回不解码）。两条都是 `function`；`dz_getActionList` 返回**裸数组** `[{ name, children: [{ name, isAdd }] }]`，与 `domain/action-library.mapPsActions` 的解码一致 |
-| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（62 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` |
+| PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS`（7 项）/ `VENDOR_FUNCS`（64 项），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） |
 | PS 样式 | `src/core/ps/style.ts` | 颜色 / 渐变 / 图层样式全部走 `ps_onJsx`；颜色用 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部），前端不判数量不循环 |
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖；`runDebugScript` 把诊断页输入的一段 ExtendScript 原样发给宿主并回显结果——**唯一执行「页面递进来的代码」的入口**，只给 `/debug` 用，业务不许经它绕过 `core/ps` 建能力 |
@@ -122,17 +126,17 @@
 | 常用页模型 | `src/domain/common-use.ts` | 14 项官方种子（逐字照抄 `configReset`）+ 文件校验 + 视图投影 |
 | 常用页设置 | `src/domain/common-use-options.ts` | 17 个 `cy*` 键白名单 + 投影 + 深合并（数组替换 / 对象逐键） |
 | 数据访问 | `src/repo/style-repo.ts` | 读文件 → Result；`mutateRawGroups` 走 `json-file` |
-| 数据写入口 | `src/repo/json-file.ts` | 库文件 / 字体标签星级 / 色板的唯一「读 → 改 → 写」；首次创建显式分支；**不认识任何业务文件的形状**（`sj_set` 的顶层解码在 `repo/settings-object.ts`） |
+| 数据写入口 | `src/repo/json-file.ts` | **全仓唯一写盘入口**：读改写 3 个 + 整份替换 2 个（`replaceJsonFile` 给值、`replaceFileText` 给原文，别合并成 `string \| T` 联合）；首次创建显式分支；**不认识任何业务文件的形状**（`sj_set` 的顶层解码在 `repo/settings-object.ts`）。`repo/*` 不许直接调 `core/storage.writeTextAtomic`——那会绕开「读改写 ↔ 整份替换」之间的排队 |
 | 设置文件形状 | `src/repo/settings-object.ts` | `sj_set.json` 的文件名常量 + 顶层解码 + 原始记录数组；两个按键分工的 repo 共用这一份 |
 | 字面板仓库 | `src/repo/font-set-repo.ts` | 5 个 `sj_*` 设置文件；缺失按空/默认读、首次写才创建、`sj_set.json` 只改 `zt*` |
 | 常用页仓库 | `src/repo/common-use-repo.ts` | `sj_commonFunction.json`（根是裸数组，缺失按种子读不写盘）+ `sj_set.json` 的 17 个 `cy*` 键（未知键原样保留） |
 | 串行队列 | `src/core/serial/index.ts` | 按 key 串行，只保证顺序、不传递失败 |
-| 业务切片 | `src/store/style-library.ts` | 只读投影，失败原样保留 |
+| 业务切片 | `src/store/style-library.ts` | 只读投影；失败**只存失败臂**（`indexFailure` / `failures`，不存整条 `Result`），`code`/`reason`/`detail` 一个不丢；三态读法：`failures[k]` 非空 = 失败、`libraries[k]` 非空且无失败 = 读到（空数组 = 读到但是空）、两者皆空 = 还没读 |
 | 文字属性快照 | `src/store/text.ts` | PS 为唯一真相；读失败保留旧值 + 标 stale，写成功由页面 patch |
 | 字面板切片 | `src/store/font-set.ts` | 设置/快捷字体/层级/最近字体只读投影；设置本地先生效 |
-| 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源各自留失败原因 |
+| 常用页切片 | `src/store/common-use.ts` | 网格 / 17 键设置 / 折叠态只读投影；两类来源的失败臂在 `failures: { tiles, options }`（与 `store/action` 同名同形） |
 | 状态 | `src/store/app.ts` | 切片写法 |
-| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（`variant` 两档，其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-input-surface` |
+| UI 控件 | `src/components/ui/index.tsx` | 唯一 UI 出口；`Input` 是**全仓唯一输入框渲染入口**（**没有 `variant`**，表面按所在表面走，见 `STYLE.md` 规则 15 / 19；其余只覆盖布局）；输入位表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处，下拉触发器与复合数字框外壳挂 `mm-input-surface` |
 | 界面文案 | `src/types/messages.ts` | 唯一入口：`MSG.corrupt`（文件坏）/ `MSG.badPayload`（宿主返回认不出）/ `MSG.stale`（状态过期）+ 分域的官方逐字句；`fail` / `failWithDetail` 里**不许再写中文**，现场（字段路径 / 下标）一律进 `detail`。存量：`font`/`style` 约 99 处（`TD-09-6`）、`core/ps` 29 处（`TD-04-1`） |
 | 分组头 | `src/components/GroupHead/index.tsx` | 整行「箭头 + 名称 + 计数（可选）+ 行尾插槽（可选）」；内层 button 管开合 / 右键 / 拖拽，`data-*` 挂在它上面（拖拽落点靠它选节点）；`titleSlot` 为就地改名态（不渲染 button）。**与 `IconPanel`（触发器+面板）、已删的 `Collapse`（标题+内容）不同层**：这里没有面板、没有内容区 |
 | 段选样式 | `src/components/Segment/segment.css` | 整条定宽 `--mm-segment-w`(100，两块各 50)、圆角 `--mm-radius-lg`(6)；未选中的底取输入位档（比所在表面深一档），选中项铺 accent 实底 + 反白 |
@@ -147,7 +151,7 @@
 | PS 事件订阅 | `src/core/cep/ps-events.ts` | 注册 + JSON 回调 + setd 判据；`subscribeHostEvent` 返回 `Result<取消函数>`，非 CEP / 注册被拒都折成 `PS_UNREADY`，**不抛异常**；一次性等待用 `startHostEventWait`（订阅 / 超时 / 退订都在这里），调用方只递判据 |
 | 图片解码 | `src/core/image/index.ts` | FileReader / canvas / Image 默认注入 |
 | 文件对话框 | `src/core/dialog/index.ts` | CEP fs API，取消返回 null |
-| 仓库容器 | `src/repo/ku-archive.ts` | .kux 导出导入 + id 重发 + 回收 |
+| 仓库容器 | `src/repo/ku-archive.ts` | .kux 导出导入 + id 重发 + 回收；写内层库文件走 `replaceFileText`（原文，不重新序列化） |
 | 容器编解码 | `src/domain/ku-io.ts` | 纯函数（app 移植） |
 | 状态通道 | `src/core/feedback/channel.ts` | 单通道订阅 + 通知 + 挂载门；`toast` / `loading` 共用，禁止再各写一份 `Set + emit` |
 | Toast | `src/components/Toast/index.tsx` | 禁止 alert |
@@ -161,7 +165,6 @@
 | 导航栏 | `src/app/nav-bar.tsx` | 侧边导航 |
 | 图层监听 | `src/app/layer-watcher.tsx` | 唯一的**常驻**图层订阅者，页面只读 store；命令内的一次性事件等待（吸色等）不在此列，见 `CONVENTIONS` §3.1.5 第 5 条 |
 | 常用页事件 | `src/app/common-use-watcher.tsx` | 常用页 5 个语义（拖入 / 粘贴 / 剪贴蒙版 / 填色 / 参考线）的唯一订阅者；按 store 的 5 个设置开关 + `guideOn` 订阅 / 退订，失败只 `log.warn` 不弹 toast；与 `layer-watcher` 分开（那个永不写盘） |
-| 状态持久化 | `src/hooks/usePersisted.ts` | 界面偏好，key 强类型 |
 | 全局快捷键 | `src/hooks/useShortcut.ts` | 常驻字母键；负责「打字中 / 带修饰键」两条排除；与 `useDismiss` 分工写在文件头 |
 | 禁右键菜单 | `src/hooks/useNoContextMenu.ts` | 全项目唯一 `contextmenu` 监听；只 `preventDefault`、不 `stopPropagation`（自己的 `ContextMenu` 仍能打开）；只在 `app/layout` 挂一次 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 |
@@ -184,7 +187,7 @@
 | 图标 + 展开面板样式 | `src/components/IconPanel/icon-panel.css` | `__box` 只给通栏（`width:100%`）+ `isolation: isolate`；**底色由 `__box::before` 左右铺满**（`left/right: calc(-1 * bleed)`、`z-index:-1`），内容盒与位置不动。左右通栏靠承载行声明的 `--mm-icon-panel-bleed`（页面根壳声明为 `--mm-page-pad-x`）；`__box` 上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）；不许用负 margin（会连内容一起拉宽） |
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 |
-| 输入框 | `src/components/TextField/index.tsx` | 三档定宽（`variant`）+ 左图标 + Enter 提交；内部渲染 `ui.Input` |
+| 输入框 | `src/components/TextField/index.tsx` | 左图标 / 右插槽 + Enter 提交；内部渲染 `ui.Input`；**不定宽**——外壳吃满容器（`flex: 1 1 auto`），要定宽给那个页面的局部 css（`STYLE.md` §6.1），组件不出宽度档位 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 |
@@ -192,7 +195,7 @@
 | 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口；前提类码（`PS_NO_DOC` / `PS_WRONG_LAYER`）灰字，不标红 |
 | 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
-| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-badge` / `.mm-notice` / `.mm-modal`，都只出 CSS 契约、不带行为 |
+| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-notice` / `.mm-modal`，都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |

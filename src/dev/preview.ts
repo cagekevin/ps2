@@ -19,7 +19,6 @@ import { useCommonUseStore } from '../store/common-use';
 import { useFontStore } from '../store/font';
 import { useStyleLibraryStore } from '../store/style-library';
 import { useTextStore } from '../store/text';
-import { ok } from '../types/result';
 
 /* ---------- 字体管理页：家族名长短与字重数量都要照顾到极端情况 ---------- */
 function fontItem(family: string, weights: string[]): FontItem {
@@ -218,10 +217,10 @@ export function installPreviewData(): void {
     tags: PREVIEW_TAGS,
     stars: PREVIEW_STARS,
     classification: PREVIEW_CLASSIFICATION,
-    tagsRead: ok({ tags: PREVIEW_TAGS, dropped: [] }),
-    starsRead: ok({ stars: PREVIEW_STARS, dropped: [] }),
+    failures: { tags: null, stars: null, classification: null },
+    dropped: { tags: [], stars: [] },
     /* 读成功 ⇒ 失败臂为空（`TD-09-4` 收窄后不再是 ok 结果） */
-    classificationRead: null,
+
     loadTags: () => {},
     loadStars: () => {},
     loadClassification: () => {}
@@ -229,21 +228,16 @@ export function installPreviewData(): void {
 
   useCommonUseStore.setState({
     load: () => {},
-    reasons: { tiles: null, options: null }
+    failures: { tiles: null, options: null }
   });
 
   const libraries = previewLibraries();
   useStyleLibraryStore.setState({
-    indexResult: ok({ index: 0, list: WAREHOUSES }),
+    indexFailure: null,
     warehouses: WAREHOUSES,
     activeIndex: 0,
     libraries,
-    results: {
-      color: ok(libraries.color),
-      gradient: ok(libraries.gradient),
-      font: ok(libraries.font),
-      style: ok(libraries.style)
-    },
+    failures: { color: null, gradient: null, font: null, style: null },
     loading: false,
     load: async () => {},
     selectWarehouse: async () => {}

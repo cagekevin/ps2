@@ -34,7 +34,6 @@ export function SpacingPanel() {
     <div className="mm-common__panel">
       <div className="mm-u-row mm-common__panel-row">
         <TextField
-          variant="fill"
           title={'间距'}
           placeholder="10"
           inputMode="decimal"

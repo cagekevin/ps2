@@ -153,6 +153,28 @@
   color: var(--mm-color-bg-popover);
 }
 
+/* 纯色块：正方形 + 小圆角，颜色由调用点注入 `--mm-swatch`（动态值只交变量，§14.1）。
+   与 `.mm-style__item--color`（样式页格子）的区别：那个还带底、hover、选中态，是**可编辑格子**；
+   这里只有「形 + 色 + 描边 hover」，专门给「点一下就用这个颜色」的场景（吸色弹窗、图层颜色）。
+   hover **描边不叠底**：叠底会盖住色值本身，而块就是那个颜色。 */
+.mm-swatch{
+  /* 内容居中：色块本身没有子元素，但清除档（无颜色 + 一个 ✕）要靠它把图标摆正。
+     这里只加**排布**，不加任何颜色 / 边框 —— 那属于调用点。 */
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-swatch-w);
+  height: var(--mm-swatch-h);
+  border-radius: var(--mm-radius-sm);
+  background: var(--mm-swatch);
+  cursor: pointer;
+}
+
+.mm-swatch:hover{
+  outline: var(--mm-border-w) solid var(--mm-color-border);
+}
+
 /* 角标：贴在别的东西上的小计数 / 标记（字重数量、授权标、筛选计数）。
    尺寸复用既有的徽标档（`--mm-filter-badge`）；语义只有三档，
    要第四种说明那不是「角标」，是另一个东西。 */

@@ -214,7 +214,7 @@ src/
 │  ├─ dialog/     文件对话框（CEP fs API）
 │  ├─ feedback/   提示条 / 全屏加载的**状态 + 通道原语**（`channel.ts`：订阅 / 通知 / 挂载门；零 React，components 只渲染）
 │  ├─ image/      图片解码（FileReader / canvas）
-│  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/env/diag/raw）
+│  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
 │  └─ logger/     日志
@@ -222,7 +222,7 @@ src/
 ├─ repo/          数据访问：读文件 → Result，不做业务判断
 ├─ commands/      业务命令：组合原子能力 + 写库，无 UI
 ├─ store/         状态切片
-├─ hooks/         可复用交互原语（点外关闭、浮层定位、焦点陷阱、受控草稿、拖拽、持久化、输入法回车、分页）
+├─ hooks/         可复用交互原语（点外关闭、浮层定位、焦点陷阱、受控草稿、拖拽、输入法回车、分页）
 ├─ components/    纯 UI
 ├─ features/      页面与交互
 ├─ assets/        静态资源（SVG sprite）
@@ -325,7 +325,7 @@ components → hooks ──────→ core
 |---|---|---|
 | 用户文件（`sj_*`） | `repo/*` | `commands/*`（读改写）+ `store/*`（只读投影） |
 | PS 状态 | `core/ps/*` | `commands/*` + **`store/text.ts`（唯一一处 store 直读 PS）** |
-| 界面偏好 | `core/prefs`（`prefs.json`，**与库文件不同目录不同文件**） | `commands/common-use` + `hooks/usePersisted` + `store/{common-use,font}` |
+| 界面偏好 | `core/prefs`（`prefs.json`，**与库文件不同目录不同文件**） | **读**：各 `store/*` 用 `getPref` + 归一函数（`normalizeColumns` / `normalizeMode` / `normalizeExpandedGroups`）**一处判**；**写**：`commands/*` 的偏好命令（`setListColumns` / `setMode` / `setColorSignOpen` / `setExpandedGroups`）统一 `savePref`。页面不碰 `core/prefs` |
 | 字节 | `core/storage` | 见 3.1.1 |
 
 #### 3.1.4 投影层（只读，不改真身）
@@ -622,7 +622,7 @@ evalScript("ps_onJsx('" + JSON.stringify(r) + "')")
 | `addEventListener` / `window.addEventListener('keydown')` | `hooks/useDismiss`（Esc 关浮层）/ `hooks/useShortcut`（字母快捷键）/ `hooks/useNoContextMenu`（禁浏览器右键菜单，只 `preventDefault`） | 调 hook；全站只这三个全局监听入口，别在组件里再挂一个 |
 | `getBoundingClientRect` | `hooks/useFloatingPosition` | 调 hook（要锚点宽度就用 `update()` 的返回值） |
 | `createPortal(…, document.body)` | `components/Portal` | 用 `<Portal>` 包住浮层 |
-| `localStorage` | `core/prefs`（界面偏好）/ `core/auth`（登录 token——凭证不进偏好文件，否则清偏好就掉登录） | `hooks/usePersisted` |
+| `localStorage` | `core/prefs`（界面偏好）/ `core/auth`（登录 token——凭证不进偏好文件，否则清偏好就掉登录） | 业务层一律经 `store/*` 读、`commands/*` 写 |
 | `JSON.parse` | `types/json.ts` | 调 `parseJson`（label 必填） |
 | `evalScript` / `callJsx` | `core/ps/*` | 调 `commands` |
 
@@ -732,6 +732,7 @@ core/ps/
 ├─ font.ts      字体应用（ys_* 先检查再应用；ztgl_* 系统字体列表/应用）
 ├─ text.ts      文本属性（zt_* 直调；读返回 raw、写返回 Result<void>）
 ├─ common-use.ts 常用页按钮（cy_*，两条通道各占一半，逐个看原版调用点）
+├─ rename.ts    重命名（cmm_batchName / cmm_setLayerColor，直调 + 只发不读）
 ├─ env.ts       环境变量注入
 └─ diag.ts      能力诊断
 ```
@@ -805,7 +806,12 @@ const palette = useStore((s) => s.palette);   // 只订阅这一个字段
 - 技术错误：`log.error(msg, ctx)`，不弹给用户
 - 禁止 `try/catch` 吞掉错误不留日志
 - 错误文案统一中文，不带技术细节（堆栈只进日志）
-- **文案只有一个入口：`src/types/messages.ts` 的 `MSG`。**（放 `types` 是因为它是唯一所有层都能 import 的层；`core` 也要用它说人话） 任何层要显示给用户的字（失败 / 标签 / 标题 / 菜单 / 空态 / 进度 / 确认）都从这里取；**页面上不许出现中文字面量**，`fail` / `toast` 里也不许再写中文。
+- **消息只有一个入口：`src/types/messages.ts` 的 `MSG`。**（放 `types` 是因为它是唯一所有层都能 import 的层；`core` 也要用它说人话）
+  **判据（一条）：这句话是「系统告诉用户发生了什么」吗？**
+  - **是**（失败 / 成功 / 进度 / 空态 / 确认正文与确认按钮 / 输入校验）⇒ 进 `MSG`；`fail` / `toast` 里不许再写中文。
+  - **不是**（按钮 label 与 `title`、字段 label 与 `placeholder`、菜单项、选项名、分区标题）⇒ **就地写在组件或调用点**，不禁止中文；**也不许反过来建一张「页面文字表」**——那只是把 `MSG` 换个名字，读者与判据都没变（2026-10-31 曾这么写过一版，删了）。
+  - **边界**：同一句话两种用途时，按「用户看到那一刻它在说什么」判——`InputDialog` 的标题「请输入组名」是**提示**（进 `MSG`），按钮叫「确定」是**界面**（就地）。
+  - 存量：`MSG.home` 里那批按钮名与分区标题属遗留（`TD-04-2`），改到哪页顺手退回该页，不追溯。
   - `core/` **不许 import `domain`**，所以 `core` 里也不许出现中文文案：那里只说错误码 + 英文技术 `detail`，中文由消费方用 `MSG` 或码映射给出（现存 72 处属存量债 `TD-04-1`，按文件清，不新写）。
   - 唯一的非文案例外：传给 jsx 的**参数值**（如翻转方向 `'左右'`）必须与官方逐字一致，留在调用点，不算文案。
 

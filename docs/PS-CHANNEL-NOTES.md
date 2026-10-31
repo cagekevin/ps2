@@ -110,7 +110,7 @@ mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字
 ```
 
 - 能力分两档：`core`（自有）失败 = 全部不可用；`vendor` 失败 = 只有应用类不可用，读图层照常。
-- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-28 起 **62 项**，`core/ps/init.test.ts` 会校验「能力表里每个 vendor 能力都在清单里」；`CORE_FUNCS` 同理，7 项）：
+- `VENDOR_FUNCS` 是**实际在用**的函数清单（2026-10-31 起 **64 项**：62 + 重命名页的 `cmm_batchName` / `cmm_setLayerColor`，见 §11.6；`core/ps/init.test.ts` 会校验「能力表里每个 vendor 能力都在清单里」；`CORE_FUNCS` 同理，7 项）：
   通道 1（`ps_onJsx`）+ 渐变 1（`ys_useGradient`）+ 图层样式 1（`ps_ysBtnUseStyle`）+ 环境 1（`Sys_setSystemEnvInfo`）
   + 系统字体 2（`ztgl_initSystemList` / `ztgl_setFont`）+ 字体检查/应用/复制 3（`ys_checkUseFont` / `ys_useFont` / `ys_getFontInfo`）
   + 工具切换 1（`Tool_set`，样式页快速吸色）
@@ -483,6 +483,29 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 登记与验证（2026-10-30 更新）：`05` 原要求先真机 `typeof` 探针再登记，无真机期间按用户指示照抄可运行的 Vue 版实践
 （`ps/src/cep/jsx/action.ts`）。**现在已真机确认**：两个函数都是 `function`，`dz_getActionList` 的返回结构与
 `domain/action-library.mapPsActions` 的解码一致。**只剩 `dz_callAction` 的实际执行没跑**（未跑不等于不成立）。
+
+### 11.6 重命名页（第六条：两条都直调，**只发不读**）
+
+| 函数 | 通道 | 参数 | 说明 |
+|---|---|---|---|
+| `cmm_batchName` | **直调** | `[表达式, 是否过滤子图层]` | 批量重命名当前选中图层；表达式求值**在 jsx 内部**（`%n` / `%%nn` / `###` 怎么展开由它决定） |
+| `cmm_setLayerColor` | **直调** | `[0..7]` | 图层颜色标记，`0` = 清除 |
+
+四条要点：
+
+1. **通道跟参考实现**：官方派发表里 `cmm_batchName` 是走 `jsxHistory` 的那条（自由面板用），
+   可运行的 Vue 参考实现却按直调写。我们跟参考实现；真机若报 `error:缺少必需值`，
+   改能力表一行为 `channel: 'dispatch'` 即可（**UNVERIFIED**）。
+2. **只发不读**：两条的返回结构都没实测，能力表用 `lenientVoid`——只认 `raw.ts` 的约定值表
+   （`-1` 等），认不出按成功。真机拿到原文后必须收紧，别让宽松解析变成永久契约。
+3. **不写 `require`**：两条都作用于「当前选中图层」，但「没选中时是 `-1`、抛错还是静默 no-op」
+   未知，先不判；真机看到静默 no-op 再补（判据同 §11.3 那批 `zt_*` 写函数）。
+4. **前端不求值**：`domain/rename` 只做「删旧标记 + 拼新标记」。任何在前端算 `%n` 的写法
+   都会与 PS 侧结果不一致，而错的是图层名——这类错改不回来。
+
+> 探针：`VENDOR_FUNCS` 已登记这两个名字，`typeof` 真机探针**还没跑**（`06` M0 的出口条件之一）。
+
+---
 
 ## 十二、库文件数据契约（抄错就丢用户数据）
 

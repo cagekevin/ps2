@@ -178,7 +178,6 @@ export function ExportPanel() {
             <span className="mm-common__field-label">{'品质'}</span>
             <TextField
               title={'品质1-100'}
-              variant="wide"
               inputMode="decimal"
               value={draft.quality}
               onChange={(next) => setField('quality', next)}
@@ -195,7 +194,6 @@ export function ExportPanel() {
           <TextField
             title={'选择自定义目录'}
             placeholder={'自定义目录'}
-            variant="fill"
             value={draft.path}
             onChange={(next) => setField('path', next)}
             onSubmit={(value) => {
@@ -232,7 +230,6 @@ export function ExportPanel() {
           <TextField
             title={'命名'}
             placeholder={'重命名'}
-            variant="fill"
             value={flag(config.layerName) ? layerName : draft.name}
             onChange={(next) => setField('name', next)}
             onSubmit={(value) => write('name', value.trim())}
@@ -283,14 +280,12 @@ export function ExportPanel() {
         <div className="mm-u-row mm-common__panel-row">
           <TextField
             title={'导出宽度'}
-            variant="half"
             value={draft.width}
             onChange={(next) => setField('width', next)}
             onSubmit={(value) => writeCompress('width', value.trim())}
           />
           <TextField
             title={'导出高度'}
-            variant="half"
             value={draft.height}
             onChange={(next) => setField('height', next)}
             onSubmit={(value) => writeCompress('height', value.trim())}
@@ -298,7 +293,6 @@ export function ExportPanel() {
         </div>
         <TextField
           title={'水印文件'}
-          variant="fill"
           value={draft.watermark}
           onChange={(next) => setField('watermark', next)}
           onSubmit={(value) => {

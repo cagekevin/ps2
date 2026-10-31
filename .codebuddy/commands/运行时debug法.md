@@ -54,7 +54,7 @@
     【断】产物里缺 `lib/all.decrypted.js` ⇒ 面板起来但所有 PS 能力失联
 ```
 
-**真相源契约（红线，整条链路守此）**：**`src/core/**` 是唯一 PS 出口**（ADR）；页面只经 `useCommand` 拿数据；命令入口是 `src/commands/registry.ts` 的 `execute`（ADR）；**stores 只读投影，不写状态**。
+**真相源契约（红线，整条链路守此）**：**`src/core/**` 是唯一 PS 出口**（ADR）；页面只经 `hooks/useRunCommand` 调命令；命令入口是 `src/commands/<域>.ts` 里 `export` 的函数（无注册表）；**stores 只读投影，不写状态**。
 
 ---
 
@@ -62,15 +62,13 @@
 
 ```
 [1] 页面发起
-    src/features/** → src/components/command/useCommand.ts → 命令 id + payload
-    【断】🔴 页面 import `@/core/**`（连 `import type` 也不行）⇒ `npm run lint` 红
-        页面 import `@/commands/**` 的**值** ⇒ 同上（只许 `import type` 拿 payload 类型）
+    src/features/** → src/hooks/useRunCommand.ts → src/commands/<域>.ts 的命令函数
+    【断】🔴 页面 import `core/**`（连 `import type` 也不行）⇒ `npm run lint` 红
+        页面 import `commands/**` 的**值** ⇒ 同上（只许 `import type`）
         ↓
-[2] 命令注册与执行
-    src/commands/registry.ts：defineCommand 注册；`execute` 是**唯一执行入口**
-    payload 形状在 src/commands/payloads.ts（id 必须在表内）
-    【断】🔴 有第二个执行入口（页面自己 new 了一个 service）⇒ 两条路 = 第二份真相
-        payload 与表里不一致 ⇒ 漏登记在 typecheck 期暴露不了，靠 `npm run lint`
+[2] 命令执行
+    命令层 = 直接 export 的 async 函数，返回 `Result<T>`；**没有注册表、没有命令 id**
+    【断】🔴 命令层抛异常 / 返回 boolean / 页面自己 catch ⇒ 失败绕开 `useRunCommand` 的留痕
         ↓
 [3] PS 能力调用
     src/core/ps/<域>.ts（按域分文件）→ src/core/cep/bridge.ts（队列 + 超时 + `ERR:` 协议）

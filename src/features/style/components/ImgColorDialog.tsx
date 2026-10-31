@@ -75,12 +75,12 @@ export function ImgColorDialog({
         onKeyDown={onKeyDown}
       >
         <div className="mm-imgcolor__title">提取的颜色</div>
-        <div className="mm-imgcolor__row">
+        <div className="mm-u-tiles">
           {hexes.map((hex, index) => (
             <button
               key={`${hex}-${index}`}
               type="button"
-              className="mm-imgcolor__swatch"
+              className="mm-swatch"
               style={{ '--mm-swatch': hex } as CSSProperties}
               title="左键应用，右键删除"
               onClick={() => onApplyColor(hex)}
@@ -88,7 +88,7 @@ export function ImgColorDialog({
             />
           ))}
         </div>
-        <div className="mm-imgcolor__row">
+        <div className="mm-u-tiles">
           <Button variant="primary" className="mm-imgcolor__btn" onClick={() => onSaveColorGroup(hexes)}>
             保存到颜色
           </Button>
@@ -100,7 +100,7 @@ export function ImgColorDialog({
         <div className="mm-divider mm-imgcolor__hr" />
 
         <div className="mm-imgcolor__title">提取的渐变色</div>
-        <div className="mm-imgcolor__row">
+        <div className="mm-u-tiles">
           {pairs.map(({ pair, css }) => (
             <button
               key={css}

@@ -143,6 +143,7 @@ button{
 .mm-font,
 .mm-font-panel,
 .mm-home,
+.mm-rename,
 .mm-settings,
 .mm-style{
   display: flex;
@@ -216,6 +217,64 @@ button{
  * 不自己写 `justify-content` —— 那样就第二个横排入口了（§6）。
  * 独立成块的只有 divider 与 btn-grid（grid 不用 justify-content，不受那条约束）。
  */
+
+/* 文字 tab 条：一档一个按钮，**选中只换文字色**（不加下划线、不加底色块），档间一条亮竖线。
+   来源是样式页的四库导航（`.mm-style__tabs` 已迁到这里），重命名页的模式条是第二个使用者。
+   两种布局各一个修饰符，**不是可选参数**：
+   **只有等分铺满一种**（2026-10-31 删掉 `--start` 靠左档：它只服务重命名页的模式条，
+   而那一页的样式已全部推倒重做）。
+   竖线只在等分布局里用（靠左布局要靠 `gap`，再画线就成了分隔线语法）。 */
+.mm-tabs{
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.mm-tabs__cell{
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+
+.mm-tabs__tab{
+  width: 100%;
+  min-width: 0;
+  height: var(--mm-tab-line-h);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  /* 文字居中：`button{ text-align: inherit }` 会让它跟着 body 左对齐 */
+  text-align: center;
+  cursor: pointer;
+}
+
+.mm-tabs__tab--active{
+  color: var(--mm-color-accent);
+}
+
+/* tab 是按钮，hover 叠底；选中与否只由文字色表达（§7 规则 12） */
+.mm-tabs__tab:hover{
+  background: var(--mm-color-bg-hover);
+}
+
+/* 段间竖线用**亮线**档：暗线 `--mm-color-border`(#2e2e2e) 落在 #363636 上几乎看不见 */
+.mm-tabs__line{
+  flex: 0 0 auto;
+  width: var(--mm-border-w);
+  height: var(--mm-tab-line-h);
+  background: var(--mm-color-border-control);
+}
+
+/* 贴左的换行排：一排小块（chip / 色块 / 格子）挨着排、排满换行，**不拉伸**。
+   与 `.mm-u-row--wrap` 的区别就一条：那个是 `space-between`（两端铺满），这个是从左往右贴。
+   判据：这些块该**铺满**还是该**挨着** —— 铺满用 `.mm-u-row--wrap`，挨着用这里
+   （`gap` 是块与块的最小间距，不是用来分配剩余空间的）。 */
+.mm-u-tiles{
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-inline);
+  align-items: center;
+}
 
 /* 分隔线：线只有两档（§7 规则 8）—— 默认暗线（页面 / 列表分隔），`--strong` 亮线（控件外缘）。
    线自己是 flex item，`align-self: stretch` 取满交叉轴，厚度走 `--mm-border-w`。

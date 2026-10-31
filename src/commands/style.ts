@@ -10,6 +10,7 @@
  */
 
 import { openFile, saveFile } from '../core/dialog';
+import { savePref } from '../core/prefs';
 import { isRecord } from '../types/guards';
 import { MSG } from '../types/messages';
 import { exportKuArchive, importKuArchive, kuArchiveDefaultName, type KuImportResult } from '../repo/ku-archive';
@@ -58,6 +59,21 @@ export {
   renameKuGroup,
   renameKuItem
 };
+
+/* ---------------- 界面偏好（1）：本页偏好的唯一落盘入口 ---------------- */
+
+/**
+ * 记住展开的分组（切走再回来保持原样）。
+ *
+ * 与 `commands/action.setListColumns`、`commands/rename.setMode` 同一形状：
+ * store 只改内存、命令负责落盘，页面不 import `core/prefs`。
+ * 偏好丢了最多回到「只展开第一组」，不阻断业务。
+ */
+export async function setExpandedGroups(next: number[]): Promise<Result<void>> {
+  useStyleLibraryStore.getState().setExpandedGroups(next);
+  await savePref(EXPANDED_GROUPS_KEY, next);
+  return ok(undefined);
+}
 import { isForegroundSetd, startHostEventWait } from '../core/cep/ps-events';
 import {
   buildColorPairGradients,
@@ -66,6 +82,7 @@ import {
   type GradientLibraryItem
 } from '../domain/image-color';
 import { updateSwatchItems } from '../repo/swatch-repo';
+import { EXPANDED_GROUPS_KEY, useStyleLibraryStore } from '../store/style-library';
 import type { JsonMutator } from '../repo/json-file';
 import { emitAppEvent } from '../core/cep/bridge';
 import { log } from '../core/logger';

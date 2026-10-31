@@ -22,7 +22,6 @@ import {
   readTextResult,
   removeFile,
   writeTextAtAtomic,
-  writeTextAtomic,
   type StorageRoot
 } from '../core/storage';
 import {
@@ -41,6 +40,7 @@ import { fail, failWithDetail, ok, type Result } from '../types/result';
 import {
   readJsonFile,
   readOrEmpty,
+  replaceFileText,
   updateOrCreateJsonFile,
   type JsonMutator
 } from './json-file';
@@ -85,6 +85,19 @@ function decodeLibraryFile(raw: unknown): Result<LibraryRead> {
   return ok({ groups: decoded.value.groups, dropped: decoded.value.dropped });
 }
 
+/**
+ * **写路径**的解码：只要仓库本体（裸数组）。
+ *
+ * 与读路径分开是必须的：`LibraryRead` 多了 `dropped`（读视图的记账），
+ * 拿它当写入值，文件就会变成 `{ groups, dropped }` —— 下一次 `decodeLibrary` 要求顶格是数组，
+ * 直接 `CORRUPT`，用户的动作库等于被这次编辑写坏（`TD-03-3`，单测 `action-repo.test.ts` 钉住）。
+ */
+function decodeLibraryGroups(raw: unknown): Result<ActionGroup[]> {
+  const decoded = decodeLibrary(raw);
+  if (decoded.status === 'error') return decoded;
+  return ok(decoded.value.groups);
+}
+
 export function readIndex(): Result<WarehouseIndex> {
   return readOrEmpty(
     readJsonFile(ACTION_INDEX_FILE, ROOT, '动作库索引', decodeIndexFile),
@@ -123,7 +136,8 @@ export function readLibrary(): Result<LibraryRead> {
   );
   if (read.status === 'error') return read;
 
-  return ok({ groups: read.value.groups, dropped: read.value.dropped, fileName: entry.fileName });
+  /* 只回接口声明的两个字段：`fileName` 由索引决定，写路径在 `updateLibrary` 内部自己取 */
+  return ok({ groups: read.value.groups, dropped: read.value.dropped });
 }
 
 /** 改当前仓库文件：只给出 `groups`，文件名由索引决定（调用方不自己拼） */
@@ -142,17 +156,9 @@ export async function updateLibrary(
     entry.fileName,
     ROOT,
     `动作库「${entry.name}」`,
-    (raw) => {
-      return decodeLibraryFile(raw);
-    },
-    (current) => {
-      const next = mutator(current.groups);
-      if (next.status === 'error') return next;
-      if (!next.value) return ok(null);
-      /* 逐字段显式列出，不 `{...current}` 一把带过：写回时 `dropped` 只是随行记账 */
-      return ok({ groups: next.value, dropped: current.dropped });
-    },
-    { missing: () => ({ groups: defaultLibrary(), dropped: [] }) }
+    decodeLibraryGroups,
+    mutator,
+    { missing: defaultLibrary }
   );
 }
 
@@ -219,7 +225,7 @@ export function readWarehouseText(fileName: string): Result<string> {
  * 与 `writeArchive` 分开：那个走用户选的绝对路径，这个走 `legacy` 根 —— 混用会把预设写进用户桌面。
  */
 export function writeWarehouseFile(fileName: string, text: string): Promise<Result<void>> {
-  return writeTextAtomic(fileName, text, ROOT);
+  return replaceFileText(fileName, ROOT, text);
 }
 
 /* ---------------- 整包（云同步的两个出入口） ---------------- */
@@ -301,7 +307,7 @@ export async function applyBundle(bundle: ActionBundle): Promise<Result<void>> {
     }
   }
 
-  return writeTextAtomic(ACTION_INDEX_FILE, bundle.indexText, ROOT);
+  return replaceFileText(ACTION_INDEX_FILE, ROOT, bundle.indexText);
 }
 
 /* ---------------- `.dzx`（用户选路径：`CONVENTIONS` §5 授权例外） ---------------- */

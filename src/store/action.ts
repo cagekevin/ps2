@@ -2,9 +2,9 @@
  * 【范本】动作库的只读投影
  *
  * 只做两件事：读 `repo/action-repo` + 把 `columns` 从 `core/prefs` 读出来。
- * **不写文件**、不判断好坏——失败臂原样留在 `reasons` 里，由页面用 `StateHint` 展示。
- * `reasons` 只存**失败臂**（`Failure`），`null` = 最近一次读没有失败；存整条 `Result` 会让
- * 「ok」与「没读过」同形（`TD-09-3`）。
+ * **不写文件**、不判断好坏——失败臂原样留在 `failures` 里，由页面用 `StateHint` 展示。
+ * `failures` 只存**失败臂**（`Failure`），`null` = 那个来源最近一次读没有失败；存整条 `Result` 会让
+ * 「ok」与「没读过」同形（`TD-09-3`）。名字与单源的 `failure` 成对：单数一个、复数一张表。
  *
  * 写盘后的重读一律由命令层调 `load()`（`05` §3.10 D：数据类成功 → 重读；参数类只改本地）。
  */
@@ -34,7 +34,8 @@ interface ActionState {
   /** 文件里认不出而跳过的动作项；页面必须显示「N 项无法识别」 */
   dropped: Dropped[];
   columns: ActionColumns;
-  reasons: { index: Failure | null; library: Failure | null };
+  /** 两个来源各自的失败臂（键 = 来源，不另起名字） */
+  failures: { index: Failure | null; library: Failure | null };
   load: () => void;
   /** 只改本地 + prefs（`setListColumns` 命令调它，不重读文件） */
   setColumns: (columns: ActionColumns) => void;
@@ -45,7 +46,7 @@ export const useActionStore = create<ActionState>()((set, get) => ({
   groups: defaultLibrary(),
   dropped: [],
   columns: normalizeColumns(getPref<unknown>(COLUMNS_KEY, 2)),
-  reasons: { index: null, library: null },
+  failures: { index: null, library: null },
 
   load() {
     const previous = get();
@@ -56,7 +57,7 @@ export const useActionStore = create<ActionState>()((set, get) => ({
       index: index.status === 'ok' ? index.value : previous.index,
       groups: library.status === 'ok' ? library.value.groups : previous.groups,
       dropped: library.status === 'ok' ? library.value.dropped : [],
-      reasons: {
+      failures: {
         index: index.status === 'error' ? index : null,
         library: library.status === 'error' ? library : null
       }

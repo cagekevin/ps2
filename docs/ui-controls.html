@@ -503,7 +503,7 @@
 <table>
 <tr><th>控件</th><th>入口</th><th>样式</th><th>职责 / 当前形态</th></tr>
 <tr><td>Button / Input / Field</td><td><code>components/ui</code></td><td><code>ui.css</code></td><td>基础控件表面；<code>Input</code> 是全仓唯一输入框渲染入口（<code>variant</code> 两档）</td></tr>
-<tr><td>TextField</td><td><code>components/TextField</code></td><td><code>text-field.css</code></td><td>定宽输入框（三档宽度 + 左图标 + Enter 提交），内部渲染 <code>ui.Input</code></td></tr>
+<tr><td>TextField</td><td><code>components/TextField</code></td><td><code>text-field.css</code></td><td>输入框外壳（左图标 / 右插槽 + Enter 提交，宽度吃满容器），内部渲染 <code>ui.Input</code></td></tr>
 <tr><td>SelectBox</td><td><code>components/SelectBox</code></td><td><code>select-box.css</code></td><td>下拉选择；面板挂 <code>.mm-popover</code> + <code>Portal</code>，宽度 = 触发器宽</td></tr>
 <tr><td>CheckBox</td><td><code>components/CheckBox</code></td><td><code>check-box.css</code></td><td>12×12 / 圆角 3；根排列、隐藏 input、标签省略已上移 <code>global.css</code></td></tr>
 <tr><td>RadioButton</td><td><code>components/RadioButton</code></td><td><code>radio-button.css</code></td><td>12×12 正圆；与 CheckBox 共用 <code>global.css</code> 的根与标签规则</td></tr>
@@ -534,7 +534,7 @@
 <tr><td>IconButton</td><td>默认 / 选中 / 禁用</td><td>禁用 <code>opacity .4</code></td><td>hover、选中底色</td></tr>
 <tr><td>SelectBox</td><td>收起 / 展开 / 项 / 当前项 / 禁用</td><td>展开后出面板、当前项有对勾位</td><td>项 hover、当前项底色</td></tr>
 <tr><td>Chevron</td><td>展开 / 收起（<code>--closed</code>）</td><td>收起 <code>rotate(-90deg)</code>，120ms</td><td>—（纯几何，未受影响）</td></tr>
-<tr><td>TextField</td><td><code>--wide</code> / <code>--half</code> / <code>--fill</code></td><td>三档宽度（80 / 50%-6 / 撑满）；<code>--compact</code> 已删</td><td>—（纯尺寸）</td></tr>
+<tr><td>TextField</td><td>—（无档位）</td><td>宽度吃满容器（<code>flex: 1 1 auto</code>）；<code>--wide</code> / <code>--half</code> / <code>--fill</code> 三档与定宽 token <code>--mm-input-w-wide</code> 已于 2026-10-31 删除（<code>TD-09-11</code>）</td><td>—</td></tr>
 <tr><td>TileButton</td><td>默认 / hover / <code>--active</code> / <code>--filled</code> / <code>--disabled</code></td><td>角标位置、禁用态</td><td>hover 叠白、展开中凹底、已填充标记色</td></tr>
 <tr><td>TagChip</td><td>默认 / <code>--on</code>（选中）</td><td>—</td><td>选中底色与描边（全部靠颜色）</td></tr>
 <tr><td>FontListItem</td><td>默认 / hover / <code>--active</code> / <code>--unavailable</code></td><td>不可用项的文字说明</td><td>hover 底、当前项底、不可用灰化</td></tr>
@@ -629,7 +629,7 @@
 <tr><td><code>SelectBox</code></td><td><code>src/components/SelectBox/index.tsx</code></td><td>options, value, onChange, icon, arrowIcon = &#39;iconxiala&#39;, arrowSize = 12, className = &#39;&#39;, disabled = false, footer, onRemove</td></tr>
 <tr><td><code>Spin</code></td><td><code>src/components/Spin/index.tsx</code></td><td>tip, mask = false</td></tr>
 <tr><td><code>StateMask</code></td><td><code>src/components/StateMask/index.tsx</code></td><td>overlay, children</td></tr>
-<tr><td><code>TextField</code></td><td><code>src/components/TextField/index.tsx</code></td><td>value, onChange, onSubmit, variant = &#39;wide&#39;, title, placeholder, icon, inputMode = &#39;text&#39;, disabled = false</td></tr>
+<tr><td><code>TextField</code></td><td><code>src/components/TextField/index.tsx</code></td><td>value, onChange, onSubmit, title, placeholder, icon, rightSlot, inputMode = &#39;text&#39;, disabled = false</td></tr>
 <tr><td><code>ToastProvider</code></td><td><code>src/components/Toast/index.tsx</code></td><td>children</td></tr>
 <tr><td><code>Button</code></td><td><code>src/components/ui/index.tsx</code></td><td>variant = &#39;ghost&#39;, className = &#39;&#39;, type = &#39;button&#39;, ...rest</td></tr>
 <tr><td><code>Field</code></td><td><code>src/components/ui/index.tsx</code></td><td>label, hint, children</td></tr>
@@ -969,7 +969,7 @@
 <tr><td><code>src/components/CheckBox/check-box.css</code></td><td>14</td><td>9</td><td>0/0/0/0/0</td><td>CheckBox 四态</td></tr>
 <tr><td><code>src/components/RadioButton/radio-button.css</code></td><td>6</td><td>2</td><td>0/0/0/0/0</td><td>RadioButton 四态</td></tr>
 <tr><td><code>src/components/SelectBox/select-box.css</code></td><td>47</td><td>22</td><td>0/0/0/0/0</td><td>下拉（唯一实现：选项列表）</td></tr>
-<tr><td><code>src/components/TextField/text-field.css</code></td><td>21</td><td>8</td><td>0/0/0/0/0</td><td>Input 的定宽外壳</td></tr>
+<tr><td><code>src/components/TextField/text-field.css</code></td><td>17</td><td>7</td><td>0/0/0/0/0</td><td>Input 的外壳（图标 / 插槽 / Enter；宽度吃满容器）</td></tr>
 <tr><td><code>src/components/IconButton/icon-button.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>IconButton</td></tr>
 <tr><td><code>src/components/Chevron/chevron.css</code></td><td>5</td><td>1</td><td>0/0/0/0/0</td><td>Chevron</td></tr>
 <tr><td><code>src/components/PageHeader/page-header.css</code></td><td>13</td><td>6</td><td>0/0/0/0/0</td><td>PageHeader</td></tr>

@@ -40,7 +40,8 @@ interface CommonUseState {
    * 存 `Result` 而不是一句字符串：失败提示要交给 `StateHint`，由**码**决定说什么、
    * 要不要给重试（`IO_ERROR` 才给）——存成字符串就只能自己拼文案，等于第二套提示。
    */
-  reasons: { tiles: Failure | null; options: Failure | null };
+  /** 两个来源各自的失败臂（键 = 来源） */
+  failures: { tiles: Failure | null; options: Failure | null };
   /** 只读 repo + prefs，不写任何文件 */
   load: () => void;
   /**
@@ -59,7 +60,7 @@ export const useCommonUseStore = create<CommonUseState>()((set, get) => ({
   dropped: [],
   options: pickCommonUseOptions({}),
   missingOptions: [],
-  reasons: { tiles: null, options: null },
+  failures: { tiles: null, options: null },
   guideOn: false,
 
   load() {
@@ -74,7 +75,7 @@ export const useCommonUseStore = create<CommonUseState>()((set, get) => ({
       dropped: file.status === 'ok' ? file.value.dropped : [],
       options: options.status === 'ok' ? options.value : previous.options,
       missingOptions: missing,
-      reasons: {
+      failures: {
         tiles: file.status === 'error' ? file : null,
         options: options.status === 'error' ? options : null
       }

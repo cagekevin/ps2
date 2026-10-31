@@ -30,16 +30,16 @@
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
 | 按钮 | `components/ui` 的 `Button`（**全仓唯一渲染入口**，支持 `ref`）。`variant` **闭合在类型里**，写错编译失败：<br>**不传 = 实心灰底**（`--mm-color-bg-raised`）—— 这是绝大多数：抽屉里的动作按钮、弹窗的取消/确定、数值档位、九宫格预设；<br>`ghost` = 透明无底 —— 只给**底栏图标按钮**与**行内小动作**（下拉项删除、「复制/清空」这类文字链）；<br>`primary` = 蓝底（一行里唯一的主操作）；<br>`danger` = 红字（不可逆动作的确认）。<br>判据：**原版截图里凡是成块的按钮都是灰底实心**，透明只出现在「它旁边已经有底」的场合 | 手写 `<button className="mm-btn …">`（那就是第二个入口，2026-10-31 已从 25 处收净）；页面写底色 / 圆角 / 字号；把本该实心的按钮挂成 `ghost`（会变成一段没有边界的文字） |
-| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分两档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」 |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，**没有 `variant`**：表面按所在表面走，见规则 15 / 19）；「左图标 + 右插槽 + Enter 提交」用 `components/TextField`（**宽度吃满容器，组件不提供宽度档位**；某处真要定宽就给那个页面的局部 css）。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」、给输入框加宽度档位 prop |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
-| **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满**。**行里有 3 个以上元素、其中几个要挨在一起时，先分组**（嵌一层 `.mm-u-row` + 该组的 `gap`）—— 平铺会让 `space-between` 把空隙**均分成 n-1 份**，本该贴住的「标签 + 控件」被推到行中间（2026-10-31 导出抽屉的「品质」就是这么飘的）。**但别把这条用到该均分的地方**：一排图标按钮本来就该**均分铺满**（一排 6 个就是 6 等分），给它加 `flex-start` 会挤成左边一坨、右边空一片 —— §6.2 的 `.mm-icon-row` 只补 `gap`，不加 `justify-content` | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
+| **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满**。**行里有 3 个以上元素、其中几个要挨在一起时，先分组**（嵌一层 `.mm-u-row` + 该组的 `gap`）—— 平铺会让 `space-between` 把空隙**均分成 n-1 份**，本该贴住的「标签 + 控件」被推到行中间（2026-10-31 导出抽屉的「品质」就是这么飘的）。**换行且要挨着**（chip 排 / 色块排 / 格子排）用组合层 `.mm-u-tiles`（§6.2），不是本条。**但别把这条用到该均分的地方**：一排图标按钮本来就该**均分铺满**（一排 6 个就是 6 等分），给它加 `flex-start` 会挤成左边一坨、右边空一片 —— §6.2 的 `.mm-icon-row` 只补 `gap`，不加 `justify-content` | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
 | 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（浅色底 / 文字色 / 圆角 / 投影，**无描边**，见 §7 规则 16）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 （`hooks/input-method-enter` 里的 `enterSubmit`，判据 + `preventDefault` + 执行三件事一处）。
 
-三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层定宽容器与左图标。
+三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层外壳（左图标 / 右插槽 / Enter 提交）。
 字体面板、输入弹窗、层级编辑、标签输入、就地编辑**全部渲染 `Input`**，各自的 css 只覆盖
 宽度 / 间距 / 文字色 / 焦点描边——**底色与圆角不许覆盖**，它们只在一个地方给
 （`ui.css` 的 `.mm-input, .mm-input-surface`）。改输入框颜色 = 改 `tokens.css` 的 `--mm-color-bg-input` 一行。
@@ -76,23 +76,26 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 ---
 
-### 6.2 组合层（7 件）
+### 6.2 组合层（10 件）
 
 > **为什么有这一层**：§6 那张表是**单个控件**（Button / Input / Select），`global.css` 的 `.mm-u-*` 是**排列方向**。——
 > 中间缺一层：原版截图里反复出现、由多个控件组成的固定形状 一行图标、一排等宽按钮、一个标签片、一条数据健康提示、一个弹窗壳。
 > 2026-10-30 之前它们被各页面各自实现（同一条警告条有三份：`mm-common__warning` / `mm-font__warning` / `mm-action__warning`；
 > 弹窗壳三份：`Confirm` / `InputDialog` / `TagCreator`），视觉统一时必然漏页 —— 所以上收到这里。
 >
-> **这一层只有 CSS 契约，没有 TSX**：7 件都不带行为，页面挂类名即用。带行为的仍是 §6 的控件。
+> **这一层只有 CSS 契约，没有 TSX**：10 件都不带行为，页面挂类名即用。带行为的仍是 §6 的控件。
 >
 > **值不在这里**：§7 规则 1–18 照样生效（不许色值、不许 `px`、间距进六档）。本表只写「用哪一个、什么时候必须用」。
 
 | 组合件 | 类名 | 判据（命中就必须用它，不许自己写一份） | 实现位置 |
 |---|---|---|---|
 | 分隔线 | `.mm-divider`，竖线档 `.mm-divider--vertical` | 任何一条分隔线（线色只有暗线一档，规则 8；同排之间的隔断用 `--vertical`） | `global.css` |
+| 文字 tab 条 | `.mm-tabs` + `__cell` / `__tab` / `--active` / `__line`；靠左档 `.mm-tabs--start` | 并排的**文字**档位切换（样式页四库导航 / 重命名页默认·替换）。**选中只换文字色**，不加下划线、不加底色块；档间竖线 `__line` 只用亮线。布局两档：默认**等分铺满**，`--start` **按内容宽靠左**（右侧还要放工具按钮时用） | `global.css` |
+| 贴左换行排 | `.mm-u-tiles` | 一排**小块**排满后换行、且要**挨着**：chip 排（最近使用 / 序列 / 筛选标签）、色块排（图层颜色 / 提取的颜色）、样式页格子排。**与 `.mm-u-row--wrap` 的分工**：那个是 `space-between`（两端铺满、剩余空隙均分），这个是 `flex-start`（贴左、`gap` 只当最小间距）—— 判据是「这些块该铺满还是该挨着」 | `global.css` |
 | 图标排 | `.mm-icon-row`（**修饰符**，与 `.mm-u-row` 同挂） | 一排 ≥2 个**同尺寸**图标按钮（对齐排 / 分布排 / 翻转 / 字重 / 样式排） | `global.css` |
 | 按钮排 | `.mm-btn-grid` | ≥2 个**等宽**按钮排或网格（缩放档位 / 字号预设 / 内边距预设 / 九宫格点阵）；列数由 `--mm-btn-grid-cols` 注入（§14.1 允许的运行时值） | `global.css` |
 | 标签片 | `.mm-chip`，选中态 `.mm-chip--on` | tag / chip：扁平的**可点小片**（筛选标签 / 最近使用 / 序列 / 动作项）。底 / 文字色 / hover 由**所在表面**声明（规则 19），所以同一个类在深色面板与浅色浮层里都能用，**没有第二个「浅色版」类** | `ui.css` |
+| 纯色块 | `.mm-swatch` | **只有形与色**的方块（边长 `--mm-swatch-w/h`、小圆角、背景取调用点注入的 `--mm-swatch`、hover 描边不叠底）：吸色弹窗的「提取的颜色」、重命名页的图层颜色。**与样式页 `.mm-style__item--color` 的区别**：那个是**可编辑格子**，还带底 / 选中 / 编辑态，不是同一个东西 | `ui.css` |
 | 角标 | `.mm-badge`，语义档 `--count` | 贴在别的东西上的**小计数或标记**（筛选计数）。档位只在**有消费者**时才加（2026-10-31 删掉零消费者的 `--info` / `--warn` 两档） | `ui.css` |
 | 数据健康提示 | `.mm-notice`，语义档 `--warn` / `--error` | 「N 项无法识别」「分类筛选已禁用」这类**读到了但数据不全**的内联提示。档位只在**有消费者**时才加 | `ui.css` |
 | 弹窗壳 | `.mm-modal` + `__head` / `__title` / `__body` / `__actions` / `__grow`（后两个是 `.mm-u-row` 修饰符） | 居中的小弹窗（确认 / 输入 / 新建标签）；全屏加载走 `.mm-modal-mask` + `Loading`，不挂 `.mm-modal` | `ui.css` |

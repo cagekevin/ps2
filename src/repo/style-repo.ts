@@ -158,7 +158,7 @@ export function readKuGroupId(
  *
  * 三条约束由 `repo/json-file.ts` 保证，这里只做「库文件名解析 + 库格式解码」：
  *   1. 读失败直接返回，**不执行 mutator**
- *   2. 写入走 writeTextAtomic（备份 .bak + 串行）
+ *   2. 写入走 `json-file`（备份 `.bak` + 同文件队列），本文件不直接碰 `core/storage` 写
  *   3. 写失败返回 IO_ERROR，不静默成功
  */
 export async function mutateRawGroups(

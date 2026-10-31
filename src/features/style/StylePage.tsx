@@ -55,7 +55,7 @@ interface DescribeTarget {
 export default function StylePage() {
   const load = useStyleLibraryStore((state) => state.load);
   const loadingLibrary = useStyleLibraryStore((state) => state.loading);
-  const indexResult = useStyleLibraryStore((state) => state.indexResult);
+  const indexFailure = useStyleLibraryStore((state) => state.indexFailure);
   const warehouses = useStyleLibraryStore((state) => state.warehouses);
   const activeIndex = useStyleLibraryStore((state) => state.activeIndex);
   const activeKind = useStyleLibraryStore((state) => state.activeKind);
@@ -63,7 +63,7 @@ export default function StylePage() {
   const selectWarehouse = useStyleLibraryStore((state) => state.selectWarehouse);
   const libraries = useStyleLibraryStore((state) => state.libraries);
   const groups = useStyleLibraryStore((state) => state.libraries[state.activeKind]);
-  const result = useStyleLibraryStore((state) => state.results[state.activeKind]);
+  const failure = useStyleLibraryStore((state) => state.failures[state.activeKind]);
 
   /* 悬停浮层：enter 时记下项与锚点元素，leave 清空 */
   const [describe, setDescribe] = useState<DescribeTarget | null>(null);
@@ -185,29 +185,27 @@ export default function StylePage() {
         {loadingLibrary ? <span className="mm-style__loading">读取中…</span> : null}
       </div>
 
-      {indexResult && indexResult.status !== 'ok' ? (
-        <StateHint result={indexResult} onRetry={() => void load()} />
+      {indexFailure ? (
+        <StateHint result={indexFailure} onRetry={() => void load()} />
       ) : (
         <>
           {/* 四等分 + 段间 1px 竖线（原版 .switch 结构） */}
-          <div className="mm-style__tabs">
+          <div className="mm-tabs">
             {KU_KINDS.map((kind, index) => (
-              <div key={kind} className="mm-style__tab-cell">
+              <div key={kind} className="mm-tabs__cell">
                 <button
                   type="button"
-                  className={`mm-style__tab${kind === activeKind ? ' mm-style__tab--active' : ''}`}
+                  className={`mm-tabs__tab${kind === activeKind ? ' mm-tabs__tab--active' : ''}`}
                   onClick={() => setActiveKind(kind)}
                 >
                   {KU_TAB_LABELS[index]}
                 </button>
-                {index !== KU_KINDS.length - 1 ? <span className="mm-style__tab-line" /> : null}
+                {index !== KU_KINDS.length - 1 ? <span className="mm-tabs__line" /> : null}
               </div>
             ))}
           </div>
 
-          {result && result.status !== 'ok' ? (
-            <StateHint result={result} onRetry={() => void load()} />
-          ) : null}
+          {failure ? <StateHint result={failure} onRetry={() => void load()} /> : null}
 
           <div className="mm-style__list">
             {(groups ?? []).map((group: KuGroup, index: number) => {
@@ -261,7 +259,7 @@ export default function StylePage() {
                   )}
 
                   {isOpen ? (
-                    <div className={`mm-style__items mm-style__items--${activeKind}`}>
+                    <div className="mm-u-tiles">
                       {group.items.map((item, itemIndex) => (
                         <ItemView
                           key={`${item.name}-${itemIndex}`}
@@ -326,7 +324,8 @@ export default function StylePage() {
               );
             })}
 
-            {!groups?.length && !newGroup && result?.status === 'ok' ? (
+            {/* 「读到但是空的」= 有值数组 + 无失败臂；「没读过」不显示空态 */}
+            {groups !== null && !failure && !groups.length && !newGroup ? (
               <StateHint empty="这个库是空的" />
             ) : null}
 

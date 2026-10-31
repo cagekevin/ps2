@@ -9,6 +9,7 @@ import { fail, failWithDetail, ok } from '../types/result';
 import {
   mutateJsonFile,
   readOrEmpty,
+  replaceFileText,
   updateJsonFile,
   updateOrCreateJsonFile
 } from './json-file';
@@ -289,5 +290,15 @@ describe('并发写：mutator 拿到的是队列内最新记录', () => {
 
     /* 第二次看到 0 条 = 真的重读了；若拿到读缓存就会看到 1 条，patchItem 的存在性判断随即失效 */
     expect(seen).toEqual([1, 0]);
+  });
+});
+
+describe('replaceFileText（原文整份替换）', () => {
+  it('一字不改地写盘：不 JSON.stringify、不去空白', async () => {
+    h.files.set(`data:${FILE}`, '[]');
+
+    const result = await replaceFileText(FILE, 'data', '  { "a": 1 }\n');
+    expect(result.status).toBe('ok');
+    expect(h.files.get(`data:${FILE}`)).toBe('  { "a": 1 }\n');
   });
 });

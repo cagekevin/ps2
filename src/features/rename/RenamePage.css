@@ -1,0 +1,34 @@
+/*
+ * 重命名页样式（`/rename`）—— 照兄弟页 `ActionPage.css` 的写法：只写 flex 容器，
+ * 间距一律 `--mm-space-2`（组间 8），页面撑满 / 页边 / 滚动条槽由 `global.css` 的页面根容器组给。
+ *
+ * **本页不新造任何控件皮肤**：模式条走 `.mm-tabs`（与样式页同一份）、预设项走 `Button`
+ * （与动作页动作项同一份 26 高按钮）、色块走 `.mm-swatch`（与吸色弹窗同一份）、
+ * 图标走 `IconButton`（全仓唯一图标按钮）、输入走 `TextField` + 它的 `rightSlot`。
+ */
+
+.mm-rename__body{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+  min-height: 0;
+}
+
+.mm-rename__list{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+  /* **不许 `flex:1`**：这个容器后面还有分隔线 + 图层颜色标记，
+     它一伸展就把那两块顶到底部，中间留出一大片空白（2026-10-31 截图里的那条大缝）。
+     滚动由父级 `.mm-rename__body` 负责（与 Vue 版 `u-scroll` 在 body 上一致）。 */
+}
+
+/* 一组 = 组头 + 预设项，组内间距同样取组间 8（与动作页 `.mm-btn-grid` 在组内的取法一致） */
+.mm-rename__group{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+}
+
+/* 预设项排布：走组合层 `.mm-u-tiles`（贴左换行 + 6），只注入本页不需要额外的值 */

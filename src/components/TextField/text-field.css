@@ -1,21 +1,23 @@
 /*
- * 定宽输入框（三档 `variant`）+ 左图标 + Enter 提交。
+ * 输入框外壳（左图标 / 右插槽 / Enter 提交）+ 宽度吃满所在容器。
  *
  * 输入位的表面（底 / 描边 / 圆角 / 字号）**不在本文件**：内部渲染的是 `ui.Input`，
- * 表面由 `ui.css` 的 `.mm-input` 给（`STYLE.md` §6.1）。这里只给定宽容器的排列与图标档位。
+ * 表面由 `ui.css` 的 `.mm-input` 给（`STYLE.md` §6.1）。这里只给外壳的排列与图标档位。
+ *
+ * **宽度只有一条规则**：外壳 `flex: 1 1 auto`，一行放两个就各占一半。
+ * 不再有 `wide` / `half` / `fill` 档位 —— 那三档里只有 `fill` 有实现，
+ * 另外两档是空壳（2026-10-31 删，`TD-09-11`）。某个位置真要定宽时给**容器**宽度，
+ * 不给组件加档位：档位与容器宽度会同时生效，同一概念就有了两种写法。
  */
 
 .mm-text-field{
   display: inline-flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: var(--mm-space-1);
   height: var(--mm-control-h);
   border-radius: var(--mm-radius-md);
-}
-
-.mm-text-field--fill{
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 .mm-text-field__icon{

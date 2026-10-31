@@ -64,7 +64,7 @@ export function useActionPage() {
   const groups = useActionStore((state) => state.groups);
   const dropped = useActionStore((state) => state.dropped);
   const columns = useActionStore((state) => state.columns);
-  const reasons = useActionStore((state) => state.reasons);
+  const failures = useActionStore((state) => state.failures);
   const load = useActionStore((state) => state.load);
 
   const run = useRunCommand();
@@ -390,7 +390,7 @@ export function useActionPage() {
     groups,
     dropped,
     columns,
-    reasons,
+    failures,
     menu,
     dialog,
     switchWarehouse,

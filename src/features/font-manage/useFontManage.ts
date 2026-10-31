@@ -32,7 +32,7 @@ import {
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { usePagedList } from '../../hooks/usePagedList';
 import { defaultPreviewText, useFontStore } from '../../store/font';
-import { ok, type Result } from '../../types/result';
+import { ok, type Failure, type Result } from '../../types/result';
 import type { FontMenuAction } from './components/FontMenu';
 import { useTagActions } from './useTagActions';
 
@@ -40,11 +40,12 @@ export function useFontManage() {
   const runCommand = useRunCommand();
 
   const tags = useFontStore((state) => state.tags);
-  const tagsRead = useFontStore((state) => state.tagsRead);
+  const failures = useFontStore((state) => state.failures);
+  const droppedBySource = useFontStore((state) => state.dropped);
   const stars = useFontStore((state) => state.stars);
-  const starsRead = useFontStore((state) => state.starsRead);
+
   const classification = useFontStore((state) => state.classification);
-  const classificationRead = useFontStore((state) => state.classificationRead);
+
   const previewMode = useFontStore((state) => state.previewMode);
   const previewText = useFontStore((state) => state.previewText);
   const loadTags = useFontStore((state) => state.loadTags);
@@ -235,15 +236,17 @@ export function useFontManage() {
 
   /** 失败原因只有一个出口（标签、评分、分类共用） */
   /**
-   * 收原因：`tagsRead` / `starsRead` 存的是整条 `Result`（页面还要读 `value.dropped`），
-   * `classificationRead` 已收窄成失败臂（`TD-09-4`）—— 前者是后者的父类型，一个函数收两种。
+   * 收原因：三个来源现在都是**失败臂**（`Failure | null`），这里只取一句话。
+   *
+   * 以前 `tagsRead` / `starsRead` 存整条 `Result`，这个函数得同时收 `Result` 与 `Failure` 两种
+   * （父类型 + 子类型），等于一个函数干两件事（`TD-05-2`）。
    */
-  function reasonOf(read: Result<unknown> | null): string {
-    return read?.status === 'error' ? read.reason : '';
+  function reasonOf(failure: Failure | null): string {
+    return failure ? failure.reason : '';
   }
 
-  const tagsDropped = tagsRead?.status === 'ok' ? tagsRead.value.dropped : [];
-  const starsDropped = starsRead?.status === 'ok' ? starsRead.value.dropped : [];
+  const tagsDropped = droppedBySource.tags;
+  const starsDropped = droppedBySource.stars;
 
   return {
     loadResult,
@@ -278,13 +281,13 @@ export function useFontManage() {
     rate,
     refresh,
     tags,
-    tagsError: reasonOf(tagsRead),
+    tagsError: reasonOf(failures.tags),
     tagsDropped,
-    starsError: reasonOf(starsRead),
+    starsError: reasonOf(failures.stars),
     starsDropped,
     stars,
     /* 读失败与「读到 0 个分类」是两件事：前者给原因，后者给一句独立的说明 */
-    classificationError: reasonOf(classificationRead),
+    classificationError: reasonOf(failures.classification),
     classificationEmpty: classification.categories.length === 0,
     ...tagActions,
     onMenuSelect

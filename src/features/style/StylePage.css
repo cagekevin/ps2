@@ -32,48 +32,6 @@
 }
 
 /* tab 条：四等分 + 段间 1px 竖线；整条**不加**底部分隔线（官方实拍没有） */
-.mm-style__tabs{
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-}
-
-.mm-style__tab-cell{
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  align-items: center;
-}
-
-/* 未选中是次要色，选中**只换文字色为 accent**，不加下划线（官方实拍：蓝字，无横线）。
-   文字**居中**：`global.css` 的 `button{ text-align: inherit }` 会让它跟着 body 左对齐。 */
-.mm-style__tab{
-  width: 100%;
-  min-width: 0;
-  height: var(--mm-tab-line-h);
-  color: var(--mm-color-text-dim);
-  font-size: var(--mm-font-sm);
-  text-align: center;
-  cursor: pointer;
-}
-
-.mm-style__tab--active{
-  color: var(--mm-color-accent);
-}
-
-/* tab 是按钮，hover 叠底；选中与否只由文字色表达（规则 12） */
-.mm-style__tab:hover{
-  background: var(--mm-color-bg-hover);
-}
-
-/* 段间竖线用**亮线**档：暗线 `--mm-color-border`(#2e2e2e) 落在 #363636 上几乎看不见 */
-.mm-style__tab-line{
-  flex: 0 0 auto;
-  width: var(--mm-border-w);
-  height: var(--mm-tab-line-h);
-  background: var(--mm-color-border-control);
-}
-
 /* 描述浮层：表面 / 定位 / 层级全部由 `.mm-popover` 给（规则 16），
    这里只给宽度与内边距 —— 少了内边距文字会贴着浮层边 */
 .mm-style__describe{
@@ -91,15 +49,6 @@
 }
 
 .mm-style__group,
-
-/* 官方格子的间距是**每格自带的固定右间距**（`mr5` / `mr6`）+ 行间距 `mt5/6/7`，
-   不是把一行拉满的 space-between —— 用 space-between 时最后一行不满，格子会被均匀撑开，
-   行内出现大小不一的缝（截图里那些黑块就是缝）。这里统一成固定间距 6（三库都并到这一档）。 */
-.mm-style__items{
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-inline);
-}
 
 .mm-style__group{
   padding: var(--mm-space-1) 0;

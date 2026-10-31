@@ -134,6 +134,8 @@
   --mm-filter-panel-max-w-gap: 64px;
   --mm-filter-badge: 14px;
 
+
+
   /* 输入弹窗（原版 .input-box-main：宽 220、左偏移 90、top 30%） */
   --mm-dialog-w: 220px;
   --mm-dialog-offset-x: 90px;
@@ -149,6 +151,7 @@
   --mm-common-tile-icon: 32px;
   --mm-common-zoom-trigger-w: 72px;
 
+
   /* 弹层 / 浮层 */
   --mm-modal-w: 260px;
   --mm-modal-min-w: 240px;
@@ -163,13 +166,6 @@
   --mm-imgcolor-grad-h: 22px;
   --mm-spin-size: 18px;
   --mm-spin-duration: 0.8s;
-
-  /* 定宽输入框（原版 .inputcom1 / .inputcom-2 / .switch-input）
-     half 与父级 gap 12 配对：(100% - 12) / 2 = 50% - 6px。
-     写成 50%-5px 时两个框加起来比容器宽 2px，右边的框会压出边界 */
-  /* 当前**没有使用者**：`TextField` 的 wide / half / fill 三档与「宽度自适应」还有冲突，
-     等 `TD-09-11` 定案后再接上 —— 现在删了，定案时又要重建同一个值。 */
-  --mm-input-w-wide: 80px;
 
   /* ---------- 8. 颜色 ----------
      值逐条取自仓外 Vue 工程的 src/styles/tokens.css；命名按 --mm-color-<角色>，
@@ -232,5 +228,17 @@
   --mm-color-nav-hover: rgba(0, 0, 0, 0.9);        /* 导航悬停 */
   /* 叠黑一档：浅色浮层上的行 hover —— 叠白落在白底上不可见（STYLE.md §7 规则 19） */
   --mm-color-hover-popover: rgba(0, 0, 0, 0.06);
+
+  /* ---------- 9. 色板数据 ----------
+     **不是主题色**：PS「图层颜色」标记的 7 个色值（序号 1..7，0 = 清除），换主题也不该变。
+     放这里的唯一原因：原始色值只许写在 tokens.css（`CONVENTIONS` §0）。
+     禁止当语义色引用，也禁止被页面改成别的颜色。 */
+  --mm-layer-color-1: #b0423f;
+  --mm-layer-color-2: #a5620a;
+  --mm-layer-color-3: #aa890a;
+  --mm-layer-color-4: #5f823c;
+  --mm-layer-color-5: #526f99;
+  --mm-layer-color-6: #7155a0;
+  --mm-layer-color-7: #6a6a6a;
 
 }

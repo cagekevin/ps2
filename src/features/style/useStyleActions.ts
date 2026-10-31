@@ -41,11 +41,11 @@ import {
   renameKuItem,
   sendGroupToSwatch,
   sendItemToSwatch,
+  setExpandedGroups as setExpandedGroupsCommand,
   setGroupShowInLibrary
 } from '../../commands/style';
 import type { KuKind } from '../../domain/style-library';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
-import { usePersisted } from '../../hooks/usePersisted';
 import { useStyleLibraryStore } from '../../store/style-library';
 import { ok, type Result } from '../../types/result';
 
@@ -92,10 +92,10 @@ export function useStyleActions() {
   const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
   const libraries = useStyleLibraryStore((state) => state.libraries);
 
-  /* 展开的分组记进 prefs：切走再回来保持原样 */
-  const [expandedList, setExpandedList] = usePersisted<number[]>('style.expandedGroups', [0]);
+  /* 展开的分组在 store 里（值已归一），落盘走 `commands/style.setExpandedGroups` */
+  const expandedGroups = useStyleLibraryStore((state) => state.expandedGroups);
   /* 组多时每渲染都 new Set 是白跑；列表没变就复用 */
-  const expanded = useMemo(() => new Set(expandedList), [expandedList]);
+  const expanded = useMemo(() => new Set(expandedGroups), [expandedGroups]);
   const [menu, setMenu] = useState<MenuTarget | null>(null);
   const [editing, setEditing] = useState<RenameTarget | null>(null);
   /* 正在新建的分组：afterIndex = -1 表示追加到末尾（底栏按钮走这条） */
@@ -109,10 +109,10 @@ export function useStyleActions() {
     void load();
   }, [load]);
 
-  /* 切仓库或切 tab 时，回到默认展开 */
+  /* 切仓库或切 tab 时，回到默认展开（与改造前同一时机，行为不变） */
   useEffect(() => {
-    setExpandedList(Array.from({ length: DEFAULT_EXPANDED }, (_, i) => i));
-  }, [activeKind, activeIndex, setExpandedList]);
+    void setExpandedGroupsCommand(Array.from({ length: DEFAULT_EXPANDED }, (_, i) => i));
+  }, [activeKind, activeIndex]);
 
   /** 当前仓库；没有就是 null（拖拽这类静默失败的动作用它） */
   function currentWarehouse() {
@@ -158,14 +158,14 @@ export function useStyleActions() {
    * 写库失败不回滚本地状态——下次 load 会以文件为准。
    */
   function toggleGroup(index: number) {
-    const next = !expandedList.includes(index);
-    setExpandedList(
-      next ? [...expandedList, index] : expandedList.filter((item) => item !== index)
+    const open = !expandedGroups.includes(index);
+    void setExpandedGroupsCommand(
+      open ? [...expandedGroups, index] : expandedGroups.filter((item) => item !== index)
     );
 
     const warehouse = currentWarehouse();
     if (!warehouse) return;
-    void setGroupShowInLibrary(warehouse, activeKind, index, next);
+    void setGroupShowInLibrary(warehouse, activeKind, index, open);
   }
 
   /**

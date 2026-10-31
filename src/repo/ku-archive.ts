@@ -15,7 +15,6 @@ import {
   readTextAt,
   readTextResult,
   removeFile,
-  writeTextAtomic,
   writeTextAtAtomic
 } from '../core/storage';
 import { log } from '../core/logger';
@@ -24,6 +23,7 @@ import { log } from '../core/logger';
 const ROOT: StorageRoot = 'legacy';
 import { fileNameOf, kuGuid } from '../domain/style-library';
 import { decodeBase64, encodeBase64 } from '../core/cep/base64';
+import { replaceFileText } from './json-file';
 import { readIndex, readIndexText, writeIndexRaw } from './style-repo';
 import {
   encodeKuContainer,
@@ -38,7 +38,7 @@ import {
 
 import { normalizeStyleIndex, type StyleWarehouse, type StyleWarehouseIndex } from '../domain/style-library';
 import { MSG } from '../types/messages';
-import { fail, failWithDetail, ok, type Result } from '../types/result';
+import { failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
 import { parseJson } from '../types/json';
 
@@ -87,7 +87,9 @@ function sidecarNamesOfWarehouse(warehouse: StyleWarehouse): Result<string[]> {
 
     const parsed = parseJson(text.value, fileName);
     if (parsed.status === 'error') return parsed;
-    if (!Array.isArray(parsed.value)) return fail('CORRUPT', `${fileName} 顶层不是数组`);
+    if (!Array.isArray(parsed.value)) {
+      return failWithDetail('CORRUPT', MSG.corrupt, `${fileName}:not-array`);
+    }
     names.push(...sidecarNamesOf(kind, parsed.value as KuRawGroup[]));
   }
   return ok(names);
@@ -148,9 +150,11 @@ function assertSafeNames(entries: readonly KuFileEntry[]): Result<void> {
   const seen = new Set<string>();
   for (const entry of entries) {
     if (!isSafeKuEntryName(entry.name)) {
-      return fail('VALIDATION', `导入文件名不合法：${entry.name}`);
+      return failWithDetail('VALIDATION', MSG.style.kuBadFileName, `name:${entry.name}`);
     }
-    if (seen.has(entry.name)) return fail('VALIDATION', `导入文件名重复：${entry.name}`);
+    if (seen.has(entry.name)) {
+      return failWithDetail('VALIDATION', MSG.style.kuDuplicateFileName, `name:${entry.name}`);
+    }
     seen.add(entry.name);
   }
   return ok(undefined);
@@ -165,7 +169,7 @@ function validateContainer(file: KuContainerFile): Result<void> {
     for (const kind of KU_CONTAINER_ORDER) {
       const fileName = fileNameOf(warehouse, kind);
       if (fileName && !names.has(fileName)) {
-        return fail('VALIDATION', `索引引用的库文件不在包里：${fileName}`);
+        return failWithDetail('VALIDATION', MSG.style.kuMissingFile, `file:${fileName}`);
       }
     }
   }
@@ -233,7 +237,7 @@ export async function importKuArchive(
     decode: decodeBase64
   });
   if (remapped.status === 'error') {
-    return fail(remapped.code, `导入文件内层结构不认识：${remapped.reason}`);
+    return failWithDetail(remapped.code, MSG.style.kuInnerBroken, remapped.detail);
   }
   const file = remapped.value;
 
@@ -246,10 +250,10 @@ export async function importKuArchive(
   /* 写内层文件：b64 → utf8 落盘（remap 已换新 id，不会覆盖本地同名）；已有文件先 .bak */
   for (const entry of file.arrFileData) {
     if (typeof entry.data !== 'string') continue;
-    /* 写内层文件统一走 storage：自动 `.bak` + 同文件串行 */
-    const written = await writeTextAtomic(entry.name, decodeBase64(entry.data), ROOT);
+    /* 整份替换写库文件：走 `json-file` 的文件队列（`.bak` + 与读改写互斥），不直接调 storage */
+    const written = await replaceFileText(entry.name, ROOT, decodeBase64(entry.data));
     if (written.status === 'error') {
-      return fail(written.code, `写入 ${entry.name} 失败：${written.reason}`);
+      return failWithDetail(written.code, written.reason, `${written.detail} file:${entry.name}`);
     }
   }
 
@@ -261,17 +265,17 @@ export async function importKuArchive(
     if (local.status === 'error') return local;
 
     const parsed = parseJson(local.value, '本地索引');
-    if (parsed.status === 'error') {
-      return failWithDetail('CORRUPT', MSG.corrupt, 'index:unreadable');
-    }
+    /* 原样透传：`parseJson` 的 `reason`/`detail` 已经指出坏在第几个字符，
+       换成自己写的 `index:unreadable` 等于把现场抹掉（刀 14） */
+    if (parsed.status === 'error') return parsed;
     const raw = isRecord(parsed.value) ? parsed.value : {};
     const list = Array.isArray(raw.list) ? raw.list : [];
     raw.list = [...list, ...incoming];
     const written = await writeIndexRaw(raw);
-    if (written.status === 'error') return fail(written.code, written.reason);
+    if (written.status === 'error') return written;
   } else {
     const written = await writeIndexRaw(file.store as unknown as Record<string, unknown>);
-    if (written.status === 'error') return fail(written.code, written.reason);
+    if (written.status === 'error') return written;
     recycleOldFiles(oldFiles);
   }
 

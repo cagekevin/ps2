@@ -505,7 +505,7 @@ Grep  "尚未落地|未落地|磁盘|索引|注入|预算|兜底|序列化"
 | 文案 / 失败 label / 错误映射 | 错误文案常量 | `src/types/result.ts`（**SSOT**） |
 | 数据读写（文件真相） | `src/repo/<域>-repo.ts`（`Repo<T>`：串行队列 + 原子写 + `.bak` + `onChange`） | `ADR` |
 | 宿主能力（PS 调用 / 事件 / 文件） | `src/core/`（**唯一 PS 出口**） | `ADR` |
-| 页面数据 | 走 `useCommand` → `src/commands/registry.ts` 的 `execute` → `src/store/` 只读投影 | `ADR` / `ADR` |
+| 页面数据 | 走 `hooks/useRunCommand` → `src/commands/<域>.ts` → `src/store/` 只读投影 | `CONVENTIONS` §3.1 |
 
 **确认"没有"的（别浪费时间找）**：本项目**不用 Tailwind、不用 CSS-in-JS、不用 CSS Modules、不用组件 `<style scoped>`**：
 **没有**通用 Card 组件；**不装**任何浏览器自动化 / 截图回归依赖。
@@ -550,7 +550,6 @@ Grep  "尚未落地|未落地|磁盘|索引|注入|预算|兜底|序列化"
 - **规范要能自生长**（发现更好做法 ⇒ 改规范 + 写理由，而不是绕过它自己造一份）
 - **样式数值只有一个来源**（`ADR`，`style-guard` 强制）
 - **原版不是标准答案**（线上 PS 应用缺陷，非本仓文档：视觉照搬可以，工程别照抄）
-- **已完成页面冻结**（`/fontSet` `/fontManage` `/action` `/freePanel` `/set` 只许修 bug / 数据错误 / 安全问题）
 
 ---
 

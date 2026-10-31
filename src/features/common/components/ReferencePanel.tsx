@@ -46,7 +46,6 @@ export function ReferencePanel() {
 
       <div className="mm-u-row mm-common__panel-row">
         <TextField
-          variant="fill"
           title={'参考线宽度'}
           placeholder="20"
           inputMode="decimal"

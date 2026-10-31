@@ -15,7 +15,7 @@ import { familyLang } from '../domain/font-lang';
 import type { FontTag } from '../domain/font-meta';
 import { readClassification, readFontStars, readFontTags } from '../repo/font-repo';
 import type { Dropped } from '../types/decode-list';
-import type { Failure, Result } from '../types/result';
+import type { Failure } from '../types/result';
 
 export type PreviewMode = 'none' | 'small' | 'medium' | 'large' | 'extra-large';
 
@@ -34,27 +34,26 @@ export function defaultPreviewText(family: string): string {
   return familyLang(family) === 'en' ? 'Crazy Design' : '设计助理';
 }
 
-type TagsRead = Result<{ tags: FontTag[]; dropped: Dropped[] }>;
-type StarsRead = Result<{ stars: Record<string, number>; dropped: Dropped[] }>;
 
 interface FontState {
   tags: FontTag[];
-  tagsRead: TagsRead | null;
   stars: Record<string, number>;
-  starsRead: StarsRead | null;
-  /** 分类投影：读失败时给空分类，**不要**拿它判「读没读到」——那看 `classificationRead` */
+  /** 分类投影：读失败时给空分类，**不要**拿它判「读没读到」——那看 `failures.classification` */
   classification: Classification;
   /**
-   * 分类的读取结果（与 `tagsRead` / `starsRead` 同形）。
+   * 三个来源各自的失败臂（键 = 来源；`null` = 那个来源最近一次读没失败）。
    *
-   * 以前是 `classificationDegraded: string`：空串正常、非空坏，但 `.value` 永远可取，
-   * 而且把「读失败的原因」和「分类为空」两种不同的事塞进同一个字符串——
-   * 失败码位写人话，页面只能原样拼进 UI。
+   * 以前是**平铺字段** `tagsRead` / `starsRead` / `classificationRead`，前两个还存**整条 `Result`**
+   * （页面为了拿 `value.dropped` 只好再判一次 `status`）。现在与 `store/action` / `store/common-use` /
+   * `store/style-library` 统一成一对名字：单源 `failure`、多源 `failures`（键 = 来源）；
+   * **坏项记账属于值，不属于失败**，搬到下面的 `dropped`。
    *
-   * 只存**失败臂**（`Failure`），读成功时是 `null`：页面读它只为拿 `reason`，
-   * 分类本身在 `classification`（`TD-09-4`）。
+   * 分类那一臂的历史（`TD-09-4`）：更早是 `classificationDegraded: string`，空串正常 / 非空坏，
+   * 且 `.value` 永远可取——那次收口（只存失败臂）保留，这里只是把它挪进同一张表（`TD-05-2`）。
    */
-  classificationRead: Failure | null;
+  failures: { tags: Failure | null; stars: Failure | null; classification: Failure | null };
+  /** 读的时候被跳过的坏项（值侧记账；与失败臂分开，`Result` 不进 store） */
+  dropped: { tags: Dropped[]; stars: Dropped[] };
   previewMode: PreviewMode;
   previewText: string;
   loadTags: () => void;
@@ -76,43 +75,53 @@ function initialPreviewMode(): PreviewMode {
 
 export const useFontStore = create<FontState>()((set, get) => ({
   tags: [],
-  tagsRead: null,
   stars: {},
-  starsRead: null,
   classification: emptyClassification(),
-  classificationRead: null,
+  failures: { tags: null, stars: null, classification: null },
+  dropped: { tags: [], stars: [] },
   previewMode: initialPreviewMode(),
   previewText: getPref<string>('font.previewText', ''),
 
   loadTags() {
     const read = readFontTags();
+    const { failures } = get();
     if (read.status === 'error') {
       /* 保留旧值 + 留痕：同一份标签文件不会随上下文变，失败时清空只会让用户以为标签没了 */
       log.warn('读取字体标签失败', { code: read.code, reason: read.reason, detail: read.detail });
-      set({ tagsRead: read });
+      set({ failures: { ...failures, tags: read } });
       return;
     }
-    set({ tagsRead: read, tags: read.value.tags });
+    set({
+      tags: read.value.tags,
+      dropped: { ...get().dropped, tags: read.value.dropped },
+      failures: { ...failures, tags: null }
+    });
   },
 
   loadStars() {
     const read = readFontStars();
+    const { failures } = get();
     if (read.status === 'error') {
       log.warn('读取字体星级失败', { code: read.code, reason: read.reason, detail: read.detail });
-      set({ starsRead: read });
+      set({ failures: { ...failures, stars: read } });
       return;
     }
-    set({ starsRead: read, stars: read.value.stars });
+    set({
+      stars: read.value.stars,
+      dropped: { ...get().dropped, stars: read.value.dropped },
+      failures: { ...failures, stars: null }
+    });
   },
 
   loadClassification() {
     const read = readClassification();
+    const { failures } = get();
     if (read.status === 'error') {
       log.warn('读取字体分类失败', { code: read.code, reason: read.reason, detail: read.detail });
-      set({ classificationRead: read });
+      set({ failures: { ...failures, classification: read } });
       return;
     }
-    set({ classification: read.value, classificationRead: null });
+    set({ classification: read.value, failures: { ...failures, classification: null } });
   },
 
   setPreviewMode(mode) {

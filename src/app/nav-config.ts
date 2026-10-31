@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'font-manage', name: '字体管理', path: '/font-manage', icon: 'icon-nav_zitiguanli', shortcut: 'h', implemented: true },
   { key: 'style', name: '样式面板', path: '/style', icon: 'icon-nav_yangshiku', shortcut: 'u', implemented: true },
   { key: 'action', name: '动作管理', path: '/action', icon: 'icon-nav_dongzuoku', shortcut: 'w', implemented: true },
-  { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: false },
+  { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: true },
   { key: 'overprint', name: '批量套版', path: '/overprint', icon: 'icon-nav_piliangtaoban', implemented: false },
   { key: 'set', name: '设置', path: '/set', icon: 'iconyonghushezhi', implemented: true, bottom: true }
 ];

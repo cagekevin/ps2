@@ -156,9 +156,9 @@ export default function CommonPage() {
        *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
        */}
       <div className="mm-common__body">
-        {page.reasons.tiles ? <StateHint result={page.reasons.tiles} onRetry={page.reload} /> : null}
-        {page.reasons.options ? (
-          <StateHint result={page.reasons.options} onRetry={page.reload} />
+        {page.failures.tiles ? <StateHint result={page.failures.tiles} onRetry={page.reload} /> : null}
+        {page.failures.options ? (
+          <StateHint result={page.failures.options} onRetry={page.reload} />
         ) : null}
         {page.dropped.length ? (
           <div
