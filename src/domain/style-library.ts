@@ -52,6 +52,11 @@ export interface KuFontPreview {
 /**
  * 生成分组 GUID。
  * 格式照库文件里已有的 id：大写十六进制，8-4-4-4-12 带连字符。
+ *
+ * **为什么不并入 `types/id.ts` 的 `newId()`**：这里要的是**官方文件格式**（原版
+ * `checkError` 会校验组 id / 项 id 的形状，样式组还要 `YS` 前缀），属于「外部形状」，
+ * 换成 12 位短串会让原版读不了样式库。`newId()` 服务的是**我们自己的**文件名与 id
+ * （动作库仓库名、模板库文件夹/条目），两者用途不重叠。
  */
 export function kuGuid(): string {
   const hex = '0123456789ABCDEF';

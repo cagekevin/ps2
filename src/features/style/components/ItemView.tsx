@@ -68,7 +68,7 @@ export function ItemView({
         onMouseLeave={describeOff}
       >
         {item.thumb ? (
-          <img className="mm-style__thumb" src={userAssetUrl('kuStyle', item.thumb)} alt={item.name} />
+          <img className="mm-style__thumb" src={userAssetUrl('legacy', 'kuStyle', item.thumb)} alt={item.name} />
         ) : null}
       </button>
     );
@@ -110,7 +110,7 @@ export function ItemView({
 
   /* 颜色与渐变共用一个色块，尺寸由修饰类决定。
      目录名是 Gradient（大写 G），不是 kuGradient —— 原版 path.kuGradient 的值就是 'Gradient' */
-  const background = item.image ? `url(${userAssetUrl('Gradient', item.image)})` : item.swatch;
+  const background = item.image ? `url(${userAssetUrl('legacy', 'Gradient', item.image)})` : item.swatch;
 
   return (
     <button

@@ -16,6 +16,7 @@ import { decodeList, type Dropped } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { failWithDetail, ok, type Result } from '../types/result';
 import { MSG } from '../types/messages';
+import { newId } from '../types/id';
 import type { DropPosition } from './reorder';
 
 /* ---------------- 形状（7 个里属于本文件的 4 个） ---------------- */
@@ -70,8 +71,7 @@ export function defaultLibrary(): ActionLibraryFile {
 export function newWarehouseFileName(taken: readonly string[]): string {
   const used = new Set(taken);
   for (;;) {
-    const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-    const name = `sj_dz${stamp}.json`;
+    const name = `sj_dz${newId()}.json`;
     if (!used.has(name)) return name;
   }
 }

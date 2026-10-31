@@ -4,7 +4,7 @@
  */
 
 import { getUserDataPath } from '../cep/bridge';
-import { ROOTS } from '../storage';
+import { ROOTS, type StorageRoot } from '../storage';
 
 /**
  * CEP 里 `<img src>` 需要的前缀。
@@ -28,11 +28,14 @@ export function userSubPath(...segments: string[]): string {
 /**
  * 可直接塞进 <img src> 的资源地址。
  *
- * 官方约定：缩略图在 `<userDir>/kuStyle/<id>.png`，渐变图在 `<userDir>/Gradient/<file>`。
- * `userDir` = `getSystemPath('userData')` + `/SheJiZhuLi`（原版 `USER_DIR`），
- * 不是裸的 userData —— 少这一段所有缩略图都会 404（表现就是整片破图）。
+ * **根是参数，不是写死**：`root` 取 `core/storage` 的数据根（`legacy` = `/SheJiZhuLi`、
+ * `data` = `/Maomao`）。样式库的缩略图在 `legacy`（官方 `USER_DIR`），模板库的在 `data`；
+ * 写死一个根就会逼出第二个 `xxxAssetUrl`（两个拼法 = 下一个人一定抄错那个）。
+ *
+ * **每段都 encode**：CEP 的 `<img>` 走 `file://`，中文 / 空格 / `#` 不编码就 404
+ * （表现是整片破图，且控制台不一定报错）。段内的 `/` 被编成 `%2F`，不会被当路径分隔符。
  */
-export function userAssetUrl(...segments: string[]): string {
-  const root = ROOTS.legacy.replace(/^\//, '');
-  return `${osPrefix()}${userSubPath(root, ...segments)}`;
+export function userAssetUrl(root: StorageRoot, ...segments: string[]): string {
+  const rootName = ROOTS[root].replace(/^\//, '');
+  return `${osPrefix()}${userSubPath(rootName, ...segments.map(encodeURIComponent))}`;
 }

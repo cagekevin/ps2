@@ -40,6 +40,10 @@ interface NodeFs {
   existsSync(path: string): boolean;
   mkdirSync(path: string, options: { recursive: boolean }): void;
   unlinkSync(path: string): void;
+  /** 只用于 `removeDir`：平铺目录逐个删子文件（不引 `fs.rm` / `recursive` —— CEP 的
+   *  Node 版本跨版本不稳，`rmdirSync({recursive})` 在旧版上直接抛） */
+  readdirSync(path: string): string[];
+  rmdirSync(path: string): void;
 }
 
 function getFs(): NodeFs | null {
@@ -195,6 +199,30 @@ export function writeTextAtomic(
 ): Promise<Result<void>> {
   const target = filePath(root, name);
   return runSerial(`write:${target}`, () => Promise.resolve(writeTextFile(target, text, true)));
+}
+
+/**
+ * 删除目录；目录本来就不存在也算成功（目标已达成）。
+ *
+ * 只处理**平铺目录**：逐个 `unlinkSync` 子文件，再 `rmdirSync`。
+ * 遇到子目录会抛 → `IO_ERROR`（`detail` 带原始错误），**不递归**：
+ * 递归删是「一次误点删一片」的入口，本仓唯一的递归删除需求（模板条目目录
+ * `PSD/<id>.info/`）结构固定为平铺，用不上递归。
+ */
+export function removeDir(name: string, root: StorageRoot = 'data'): Result<void> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+
+  const target = filePath(root, name);
+  try {
+    if (!fs.existsSync(target)) return ok(undefined);
+    for (const child of fs.readdirSync(target)) fs.unlinkSync(`${target}/${child}`);
+    fs.rmdirSync(target);
+    return ok(undefined);
+  } catch (error) {
+    log.error('删除目录失败', { name, root, error });
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `rmdir:${String(error)}`);
+  }
 }
 
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
