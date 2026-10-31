@@ -11,7 +11,7 @@ import { Button, Input } from '../../../components/ui';
 import { useDraft } from '../../../hooks/useDraft';
 import { enterSubmit } from '../../../hooks/input-method-enter';
 import type { CreateButtonConfig } from '../../../domain/font-set';
-import { CREATE_BUTTON_PADDINGS, CREATE_BUTTON_PRESETS } from '../font-panel-constants';
+import { CREATE_BUTTON_PRESETS } from '../font-panel-constants';
 
 interface Props {
   config: CreateButtonConfig;
@@ -81,19 +81,7 @@ export function CreateButtonPanel({ config, onChange, onApply }: Props) {
         />
       </div>
 
-      <div className="mm-u-row mm-font-panel__row mm-font-panel__row--tight">
-        <div className="mm-font-panel__label">预设</div>
-        {CREATE_BUTTON_PADDINGS.map((value) => (
-          <Button
-            key={value}
-            
-            title={`内边距 ${value}`}
-            onClick={() => commitPadding(value)}
-          >
-            {value}
-          </Button>
-        ))}
-      </div>
+
 
       <div className="mm-btn-grid mm-font-panel__quick-grid">
         {CREATE_BUTTON_PRESETS.map((value) => (

@@ -1,12 +1,13 @@
 /**
  * 【范本】面板外壳
- * 只放全局布局（导航、头部、内容区），不放业务逻辑。
- * 头部右侧的「诊断」是固定入口，任何页面都能进 /debug。
+ * 只放全局布局（导航、内容区），不放业务逻辑。
+ *
+ * **没有头部标题行**（2026-10-31）：原来那一行只有「应用名 + 版本 + 诊断」，
+ * 占一整行却没有任何信息量 —— 标题在导航栏已经能看出来，版本与诊断收进**设置页**
+ * （诊断是个排查入口，不是每天要点的东西）。
  */
 import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
 import { ConfirmHost } from '../components/Confirm/useConfirm';
-import { APP_TITLE, APP_VERSION } from '../core/env';
 import { useNoContextMenu } from '../hooks/useNoContextMenu';
 import { CommonUseWatcher } from './common-use-watcher';
 import { LayerWatcher } from './layer-watcher';
@@ -30,18 +31,6 @@ export function Layout({ children }: LayoutProps) {
       <ConfirmHost />
       <NavBar />
       <div className="mm-layout__main">
-        <header className="mm-u-row mm-layout__header">
-          <span className="mm-layout__title">{APP_TITLE}</span>
-          <div className="mm-u-row mm-layout__actions">
-            <NavLink
-              to="/debug"
-              className={({ isActive }) => `mm-layout__debug${isActive ? ' mm-layout__debug--active' : ''}`}
-            >
-              诊断
-            </NavLink>
-            <span className="mm-layout__version">v{APP_VERSION}</span>
-          </div>
-        </header>
         <main className="mm-layout__body">{children}</main>
       </div>
     </div>

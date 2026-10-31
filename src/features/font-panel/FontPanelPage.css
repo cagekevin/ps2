@@ -8,7 +8,9 @@
  */
 
 .mm-font-panel{
-  overflow-y: auto;
+  /* 滚动条改 overlay：浮在内容上不占宽度，内容左右 padding 都是 8 ⇒ 视觉左右对称（占位槽会让右边多 8）。
+     滚动条宽 8 == 页边 8，正好落在右侧 padding 里，不遮内容。全仓页面级滚动容器统一（2026-10-31）。 */
+  overflow-y: overlay;
 }
 
 /* 纵向排列走公共 `.mm-u-col` */
@@ -100,10 +102,10 @@
   --mm-btn-grid-cols: 8;
 }
 
-/* 拆分文本：2×2 大按钮，块与块之间要能分开看，取区块内档（比数值按钮排松一档） */
+/* 拆分文本：2×2 按钮。**只注入列数** —— gap 归组合层 `.mm-btn-grid`（原先这里覆写成 12，
+   与其它网格不一致；2026-10-31 删掉覆写，全仓网格间距统一 4） */
 .mm-font-panel__split{
   --mm-btn-grid-cols: 2;
-  gap: var(--mm-space-3);
 }
 
 /* 层级编辑的 6 个输入框与上方 `.mm-font-panel__levels` 的 6 档一一对应，列数必须一致 */
@@ -168,10 +170,20 @@
 
 /* 同排控件之间一行高：一律取同行并列档，不许按区块给不同值（规则 9、10） */
 .mm-font-panel__color-row,
-.mm-font-panel__paste-row,
 .mm-font-panel__row{
   gap: var(--mm-space-inline);
   height: var(--mm-control-h);
+}
+
+/*
+ * 粘贴属性面板的两排勾选：**不套 26 的行高**。
+ *
+ * 里面只有「12 方框 + 16 行高文字」= 16 高，套上 26 会上下各留 5px；
+ * 两排一叠就凭空多出 10px，这才是"两排之间看着很高"的真正原因（不是 gap）。
+ * 所以这两排由内容定高，间距就只剩 `.mm-font-panel__panel` 的 gap(4)。
+ */
+.mm-font-panel__paste-row{
+  gap: var(--mm-space-inline);
 }
 
 .mm-font-panel__family,
@@ -184,17 +196,15 @@
 }
 
 /* IconPanel 抽屉里的内容排：`__box` 已给 padding 8，这里只给行间的组间距 */
+/* 粘贴属性面板内三个块（两排勾选 + 恢复默认）之间取「组内」档 4：
+   它们同属一块设置，用组间档(8)叠上每排的 26 高，视觉上两排之间会到 18 */
 .mm-font-panel__panel{
-  gap: var(--mm-space-2);
+  gap: var(--mm-space-1);
 }
 
-/* 两档行：上一行要垫开一层，下一类行要贴紧 */
+/* 上一行要垫开一层（`--tight` 那档已随「预设」三个按钮一起删掉） */
 .mm-font-panel__row--pad{
   padding-top: var(--mm-space-1);
-}
-
-.mm-font-panel__row--tight{
-  gap: var(--mm-space-1);
 }
 
 .mm-font-panel__create{

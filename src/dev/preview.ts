@@ -12,6 +12,8 @@
  * 不冒充官方数据，也不写进任何文件。
  */
 import type { Classification } from '../domain/classification';
+import type { TemplateIndex } from '../domain/template-library';
+import { useTemplateStore } from '../store/template';
 import type { FontItem } from '../domain/font-item';
 import type { KuGroup, KuItem, KuKind, StyleWarehouse } from '../domain/style-library';
 import { DEFAULT_TEXT_INFO } from '../domain/text-info';
@@ -242,7 +244,76 @@ export function installPreviewData(): void {
     load: async () => {},
     selectWarehouse: async () => {}
   });
+
+  /* 模板库：两条根夹 + 一条子夹 + 五条模板（名字长短不一，测截断） */
+  useTemplateStore.setState({
+    index: PREVIEW_TEMPLATE_INDEX,
+    currentFolderId: null,
+    failure: null,
+    load: () => {}
+  });
 }
+
+const PREVIEW_TEMPLATE_INDEX: TemplateIndex = {
+  version: 1,
+  folders: [
+    { id: 'f-banner', name: 'Banner', parentId: null },
+    { id: 'f-detail', name: '详情页长图', parentId: null },
+    { id: 'f-618', name: '618 大促', parentId: 'f-banner' }
+  ],
+  items: [
+    {
+      id: 'i-1',
+      file: '主标题组',
+      ext: 'psd',
+      name: '主标题组',
+      folderId: null,
+      width: 800,
+      height: 600,
+      createdAt: 1730000000000
+    },
+    {
+      id: 'i-2',
+      file: '价格标签',
+      ext: 'psd',
+      name: '价格标签',
+      folderId: null,
+      width: 240,
+      height: 120,
+      createdAt: 1730000900000
+    },
+    {
+      id: 'i-3',
+      file: '这是一个特别长的模板名字用来测截断',
+      ext: 'psd',
+      name: '这是一个特别长的模板名字用来测截断',
+      folderId: null,
+      width: 1200,
+      height: 300,
+      createdAt: 1730001800000
+    },
+    {
+      id: 'i-4',
+      file: '按钮组',
+      ext: 'psd',
+      name: '按钮组',
+      folderId: 'f-banner',
+      width: 320,
+      height: 80,
+      createdAt: 1730002700000
+    },
+    {
+      id: 'i-5',
+      file: '竖版海报',
+      ext: 'psd',
+      name: '竖版海报',
+      folderId: 'f-618',
+      width: 600,
+      height: 900,
+      createdAt: 1730003600000
+    }
+  ]
+};
 
 const WAREHOUSES: StyleWarehouse[] = [
   { name: '默认仓库' },

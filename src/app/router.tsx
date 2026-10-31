@@ -8,6 +8,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { DEFAULT_PATH } from './nav-config';
 
 const StylePage = lazy(() => import('../features/style/StylePage'));
+const TemplatePage = lazy(() => import('../features/template/TemplatePage'));
 const CommonPage = lazy(() => import('../features/common/CommonPage'));
 const ActionPage = lazy(() => import('../features/action/ActionPage'));
 const RenamePage = lazy(() => import('../features/rename/RenamePage'));
@@ -24,6 +25,7 @@ export function AppRoutes() {
       <Routes>
         <Route path="/" element={<Navigate to={DEFAULT_PATH} replace />} />
         <Route path="/style" element={<StylePage />} />
+        <Route path="/template" element={<TemplatePage />} />
         <Route path="/common" element={<CommonPage />} />
         <Route path="/action" element={<ActionPage />} />
         <Route path="/rename" element={<RenamePage />} />

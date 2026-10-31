@@ -25,6 +25,8 @@ import { isRecord } from '../../types/guards';
 import { MSG } from '../../types/messages';
 import type { CapabilitySpec } from './capability';
 import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
+/* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */
+import type { AddedTemplate } from './template';
 
 /** 「多选」类操作至少 2 个图层：位置对换 / 颜色互换 / 按间距分布都要成对才有意义 */
 const requireTwoLayers = () => requireSelection(2);
@@ -34,6 +36,26 @@ function fontsOf(data: unknown): Record<string, unknown> | null {
   if (!isRecord(data)) return null;
   const fonts = data.fonts;
   return Array.isArray(fonts) && fonts.length > 0 ? data : null;
+}
+
+/**
+ * `ps_mbAddPsd` 的载荷：`{ id, name, ext, width, height, size, time, … }`，
+ * 我们只认这五个（模板库要的就是它们），多出来的原版字段不取。
+ *
+ * 写法照 `fontsOf`：**只判结构、不判语义**（语义在 `domain` 判）；
+ * 认不出返回 `null`，由 `strictPayload` 统一落 `PS_BAD_PAYLOAD` + 原文进 `detail`。
+ */
+function addedTemplateOf(data: unknown): AddedTemplate | null {
+  if (!isRecord(data)) return null;
+
+  const { id, name, ext, width, height } = data;
+  if (typeof id !== 'string' || !id) return null;
+  if (typeof name !== 'string' || !name) return null;
+  if (typeof ext !== 'string' || !ext) return null;
+  if (typeof width !== 'number' || !Number.isFinite(width)) return null;
+  if (typeof height !== 'number' || !Number.isFinite(height)) return null;
+
+  return { id, name, ext, width, height };
 }
 import {
   lenientVoid,
@@ -309,6 +331,56 @@ export const CAP = {
   openDirectory: {
     fn: 'cy_openDirectory', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
     parse: lenientVoid(MSG.coreOps.openFolder)
+  },
+
+  /* ---------------- 模板库：全部直调 vendor（原版面板那批函数），不写自有 jsx ---------------- */
+
+  /**
+   * 把当前选中图层存成一条模板：入参只有**一个目录**，vendor 自己在里面建 `<id>.info/`、
+   * 写源文件与缩略图，并把条目的 `id / name / ext / width / height / size / time` 一起返回。
+   *
+   * 前置 `requireSelection(1)`：没选中就一条 jsx 都不发（发送只会拿回 `{err}`）。
+   */
+  templateAdd: {
+    fn: 'ps_mbAddPsd', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    require: () => requireSelection(1),
+    parse: strictPayload({
+      whenFalse: MSG.template.noSelection,
+      whenFailed: MSG.template.saveFailed,
+      accept: addedTemplateOf
+    })
+  },
+
+  /**
+   * 重建缩略图：入参是**条目目录 + 文件名主干 + 扩展名**（原版 `mb_amendPreview` 的调用形状）。
+   * 走 dispatch（原版 `jsxHistoryNoCheck`），历史组由调度器给。
+   */
+  templateThumb: {
+    /* dispatch 通道一律 30s（`capability.test` 的守卫：长任务例外只许 `callAction`） */
+    fn: 'mb_amendPreview', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
+    parse: lenientVoid(MSG.template.thumbFailed)
+  },
+
+  /**
+   * 把模板贴进当前文档：入参是**一个** `encodeURIComponent(JSON.stringify(payload))` 字符串
+   * （原版同理），`label` 会成为调度器的日志标签，同时也是 PS 历史面板里那一步的名字。
+   */
+  templateUse: {
+    /* 同上：dispatch 只能读超时档。置入一个大 PSD 通常几秒，30s 是合理上限 */
+    fn: 'mb_useTemplate', gate: 'vendor', channel: 'dispatch', label: '应用模板',
+    timeout: READ_TIMEOUT, parse: lenientVoid(MSG.template.useFailed)
+  },
+
+  /** 把库里的源 PSD 当新文档打开（给用户改） */
+  templateOpen: {
+    fn: 'mb_openTemplatePsd', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid(MSG.template.openFailed)
+  },
+
+  /** 在系统文件管理器里打开**指定**目录（`cy_openDirectory` 只能开当前文件目录，不是一件事） */
+  templateOpenDir: {
+    fn: 'Fs_openFolder', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: lenientVoid(MSG.template.openDirFailed)
   },
 
   /** 让 jsx 弹选图对话框：返回结构未实测，raw 原样交出（按 JSON 解析会把裸路径判成 CORRUPT） */

@@ -65,6 +65,14 @@
      列表里「对号 + 文字」靠它左对齐：图标贴槽左、文字从槽后开始，间距恒为 6（§7 规则 17） */
   --mm-check-slot: 18px;
 
+  /* 模板库卡片的最小列宽：`auto-fill` 的列数由它和面板宽度决定（面板 200–360 时是 2 列），
+     不用「列数 2/3/4」档位 —— 档位是同一概念第二种样子。 */
+  --mm-template-card-min: 96px;
+
+  /* 右下角常驻存入口的边长。原版 `.add-wrap` 是 32×32，比控件档（26）大一档：
+     它是「浮在内容上的主操作」，和其它控件同高就压不住背景里的格子。 */
+  --mm-fab-size: 32px;
+
   /* 字号：三档 */
   --mm-font-xs: 11px;
   --mm-font-sm: 12px;
@@ -126,7 +134,6 @@
   --mm-weight-glyph: 18px;
   --mm-weight-count: 18px;
   --mm-name-reserve: 60px;
-  --mm-tag-collapse-h: 94px;
   --mm-tag-panel-w: 180px;
   --mm-tag-strip-h: 22px;
   --mm-filter-panel-w: 220px;

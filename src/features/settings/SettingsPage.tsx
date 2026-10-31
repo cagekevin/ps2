@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '../../components/CheckBox';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { SelectBox } from '../../components/SelectBox';
@@ -48,6 +49,7 @@ export default function SettingsPage() {
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
   const [saving, setSaving] = useState(false);
 
+  const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
   const cloudLedger = useCloudStore((state) => state.ledger);
@@ -163,21 +165,17 @@ export default function SettingsPage() {
 
         <div className="mm-settings__section">常用功能面板</div>
 
-        <div className="mm-u-row mm-settings__row">
-          <CheckBox
-            label="显示缩放区"
-            checked={showZoom}
-            onChange={(visible) => toggleSection('cyShowZoom', visible)}
-          />
-        </div>
+        <CheckBox
+          label="显示缩放区"
+          checked={showZoom}
+          onChange={(visible) => toggleSection('cyShowZoom', visible)}
+        />
 
-        <div className="mm-u-row mm-settings__row">
-          <CheckBox
-            label="显示变换区"
-            checked={showTransformation}
-            onChange={(visible) => toggleSection('cyShowTransformation', visible)}
-          />
-        </div>
+        <CheckBox
+          label="显示变换区"
+          checked={showTransformation}
+          onChange={(visible) => toggleSection('cyShowTransformation', visible)}
+        />
 
         <div className="mm-settings__section">显示的功能项</div>
 
@@ -216,18 +214,24 @@ export default function SettingsPage() {
           </span>
         </div>
 
-        <div className="mm-u-row mm-settings__row">
-          <Button
-            variant="primary"
-            disabled={cloudBusy !== null}
-            onClick={() => void syncUpload(false)}
-          >
+        {/* 一排两个等宽按钮走组合层 `.mm-btn-grid`（只注入列数），
+            不塞进 `.mm-u-row`（那是两端铺满，两个按钮会被推到左右两端、宽度按文字）。
+            这两个是同等操作，**都不给 `variant="primary"`** —— 蓝底只留给「一行里唯一要突出的那个」。 */}
+        <div className="mm-btn-grid mm-settings__actions">
+          <Button disabled={cloudBusy !== null} onClick={() => void syncUpload(false)}>
             上传到云端
           </Button>
           <Button disabled={cloudBusy !== null} onClick={() => void syncDownload()}>
             从云端下载
           </Button>
         </div>
+
+        {/* 诊断：原来在面板头部占一整行（应用名 + 版本 + 诊断），现在收进设置页 ——
+            它是排查入口，不是每天要点的东西（2026-10-31） */}
+        <div className="mm-settings__section">诊断</div>
+        {/* 一排一个按钮就**直接放 Button**，不包一层 `.mm-u-row`
+            （同页「重置常用功能」就是这个形态；单元素进 space-between 没有意义） */}
+        <Button onClick={() => navigate('/debug')}>打开诊断页</Button>
       </div>
     </div>
   );

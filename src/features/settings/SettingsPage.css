@@ -6,7 +6,13 @@
  */
 
 .mm-settings{
-  overflow-y: auto;
+  /* 最小验证（2026-10-31）：滚动条改 `overlay` —— 浮在内容上、**不占宽度**，
+     内容盒左右 padding 都是 8 ⇒ 视觉左右对称（占位槽会让右边多出 8，就是之前不对齐的原因）。
+     滚动条宽 8 == 页边 8，正好落在右侧 padding 里，不遮内容。
+     验证通过后再推广到其它页面（`global.css` 的页面壳 + 两个通栏列表）。 */
+  overflow-y: overlay;
+  /* overlay 不占位；留着 `stable` 会把预留槽打开、又退化成占位模式 */
+  scrollbar-gutter: auto;
 }
 
 /* 纵向排列走公共 `.mm-u-col`，这里只给段间一档 ——
@@ -17,9 +23,19 @@
 
 /* 分组标题：比正文强一档、提一档字号。
    它与下面各项之间由 `__body` 的 gap 给，自己不再加 margin（规则 11：相邻两块只留一处间距） */
+/*
+ * 区块小标题：与其它页同一口径（`font-manage` 的 `.mm-font__filter-title` = 11 号 + 正文色）。
+ * 原来这里是 13 号 + `text-strong`，比正文(12)还大、还是最亮的白 ——
+ * 同一层级的名字在别的页面都不这样，看着像层级错乱（2026-10-31 用户指出）。
+ */
 .mm-settings__section{
-  color: var(--mm-color-text-strong);
-  font-size: var(--mm-font-md);
+  margin-top: var(--mm-space-1);
+  font-size: var(--mm-font-xs);
+}
+
+/* 一排两个等宽按钮：形状由组合层 `.mm-btn-grid` 给，本页只注入列数 */
+.mm-settings__actions{
+  --mm-btn-grid-cols: 2;
 }
 
 /* 横排两端铺满走公共 `.mm-u-row`，同排控件之间取同行并列档 */

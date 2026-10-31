@@ -34,11 +34,6 @@ interface Props {
   className?: string;
   /** 右下角标（原版 `iconjiaobiao`）：表示可加入自由面板 */
   badge?: boolean;
-  /**
-   * 右上角**数字**角标（已选条件数这类）。与 `badge` 是两回事：
-   * 那个是原版的小三角图标标记，这个是计数。
-   */
-  count?: number;
   disabled?: boolean;
   /** 展开态（无障碍）：不传就不输出该属性，避免普通按钮被读成可展开控件 */
   ariaExpanded?: boolean;
@@ -60,7 +55,6 @@ export const IconButton = forwardRef<HTMLButtonElement, Props>(function IconButt
     active = false,
     className = '',
     badge = false,
-    count,
     disabled = false,
     ariaExpanded,
     ariaControls,
@@ -88,7 +82,6 @@ export const IconButton = forwardRef<HTMLButtonElement, Props>(function IconButt
     >
       <Icon name={name} />
       {badge ? <Icon name="iconjiaobiao" className="mm-icon-btn__badge" /> : null}
-      {count ? <span className="mm-badge mm-badge--count mm-icon-btn__count">{count}</span> : null}
     </button>
   );
 });

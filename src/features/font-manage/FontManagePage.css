@@ -6,13 +6,27 @@
  * 本文件只给它们的「宽 / 内边距 / 最大高 / 滚动」四样（`STYLE.md` §6）。
  */
 
+/*
+ * 筛选区（搜索 / 标签）与字体列表是**同一块东西**（筛完立刻看结果），
+ * 页面壳给的组间档 8 在这里偏松 —— 收到贴合档 2。
+ *
+ * **「上」和「下」必须是同一个数**：标签行的上方距离 = toolbar 的 padding-top，
+ * 下方距离 = toolbar 的 padding-bottom(0) + 这里的 gap。所以两边都取 2 ——
+ * 否则同一行文字看着像没对齐（2026-10-31 用户指出）。
+ */
+.mm-font{
+  gap: var(--mm-space-tight);
+}
+
 .mm-font__toolbar{
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   /* 搜索行 / 预览文案行 / 标签区之间同一档 */
   gap: var(--mm-space-1);
-  padding: var(--mm-space-1) 0;
+  /* 上 2 = 标签行到上方内容的距离；下 0（交给页面壳的 gap 2）——
+     两边都是 2，标签行上下才等距 */
+  padding: var(--mm-space-tight) 0 0;
 }
 
 /* 搜索行：横排两端铺满走 `.mm-u-row`，同排控件之间取同行并列档 */
@@ -84,68 +98,22 @@
 
 /* 横排两端铺满走公共 `.mm-u-row` */
 
-.mm-font__tags-head > span{
-  flex: 1;
-}
-
-/* 标签行右侧那一组：同组图标按钮贴紧（规则 6：同组间距不得大于图标边长） */
-.mm-font__tags-tools{
-  gap: var(--mm-space-1);
-}
-
-/* 「+」与折叠箭头：整块是按钮（`mm-btn` 的 26 控件高），点区补成正方 */
-.mm-font__tags-add,
-.mm-font__tags-toggle{
+/* 标签行末尾的「+」：整块是按钮（`mm-btn` 的控件高），点区补成正方。
+   标题行 / 右侧工具组 / 折叠箭头都删了 —— 标签现在就是一行 chips，
+   「+」排在最后一个（折叠会把「+」一起裁掉，所以不做折叠，2026-10-31）。 */
+.mm-font__tags-add{
   width: var(--mm-control-h);
   padding: 0;
-}
-
-/* 展开态：底色凹下去一档表达，不变蓝也换图标色（规则 12 禁止把展开做成变色）；
-   折叠箭头本身已经在转，颜色不动。 */
-.mm-font__tags-toggle--open{
-  background: var(--mm-color-bg-input);
-}
-
-.mm-font__tag-list{
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-1);
-}
-
-.mm-font__tag-list--collapsed{
-  max-height: var(--mm-tag-collapse-h);
-  overflow: hidden;
 }
 
 /* chip 的表面（高度 / 圆角 / 底色 / 选中态）已经上收到组合层 `.mm-chip`，这里不再声明；
    `--active` 的 accent 底色也一并删掉 —— 选中态统一走 `.mm-chip--on` 的反白 */
 
-/* 计数行：11 号 + 次要色，与列表之间留一档 */
-.mm-font__list-head{
-  display: flex;
-  flex: 0 0 auto;
-  gap: var(--mm-space-1);
-  align-items: center;
-  padding: var(--mm-space-1) 0;
-  color: var(--mm-color-text-muted);
-  font-size: var(--mm-font-xs);
-}
 
-.mm-font__list-count{
-  flex: 1;
-}
 
 /* 「取消筛选」是可点动作，用 accent 文字（规则 12 第 4 类用法） */
-.mm-font__clear-tag{
-  color: var(--mm-color-accent);
-  font-size: var(--mm-font-xs);
-  cursor: pointer;
-}
 
 /* 蓝字动作的 hover 走 accent 的 hover 档（规则 12 允许该 token 只出现在 :hover 里） */
-.mm-font__clear-tag:hover{
-  color: var(--mm-color-accent-hover);
-}
 
 .mm-font__warnings{
   display: flex;

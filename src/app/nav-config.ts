@@ -21,21 +21,28 @@ export interface NavItem {
   bottom?: boolean;
 }
 
+/*
+ * **这三个页面确定不做**（2026-10-31 用户裁定）：素材库 / 自定义框架 / 批量套版。
+ * 不是"还没做"，是"不做" —— 所以不是注释掉等将来，而是从导航里删掉：
+ * 导航上挂一个永远点不动的项，就是承诺了一个不存在的东西。
+ *
+ * 原版的这三块（素材库 = 云素材中心下载；自定义框架 = 自由面板；批量套版 = 批量替换）
+ * 与本工具的定位（PS 内的重命名 / 字体 / 样式 / 动作 / 模板）不是同一条线，做进来只会稀释。
+ * 要恢复时从 git 历史取这三行即可（key 分别是 `material` / `custom` / `overprint`）。
+ */
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'template', name: '模板库', path: '/template', icon: 'icon-nav_mobanku', shortcut: 'r', implemented: false },
-  { key: 'material', name: '素材库', path: '/material', icon: 'icon-nav_sucaiku', implemented: false },
-  { key: 'custom', name: '自定义框架', path: '/custom', icon: 'icon-nav_zidingyikuangjia', shortcut: 'm', implemented: false },
+  { key: 'template', name: '模板库', path: '/template', icon: 'icon-nav_mobanku', shortcut: 'r', implemented: true },
   { key: 'common', name: '常用功能', path: '/common', icon: 'icon-nav_changyonggongneng', shortcut: 'a', implemented: true },
   { key: 'font', name: '字体面板', path: '/font', icon: 'icon-nav_zitimianban', shortcut: 't', implemented: true },
   { key: 'font-manage', name: '字体管理', path: '/font-manage', icon: 'icon-nav_zitiguanli', shortcut: 'h', implemented: true },
   { key: 'style', name: '样式面板', path: '/style', icon: 'icon-nav_yangshiku', shortcut: 'u', implemented: true },
   { key: 'action', name: '动作管理', path: '/action', icon: 'icon-nav_dongzuoku', shortcut: 'w', implemented: true },
   { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: true },
-  { key: 'overprint', name: '批量套版', path: '/overprint', icon: 'icon-nav_piliangtaoban', implemented: false },
   { key: 'set', name: '设置', path: '/set', icon: 'iconyonghushezhi', implemented: true, bottom: true }
 ];
 
 export const TOP_ITEMS = NAV_ITEMS.filter((item) => !item.bottom);
 export const BOTTOM_ITEMS = NAV_ITEMS.filter((item) => item.bottom);
 
-export const DEFAULT_PATH = '/style';
+/** 打开面板落在哪一页：**字体面板**（`/font`）。`/` 与未匹配路径都跳这里 */
+export const DEFAULT_PATH = '/font';

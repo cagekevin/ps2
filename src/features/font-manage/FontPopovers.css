@@ -47,7 +47,8 @@
   display: flex;
   align-items: center;
   gap: var(--mm-space-1);
-  margin-left: auto;
+  /* 不写 `margin-left: auto`：底栏本身已经是 `flex-start`，加 auto 会把这一组顶到最右，
+     同一页其它底栏（样式页、动作页）都是贴左的（2026-10-31 用户指出） */
 }
 
 /* 字重下拉：宽取内容、最小 `--mm-weight-menu-min-w`，内边距 / 最大高 / 滚动按 §6 只写这四样 */

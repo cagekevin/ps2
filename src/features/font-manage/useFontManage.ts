@@ -135,10 +135,6 @@ export function useFontManage() {
 
   const categories = useMemo(() => usableCategoriesOf(classification), [classification]);
   const hasFilter = hasActiveFilter({ keyword, tag: activeTag, state: filterState });
-  const countLabel = activeTag || '全部';
-  const countText = hasFilter
-    ? `${countLabel}(${filtered.length})`
-    : `${countLabel}(${fonts.length})`;
 
   /**
    * 统一的失败出口：**实现委托给 `runCommand`**，这里只把 `Result` 折成 `boolean`
@@ -264,7 +260,6 @@ export function useFontManage() {
     filterState,
     setFilterState,
     categories,
-    countText,
     hasFilter,
     clearFilters,
     activeFamily,

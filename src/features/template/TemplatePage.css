@@ -1,0 +1,327 @@
+/*
+ * 模板库页样式。
+ *
+ * 只有本页用的排法（等高列网格）写在页面 css 里，**不上升为组合层**
+ * （`STYLE` §6.2：单消费者不建公共件；先例 `ExportPanel` 的 `.mm-common__form-row`）。
+ *
+ * 为什么不用 `.mm-u-tiles`：那个是「块贴左换行、不拉伸」，做不到「两列铺满页宽 + 列数随面板自适应」。
+ * 值一律走 token：颜色 / 间距 / 圆角 / 字号不写字面量。
+ */
+
+.mm-template {
+  height: 100%;
+  min-height: 0;
+}
+
+/*
+ * 路径行：**固定占一行**（`--mm-control-h` 26 高）+ 底边细线，让它一眼是「路径栏」而不是浮在内容上的文字。
+ * 形状仍按 §4-A4：文字链、无底框、不变蓝；末级是纯文本（点它没有意义）。
+ * 左侧文件夹图标是这一行的锚点 —— 用户先看见「文件夹」，才知道这是一条路径。
+ */
+.mm-template__crumb {
+  flex: 0 0 auto;
+  min-height: var(--mm-control-h);
+  border-bottom: var(--mm-border-w) solid var(--mm-color-border);
+}
+
+.mm-template__crumb-icon {
+  font-size: var(--mm-icon-sm);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-template__crumb-sep {
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-template__crumb-current {
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text-dim);
+}
+
+/* 内容区：自己滚，底栏固定 */
+.mm-template__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 滚动条改 overlay：浮在内容上不占宽度，内容左右 padding 都是 8 ⇒ 视觉左右对称（占位槽会让右边多 8）。
+     滚动条宽 8 == 页边 8，正好落在右侧 padding 里，不遮内容。全仓页面级滚动容器统一（2026-10-31）。 */
+  overflow-y: overlay;
+  /* 底部多留「按钮 + 它离底的距离」：右下角的存入口是 `fixed`，否则会压住最后一行的右侧那一格 */
+  padding: var(--mm-space-1) 0 calc(var(--mm-fab-size) + var(--mm-space-4) + var(--mm-space-2));
+}
+
+.mm-template__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--mm-template-card-min), 1fr));
+  gap: var(--mm-space-2);
+}
+
+/* 卡片：比页面亮一档；hover 只叠底 + 亮线，不变蓝（`STYLE` §7 规则 12） */
+.mm-template__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: var(--mm-space-1);
+  background: var(--mm-color-bg-hover);
+  border: var(--mm-border-w) solid transparent;
+  border-radius: var(--mm-radius-md);
+}
+
+.mm-template__card:hover,
+.mm-template__card:focus-within {
+  background: var(--mm-color-bg-active);
+  border-color: var(--mm-color-border);
+}
+
+/*
+ * 缩略图与眼睛的定位容器：**高度完全由缩略图决定**（自己不设高、不设比例），
+ * 所以里面居中 = 图像正中。`display: block` 让缩略图按块级撑满同一宽度。
+ */
+.mm-template__media {
+  position: relative;
+  display: block;
+}
+
+/* 缩略图区：4:3 固定比例（高度随列宽走，全页同一尺寸）；`relative` 是给文件夹角标定锚。
+   `width: 100%` 必须写：`<button>` 不给宽时按内容宽，套进容器后会把 4:3 算成很小的方块。 */
+.mm-template__thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--mm-color-bg-input);
+  border-radius: var(--mm-radius-sm);
+}
+
+/*
+ * 文件夹的条目数：贴在缩略图**右上角**，只有数字、没有底色块。
+ * 底色块在 4:3 的小缩略图上会盖掉一块画面，而 0 / 1 这种一位数不需要底板也看得清。
+ */
+.mm-template__badge {
+  position: absolute;
+  top: var(--mm-space-tight);
+  right: var(--mm-space-1);
+  font-size: var(--mm-font-xs);
+  line-height: var(--mm-line-16);
+  color: var(--mm-color-text-muted);
+}
+
+.mm-template__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 缩略图缺失时占位：不画破图，也不留空白 */
+.mm-template__thumb--missing::after {
+  content: '';
+  width: var(--mm-icon-nav);
+  height: var(--mm-icon-nav);
+  border: var(--mm-border-w) dashed var(--mm-color-border);
+  border-radius: var(--mm-radius-sm);
+}
+
+/*
+ * 文件夹卡没有缩略图：**不留衬底**。
+ * 那块 `--mm-color-bg-input` 是给图片 letterbox 垫底用的，没有图片时它只是一块
+ * 与卡片割裂的深色方块 —— 文件夹卡要和卡片本身一体。
+ */
+.mm-template__thumb--plain {
+  background: none;
+}
+
+.mm-template__icon {
+  font-size: var(--mm-icon-nav);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-template__name {
+  margin-top: var(--mm-space-1);
+  overflow: hidden;
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-16);
+  color: var(--mm-color-text);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+ * 眼睛：压在缩略图**正中间**，hover / 键盘聚焦时才出现。
+ *
+ * 选择器带 `.mm-template__card` 前缀是必须的：`IconButton` 自带
+ * `.mm-icon-btn{position:relative}`（同为 0,1,0），而 `icon-button.css` 常常晚于本文件加载，
+ * 单类写法会被顶回 `relative`，眼睛就跑到名字下面去了。
+ */
+.mm-template__card .mm-template__eye {
+  position: absolute;
+  /* 居中用 `inset: 0 + margin: auto`：对**任意尺寸**都成立。
+     不能用 `top/left: 50%` + 负 margin —— 这个按钮挂了 `mm-icon-btn--inline`，
+     实际尺寸是 20 而不是 `--mm-icon-btn-size`(26)，按 26 算会偏 3px（看着就是没居中）。 */
+  inset: 0;
+  margin: auto;
+  opacity: 0;
+}
+
+.mm-template__card:hover .mm-template__eye,
+.mm-template__card:focus-within .mm-template__eye {
+  opacity: 1;
+}
+
+
+
+/*
+ * 右下角常驻存入口（照原版 `.add-wrap`：一个方块按钮浮在右下）。
+ * 原版 32×32 / right 20 / bottom 42；这里用现有档位：26（`--mm-control-h`）× 26、
+ * 右 8（页边）、距底 = 底栏 26 + 8。不新增尺寸 token —— 26 已经是全仓控件高度。
+ */
+.mm-template__fab {
+  position: fixed;
+  /* 原版 `.add-wrap`：right 20 / bottom 42 —— 都按「底栏 26 之上再留 16」算的。
+     本页**没有底栏**了（2026-10-31 删掉，那行只有「共 N 个内容」，没有信息量），
+     所以 bottom 直接贴到 16。 */
+  right: var(--mm-space-4);
+  bottom: var(--mm-space-4);
+  z-index: var(--mm-z-nav);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-fab-size);
+  height: var(--mm-fab-size);
+  /* 原版图标 18（取最近档 20）；底色原版 `#006fff` = `--mm-color-accent` */
+  font-size: var(--mm-icon-btn);
+  color: var(--mm-color-text-inverse);
+  cursor: pointer;
+  background: var(--mm-color-accent);
+  border: none;
+  /* 原版 radius 6 */
+  border-radius: var(--mm-radius-lg);
+  box-shadow: 0 2px 10px var(--mm-color-mask-faint);
+}
+
+.mm-template__fab:hover:not(:disabled) {
+  background: var(--mm-color-accent-hover);
+}
+
+/* 没文档 / 没选中图层时置灰：点了只会拿回一个 `{err}`，不如直接说清楚 */
+.mm-template__fab:disabled {
+  cursor: default;
+  background: var(--mm-color-bg-raised);
+  color: var(--mm-color-text-faint);
+  box-shadow: none;
+}
+
+/* 刚存进来的那条：底色升一档 + 亮线，2s 后自然消失（不用蓝，`STYLE` 规则 12） */
+.mm-template__card--new {
+  background: var(--mm-color-bg-active);
+  border-color: var(--mm-color-border-control);
+}
+
+/* 正在被拖的那张：弱化一点，让"拖着的那个在手上"的感觉成立 */
+.mm-template__card--dragging {
+  opacity: 0.4;
+}
+
+/* 缩略图缺失的占位：虚线框，不画破图 */
+.mm-template__missing {
+  width: var(--mm-icon-nav);
+  height: var(--mm-icon-nav);
+  border: var(--mm-border-w) dashed var(--mm-color-border);
+  border-radius: var(--mm-radius-sm);
+}
+
+
+
+/*
+ * 遮罩：**形状**由全局 `.mm-modal-mask` 给（fixed inset 0 + 居中），这里只补「压暗」。
+ * 与 `StateMask` / `InputDialog` 同一写法 —— 全局那个不带上底色，压暗由使用处给
+ * （`Loading.css` 的文件头也这么写）。不另造第二个遮罩壳。
+ */
+.mm-template__mask {
+  padding: var(--mm-space-4);
+  background: var(--mm-color-mask);
+}
+
+/* 大图：按窗口最大显示，不缩放交互 */
+.mm-template__preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.mm-template__preview-close {
+  position: absolute;
+  top: var(--mm-space-2);
+  right: var(--mm-space-2);
+}
+
+/* ---------------- 「移动到…」级联选择（页面私有浮层） ---------------- */
+
+/*
+ * 面板：挂 `.mm-popover`（全仓浮层壳，给底色 / 圆角 / 投影 / 黑字），
+ * 定位由 `useFloatingPosition` 写进 `--floating-x/y`，**没有遮罩、不居中** ——
+ * 它是右键菜单的下一层，位置必须跟着鼠标走。
+ */
+.mm-template__picker {
+  min-width: calc(var(--mm-control-h) * 5);
+  padding: var(--mm-space-1) 0;
+}
+
+.mm-template__picker-title {
+  padding: var(--mm-space-1) var(--mm-space-2);
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-faint);
+}
+
+.mm-template__picker-level {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 子级：贴在这一行的右侧弹出（`left: 100%`），层级靠位置表达，不画树 */
+.mm-template__picker-level--sub {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  min-width: 100%;
+  padding: var(--mm-space-1) 0;
+  background: var(--mm-color-bg-popover);
+  color: var(--mm-color-text-popover);
+  border-radius: var(--mm-radius-md);
+  box-shadow: var(--mm-shadow-popover);
+}
+
+.mm-template__picker-row {
+  position: relative;
+  display: flex;
+}
+
+.mm-template__picker-item {
+  display: flex;
+  gap: var(--mm-space-inline);
+  align-items: center;
+  width: 100%;
+  height: var(--mm-control-h);
+  padding: 0 var(--mm-space-2);
+  font-size: var(--mm-font-sm);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+/* hover 用浅色表面的那一档（`--mm-color-hover-popover`），不是深色面板的 hover */
+.mm-template__picker-item:hover {
+  background: var(--mm-color-hover-popover);
+}
+
+.mm-template__picker-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

@@ -147,6 +147,12 @@ export const VENDOR_FUNCS = [
   'cy_createSafeAreaGuide',
   'cy_guideFunction',
   'cy_openDirectory',
+  /* 模板库：原版面板那批函数（存 / 重建预览 / 应用 / 打开源文件 / 开目录） */
+  'ps_mbAddPsd',
+  'mb_amendPreview',
+  'mb_useTemplate',
+  'mb_openTemplatePsd',
+  'Fs_openFolder',
   'cy_getImagePath',
   'cy_getPsdForFolder',
   'cy_insertionImage',

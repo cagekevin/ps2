@@ -1,9 +1,14 @@
 /**
- * 我的标签：标题 + 新建 + 折叠（容器 max-height 94px）。
- * 标签读不到时说一句，不让标签区静默变空。
+ * 字体标签筛选：一行 chips，末尾一个「+」新建。
+ *
+ * 形态（2026-10-31 用户裁定）：
+ *   - 没有标题行 —— 标签直接跟着上面的筛选行走，不再自称一块；
+ *   - **第一个 chip 是「全部」**，和标签同排、可点（= 清空标签筛选，回到全量）；
+ *   - 「+」放在**标签最后面**，跟 chips 同排换行。
+ *
+ * **不做折叠**：折叠会把排在末尾的「+」一起裁掉，用户就点不到新建了。
  */
-import { useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
-import { Chevron } from '../../../components/Chevron';
+import type { MouseEvent } from 'react';
 import { Button } from '../../../components/ui';
 import type { FontTag } from '../../../domain/font-meta';
 import { TagChip } from './TagChip';
@@ -13,74 +18,39 @@ interface Props {
   error: string;
   activeTag: string;
   onSelect: (tag: string) => void;
+  /** 「全部」chip：清空标签筛选 */
+  onClear: () => void;
   onContext: (event: MouseEvent<HTMLButtonElement>, tag: string) => void;
   onCreate: () => void;
 }
 
-export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreate }: Props) {
-  const [open, setOpen] = useState(true);
-  const [overflow, setOverflow] = useState(false);
-  const listRef = useRef<HTMLDivElement | null>(null);
-
-  useLayoutEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-
-    /* 折叠高度以 CSS 变量为唯一来源，别在 TS 里再写一遍 94 */
-    const limit =
-      Number.parseFloat(getComputedStyle(el).getPropertyValue('--mm-tag-collapse-h')) || 94;
-    const next = el.scrollHeight > limit;
-    setOverflow(next);
-    if (!next) setOpen(true);
-  }, [tags]);
+export function TagFilter({ tags, error, activeTag, onSelect, onClear, onContext, onCreate }: Props) {
+  /* 标签读不到时说一句，不让标签区静默变空 */
+  if (error) {
+    return (
+      <div className="mm-notice mm-notice--error">{error}（标签读取失败，字体列表不受影响）</div>
+    );
+  }
 
   return (
-    <section>
-      <div className="mm-u-row mm-font__tags-head">
-        <span>我的标签</span>
-        <div className="mm-u-row mm-font__tags-tools">
-          {/* 「+」与折叠箭头都是**纯图标按钮**：走 `ghost`，常态无底，hover 才叠一档。
-              挂默认（实心灰底）会让它们看起来像两个被选中的小块 —— 那底色是给带文字按钮的。 */}
-          <Button
-            variant="ghost"
-            className="mm-font__tags-add"
-            aria-label="新建标签"
-            onClick={onCreate}
-          >
-            +
-          </Button>
-          {overflow ? (
-            <Button
-              variant="ghost"
-              className={`mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
-              aria-label="展开或收起标签"
-              aria-expanded={open}
-              onClick={() => setOpen((value) => !value)}
-            >
-              <Chevron open={open} />
-            </Button>
-          ) : null}
-        </div>
-      </div>
+    <div className="mm-u-tiles">
+      {/* 「全部」和标签是同一类东西（一个筛选值），所以是 chip；它不可改名/删除，故不挂右键 */}
+      <TagChip text="全部" active={activeTag === ''} onClick={onClear} />
 
-      {error ? (
-        <div className="mm-notice mm-notice--error">{error}（标签读取失败，字体列表不受影响）</div>
-      ) : (
-        <div
-          ref={listRef}
-          className={`mm-font__tag-list${overflow && !open ? ' mm-font__tag-list--collapsed' : ''}`}
-        >
-          {tags.map((tag) => (
-            <TagChip
-              key={tag.text}
-              text={tag.text}
-              active={activeTag === tag.text}
-              onClick={() => onSelect(activeTag === tag.text ? '' : tag.text)}
-              onContextMenu={(event) => onContext(event, tag.text)}
-            />
-          ))}
-        </div>
-      )}
-    </section>
+      {tags.map((tag) => (
+        <TagChip
+          key={tag.text}
+          text={tag.text}
+          active={activeTag === tag.text}
+          onClick={() => onSelect(activeTag === tag.text ? '' : tag.text)}
+          onContextMenu={(event) => onContext(event, tag.text)}
+        />
+      ))}
+
+      {/* 「+」是**纯图标按钮**：走 `ghost`，常态无底、hover 才叠一档 */}
+      <Button variant="ghost" className="mm-font__tags-add" aria-label="新建标签" onClick={onCreate}>
+        +
+      </Button>
+    </div>
   );
 }

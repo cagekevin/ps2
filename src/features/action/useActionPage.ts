@@ -13,23 +13,19 @@ import type { MenuItem } from '../../components/ContextMenu';
 import {
   addFromPs as addFromPsCommand,
   addGroup as addGroupCommand,
-  addWarehouse as addWarehouseCommand,
   call as callCommand,
   canAskGuide,
   deleteAlias as deleteAliasCommand,
   deleteGroup as deleteGroupCommand,
   deleteItem as deleteItemCommand,
-  deleteWarehouse as deleteWarehouseCommand,
   exportLibrary,
   listPsActions,
   importLibrary,
   importPreset,
   markGuideDone,
   renameGroup as renameGroupCommand,
-  renameWarehouse as renameWarehouseCommand,
   reorderGroup as reorderGroupCommand,
   reorderItem as reorderItemCommand,
-  selectWarehouse as selectWarehouseCommand,
   setAlias as setAliasCommand,
   setListColumns,
   toggleGroup as toggleGroupCommand
@@ -88,14 +84,7 @@ export function useActionPage() {
     load();
   }, [load]);
 
-  const warehouses = index?.list ?? [];
-  const currentIndex = index?.index ?? 0;
-
   /* ---------------- 基本操作 ---------------- */
-
-  function switchWarehouse(value: string): void {
-    void run(() => selectWarehouseCommand(Number(value)));
-  }
 
   /** 折叠态写仓库文件的 `show` 字段（不是本地偏好），所以走命令 */
   function toggleGroup(at: number, open: boolean): void {
@@ -192,22 +181,6 @@ export function useActionPage() {
     const accepted = await confirm({ title: `删除动作「${name}」？` });
     if (!accepted) return;
     void run(() => deleteItemCommand(groupIndex, itemIndex), { success: MSG.action.doneDelete });
-  }
-
-  /* ---------------- 仓库增删改 ---------------- */
-
-  function addWarehouse(): void {
-    void run(addWarehouseCommand, { success: MSG.action.doneCreate });
-  }
-
-  async function removeWarehouse(name: string, at: string): Promise<void> {
-    const accepted = await confirm({ title: `删除仓库「${name}」？` });
-    if (!accepted) return;
-    void run(() => deleteWarehouseCommand(Number(at)), { success: MSG.action.doneDelete });
-  }
-
-  function renameWarehouse(name: string): void {
-    void run(() => renameWarehouseCommand(currentIndex, name), { success: MSG.action.doneRename });
   }
 
   /* ---------------- 导入导出 ---------------- */
@@ -385,15 +358,12 @@ export function useActionPage() {
   }, [index, confirm, run]);
 
   return {
-    warehouses,
-    currentIndex,
     groups,
     dropped,
     columns,
     failures,
     menu,
     dialog,
-    switchWarehouse,
     toggleGroup,
     callAction,
     notifyFreePanel,
@@ -419,9 +389,6 @@ export function useActionPage() {
     openAddGroup: () => setDialog({ kind: 'addGroup' }),
     closeDialog: () => setDialog(null),
     submitDialog,
-    addWarehouse,
-    removeWarehouse,
-    renameWarehouse,
     openExportMenu,
     openImportMenu,
     reload: load

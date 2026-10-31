@@ -10,7 +10,9 @@
    只有落在**壳自己的 padding** 里才不会被 `overflow` 裁掉。
    壳不滚、让中间那层滚时，外扩的 8px 全在滚动容器之外，抽屉底色就差 8px 不通栏。 */
 .mm-common{
-  overflow-y: auto;
+  /* 滚动条改 overlay：浮在内容上不占宽度，内容左右 padding 都是 8 ⇒ 视觉左右对称（占位槽会让右边多 8）。
+     滚动条宽 8 == 页边 8，正好落在右侧 padding 里，不遮内容。全仓页面级滚动容器统一（2026-10-31）。 */
+  overflow-y: overlay;
 }
 
 .mm-common__body{

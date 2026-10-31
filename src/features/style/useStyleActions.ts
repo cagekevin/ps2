@@ -279,9 +279,11 @@ export function useStyleActions() {
    *
    * 项：删除 / 重命名 /[颜色库] 分隔 / 发送到色板 / 追加到色板
    * 组：创建新组 / 分隔 / 删除 / 重命名 / 分隔 /[颜色库] 发送到色板 / 追加到色板 / 分隔 /
-   *     快速吸色到组 / 分隔 / 发送到仓库… / 移动到仓库…
+   *     快速吸色到组
    *
-   * 色板与仓库相关命令还没实现，**渲染但置灰**——不静默消失，让人知道有这项功能。
+   * 色板相关命令还没实现，**渲染但置灰**——不静默消失，让人知道有这项功能。
+   * **「发送到仓库…」「移动到仓库…」已删**（2026-10-31）：单仓库之后没有第二个仓库可发/可移，
+   * 留着两个永远置灰的项就是空承诺。
    */
   function buildMenuItems(target: MenuTarget): MenuItem[] {
     if (target.type === 'item') {
@@ -320,12 +322,7 @@ export function useStyleActions() {
       { label: '', separator: true }
     ];
 
-    const warehouse: MenuItem[] = [
-      { label: '发送到仓库…', disabled: true },
-      { label: '移动到仓库…', disabled: true }
-    ];
-
-    if (activeKind !== 'color') return [...head, ...warehouse];
+    if (activeKind !== 'color') return head;
 
     return [
       ...head,
@@ -341,9 +338,7 @@ export function useStyleActions() {
       {
         label: '快速吸色到组',
         onSelect: () => void handlePickColorToGroup(target.groupIndex)
-      },
-      { label: '', separator: true },
-      ...warehouse
+      }
     ];
   }
 

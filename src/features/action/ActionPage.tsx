@@ -19,7 +19,6 @@ import { Button } from '../../components/ui';
 import { MSG } from '../../types/messages';
 import { ACTION_ICONS } from './action-constants';
 import { AddActionDialog } from './components/AddActionDialog';
-import { WarehouseBar } from './components/WarehouseBar';
 import { useActionPage } from './useActionPage';
 import './ActionPage.css';
 
@@ -56,14 +55,6 @@ export default function ActionPage() {
           </div>
         ) : null}
 
-        <WarehouseBar
-          warehouses={page.warehouses}
-          currentIndex={page.currentIndex}
-          onChange={page.switchWarehouse}
-          onAdd={page.addWarehouse}
-          onRemove={page.removeWarehouse}
-          onRename={page.renameWarehouse}
-        />
 
         <div className="mm-action__list" ref={page.listRef}>
           {page.groups.map((group, groupIndex) => (

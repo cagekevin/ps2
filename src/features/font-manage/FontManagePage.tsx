@@ -9,7 +9,6 @@
 import { StateHint } from '../../components/StateHint';
 import { Button } from '../../components/ui';
 import { FontListItem } from './components/FontListItem';
-import { CountRow } from './components/CountRow';
 import { PageFooter } from './components/PageFooter';
 import { FontMenu } from './components/FontMenu';
 import { PreviewText } from './components/PreviewText';
@@ -57,16 +56,11 @@ export default function FontManagePage() {
           error={page.tagsError}
           activeTag={page.activeTag}
           onSelect={page.setActiveTag}
+          onClear={() => page.setActiveTag('')}
           onContext={page.openTagContext}
           onCreate={page.openTagCreator}
         />
       </div>
-
-      <CountRow
-        text={page.countText}
-        activeTag={page.activeTag}
-        onClear={() => page.setActiveTag('')}
-      />
 
       <div className="mm-u-col mm-font__warnings">
         {page.dropped.length > 0 ? (

@@ -7,13 +7,29 @@
   position: relative;
   /* 自成一个层叠上下文：伪元素的 z-index:-1 才落在内容之下、而不是父层背景之后 */
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  /* 上下 8（组间档）；左右为 0 —— 左右位置不动，通栏交给 `::before` 的底色层 */
+  /* 上下 8（组间档）、左右 0 —— 左右位置不动，通栏交给 `::before` 的底色层。
+     2026-10-31 回过一次：网格按钮从 26 降到 24 之后，抽屉上下再留 12 反而显空，
+     所以 padding 保持原值，收紧靠内部行距（下面那条 gap）。 */
   padding: var(--mm-space-2) 0;
   margin: var(--mm-space-2) 0;
+  /* 抽屉**内部**的行距：比页面组间(8)紧一档 —— 这些行属于同一块设置，
+     用组间档会让它们看着像互不相干的区块（2026-10-31 调整） */
+  gap: var(--mm-space-inline);
   /* 抽屉表面上的输入位比抽屉再深一档（`CONVENTIONS` §7 规则 15）：
      表面声明、控件消费，输入框自己不判断落在哪儿 */
   --mm-input-bg: var(--mm-color-bg-input-drawer);
+}
+
+/*
+ * 调用方常把抽屉内容包一层 `.mm-u-col`：抽屉是**表面**，里面的行距由表面说了算
+ * （`STYLE.md` §7 规则 19），否则同一个抽屉在不同页面里行距不一样。
+ * 只压 `gap`，不动 `.mm-u-col` 的其它属性。
+ */
+.mm-icon-panel__box > .mm-u-col{
+  gap: var(--mm-space-inline);
 }
 
 /*
@@ -39,7 +55,8 @@
   display: flex;
   align-items: center;
   width: 100%;
-  gap: var(--mm-space-1);
+  /* 不加 gap：箭头与标题文字之间的空格由 `.mm-chevron + *` 统一给（6），
+     这里再给一份会叠成 10 */
   cursor: pointer;
 }
 

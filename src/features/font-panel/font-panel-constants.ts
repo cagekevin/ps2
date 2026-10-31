@@ -56,8 +56,12 @@ export const SPLIT_TITLES = [
   '将多个文本合并为段落'
 ] as const;
 
-/** 生成按钮的内边距预设（`app.v4.js:39056`）与 1~8 快档（`:39033`） */
-export const CREATE_BUTTON_PADDINGS = ['10,5', '28,12', '15=3:1'] as const;
+/**
+ * 生成按钮的 1~8 快档（`app.v4.js:39033`）。
+ *
+ * 原版 `:39056` 还有三个内边距预设（`10,5` / `28,12` / `15=3:1`），**已删**（2026-10-31 用户裁定）：
+ * 这三种写法的实际用途重复于下面 1~8 快档 + 手填输入框，多三个按钮只是多三处要维护的文案。
+ */
 export const CREATE_BUTTON_PRESETS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 
 export const HIERARCHY_TITLES = [

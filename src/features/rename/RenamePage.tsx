@@ -121,10 +121,10 @@ export default function RenamePage() {
         )}
 
         {page.failure ? (
-          <div className="mm-u-row">
-            <span>{page.failure.reason}</span>
-            <Button onClick={page.reload}>{'重试'}</Button>
-          </div>
+          /* 失败提示走唯一入口 `StateHint`：文案取生产者的 `reason`、`detail` 挂 title、
+             重试只在 `IO_ERROR` 出现（不是任何错都给重试 —— 把 bug 伪装成可重试更糟）。
+             原先这里是手写的 `<span>` + `<Button>重试</Button>`，与其它 19 处形态不一致。 */
+          <StateHint result={page.failure} onRetry={() => void page.reload()} />
         ) : page.dropped.length ? (
           <div className="mm-notice mm-notice--warn" title={page.dropped
             .slice(0, 3)

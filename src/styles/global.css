@@ -145,7 +145,8 @@ button{
 .mm-home,
 .mm-rename,
 .mm-settings,
-.mm-style{
+.mm-style,
+.mm-template{
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -156,9 +157,8 @@ button{
   /* 区块之间（状态行 / 操作行 / 内容区、工具栏 / 列表…）：原版用 `mt10` 这一档（15 次，纵向主力），
      落回六档的「组间」8。放在页面壳而不是各页，是为了七页同值（规则 5：没有横向例外，纵向同理）。 */
   gap: var(--mm-space-2);
-  /* 滚动条出现时不挤内容：常用页一开抽屉高度就变、滚动条随之出现，内容横向抖 8px（官方不抖）。
-     槽位恒定由这里给，页面只管 `overflow-y`；对不滚动的元素无副作用。 */
-  scrollbar-gutter: stable;
+  /* 不再预留滚动条槽：各页的滚动容器统一用 `overflow-y: overlay`（见各页 css），
+     滚动条浮在页边里、不占宽度，天然不抖 —— 留着 `stable` 反而让右边多出 8。 */
   /* 承载行的左右 padding 合计：抽屉底色靠它左右铺满（`IconPanel` 的 `__box::before`） */
   --mm-icon-panel-bleed: var(--mm-page-pad-x);
 }
@@ -167,9 +167,10 @@ button{
 .mm-style__list{
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  /* 同上：触底加载把滚动条挤出来时，列表文字不横移 */
-  scrollbar-gutter: stable;
+  /* 滚动条改 overlay：浮在内容上不占宽度，内容左右 padding 都是 8 ⇒ 视觉左右对称（占位槽会让右边多 8）。
+     滚动条宽 8 == 页边 8，正好落在右侧 padding 里，不遮内容。全仓页面级滚动容器统一（2026-10-31）。 */
+  overflow-y: overlay;
+
 }
 
 .mm-check__input,
@@ -304,10 +305,25 @@ button{
 /* 按钮排 / 网格：≥2 个**等宽**按钮（缩放档位、字号预设、内边距预设、九宫格点阵）。
    用 grid 不是 flex：等宽是对齐要求，flex 得靠百分比或 grow 凑，列数一变就不等宽。
    列数是运行时值（页面按数据算），按 §14.1 走变量注入，这里不写字面量。 */
+/*
+ * 等宽按钮网格（组合层）：列数由调用方注入 `--mm-btn-grid-cols`，**gap 也归这里**。
+ *
+ * 网格里的按钮比标准控件矮一档（26 → 22）：这类按钮是「成片的功能格」
+ * （6/8 个数值、2×2 拆分、动作列表），用控件档会又胖又占地方 —— 一排 8 个时尤其明显。
+ * 这不是给某页调，是全仓网格统一（2026-10-31 调整，原来各页自己拿控件档，偏高）。
+ *
+ * **页面不许再覆写 `gap`**：抽屉里那两处 `gap: var(--mm-space-3)` 已删 —— 同一套网格
+ * 在两个页面里间距不一样，下一个人只能靠猜。
+ */
 .mm-btn-grid{
   display: grid;
   grid-template-columns: repeat(var(--mm-btn-grid-cols, 4), minmax(0, 1fr));
   gap: var(--mm-space-1);
+}
+
+.mm-btn-grid > .mm-btn{
+  /* 26 → 24：只矮一个「贴合档」。再矮（22）文字上下只剩 3px，看着贴边发塌 */
+  height: calc(var(--mm-control-h) - var(--mm-space-tight));
 }
 
 input,

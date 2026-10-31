@@ -13,7 +13,6 @@ import { ContextMenu } from '../../components/ContextMenu';
 import { GroupHead } from '../../components/GroupHead';
 import { Icon } from '../../components/icons';
 import { InlineEdit } from '../../components/InlineEdit';
-import { SelectBox } from '../../components/SelectBox';
 import { useFloatingPosition } from '../../hooks/useFloatingPosition';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { failWithDetail, ok } from '../../types/result';
@@ -56,11 +55,11 @@ export default function StylePage() {
   const load = useStyleLibraryStore((state) => state.load);
   const loadingLibrary = useStyleLibraryStore((state) => state.loading);
   const indexFailure = useStyleLibraryStore((state) => state.indexFailure);
+  /* 仓库不再显示，但「拖图入库」要知道写进哪个库文件，所以这两个数据仍要订阅 */
   const warehouses = useStyleLibraryStore((state) => state.warehouses);
   const activeIndex = useStyleLibraryStore((state) => state.activeIndex);
   const activeKind = useStyleLibraryStore((state) => state.activeKind);
   const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
-  const selectWarehouse = useStyleLibraryStore((state) => state.selectWarehouse);
   const libraries = useStyleLibraryStore((state) => state.libraries);
   const groups = useStyleLibraryStore((state) => state.libraries[state.activeKind]);
   const failure = useStyleLibraryStore((state) => state.failures[state.activeKind]);
@@ -157,31 +156,15 @@ export default function StylePage() {
     runWithFeedback
   } = useStyleActions();
 
-  const warehouseOptions = warehouses.map((warehouse, index) => ({
-    value: String(index),
-    label: warehouse.name
-  }));
-
   return (
     <section
       className="mm-style"
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => void handleDropImage(event)}
     >
+      {/* 没有仓库切换：单仓库（只有一个库文件，仓库名对用户没有信息量）。
+          保留这一行只为显示读取态。 */}
       <div className="mm-u-row mm-style__toolbar">
-        {warehouseOptions.length ? (
-          <SelectBox
-            className="mm-style__warehouse"
-            value={String(activeIndex)}
-            options={warehouseOptions}
-            icon={<Icon name="iconmorencangku" />}
-            onChange={(next) => {
-              void selectWarehouse(Number(next));
-            }}
-          />
-        ) : (
-          <StateHint empty="未找到仓库" />
-        )}
         {loadingLibrary ? <span className="mm-style__loading">读取中…</span> : null}
       </div>
 

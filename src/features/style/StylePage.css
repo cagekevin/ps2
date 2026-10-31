@@ -7,15 +7,6 @@
 
 /* 仓库条：官方是**通栏深色横条**（贴面板左右边、直角、高度更大），不是输入框。
    SelectBox 组件不动，这里只覆盖这一处：通栏 + 高度 + 去掉输入位的描边/圆角/底色。 */
-.mm-style__warehouse{
-  flex: 1 1 auto;
-  height: var(--mm-warehouse-h);
-  margin: 0 calc(-1 * var(--mm-page-pad-x));
-  padding: 0 var(--mm-page-pad-x);
-  border: 0;
-  border-radius: 0;
-  background: var(--mm-color-bg-drawer);
-}
 
 
 

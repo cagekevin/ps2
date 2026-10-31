@@ -68,7 +68,6 @@ export function SearchRow({
         title="筛选"
         className="mm-icon-btn--inline"
         active={open || filterCount > 0}
-        count={filterCount || undefined}
         ariaExpanded={open}
         disabled={!categories.length}
         onClick={() => setOpen((value) => !value)}
