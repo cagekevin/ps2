@@ -39,11 +39,19 @@ export function TagFilter({ tags, error, activeTag, onSelect, onContext, onCreat
       <div className="mm-u-row mm-font__tags-head">
         <span>我的标签</span>
         <div className="mm-u-row mm-font__tags-tools">
-          <Button className="mm-font__tags-add" aria-label="新建标签" onClick={onCreate}>
+          {/* 「+」与折叠箭头都是**纯图标按钮**：走 `ghost`，常态无底，hover 才叠一档。
+              挂默认（实心灰底）会让它们看起来像两个被选中的小块 —— 那底色是给带文字按钮的。 */}
+          <Button
+            variant="ghost"
+            className="mm-font__tags-add"
+            aria-label="新建标签"
+            onClick={onCreate}
+          >
             +
           </Button>
           {overflow ? (
             <Button
+              variant="ghost"
               className={`mm-font__tags-toggle${open ? ' mm-font__tags-toggle--open' : ''}`}
               aria-label="展开或收起标签"
               aria-expanded={open}

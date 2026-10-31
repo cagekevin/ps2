@@ -7,7 +7,8 @@
 .mm-action-dialog{
   display: flex;
   flex-direction: column;
-  gap: var(--mm-space-2);
+  /* 弹窗内段落之间与 `.mm-modal` 同值（规则 9：同类同尺寸）—— 原版弹窗用 `mt15` 那一档 */
+  gap: var(--mm-space-3);
   max-height: var(--mm-card-max-h);
 }
 

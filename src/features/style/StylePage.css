@@ -115,6 +115,13 @@
   cursor: pointer;
 }
 
+/* 色块类格子的 hover：**描边不叠底** —— 叠底会盖住色值本身，而格子就是那个颜色。
+   描边只是提醒边界、不是重点，所以用**暗线**（规则 8）：亮线会让它跳出来抢注意力。
+   `outline` 不占内部空间，格子尺寸不变；正在编辑的那张卡片不描边。 */
+.mm-style__item:hover:not(.mm-style__item--editing){
+  outline: var(--mm-border-w) solid var(--mm-color-border);
+}
+
 .mm-style__item--color{
   width: var(--mm-swatch-w);
   height: var(--mm-swatch-h);

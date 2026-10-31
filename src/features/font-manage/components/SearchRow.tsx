@@ -6,7 +6,8 @@
  */
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '../../../components/icons';
-import { Button, Input } from '../../../components/ui';
+import { IconButton } from '../../../components/IconButton';
+import { Input } from '../../../components/ui';
 import type { Category } from '../../../domain/classification';
 import type { FilterState } from '../../../domain/font-filter';
 import { useDismiss } from '../../../hooks/useDismiss';
@@ -59,20 +60,19 @@ export function SearchRow({
         <Icon name="iconsousuo" className="mm-font__search-icon" />
       </div>
 
-      <Button
+      {/* 漏斗是**纯图标按钮**，与同排的「更多」一样走 `IconButton` ——
+          挂 `.mm-btn` 会带上带文字按钮的灰底，看着像被选中了 */}
+      <IconButton
         ref={triggerRef}
-        className={`mm-font__filter-btn${filterCount ? ' mm-font__filter-btn--on' : ''}`}
-        aria-label="筛选"
-        aria-haspopup="dialog"
-        aria-expanded={open}
+        name="iconguolv"
+        title="筛选"
+        className="mm-icon-btn--inline"
+        active={open || filterCount > 0}
+        count={filterCount || undefined}
+        ariaExpanded={open}
         disabled={!categories.length}
         onClick={() => setOpen((value) => !value)}
-      >
-        <Icon name="iconguolv" />
-        {filterCount ? (
-          <span className="mm-badge mm-badge--count mm-font__filter-badge">{filterCount}</span>
-        ) : null}
-      </Button>
+      />
 
       {trailing}
 

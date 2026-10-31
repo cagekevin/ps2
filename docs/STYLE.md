@@ -33,7 +33,7 @@
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，`variant` 两档）；「定宽 + 左图标 + Enter 提交」用 `components/TextField`。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分两档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
-| **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满** | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
+| **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满**。**行里有 3 个以上元素、其中几个要挨在一起时，先分组**（嵌一层 `.mm-u-row` + 该组的 `gap`）—— 平铺会让 `space-between` 把空隙**均分成 n-1 份**，本该贴住的「标签 + 控件」被推到行中间（2026-10-31 导出抽屉的「品质」就是这么飘的）。**但别把这条用到该均分的地方**：一排图标按钮本来就该**均分铺满**（一排 6 个就是 6 等分），给它加 `flex-start` 会挤成左边一坨、右边空一片 —— §6.2 的 `.mm-icon-row` 只补 `gap`，不加 `justify-content` | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
 | 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（浅色底 / 文字色 / 圆角 / 投影，**无描边**，见 §7 规则 16）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
@@ -117,7 +117,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 | 候选 | 为什么不建 |
 |---|---|
-| `.mm-form-row`（标签 + 控件一行） | 与 `.mm-u-row` 角色重合 —— 后者已是横排唯一入口（§6）。标签与控件的间距属「间距」，按 §6.1 页面可以自己给 |
+| `.mm-form-row`（通用「标签 + 控件」两列） | 与 `.mm-u-row` 角色重合 —— 后者已是横排唯一入口（§6）。**但**：当一个区块里**多行 label 要对齐到同一条 x**、且**内容列里还有第二行**（选项 / 按钮）时，两端铺满做不到（label 宽度不同 → 内容起点不同），必须两列。这种场景用**页面私有类**实现，不上升为组合层 —— 范本见 `ExportPanel` 的 `.mm-common__form-row`（grid：`--mm-form-label-w` + 1fr），2026-10-31 按导出抽屉截图补 |
 | `.mm-stack`（纵向带间距） | 与 `.mm-u-col` 重合；`.mm-u-col` 只管方向不管间距是刻意的 —— 纵向间距按所在抽屉 / 区块定档，由承载容器给 |
 | `.mm-section`（标题 + 内容） | 已有 `GroupHead`（分组头）与 `IconPanel`（触发器 + 面板）两个带行为的件覆盖；纯静态区块用 `.mm-u-col` + `.mm-divider` 表达 |
 | `.mm-list-row`（列表里的一行） | 本仓没有「普通列表行」这个角色：字体项的 hover 要**通栏**（靠伪元素外扩页边，`FontList.css` 写了理由），动作项是等宽按钮网格 —— 2026-10-31 建了又零消费者，已删 |
@@ -162,7 +162,12 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 2. 不出现色值，只能用语义变量；`hex` / `rgb()` / `rgba()` / `hsl()` **都算色值**
    （`color-no-hex` 只认 hex，其余由 `declaration-property-value-disallowed-list` 兜）
 3. 间距只用 `--mm-space-*`
-4. 面板宽度 200–360（PS 可拉伸），控件高度只有 `--mm-control-h` 一档（26），字号 11–13 三档，圆角不超过 4
+4. 面板宽度 200–360（PS 可拉伸），控件高度只有 `--mm-control-h` 一档（26），字号 11–13 三档，
+   圆角**三档**：`--mm-radius-sm`(2) / `--mm-radius-md`(4) / `--mm-radius-lg`(6)。
+   4 是常态（按钮 / 输入位 / 弹窗 / 浮层 / 格子）；6 只给**整条带底色、内部用 `overflow: hidden`
+   裁切的控件**（段选 `.mm-segment`）—— 这种控件的外圆角同时也是内部选中块的圆角，
+   4 在 26 高上看着是个「方角」，原版截图是 6。`--mm-radius-pill` 只给正圆（勾选 / 单选 / 转圈）。
+   （2026-10-31：原写「圆角不超过 4」，与导出抽屉里段选的截图不符，按截图放宽出 6 这一档。）
 5. **间距只有六档**：`--mm-space-tight`(2 贴合) / `--mm-space-1`(4 组内) / `--mm-space-inline`(6 同行并列) /
    `--mm-space-2`(8 组间) / `--mm-space-3`(12 区块内) / `--mm-space-4`(16 区块间)；
    页边一律 `--mm-page-pad-x`(8)，五页同值，**没有横向例外**。
@@ -170,6 +175,32 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
    按现状改成 8。20 / 30 这类固定格宽（勾选位 `--mm-check-slot`、控件预留位 `--mm-control-reserve`）
    进尺寸段，**不许当通用 padding / gap 用**——把尺寸值当间距，就是本规则要防的那种漂移。
    唯一例外是 `--mm-check-slot` 作为「图标槽」的行左缩进（规则 17）：那正是它的定义，不是拿它凑间距。）
+
+   **哪一层用哪档**（2026-10-31 立；依据原版 `mt/mb` 工具类统计 —— `mt10`+`mb10` 共 19 次是纵向主力、
+   `mt15` 4 次给弹窗内段落、`mt6` 9 次给小标题→内容）：
+
+   | 层 | 手段 | 谁给 | 档位 |
+   |---|---|---|---|
+   | 页边（左右） | `padding` | 页面壳（`global.css` 一处） | `--mm-page-pad-x` 8，七页同值 |
+   | 区块之间（纵向） | 容器 `gap` | 页面壳 / 承载容器 | `--mm-space-2` 8（原版 `mt10`） |
+   | 组内（纵向） | 容器 `gap` | 承载容器 | `--mm-space-1` 4（原版 `mt6`） |
+   | 同行并列（横向） | 行容器 `gap` | 行容器 | `--mm-space-inline` 6 |
+   | 弹窗内段落 | 弹窗壳 `gap` | `.mm-modal` / `.mm-input-dialog__main` / `.mm-action-dialog` | `--mm-space-3` 12（原版 `mt15`；12/8 = 1.5 与原版 15/10 同比例） |
+   | 控件内部 | `padding` | 控件自己的 css | `space-1` / `space-2` |
+
+   **`margin` 只许三种用途**，不许拿它做普通块间距：
+   ① **分隔线的上下留白**（`gap` 会同时给所有兄弟留白，线只要自己上下留）；
+   ② **通栏元素的负 margin 抵消页边**（`margin: 0 calc(-1 * var(--mm-page-pad-x))`，padding 做不到反向）；
+   ③ **元素会被挂进任意容器、无法知道父级有没有 gap**（`IconPanel__box` 的上下 8）。
+   另有 `margin-left: auto` 属**定位**不属间距，不受此条限制。
+
+   **为什么不用统一 margin**（2026-10-31 定）：margin 会与父级 `gap` **叠加**（8+8=16，规则 11 防的就是这个）、
+   加一个元素要同时改它和邻居、会破坏 `.mm-u-row` 的两端对齐、还说不清是「谁的间距」。
+   `gap` 由容器声明，加元素自动生效、改一处全组生效 —— 这是现状 96 处间距里 `gap` 占 57、`margin` 只剩 8 的原因。
+
+   **一处「间距由 padding 给」的正当场景**：`.mm-font__list` 的项间距是 `.mm-font__item` 的
+   `padding: 8 0` —— 项要**紧贴**，hover 与间隔线才连续（通栏伪元素外扩页边）。
+   这类「贴紧的列表」用 padding 不用 gap；加 gap 会在 hover 底色之间撕出缝。
 6. **同一组内**的元素间距不得大于该组图标的边长：14 图标旁最多 14。
    跨组、跨区块的分组留白不受此限——「留白比图标还大」只在同一组里判错
 7. **同排文字与图标视觉等大**：12 号字（行高 16）配 14 图标，13 号字（行高 18）配 16 图标。
@@ -179,6 +210,14 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
    页面分隔、列表行分隔、**输入位描边**（`.mm-input` / `.mm-input-surface`）用 `--mm-color-border`（暗线）；
    控件描边、勾选框、浮层外边缘用 `--mm-color-border-control`（亮线）。不许自造第三种线色。
    （输入框底是纯黑，暗线落在上面几乎不可见——这是刻意的：靠底色反差界定输入区，不靠边框。）
+
+   **色块 hover 用暗线**（`--mm-color-border`）：色块（样式库格子 / 取色弹窗的色块与渐变条 /
+   字体面板色块）hover **不能叠底** —— 叠底会盖住色值本身，而色块就是那个颜色，只能描边。
+   但它**不是重点**：描边只是告诉用户「边界在哪、别点错」，不是要它跳出来。
+   所以**用暗线**，不用亮线、更不为它另立第三档线色（2026-10-31 定）。
+   用 `outline` 不用 `border`：`outline` 不占内部空间，色块尺寸不变。
+   （同批删掉四个零引用线色 `--mm-color-border-checked` / `-dialog` / `-warehouse` / `-swatch-hover`
+   —— 线只有两档，第三档就是自造。）
    （2026-10-29：旧的 `--mm-color-verline` / `--mm-color-row-border` / `-float` 三个名字已随 token 重构删除，
    照旧名写会引用到未定义变量。）
 9. **同类同尺寸**：同一页面内，**同一角色**的元素尺寸必须唯一——工具栏图标按钮、行内操作按钮、
@@ -312,4 +351,6 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 - [ ] 图标与文字之间只有 `--mm-space-inline`，走图标槽结构（规则 17）
 - [ ] 每个 `overflow-y: auto` 都带 `scrollbar-gutter: stable`（规则 18）
 - [ ] 浮层里的控件没有自己写 hover 底 / 输入位底，也没有再造「浅色版」变体类（规则 19）
+- [ ] 间距走的是「容器 `gap`」；`margin` 只出现在三种场合（分隔线留白 / 通栏负 margin 抵消 / 无法知道父级有没有 gap），没有拿它做普通块间距（规则 5）
+- [ ] 没有「父级 gap + 子元素 margin」同时给同一处间距（规则 11：叠加成双倍）
 - [ ] 视觉值没有写在 JS 里（§14.1）

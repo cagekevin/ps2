@@ -16,6 +16,8 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  /* 面板与面板之间取「组间」8：它们各自是一个独立区块（环境 / 执行代码 / 日志） */
+  gap: var(--mm-space-2);
   min-height: 0;
   overflow-y: auto;
   /* 宽度由页面壳定死，滚动条出现时不许挤内容（规则 18） */
@@ -27,6 +29,8 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
+  /* 面板标题与面板内容之间取「组内」4：同属一个区块 */
+  gap: var(--mm-space-1);
 }
 
 .mm-home__panel--grow{

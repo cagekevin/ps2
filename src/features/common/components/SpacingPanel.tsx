@@ -59,7 +59,7 @@ export function SpacingPanel() {
         </span>
       </div>
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <div className="mm-u-row mm-common__panel-row">
         <RadioButton

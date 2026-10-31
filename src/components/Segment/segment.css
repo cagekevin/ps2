@@ -8,7 +8,12 @@
   display: flex;
   align-items: center;
   height: var(--mm-control-h);
-  border-radius: var(--mm-radius-md);
+  /* 宽度按原版截图给：按内容宽时 JPG/PNG 挤成一团，看不出这是「二选一」的控件。
+     两块由 `__item` 的 `flex: 1 1 0` 均分，所以只要定整条宽。 */
+  width: var(--mm-segment-w);
+  /* 圆角比常态大一档：整条的外圆角同时就是内部选中块的圆角，
+     4 在 26 高上看着仍是方角（原版截图是 6，`--mm-radius-lg`） */
+  border-radius: var(--mm-radius-lg);
   /* 未选中的底：比所在表面深一档（与输入位同一档）——
      少了它整条段选只有选中那格有色，其余部分看不见边界 */
   background: var(--mm-color-bg-input);

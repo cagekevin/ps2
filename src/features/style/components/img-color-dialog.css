@@ -37,6 +37,12 @@
   cursor: pointer;
 }
 
+/* 色块与渐变条的 hover：**描边不叠底**（叠底会盖住色值本身），描边用暗线 —— 只是提醒边界，不是重点 */
+.mm-imgcolor__swatch:hover,
+.mm-imgcolor__grad:hover{
+  outline: var(--mm-border-w) solid var(--mm-color-border);
+}
+
 /* 分隔线就是组合层的 `.mm-divider`（线只有两档，规则 8）；这里只给它在卡片里的上下留白 */
 .mm-imgcolor__hr{
   margin: var(--mm-space-1) 0;

@@ -7,6 +7,8 @@
 .mm-common__panel{
   display: flex;
   flex-direction: column;
+  /* 面板里的行与行之间取「组内」4：抽屉里空间紧，8 会把面板撑得过长 */
+  gap: var(--mm-space-1);
   width: 100%;
   /* 底色不在这里：7 个面板都是 IconPanel 抽屉的内容，抽屉壳 `__box::before` 已铺 #222 */
 }
@@ -16,9 +18,9 @@
   gap: var(--mm-space-inline);
 }
 
-.mm-common__panel-rule{
-  width: 100%;
-}
+/* 面板内的分隔线直接用组合层 `.mm-divider`（线宽与线色由它给），
+   上下留白由 `__panel` 的 gap 给 —— 本页不需要覆写，所以没有私有类 */
+
 
 .mm-common__panel-btn{
   flex: 0 0 auto;
@@ -30,6 +32,44 @@
 .mm-common__panel-row > .mm-common__panel-btn:only-child{
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/*
+ * 「标签 + 内容列」两列（导出抽屉的「保存到」「命名」，按官方截图排）。
+ *
+ * 为什么不用 `.mm-u-row`：截图里 label 是**定宽左列**、多行 label 对齐到同一条 x，
+ * 而且**内容列里还有第二行**（桌面 / 文件所在目录、图层名 / 自动编号）。
+ * 两端铺满会让 label 宽度跟着内容变，第二行也塞不进同一行。
+ * 这是「明确不建 `.mm-form-row`」那条的例外，写在 `STYLE.md` §6.2。
+ */
+.mm-common__form-row{
+  display: grid;
+  grid-template-columns: var(--mm-form-label-w) minmax(0, 1fr);
+  gap: var(--mm-space-inline);
+  align-items: start;
+}
+
+/* label 与内容首行（26 高的输入位）垂直对齐；颜色跟随正文，不压暗（截图里与输入框文字同亮） */
+.mm-common__form-label{
+  line-height: var(--mm-control-h);
+}
+
+/* 内容列：输入位在上，选项 / 按钮在下一行，两者之间取「组内」4 */
+.mm-common__form-body{
+  gap: var(--mm-space-1);
+}
+
+/* 行内可见的小标签（导出抽屉第一行的「品质」二字）：不收缩 */
+.mm-common__field-label{
+  flex: 0 0 auto;
+  color: var(--mm-color-text-dim);
+}
+
+/* 「标签 + 控件」自成一个整体（导出抽屉第一行的「品质 + 80 宽输入框」）。
+   外层 `.mm-u-row` 是两端铺满，三个元素平铺会把空隙均分、标签飘到中间；
+   套一层之后外层只分「段选 | 这一组」，组内按同行并列档贴住。 */
+.mm-common__field-group{
+  gap: var(--mm-space-inline);
 }
 
 /* 一排 2 个按钮：网格走组合层 `.mm-btn-grid`（只注入列数），

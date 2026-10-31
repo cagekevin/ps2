@@ -217,6 +217,10 @@
   width: var(--mm-modal-w);
   min-width: var(--mm-modal-min-w);
   max-width: var(--mm-modal-max-w);
+  /* 弹窗内段落之间（标题 / 正文 / 操作行）取「区块内」12：原版弹窗用 `mt15` 这一档，
+     比页面里的区块间距（`mt10`）大一档 —— 弹窗更窄，段落之间需要更多呼吸。
+     12/8 = 1.5，与原版 15/10 的比例一致。 */
+  gap: var(--mm-space-3);
   padding: var(--mm-space-3);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);

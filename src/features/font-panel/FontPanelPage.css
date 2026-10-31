@@ -58,6 +58,13 @@
   cursor: pointer;
 }
 
+/* hover 只把描边压成暗线、不叠底（叠底会盖住色值本身）——
+   常态是控件亮线（它是个输入位），hover 反而**退到暗线**：只是提醒边界，不该比常态更抢眼。
+   已自带 border，所以覆盖 border-color 而不是加 outline，尺寸不受影响 */
+.mm-font-panel__swatch:hover{
+  border-color: var(--mm-color-border);
+}
+
 /* 字号 / 字距两行：`[数字框] [固定宽空槽] [数字框 or 勾选框]`。
    不用 `.mm-u-row`：两半必须严格等宽、中间是宽度固定的空槽，
    而 `.mm-u-row` 的两端铺满会把空槽推散，两半分不到同样的宽度。

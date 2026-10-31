@@ -18,7 +18,8 @@
      唯一差别是**位置**：原版这个弹窗不是屏幕居中而是 30% 高、左偏 90（`InputDialog` 文件头），
      所以宽度也没有并用 `--mm-modal-w` —— 它是已知的例外，写在 `STYLE.md` §6.2。 */
   width: var(--mm-dialog-w);
-  gap: var(--mm-space-2);
+  /* 段间与 `.mm-modal` 同值（规则 9：同类同尺寸）—— 原版弹窗内是 `mt15` 那一档 */
+  gap: var(--mm-space-3);
   padding: var(--mm-space-3);
   border-radius: var(--mm-radius-md);
   background: var(--mm-color-bg-overlay);

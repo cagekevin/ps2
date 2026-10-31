@@ -40,7 +40,8 @@ export function FontMenu({ previewMode, onMenuSelect }: Props) {
         title="更多操作"
         className="mm-icon-btn--inline"
         ariaExpanded={!!anchor}
-        /* 锚点取事件里的 currentTarget：`IconButton` 不转发 ref，只把原始事件交出来 */
+        /* 锚点取事件里的 currentTarget：这里只要一个锚点，不必为它再引一个 useRef
+           （`IconButton` 现在也支持 ref，需要跨组件持有的场合用那个） */
         onClick={(event) =>
           setAnchor((current) => (current ? null : event.currentTarget))
         }

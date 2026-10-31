@@ -9,6 +9,8 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  /* 仓库条与分组列表之间取「组间」8 */
+  gap: var(--mm-space-2);
   min-height: 0;
 }
 
@@ -16,6 +18,8 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  /* 分组与分组之间取「组间」8 —— 每组是「组头 + 动作网格」一个整体 */
+  gap: var(--mm-space-2);
   min-height: 0;
   overflow-y: auto;
   /* 宽度由页面壳定死，滚动条出现时不许挤内容（规则 18） */

@@ -19,6 +19,7 @@
  * 传了 `onContextMenu` 就一定是「右键打开设置」，没传则只是普通按钮。
  */
 
+import { forwardRef } from 'react';
 import { Icon, type IconName } from '../icons';
 import './icon-button.css';
 
@@ -33,6 +34,11 @@ interface Props {
   className?: string;
   /** 右下角标（原版 `iconjiaobiao`）：表示可加入自由面板 */
   badge?: boolean;
+  /**
+   * 右上角**数字**角标（已选条件数这类）。与 `badge` 是两回事：
+   * 那个是原版的小三角图标标记，这个是计数。
+   */
+  count?: number;
   disabled?: boolean;
   /** 展开态（无障碍）：不传就不输出该属性，避免普通按钮被读成可展开控件 */
   ariaExpanded?: boolean;
@@ -42,20 +48,30 @@ interface Props {
   onContextMenu?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
-export function IconButton({
-  name,
-  title,
-  active = false,
-  className = '',
-  badge = false,
-  disabled = false,
-  ariaExpanded,
-  ariaControls,
-  onClick,
-  onContextMenu
-}: Props) {
+/**
+ * `forwardRef` 是必须的：浮层锚点（下拉 / 筛选面板 / 菜单）要拿真实 DOM 节点算位置。
+ * 不支持 ref 时调用方要么退回手写 `<button>` + 自己拼 `.mm-icon-btn`（第二个入口），
+ * 要么把锚点塞进 state 再绕一层。
+ */
+export const IconButton = forwardRef<HTMLButtonElement, Props>(function IconButton(
+  {
+    name,
+    title,
+    active = false,
+    className = '',
+    badge = false,
+    count,
+    disabled = false,
+    ariaExpanded,
+    ariaControls,
+    onClick,
+    onContextMenu
+  }: Props,
+  ref
+) {
   return (
     <button
+      ref={ref}
       type="button"
       className={`mm-icon-btn${active ? ' mm-icon-btn--active' : ''}${className ? ` ${className}` : ''}`}
       title={title}
@@ -72,6 +88,7 @@ export function IconButton({
     >
       <Icon name={name} />
       {badge ? <Icon name="iconjiaobiao" className="mm-icon-btn__badge" /> : null}
+      {count ? <span className="mm-badge mm-badge--count mm-icon-btn__count">{count}</span> : null}
     </button>
   );
-}
+});

@@ -174,7 +174,7 @@ export default function CommonPage() {
 
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
-          <div className="mm-u-col">
+          <div className="mm-u-col mm-common__zoom">
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
@@ -211,7 +211,7 @@ export default function CommonPage() {
           </div>
         ) : null}
 
-        <div className="mm-divider mm-common__divider" />
+        <div className="mm-divider" />
 
         {visibleTiles.length ? (
           <div className="mm-u-col mm-common__grid" ref={page.gridRef}>

@@ -77,3 +77,12 @@
   transform: rotate(180deg) scaleX(-1);
   pointer-events: none;
 }
+
+/* 数字角标（已选条件数）：形状由组合层 `.mm-badge--count` 给，这里只给定位。
+   定位基准同样是 `.mm-icon-btn` 的 `position: relative` —— 调用点不写。 */
+.mm-icon-btn .mm-icon-btn__count{
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}

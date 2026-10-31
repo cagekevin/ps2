@@ -136,7 +136,7 @@ export function CustomTransformPanel() {
 
       <AnchorGrid value={anchor} onChange={setAnchor} />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button className="mm-common__panel-btn" onClick={submit}>

@@ -172,75 +172,89 @@ export function ExportPanel() {
             onChange={(value) => write('png8', value === 'PNG-8')}
           />
         ) : (
-          <TextField
-            /** 官方 title 是「品质1-100」（可见前缀「品质」在官方是独立文字，本仓输入框无可见前缀） */
-            title={'品质1-100'}
-            variant="wide"
-            inputMode="decimal"
-            value={draft.quality}
-            onChange={(next) => setField('quality', next)}
-            onSubmit={commitQuality}
-          />
+          /* 「品质 + 输入框」先自成一个整体：外层铺满只分出「段选 | 这一组」。
+             三个元素平铺会被均分空隙，二字就飘到中间去了 */
+          <div className="mm-u-row mm-common__field-group">
+            <span className="mm-common__field-label">{'品质'}</span>
+            <TextField
+              title={'品质1-100'}
+              variant="wide"
+              inputMode="decimal"
+              value={draft.quality}
+              onChange={(next) => setField('quality', next)}
+              onSubmit={commitQuality}
+            />
+          </div>
         )}
       </div>
 
-      {/* 第二行：保存到 + 路径类型 */}
-      <div className="mm-u-row mm-common__panel-row">
-        <TextField
-          /** 官方：可见前缀「保存到」+ title「选择自定义目录」；本仓输入框无可见前缀，故 title 走官方、前缀进 placeholder */
-          title={'选择自定义目录'}
-          placeholder={'保存到'}
-          variant="fill"
-          value={draft.path}
-          onChange={(next) => setField('path', next)}
-          onSubmit={(value) => {
-            /* 官方 blur 时把 `\` 转 `/`：手输的 Windows 路径不转，jsx 那边拼目录会对不上 */
-            const next = value.trim().replace(BACKSLASH, '/');
-            setField('path', next);
-            write('path', next);
-          }}
-          rightSlot={<IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择目录'} onClick={pickFolder} />}
-        />
-        <RadioButton
-          name="common-path-type"
-          label={'桌面'}
-          title={'保存到桌面'}
-          checked={num(config.pathType) === 1}
-          onChange={() => write('pathType', 1)}
-        />
-        <RadioButton
-          name="common-path-type"
-          label={'文件所在目录'}
-          title={'保存到文件所在目录'}
-          checked={num(config.pathType) === 2}
-          onChange={() => write('pathType', 2)}
-        />
+      {/* 保存到：label + [路径输入框 / 两个去向]（官方是两列，选项在输入框下一行） */}
+      <div className="mm-common__form-row">
+        <span className="mm-common__form-label">{'保存到'}</span>
+        <div className="mm-u-col mm-common__form-body">
+          <TextField
+            title={'选择自定义目录'}
+            placeholder={'自定义目录'}
+            variant="fill"
+            value={draft.path}
+            onChange={(next) => setField('path', next)}
+            onSubmit={(value) => {
+              /* 官方 blur 时把 `\` 转 `/`：手输的 Windows 路径不转，jsx 那边拼目录会对不上 */
+              const next = value.trim().replace(BACKSLASH, '/');
+              setField('path', next);
+              write('path', next);
+            }}
+            rightSlot={<IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择目录'} onClick={pickFolder} />}
+          />
+          <div className="mm-u-row">
+            <RadioButton
+              name="common-path-type"
+              label={'桌面'}
+              title={'保存到桌面'}
+              checked={num(config.pathType) === 1}
+              onChange={() => write('pathType', 1)}
+            />
+            <RadioButton
+              name="common-path-type"
+              label={'文件所在目录'}
+              title={'保存到文件所在目录'}
+              checked={num(config.pathType) === 2}
+              onChange={() => write('pathType', 2)}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* 第三行：命名 */}
-      <div className="mm-u-row mm-common__panel-row">
-        <TextField
-          title={'命名'}
-          variant="fill"
-          value={flag(config.layerName) ? layerName : draft.name}
-          onChange={(next) => setField('name', next)}
-          onSubmit={(value) => write('name', value.trim())}
-        />
-        <CheckBox
-          label={'图层名'}
-          title={'使用当前图层名字'}
-          checked={flag(config.layerName)}
-          onChange={(value) => write('layerName', value)}
-        />
-        <CheckBox
-          label={'自动编号'}
-          title={'不覆盖原图，使用数字编号命名。不支持多个切片哦'}
-          checked={flag(config.isNumber)}
-          onChange={(value) => write('isNumber', value)}
-        />
+      {/* 命名：label + [名称输入框 / 图层名·自动编号]（同上是两列） */}
+      <div className="mm-common__form-row">
+        <span className="mm-common__form-label">{'命名'}</span>
+        <div className="mm-u-col mm-common__form-body">
+          <TextField
+            title={'命名'}
+            placeholder={'重命名'}
+            variant="fill"
+            value={flag(config.layerName) ? layerName : draft.name}
+            onChange={(next) => setField('name', next)}
+            onSubmit={(value) => write('name', value.trim())}
+          />
+          <div className="mm-u-row">
+            <CheckBox
+              label={'图层名'}
+              title={'使用当前图层名字'}
+              checked={flag(config.layerName)}
+              onChange={(value) => write('layerName', value)}
+            />
+            <CheckBox
+              label={'自动编号'}
+              title={'不覆盖原图，使用数字编号命名。不支持多个切片哦'}
+              checked={flag(config.isNumber)}
+              onChange={(value) => write('isNumber', value)}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <RadioButton
         name="common-save-type"
@@ -256,7 +270,7 @@ export function ExportPanel() {
         onChange={() => write('saveType', 2)}
       />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <IconPanelGroup
         exclusive={false}

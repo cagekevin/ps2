@@ -28,29 +28,8 @@
   pointer-events: none;
 }
 
-/* 漏斗：行内工具按钮，图标取 `btn` 20（规则 14 的纯图标条一档）；
-   角标靠它定位，所以这里要给 `position`（`.mm-btn` 自己不带） */
-.mm-font__filter-btn{
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.mm-font__filter-btn .mm-icon{
-  font-size: var(--mm-icon-btn);
-}
-
-/* 筛选开启：漏斗转 accent —— 规则 12 的「选中 / 开启」里明确含「筛选开启」。
-   图标跟 currentColor，所以只写文字色，不写第二条规则。 */
-.mm-font__filter-btn--on{
-  color: var(--mm-color-accent);
-}
-
-/* 角标 = 组合层 `.mm-badge--count`，这里只给「贴在哪儿」 */
-.mm-font__filter-badge{
-  position: absolute;
-  top: 0;
-  right: 0;
-}
+/* 漏斗已改挂 `IconButton`（纯图标按钮与同排的「更多」一致）：尺寸 / 选中态 / 角标定位
+   全部由 `icon-button.css` 给，本页不再有私有样式。 */
 
 /* 筛选浮层：宽 / 内边距 / 最大高 / 滚动（`STYLE.md` §6：浮层各自只写这四样，表面由 `.mm-popover` 给）。
    滚动区在浮层里，按规则 18 不留 `scrollbar-gutter` —— 宽度本身跟触发器绑，留槽白掉 8px。 */

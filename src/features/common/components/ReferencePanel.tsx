@@ -42,7 +42,7 @@ export function ReferencePanel() {
         onChange={(value) => void run(() => toggleSmartGuide(value))}
       />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <div className="mm-u-row mm-common__panel-row">
         <TextField
@@ -62,7 +62,7 @@ export function ReferencePanel() {
         </Button>
       </div>
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button

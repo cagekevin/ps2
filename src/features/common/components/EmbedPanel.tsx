@@ -67,7 +67,7 @@ export function EmbedPanel() {
         onChange={(value) => setBoolean('cyClipMaskAutoEmbed', value)}
       />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       {LINK_OBJECT_VALUES.map((value) => (
         <RadioButton
@@ -85,7 +85,7 @@ export function EmbedPanel() {
         onChange={(value) => setBoolean('cyDeleteNext', value)}
       />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <CheckBox
         label={'拖入图片转成链接智能对象'}
@@ -93,7 +93,7 @@ export function EmbedPanel() {
         onChange={(value) => setBoolean('cyOpenDranInToLinkObject', value)}
       />
 
-      <div className="mm-common__panel-rule" />
+      <div className="mm-divider" />
 
       <div className="mm-btn-grid mm-common__panel-row--pair">
         <Button

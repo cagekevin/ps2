@@ -18,6 +18,9 @@
   /* 内容高度：滚动交给壳，这里再 `flex: 1` 会把溢出关在自己身上，壳就滚不动了 */
   flex: 0 0 auto;
   flex-direction: column;
+  /* 区块之间取「组间」8（缩放区 / 翻转行 / 分隔线 / 功能格子）。
+     分隔线自己不再写 margin —— 否则和这里的 gap 叠加成 16（规则 11：相邻两块只留一处间距） */
+  gap: var(--mm-space-2);
 }
 
 .mm-common__body > *{
@@ -26,12 +29,17 @@
 
 /* 纵向排列走公共 `.mm-u-col` */
 
+/* 缩放区两行（放大 / 缩小）之间取「组内」4 —— 由 `__zoom` 容器的 gap 给，
+   行自己不再写上下 padding（否则与容器的 gap 叠加，第一个行上方会多出一截） */
+.mm-common__zoom{
+  gap: var(--mm-space-1);
+}
+
 .mm-common__zoom-row{
   display: flex;
   flex-wrap: wrap;
   gap: var(--mm-space-1);
   align-items: center;
-  padding: var(--mm-space-1) 0;
 }
 
 .mm-common__zoom-row > .mm-icon-panel__host{
@@ -76,10 +84,8 @@
   --mm-btn-grid-cols: 5;
 }
 
-/* 区块间的分隔线就是组合层的 `.mm-divider`（线只有两档，规则 8），这里只给上下留白 */
-.mm-common__divider{
-  margin: var(--mm-space-2) 0;
-}
+/* 区块间的分隔线直接用组合层 `.mm-divider`：线色/线宽由它给，
+   上下留白由 `__body` 的 gap 给 —— 本页不需要任何覆写，所以不挂私有类。 */
 
 /* 功能格子：行组之间取组内档（行**内**的格子间距由 `__tile-row` 自己给） */
 .mm-common__grid{
