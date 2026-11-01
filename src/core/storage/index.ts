@@ -35,6 +35,9 @@ export const ROOTS: Record<StorageRoot, string> = {
 
 interface NodeFs {
   readFileSync(path: string, encoding: 'utf8'): string;
+  /** OCR 上传要 base64：`fs` 自带这档编码，不要在业务层再 `Buffer.toString('base64')` */
+  readFileSync(path: string, encoding: 'base64'): string;
+  statSync(path: string): { size: number };
   writeFileSync(path: string, data: string, encoding: 'utf8'): void;
   copyFileSync(from: string, to: string): void;
   existsSync(path: string): boolean;
@@ -222,6 +225,58 @@ export function removeDir(name: string, root: StorageRoot = 'data'): Result<void
   } catch (error) {
     log.error('删除目录失败', { name, root, error });
     return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `rmdir:${String(error)}`);
+  }
+}
+
+/**
+ * 读任意绝对路径的字节并转 base64（OCR 上传用）。
+ *
+ * 与 `readTextAt` 同一类：只读、不写库。编码交给 `fs` 的 `base64` 档 ——
+ * 在业务层自己 `Buffer.toString('base64')` 会长出第二份 base64 实现（`core/cep/base64` 已有一份）。
+ */
+export function readBase64At(absPath: string): Result<string> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+
+  try {
+    if (!fs.existsSync(absPath)) {
+      return failWithDetail('NOT_FOUND', MSG.codeReason.NOT_FOUND, `path:${absPath}`);
+    }
+    return ok(fs.readFileSync(absPath, 'base64'));
+  } catch (error) {
+    log.warn('读取二进制失败', { absPath, error });
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `read:${absPath};${String(error)}`);
+  }
+}
+
+/** 任意绝对路径的字节数（判第三方接口的体积上限用） */
+export function fileSizeAt(absPath: string): Result<number> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+
+  try {
+    if (!fs.existsSync(absPath)) {
+      return failWithDetail('NOT_FOUND', MSG.codeReason.NOT_FOUND, `path:${absPath}`);
+    }
+    return ok(fs.statSync(absPath).size);
+  } catch (error) {
+    log.warn('取文件大小失败', { absPath, error });
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `stat:${absPath};${String(error)}`);
+  }
+}
+
+/** 删任意绝对路径的文件；本来就不存在也算成功（临时产物用） */
+export function removeFileAt(absPath: string): Result<void> {
+  const fs = getFs();
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+
+  try {
+    if (!fs.existsSync(absPath)) return ok(undefined);
+    fs.unlinkSync(absPath);
+    return ok(undefined);
+  } catch (error) {
+    log.warn('删除临时文件失败', { absPath, error });
+    return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, `unlink:${absPath};${String(error)}`);
   }
 }
 

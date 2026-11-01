@@ -14,7 +14,7 @@
  * 正文解析失败与缺 unit 一律 `CORRUPT`，现场进 `detail`。
  */
 
-import { CLOUD_SYNC_URL } from '../core/http/endpoints';
+import { CLOUD_SYNC_URL } from '../config';
 import { httpFailure, postText } from '../core/http/client';
 import { savePref } from '../core/prefs';
 import {

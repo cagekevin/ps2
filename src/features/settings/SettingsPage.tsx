@@ -20,12 +20,13 @@ import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '../../components/CheckBox';
 import { useConfirm } from '../../components/Confirm/useConfirm';
 import { SelectBox } from '../../components/SelectBox';
-import { Button } from '../../components/ui';
-import { useRunCommand } from '../../hooks/useRunCommand';
+import { Button, Input } from '../../components/ui';
+import { useReportFailure, useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { download, upload } from '../../commands/cloud';
 import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
+import { getOcrCredentials, setOcrCredentials } from '../../commands/ocr';
 import { booleanOptionOf } from '../../domain/common-use-options';
 import { UNITS, unitIndexOf } from '../../domain/units';
 import { useCloudStore } from '../../store/cloud';
@@ -48,6 +49,14 @@ export default function SettingsPage() {
   const load = useFontSetStore((state) => state.load);
   const setLocalSettings = useFontSetStore((state) => state.setLocalSettings);
   const [saving, setSaving] = useState(false);
+
+  /*
+   * OCR 凭证：进页面读一次，改动只在点「保存」时落盘（不做逐字写）。
+   * 读失败由 `reportFailure` 留痕；`NOT_FOUND`（还没配）不算故障，静默。
+   */
+  const [ocrApiKey, setOcrApiKey] = useState('');
+  const [ocrSecretKey, setOcrSecretKey] = useState('');
+  const reportFailure = useReportFailure();
 
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -74,7 +83,25 @@ export default function SettingsPage() {
     loadCloud();
   }, [load, loadOptions, loadCloud]);
 
+  useEffect(() => {
+    const credentials = getOcrCredentials();
+    if (credentials.status === 'ok') {
+      setOcrApiKey(credentials.value.apiKey);
+      setOcrSecretKey(credentials.value.secretKey);
+      return;
+    }
+    reportFailure(credentials, { quiet: ['NOT_FOUND'], spin: false });
+  }, [reportFailure]);
+
   const current = UNITS[unitIndexOf(settings.appUnit)] ?? UNITS[0];
+
+  /** 保存 OCR 凭证：成功提示由 hook 出（`success`），失败带 code/detail 进日志 */
+  function saveOcrCredentials(): void {
+    void run(() => setOcrCredentials({ apiKey: ocrApiKey, secretKey: ocrSecretKey }), {
+      spin: false,
+      success: MSG.ocr.saved
+    });
+  }
 
   function changeUnit(value: string): void {
     if (saving || value === settings.appUnit) return;
@@ -202,6 +229,33 @@ export default function SettingsPage() {
         <Button onClick={() => void run(resetAll, { spin: false })}>
           重置常用功能
         </Button>
+
+        {/* OCR 凭证：存 `%APPDATA%\Maomao\credentials.json`（不进 prefs，`CONVENTIONS` §4.8）。
+            两个字段各占一行：面板只有 200 多宽，一行塞两个输入框会挤成两截 */}
+        <div className="mm-settings__section">OCR（百度云）</div>
+
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">API Key</span>
+          <Input
+            className="mm-u-grow"
+            value={ocrApiKey}
+            placeholder="应用的 API Key"
+            onChange={(event) => setOcrApiKey(event.target.value)}
+          />
+        </div>
+
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">Secret Key</span>
+          <Input
+            className="mm-u-grow"
+            type="password"
+            value={ocrSecretKey}
+            placeholder="应用的 Secret Key"
+            onChange={(event) => setOcrSecretKey(event.target.value)}
+          />
+        </div>
+
+        <Button onClick={saveOcrCredentials}>保存 OCR 凭证</Button>
 
         <div className="mm-settings__section">云同步</div>
 

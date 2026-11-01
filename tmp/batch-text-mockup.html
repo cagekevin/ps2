@@ -87,6 +87,10 @@
   .btn--primary{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);}
   .btn--primary:hover:not(:disabled){background:var(--mm-color-accent-hover);}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
+  /* 识别中按钮里的小转圈（真实实现用 components/Spin 的裸圈） */
+  .btn__spin{display:inline-block;width:10px;height:10px;border-radius:50%;
+    border:1.5px solid currentColor;border-top-color:transparent;animation:btnspin .7s linear infinite;}
+  @keyframes btnspin{to{transform:rotate(360deg)}}
 
   /* pane 吃满剩余高度，里面的 textarea 再吃满 pane —— 输入框能多大就多大 */
   .pane{display:flex;flex-direction:column;gap:var(--mm-space-2);flex:1 1 auto;min-height:0;}
@@ -167,16 +171,17 @@
         <div class="head">
           <div class="tabs" id="modeTabs" role="tablist">
             <div class="tabs__cell">
-              <button type="button" role="tab" class="tabs__tab tabs__tab--on" data-mode="create">新建</button>
+              <button type="button" role="tab" class="tabs__tab" data-mode="create">新建</button>
             </div>
             <span class="tabs__line"></span>
             <div class="tabs__cell">
-              <button type="button" role="tab" class="tabs__tab" data-mode="edit">改字</button>
+              <button type="button" role="tab" class="tabs__tab tabs__tab--on" data-mode="edit">改字</button>
             </div>
           </div>
           <div class="acts" id="acts">
+            <button type="button" class="btn" id="ocrBtn" title="识别当前画布上的文字，按坐标新建文字图层">OCR</button>
             <button type="button" class="btn" data-read="all">全部</button>
-            <button type="button" class="btn" data-read="sel">读取</button>
+            <button type="button" class="btn" data-read="sel">选中</button>
           </div>
         </div>
 
@@ -216,7 +221,10 @@
 
   <div class="notes">
     <p><b>新建</b>：一个输入框，一行一层 → 确定 → 文档里多出 N 个文字图层。排版按下面那套默认方案自动做，用户不满意再自己调。</p>
-    <p><b>改字</b>：「全部」读整个文档的文字层；「读取」读点按钮那一刻 PS 里选中的文字层（非文字层直接过滤）→ 下栏逐行改 → 确定写回原来那些层，位置样式都不动。</p>
+    <p><b>改字</b>：「全部」读整个文档的文字层；「选中」读点按钮那一刻 PS 里选中的文字层（非文字层直接过滤）→ 下栏逐行改 → 确定写回原来那些层，位置样式都不动。</p>
+    <p><b>OCR</b>：改字页右上<b>最左</b>那个按钮（左起：OCR / 全部 / 选中）。它排最左是因为「产出一批新层」，与右边两个「读已有层」不是同一类动作。点一次 = 导出当前画布（合并可见层）→ 百度云 OCR → 按坐标新建「✨ 智能重构布局 / 模块 N」文字层，一次撤销全撤。<b>结果不在这里显示</b>——层已经在画布上；要改错字就点「全部」/「选中」。识别中按钮禁用、状态行写「识别中…」，不弹全屏遮罩。</p>
+    <p><b>字体</b>：OCR 建层用<b>与「新建」同一个字体常量</b>（思源黑体 CN / Regular，<code>DEFAULT_CREATE_FONT.hjm</code>），jsx 不写字体名。原来那版照抄旧脚本用了 NotoSansSC，与新建不一致 —— 已收成一种。</p>
+    <p><b>默认落在「改字」</b>：OCR 建完层，下一步几乎一定是改错字；新建是纯手输，进来再切一次的成本比反过来高。</p>
     <p><b>留空 = 清空该行。</b>框内即该行最终文字；空行是把那行清空，算改动（全空 = 全清，不拦）。行数必须等于读到的层数。</p>
     <p><b>层内换行</b>显示成 <code>⏎</code>（读入转换、写回还原），所以「一行 = 一层」恒成立，段落层也能改。</p>
     <p><b>蓝条 + 整行高亮</b> = 光标所在行对应的那一层。</p>
@@ -246,7 +254,7 @@
       <li><b>假业务样例</b>：拿「主标题 / 副标题 / ￥199」当数据，等于把适用范围缩到某个假想 PSD。图层名用 PS 真实命名，文字与图层名无关，界面不出现业务场景。</li>
       <li><b>一行 = 一层</b>：段落层内部就有换行，按 <code>\n</code> 拆行会整体错位、把字写到别的层。层内换行用 <code>⏎</code> 占位。</li>
       <li><b>替用户定落点</b>：编「第一行在最上 / 按行距向下堆叠 / 插入当前组内 / 用面板字号」。位置、样式、顺序交给 PS 原生。</li>
-      <li><b>把自由换成选项</b>：用「全部 / 选中 / 当前」三档代替用户在 PS 里自己多选。选择发生在 PS 里，面板只给「全部」「读取」两个按钮。</li>
+      <li><b>把自由换成选项</b>：用「全部 / 选中 / 当前」三档代替用户在 PS 里自己多选。选择发生在 PS 里，面板只给「全部」「选中」两个按钮（OCR 是第三个按钮，它不读层、只建层）。</li>
       <li><b>假按钮</b>：三档作用范围只换提示文案、数据一动不动。按钮必须真换数据，否则删掉。</li>
       <li><b>一层一格输入框</b>：不能全选、不能整段粘贴、不能连着打字。用一个 textarea 逐行改。</li>
       <li><b>多余的提示与流程</b>：跳过计数、结果页、二次确认、丢弃拦截、空态文案。非文字层直接过滤不提示；只在真会写错层时才报（行数不符、目标层已不存在）。</li>
@@ -269,7 +277,7 @@
     { id: 15, name: '文字层 5',      text: '这一层文字很长，用来验证排不完的时候是省略号，而不是把表格撑开或换行' },
     { id: 16, name: '文字层 6',      text: '这里是第六层的文字' }
   ];
-  /* 「读取」= 点按钮那一刻 PS 里选中的那几层，这里模拟成选中了第 1、3 层 */
+  /* 「选中」= 点按钮那一刻 PS 里选中的那几层，这里模拟成选中了第 1、3 层 */
   const SELECTED = [ALL[0], ALL[2]];
 
   const BREAK = '\u23CE';                 // ⏎：层内换行的占位符
@@ -281,7 +289,8 @@
   const statusEl = $('status'), okBtn = $('okBtn'), acts = $('acts');
   const editBlock = $('editBlock'), createBlock = $('createBlock');
 
-  let mode = 'create';
+  /* 默认落在「改字」：OCR 建完层，下一步几乎一定是改错字 */
+  let mode = 'edit';
   let layers = [];                        // 当前读到的图层 [{ id, name, text }]
 
   /* 下栏按行拆；空字符串 = 0 行（否则 ''.split('\n') 会得到 1 个空行） */
@@ -339,7 +348,7 @@
     }
 
     if (layers.length === 0) {
-      statusEl.textContent = '点「全部」或「读取」读取文字图层';
+      statusEl.textContent = '点「全部」或「选中」读取文字图层，或点「OCR」识别画布';
       okBtn.disabled = true;
       return;
     }
@@ -363,7 +372,7 @@
     markLine();
   }
 
-  /* 「全部」/「读取」：都是重新读一次，读到的结果替换列表与下栏 */
+  /* 「全部」/「选中」：都是重新读一次，读到的结果替换列表与下栏 */
   function read(scope) {
     layers = (scope === 'all' ? ALL : SELECTED).map((l) => ({ id: l.id, name: l.name, text: l.text }));
     drawSrc();
@@ -400,9 +409,10 @@
 
   function openModal() {
     mask.hidden = false;
-    mode = 'create';
+    /* 默认落在改字（OCR 之后就是改错字） */
+    mode = 'edit';
     Array.prototype.forEach.call($('modeTabs').querySelectorAll('.tabs__tab'), (x) => {
-      const on = x.dataset.mode === 'create';
+      const on = x.dataset.mode === 'edit';
       x.classList.toggle('tabs__tab--on', on);
       x.setAttribute('aria-selected', String(on));
     });
@@ -411,8 +421,22 @@
     fresh.value = '';
     drawSrc();
     refresh();
-    fresh.focus();
+    dst.focus();
   }
+
+  /* OCR：真实实现是 导出画布 → 百度 OCR → 按坐标建层（一次撤销）。
+     识别中：按钮里转圈 + 状态行一句；建完不自动读取，想改就点「全部」/「选中」。 */
+  $('ocrBtn').addEventListener('click', () => {
+    statusEl.classList.remove('status--err');
+    statusEl.textContent = '正在识别…';
+    $('ocrBtn').disabled = true;
+    $('ocrBtn').innerHTML = '<span class="btn__spin"></span>';
+    setTimeout(() => {
+      $('ocrBtn').disabled = false;
+      $('ocrBtn').textContent = 'OCR';
+      statusEl.textContent = '已建好文字图层，可在「改字」页点「全部」或「选中」后修改';
+    }, 1200);
+  });
   function closeModal() { mask.hidden = true; }
 
   okBtn.addEventListener('click', closeModal);

@@ -184,6 +184,11 @@ export const MSG = {
 
   /** 页面固定句：坏项计数（前缀，后面接「（悬停看位置）」） */
   droppedSummary: '项无法识别，已跳过（悬停看位置）',
+  /**
+   * 字体没设上、层照样建了（批量文字新建 / OCR 建层两处共用同一句）。
+   * 放顶层是因为它是跨域结论，不是某个页面的私有文案。
+   */
+  fontMissing: '字体缺失，已改用 PS 默认字体',
   /** 页面固定句：网格空态（官方 0 命中，属我们自己的空态句式） */
   emptyCommonGrid: '没有可显示的常用功能',
 
@@ -394,8 +399,32 @@ export const MSG = {
   textBatch: {
     lineCountMismatch: '行数与图层数不一致，不能增删行',
     writePartial: '有图层没写成（已锁定或已删除）',
-    fontMissing: '字体缺失，已改用 PS 默认字体',
     emptyDraft: '还没有输入文字'
+  },
+
+  /**
+   * OCR（百度云）。
+   *
+   * 只收**已经用上**的句子：识别链（`noCredentials` / `empty` / `recognizeFailed` / `done`）
+   * 在 plan 17 的 M2–M4 落地时一起加，先写就是「没调用方的文案」。
+   */
+  ocr: {
+    /** 百度返回了认不出的结构，或 `error_code` 不在已知表里（原文进 `detail`） */
+    recognizeFailed: '文字识别失败',
+    /** 凭证没配：读 `credentials.json` 得 `NOT_FOUND` 时用这句，不冒充网络错误 */
+    noCredentials: '还没配置百度云 OCR 的 API Key 和 Secret Key',
+    /** 识别成功但一块文字都没有（空白画布 / 纯图形） */
+    empty: '这张图没识别到文字',
+    /** 导出图超过百度单图 4MB 上限，且三档质量都用完 */
+    imageTooLarge: '导出图超过 4MB，缩小画布后再试',
+    /** 识别进行中（3–10s）：状态行说一句，同时 OCR 按钮里转圈 */
+    recognizing: '正在识别…',
+    /** 建层成功：结果在画布上，要改字去「改字」页点「全部」 */
+    created: '已建好文字图层，可在「改字」页点「全部」或「选中」后修改',
+    /** 有识别结果缺坐标被跳过（少了几行） */
+    dropped: '有识别结果无法解析，已跳过',
+    /** 设置页保存凭证 */
+    saved: '凭证已保存'
   },
 
   codeReason: {

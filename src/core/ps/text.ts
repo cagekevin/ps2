@@ -186,7 +186,13 @@ export function createButton(config: {
   return callCapability(CAP.createButton, [config]);
 }
 
-/** 写回译文（`zt_setTranslateText`）：`replace` 为真 = 覆盖原文 */
-export function setTranslateText(data: unknown, replace: boolean): Promise<Result<void>> {
-  return callCapability(CAP.setTranslateText, [data, replace]);
+/**
+ * 写回译文（`zt_setTranslateText`）：**固定不替换原文** —— 在原文图层下方新建译文图层。
+ *
+ * 官方给的是「替换 / 不替换」两个选项，我们只保留一种（2026-11-01 用户裁定）：
+ * 参数恒为 `false`，调用方拿不到那个开关，也就写不出第二种行为。
+ * `false` 的宿主行为（下方新建 vs 其它）**UNVERIFIED**，真机确认后只改这里。
+ */
+export function setTranslateText(data: unknown): Promise<Result<void>> {
+  return callCapability(CAP.setTranslateText, [data, false]);
 }

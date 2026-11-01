@@ -4,14 +4,16 @@
  * 为什么是本页私有组件而不是公共件：形状只服务这一处（tab + 原文表 + 一个大 textarea），
  * 两处以上再抽（`CONVENTIONS` §4.8）。遮罩直接用 `global.css` 的 `.mm-modal-mask`。
  *
- * 改字那半的交互只有两个按钮：「全部」读整个文档，「读取」读点按钮那一刻 PS 的选中集合。
- * 选择动作发生在 PS 里，面板不再给「全部 / 选中 / 当前」三档。
+ * 改字那半的交互只有三个按钮，从左到右：「OCR」识别当前画布并建层、「全部」读整个文档、
+ * 「选中」读点按钮那一刻 PS 的选中集合。选择动作发生在 PS 里，面板不再给「当前」这一档。
+ * OCR 排最左是因为它「产出一批新层」，与右边两个「读已有层」不是同一类动作。
  *
  * 原文表只干一件事：告诉用户「现在改的是哪一层」。所以一行 18 高、11 号字，
  * 光标动到哪一行，哪一行整行高亮并滚进可视区（单向，不绑 scrollTop）。
  */
 
 import { useCallback, useRef, useState } from 'react';
+import { Spin } from '../../../components/Spin';
 import { Button, Textarea, stopClickPropagation } from '../../../components/ui';
 import { encodeLayers } from '../../../domain/text-batch';
 import { useDismiss } from '../../../hooks/useDismiss';
@@ -80,11 +82,30 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
 
           {batch.mode === 'edit' ? (
             <div className="mm-u-row mm-text-batch__tools">
-              <Button variant="ghost" disabled={batch.busy} onClick={() => batch.read('all')}>
+              {/* OCR 放最左：它是「产出一批新层」，与右边两个「读已有层」不是同一类动作 */}
+              <Button
+                variant="ghost"
+                className="mm-text-batch__ocr"
+                disabled={batch.busy !== null}
+                title="识别当前画布上的文字，按坐标新建文字图层"
+                onClick={batch.recognize}
+              >
+                {/* 识别要 3–10s：按钮里转圈（不铺全屏遮罩，弹窗还开着，铺了就是两层灰） */}
+                {batch.busy === 'recognize' ? <Spin /> : 'OCR'}
+              </Button>
+              <Button
+                variant="ghost"
+                disabled={batch.busy !== null}
+                onClick={() => batch.read('all')}
+              >
                 全部
               </Button>
-              <Button variant="ghost" disabled={batch.busy} onClick={() => batch.read('selection')}>
-                读取
+              <Button
+                variant="ghost"
+                disabled={batch.busy !== null}
+                onClick={() => batch.read('selection')}
+              >
+                选中
               </Button>
             </div>
           ) : null}
@@ -100,7 +121,7 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
               </div>
               <div className="mm-text-batch__list" ref={listRef}>
                 {batch.layers.length === 0 ? (
-                  <span className="mm-text-batch__empty">点「全部」或「读取」读取文字图层</span>
+                  <span className="mm-text-batch__empty">点「全部」或「选中」读取文字图层，或点「OCR」识别画布</span>
                 ) : (
                   batch.layers.map((layer, index) => (
                     <div
@@ -150,7 +171,11 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
 
         <div className="mm-u-row mm-modal__actions">
           <Button onClick={onClose}>取消</Button>
-          <Button variant="primary" disabled={!batch.canConfirm || batch.busy} onClick={batch.confirm}>
+          <Button
+            variant="primary"
+            disabled={!batch.canConfirm || batch.busy !== null}
+            onClick={batch.confirm}
+          >
             确定
           </Button>
         </div>

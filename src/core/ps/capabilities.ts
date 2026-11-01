@@ -31,6 +31,8 @@ import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 /* 批量文字的私有解析器：单独一个文件，**不能**从 `./text-batch` 引 —— 那个文件 import 本文件的
    `CAP`，反过来引就是运行时环（`check:cycles` 会红） */
 import { createReportRaw, layersRaw, writeReportRaw } from './text-batch-raw';
+/* OCR 的私有解析器：同样单独文件（写进 `./ocr.ts` 会成运行时环） */
+import { exportPathRaw } from './ocr-raw';
 /* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */
 import type { AddedTemplate } from './template';
 
@@ -280,6 +282,19 @@ export const CAP = {
     fn: 'mm_text_createAll', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
     parse: createReportRaw
   },
+
+  /* ---------------- OCR（自写 jsx，`core` 门只能直调） ---------------- */
+
+  /**
+   * 导出当前画布为 JPG：入参 `quality`（8 / 6 / 4）。
+   * 体积上限由 `commands/ocr` 判（百度 4MB），这里不管。
+   */
+  ocrExport: {
+    fn: 'mm_ocr_exportImage', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: exportPathRaw
+  },
+
+  /* 建层不单列能力：OCR 走 `textCreateAll`（`mode: "absolute"` 那一支），与「批量文字」同一个入口 */
 
   /* ---------------- 常用页（§11.4：通道按原版调用点分，不按前缀猜） ---------------- */
 

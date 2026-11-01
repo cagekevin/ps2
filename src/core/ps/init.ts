@@ -79,6 +79,8 @@ export const CORE_FUNCS = [
   'mm_text_readAll',
   'mm_text_writeAll',
   'mm_text_createAll',
+  /* OCR：只导出画布（建层走 `mm_text_createAll`，不另开函数） */
+  'mm_ocr_exportImage',
   /* 诊断：官方能力探测 */
   'mm_diag_vendor'
 ] as const;

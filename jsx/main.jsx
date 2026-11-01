@@ -382,7 +382,35 @@ function mm_text_writeAll(patchesJson) {
 }
 
 /**
- * 历史组里真正建层的那一步。
+ * 建一个文字层并填内容 / 字体：**全仓唯一建文字层的地方**（新建与 OCR 共用）。
+ *
+ * 只做两个调用方完全一样的那几行：`artLayers.add` → `kind = TEXT` →（可选）`textItem.kind`
+ * → `contents` → `font`（设不上置 `report.fontMissing`）。
+ * **位置 / 字号 / 颜色 / 对齐 / 命名一概不管**：新建按 pt 纵向堆叠、OCR 按画布 px 绝对定位，
+ * 那是两套排版语义，硬合成一个函数就得带 `mode` 或一堆可选参数。
+ *
+ * `kind` 传 `null` = 不指定（保持 PS 默认），OCR 那一支就这么用。
+ */
+function mm_text_newLayer(parent, kind, content, font, report) {
+	var layer = parent.artLayers.add();
+	layer.kind = LayerKind.TEXT;
+
+	var item = layer.textItem;
+	if (kind) item.kind = kind;
+	item.contents = content;
+
+	if (font) {
+		try {
+			item.font = font;
+		} catch (e) {
+			report.fontMissing = true;
+		}
+	}
+	return layer;
+}
+
+/**
+ * 纵向堆叠那一支（批量文字新建），在 suspendHistory 里跑。
  *
  * 落点：**第一层不设坐标**，用 PS 新建文字层的默认位置（用户实测：拖入图片就落在视图正中，
  * 新建文字同理）；后面的层相对第一层按字号往下排。这样不用去猜「视图中心」怎么算。
@@ -396,21 +424,10 @@ function mm_text_doCreate() {
 	var lastY = 0;
 
 	for (var i = 0; i < cfg.lines.length; i++) {
-		var layer = doc.artLayers.add();
-		layer.kind = LayerKind.TEXT;
+		var layer = mm_text_newLayer(doc, TextType.POINTTEXT, cfg.lines[i], cfg.font && cfg.font.hjm, report);
 		var item = layer.textItem;
-		item.kind = TextType.POINTTEXT;
-		item.contents = cfg.lines[i];
 		item.size = UnitValue(cfg.sizes[i], "pt");
 		item.justification = mm_text_justification(cfg.align);
-
-		if (cfg.font && cfg.font.hjm) {
-			try {
-				item.font = cfg.font.hjm;
-			} catch (e) {
-				report.fontMissing = true;
-			}
-		}
 
 		if (i === 0) {
 			startX = item.position[0];
@@ -431,17 +448,82 @@ function mm_text_justification(align) {
 	return Justification.LEFT;
 }
 
-/** 新建 N 层：`{ lines, sizes, font: { hjm }, align }` → `{ ok, fontMissing }`，一条历史 */
+/**
+ * 画布绝对坐标那一支（OCR），在 suspendHistory 里跑。
+ *
+ * 位置 / 字号 / 组结构全由前端（`domain/ocr`）算好；这里只建组、建层、设颜色与 px 单位，
+ * 结束把单位恢复。建层本身走 `mm_text_newLayer`，与新建同一处。
+ */
+function mm_text_doCreateAbsolute() {
+	var cfg = $.global.__mm_textCreate;
+	var doc = app.activeDocument;
+	var report = { ok: 0, fontMissing: false };
+
+	var originalRuler = app.preferences.rulerUnits;
+	var originalType = app.preferences.typeUnits;
+	app.preferences.rulerUnits = Units.PIXELS;
+	app.preferences.typeUnits = TypeUnits.PIXELS;
+
+	try {
+		var master = doc.layerSets.add();
+		master.name = cfg.master;
+
+		var black = new SolidColor();
+		black.rgb.red = 0;
+		black.rgb.green = 0;
+		black.rgb.blue = 0;
+
+		for (var g = 0; g < cfg.groups.length; g++) {
+			var group = cfg.groups[g];
+			var set = master.layerSets.add();
+			set.name = group.name;
+
+			for (var i = 0; i < group.layers.length; i++) {
+				var spec = group.layers[i];
+				var layer = mm_text_newLayer(set, null, spec.content, cfg.font, report);
+				layer.name = spec.name;
+
+				var item = layer.textItem;
+				item.color = black;
+				item.size = new UnitValue(spec.size, "px");
+				item.position = [spec.left, spec.top];
+				report.ok += 1;
+			}
+		}
+	} finally {
+		app.preferences.rulerUnits = originalRuler;
+		app.preferences.typeUnits = originalType;
+	}
+
+	$.global.__mm_textCreateReport = report;
+}
+
+/**
+ * 建文字层的**唯一入口**（批量文字新建 / OCR 共用）。
+ *
+ * 两种入参形状，判别位 `mode`（缺省 = 纵向堆叠）：
+ *   `{ lines, sizes, font: { hjm }, align }`
+ *   `{ mode: "absolute", master, font, groups: [{ name, layers: [{ name, content, left, top, size }] }] }`
+ * → `{ ok, fontMissing }`，整次一条历史（撤销一步全撤）。
+ */
 function mm_text_createAll(configJson) {
 	return mm_safe("mm_text_createAll", function () {
 		if (!app.documents.length) return "no-doc";
 
 		var cfg = JSON.parse(configJson);
-		if (!cfg || !cfg.lines || !cfg.lines.length) return { ok: 0, fontMissing: false };
+		if (!cfg) return { ok: 0, fontMissing: false };
+
+		var absolute = cfg.mode === "absolute";
+		if (absolute ? !(cfg.groups && cfg.groups.length) : !(cfg.lines && cfg.lines.length)) {
+			return { ok: 0, fontMissing: false };
+		}
 
 		$.global.__mm_textCreate = cfg;
 		$.global.__mm_textCreateReport = null;
-		app.activeDocument.suspendHistory("批量文字：新建", "mm_text_doCreate()");
+		app.activeDocument.suspendHistory(
+			absolute ? "OCR 文字识别" : "批量文字：新建",
+			absolute ? "mm_text_doCreateAbsolute()" : "mm_text_doCreate()"
+		);
 
 		var report = $.global.__mm_textCreateReport || { ok: 0, fontMissing: false };
 		$.global.__mm_textCreate = null;
@@ -449,6 +531,46 @@ function mm_text_createAll(configJson) {
 		return report;
 	});
 }
+
+/* ---------------- OCR：导出画布 / 按坐标建层 ---------------- */
+
+/**
+ * 导出当前画布为 JPG（**合并可见图层**），返回图片绝对路径。
+ *
+ * `duplicate(name, true)` 的第二参数是 mergeLayersOnly：只留合成图，隐藏层不参与。
+ * 这与用户眼睛看到的画面一致，也是原 jsx 的做法。
+ *
+ * 与原 jsx 的一处差异：**失败也把副本关掉**（原实现 saveAs 抛错时副本会留在 PS 里，
+ * 文档列表里多一个 temp_export）。
+ */
+function mm_ocr_exportImage(quality) {
+	return mm_safe("mm_ocr_exportImage", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		var dir = new Folder(Folder.temp.fsName + "/ps_ocr_engine");
+		if (!dir.exists) dir.create();
+
+		var path = dir.fsName + "/temp_poster.jpg";
+		if (File(path).exists) File(path).remove();
+
+		var dup = doc.duplicate("temp_export", true);
+		try {
+			app.activeDocument = dup;
+			var options = new JPEGSaveOptions();
+			options.quality = quality || 8;
+			dup.saveAs(new File(path), options, true, Extension.LOWERCASE);
+		} finally {
+			dup.close(SaveOptions.DONOTSAVECHANGES);
+			app.activeDocument = doc;
+		}
+
+		return path;
+	});
+}
+
+/* 建层不在这里：OCR 走 `mm_text_createAll` 的 `mode: "absolute"` 那一支，
+   与「批量文字」共用 `mm_text_newLayer`。别再往本段加第二个建层函数。 */
 
 /* ---------------- 诊断 ---------------- */
 

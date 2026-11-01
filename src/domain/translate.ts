@@ -1,7 +1,7 @@
 /**
  * 翻译的纯规则：语言表 / 混淆文本编解码 / 请求签名 / 响应解析。
  *
- * 只放算法与常量：不发请求（`core/http/jsonp`）、不读写文件（`repo`）、不弹提示（页面）。
+ * 只放算法与常量：不发请求（`core/http/node-http`）、不读写文件（`repo`）、不弹提示（页面）。
  *
  * 三个必须照抄原版的地方，改了就整条链路错：
  *   1. `encodeText` / `decodeText` 是原版 `Xv` / `qv`，与 `core/cep/text-codec` 的同名函数
@@ -15,11 +15,9 @@ import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { MSG } from '../types/messages';
 import { md5 } from './md5';
+import { TRANSLATE_APP_ID, TRANSLATE_KEY } from '../config';
 
-/** 原版硬编码，`app.v4.js:42816-42818` */
-export const TRANSLATE_URL = 'http://api.fanyi.baidu.com/api/trans/vip/translate';
-export const TRANSLATE_APP_ID = '20200914000565553';
-export const TRANSLATE_KEY = 'GhNw0VLPC2EiKagG8Xwn';
+/** 地址与凭证（原版硬编码，`app.v4.js:42816-42818`）在 `src/config.ts`，本文件只放签名与解码 */
 
 /** 单段文本上限（`app.v4.js:43339`）；每日次数上限见 `DAILY_LIMIT`，两者不是一回事 */
 export const MAX_TEXT_LENGTH = 1000;

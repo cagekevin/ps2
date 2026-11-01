@@ -154,6 +154,7 @@
   --mm-batch-no-w: 16px;        /* 行号列 */
   --mm-batch-name-w: 60px;      /* 图层名列（超出省略号） */
   --mm-batch-draft-min-h: 120px;/* 输入框最小高；正常情况它吃满弹窗剩余高度 */
+  --mm-batch-ocr-w: 46px;       /* 识别按钮最小宽：识别中内容换成转圈，定宽免得三个按钮左右跳 */
 
   /* 字体面板页 */
   --mm-preview-card-w: 180px;

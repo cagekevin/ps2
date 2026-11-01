@@ -21,6 +21,7 @@ import { ok } from '../../types/result';
 import { callCapability } from './capability';
 import { CAP } from './capabilities';
 import type { TextCreateReport, TextWriteReport } from './text-batch-raw';
+import type { OcrGroupSpec } from '../../types/ocr';
 
 /** 读的范围：整个文档 / 点击那一刻的选中集合 */
 export type TextScope = 'all' | 'selection';
@@ -33,10 +34,27 @@ export interface TextPatch {
 
 /** 新建一层的入参；`sizes` 由 `domain/text-batch.createSizes` 算好，jsx 不再算第二份公式 */
 export interface TextCreateConfig {
+  /** 缺省 = 纵向堆叠（写不写都行）；`'absolute'` 是另一支，见 `OcrCreateConfig` */
+  mode?: 'stack';
   lines: string[];
   sizes: number[];
   font: { hjm: string; mz: string; zz: string };
   align: 0 | 1 | 2;
+}
+
+/**
+ * OCR 那一支的入参：位置与分组由 `domain/ocr` 算好，画布绝对坐标（px）。
+ *
+ * 与 `TextCreateConfig` 是**同一个入口的两种形状**（判别位 `mode`），不是两个函数：
+ * 建层动作（add / kind / contents / font / fontMissing）在 jsx 的 `mm_text_newLayer` 一处。
+ */
+export interface OcrCreateConfig {
+  mode: 'absolute';
+  /** 承载全部层的组名 */
+  master: string;
+  /** 与「新建」同一个字体来源（`DEFAULT_CREATE_FONT`），jsx 不写字体名 */
+  font: { hjm: string };
+  groups: OcrGroupSpec[];
 }
 
 /** 读全部 / 选中文字层：返回**还没解码**的数组，逐项形状交给 domain */
@@ -50,8 +68,18 @@ export function writeTextLayers(patches: readonly TextPatch[]): Promise<Result<T
   return callCapability(CAP.textWriteAll, [patches]);
 }
 
-/** 新建 N 个文字层（按传入的字号序列排好，一条历史） */
-export function createTextLayers(config: TextCreateConfig): Promise<Result<TextCreateReport>> {
+/**
+ * 建文字层的**唯一入口**（批量文字新建 / OCR 共用）。
+ *
+ * 两种入参靠 `mode` 分（缺省 = 纵向堆叠）；空入参在前端就拦掉，不白跑一次 jsx。
+ */
+export function createTextLayers(
+  config: TextCreateConfig | OcrCreateConfig
+): Promise<Result<TextCreateReport>> {
+  if (config.mode === 'absolute') {
+    if (!config.groups.length) return Promise.resolve(ok({ ok: 0, fontMissing: false }));
+    return callCapability(CAP.textCreateAll, [config]);
+  }
   if (!config.lines.length) return Promise.resolve(ok({ ok: 0, fontMissing: false }));
   return callCapability(CAP.textCreateAll, [config]);
 }

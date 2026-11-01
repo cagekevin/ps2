@@ -376,7 +376,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 | 24 | `zt_textBranchMerge` | `[mode]` | 拆分/合并真正执行；`1` 分行 / `2` 分为单个 / `3` 合并 / `4` 合并为段落 |
 | 25 | `zt_createButton` | `[{ type, isLine, padding }]` | 生成按钮；`type` 1 圆角 / 2 直角 |
 | 26 | ~~`zt_switchFontDirection`~~ | 无 | **已移除（2026-10-31）**：入口被「批量文字」替换，能力表 / `VENDOR_FUNCS` / `core/ps/text` 三处同批删净 |
-| 27 | `zt_setTranslateText` | `[data, replace]` | 写回译文；`replace` 为真 = 覆盖原文 |
+| 27 | `zt_setTranslateText` | `[data, false]` | 写回译文。**第二参数我们恒传 `false`**：在原文图层下方新建译文层、不替换原文（2026-11-01 用户裁定，官方那个「替换 / 不替换」选项只留一种，入口在 `core/ps/text.setTranslateText`，调用方拿不到开关）。`false` 的宿主行为 **UNVERIFIED** |
 | 28 | `ys_getFontInfo` | 无 | 复制文字属性，复用 `core/ps/font.getFontInfo` |
 | 29 | `ys_checkUseFont` | `[payload]` | 参数先 `encodeText`，复用 `core/ps/font.checkFontUsable` |
 | 30 | `ys_useFont` | `[payload]` | 参数先 `encodeText`，复用 `core/ps/font.applyFont` |

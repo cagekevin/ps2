@@ -31,6 +31,11 @@
   flex: 0 0 auto;
 }
 
+/* 识别中按钮内容从「OCR」换成转圈：给个最小宽度，免得三个按钮左右跳一下 */
+.mm-text-batch__ocr{
+  min-width: var(--mm-batch-ocr-w);
+}
+
 /* 原文表：只用来指出「现在改的是哪一层」，所以一行 18 高、11 号字，不承担阅读 */
 .mm-text-batch__table{
   display: flex;

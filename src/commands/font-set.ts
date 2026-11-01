@@ -10,8 +10,9 @@
  * payload 形状由计划 §3.6 的映射表冻结：`align` / `textAlign` 的参数就是自由面板将来要喂的键。
  */
 
-import { jsonpGet } from '../core/http/jsonp';
+import { nodeGet } from '../core/http/node-http';
 import { MSG } from '../types/messages';
+import { parseJson } from '../types/json';
 import { log } from '../core/logger';
 import { applyFont, checkFontUsable, getFontInfo } from '../core/ps/font';
 import {
@@ -60,6 +61,7 @@ import {
   type QuickFont
 } from '../domain/quick-font';
 import { normalizeTextColor, type RgbColor } from '../domain/text-info';
+import { TRANSLATE_URL } from '../config';
 import {
   buildTranslateParams,
   DAILY_LIMIT,
@@ -67,8 +69,7 @@ import {
   encodeText,
   MAX_TEXT_LENGTH,
   decodeTranslateItems,
-  decodeTranslateResponse,
-  TRANSLATE_URL
+  decodeTranslateResponse
 } from '../domain/translate';
 import { readSystemFontCache } from '../repo/font-repo';
 import {
@@ -216,13 +217,15 @@ export async function pasteFont(keeps: PasteFontConfig): Promise<Result<void>> {
 /**
  * 翻译：计数 → 读文本 → 逐段请求 → 写回 → 计数 +1。
  *
+ * **写回不替换原文**：在原文图层下方新建译文图层（2026-11-01 用户裁定，官方那个
+ * 「替换 / 不替换」选项我们只留一种）。原文一个字都不动，所以失败时也不需要回滚。
+ *
  * 顺序不能反：写回失败不改文档也不计数；计数读坏按 0 次放行（读坏不阻断用户干活）。
- * 失败码 `NETWORK` / `TIMEOUT` 原样透传，原文一个字都不动。
+ * 失败码 `NETWORK` / `TIMEOUT` 原样透传。
  */
 export async function translate(input: {
   from: string;
   to: string;
-  replace: boolean;
 }): Promise<Result<void>> {
   const counterRead = readTranslateCounter();
   if (counterRead.status === 'error') {
@@ -254,20 +257,24 @@ export async function translate(input: {
 
   for (let index = 0; index < items.value.length; index += 1) {
     const source = sources[index] ?? '';
-    const response = await jsonpGet(
+    const response = await nodeGet(
       TRANSLATE_URL,
       buildTranslateParams({ text: source, from: input.from, to: input.to })
     );
     if (response.status === 'error') return response;
 
-    const parsed = decodeTranslateResponse(response.value);
+    /* 百度翻译不回 CORS 头（`fetch` 会被拦），走 Node；拿回的是正文原文，解析用全仓唯一入口 */
+    const raw = parseJson(response.value, '百度翻译响应');
+    if (raw.status === 'error') return raw;
+
+    const parsed = decodeTranslateResponse(raw.value);
     if (parsed.status === 'error') return parsed;
 
     const item = items.value[index];
     if (item) item.dst = encodeText(parsed.value);
   }
 
-  const written = await setTranslateText(items.value, input.replace);
+  const written = await setTranslateText(items.value);
   if (written.status === 'error') return written;
 
   /* 计数写失败只记日志：文档已经改好了，不能因为计数提示失败让用户以为没翻译 */

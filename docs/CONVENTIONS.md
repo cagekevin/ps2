@@ -203,6 +203,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 
 ```
 src/
+├─ config.ts      **唯一可调参数表**：服务地址、体积与超时、OCR 排版系数、默认名字。叶子模块（不 import 任何东西）
 ├─ core/          技术横切：零业务、零 UI
 │  ├─ cep/        PS 通道
 │  ├─ http/       请求与 endpoint
@@ -214,6 +215,7 @@ src/
 │  ├─ dialog/     文件对话框（CEP fs API）
 │  ├─ feedback/   提示条 / 全屏加载的**状态 + 通道原语**（`channel.ts`：订阅 / 通知 / 挂载门；零 React，components 只渲染）
 │  ├─ image/      图片解码（FileReader / canvas）
+│  ├─ ocr/        云 OCR（百度）：`credentials`（凭证）/ `blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
@@ -234,7 +236,7 @@ src/
 └─ app/           router、layout、providers、layer-watcher、common-use-watcher
 ```
 
-`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**。
+`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**；`docs/参考/` 只放参考脚本（**不参与构建、不部署、不被任何代码 import**，见该目录 `README.md`）。
 
 ### 依赖方向（只允许向下；**静态方向只写这一份**）
 
@@ -249,7 +251,8 @@ components → hooks ──────→ core
 
 | 层 | 允许 import | 禁止 import |
 |---|---|---|
-| `core` | `types`、`core` 内部其他模块 | `commands`、`store`、`components`、`features`、`app` |
+| `config` | **无**（叶子：只放常量与地址，不 import 任何模块） | 任何模块 |
+| `core` | `config`、`types`、`core` 内部其他模块 | `commands`、`store`、`components`、`features`、`app` |
 | `store` | `core`、`domain`、`repo`、`types` | `commands`、`features`、`components` |
 | `components` | `hooks`、`core/logger`、`core/feedback`（状态与通道原语）、`types`、`components` 内部 | `commands`、`features`、`store`、`core/ps`、`core/storage`、`core/cep` |
 | `domain` | `types`、`domain` 内部 | `core`、`repo`、`commands`、`store`、`components`、`features`、`app` |
@@ -258,6 +261,8 @@ components → hooks ──────→ core
 | `commands` | `core`、`domain`、`repo`、`store`、`types` | `features`、`components`、`app` |
 | `features` | 所有下层 | 其他 `features` |
 | `app` | 全部 | - |
+
+`config.ts` 是**叶子**：它不 import 任何模块，**任何层都可以 import 它**（表里各层的「禁止 import」都不含它）。反向不成立 —— `config.ts` import 任何东西都算越界。
 
 `repo` 允许用 core 的 IO/路径原语（`nodeRequire('fs'/'buffer')`、`getUserDataPath`），但**不许**绕过 `core/storage` 去写库文件；导入导出这种「整份归档」是唯一需要外部路径的场景。
 
@@ -655,7 +660,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | 横切 | 模块 | 对外签名 | 禁止 |
 |---|---|---|---|
 | 日志 | `core/logger` | `log.info/warn/error(msg, ctx?)` | 组件里 `console.*` |
-| 网络 | `core/http` | `request<T>(path, opts): Promise<Result<T>>`；`jsonpGet(url, params, timeoutMs)` 只服务不支持 CORS 的第三方接口（百度翻译）；`postText(url, body, opts)` 只服务 GAS 网关（云同步，地址即账号），只回状态码 + 正文，错误码映射由 `commands` 按协议做。三种业务代码都经 `commands` 调 | feature 里写 `fetch` / 注入 `<script>` |
+| 网络 | `core/http` | **三个出口，按「服务端给不给 CORS 头」分，同一约束只有一个实现**：`request<T>(path, opts)` = `fetch` + JSON（自家 API，按 `endpoints.ts` 的 key 拼 URL、自动加 token）；`postText(url, body, opts)` = `fetch` + 文本体，只回状态码 + 正文（GAS 云同步，地址即账号）；`nodeGet(url, params, timeoutMs)` / `nodePost(url, params, timeoutMs)`（`node-http.ts`）= Node `http/https`，**无 CORS 头的第三方接口**（百度 OCR：实测响应无 `Access-Control-Allow-Origin`；百度翻译同病，2026-11-01 已从 JSONP 迁过来，`jsonp.ts` 删除）。三者都返回 `Result`，错误码映射由 `commands` 或对应域按协议做。**不许合并成带 `mode` 参数的函数**（会让每个调用方多知道一件事，`§4.3`），**也不许再插 `<script>` 走 JSONP**（唯一那条已删） | feature 里写 `fetch` / 注入 `<script>` / 直接 `require('https')` |
 | 鉴权 | `core/auth` | `getToken()`、`onUnauthorized(cb)` | 业务层手动拼 Authorization |
 | 存储 | `core/storage` | `readTextResult/writeTextAtomic`；导入导出用 `readTextAt/writeTextAtAtomic/copyFileAt` | 组件里直接用 `cep.fs` |
 | 官方设置文件 | `repo/*`（内部走 `repo/json-file` + `core/storage`） | `readXxx()` / `updateXxx()`，只改自己那几个键，未知键原样保留（`sj_commonFunction.json` 的根是**裸数组**，不是 `{ index, list }`） | 页面、命令、组件直接读写 `sj_*.json`；用 `core/prefs` 代管官方设置文件 |
