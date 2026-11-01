@@ -26,10 +26,13 @@ export const TOP_TITLES_TWO = ['复制文字属性', '粘贴文字属性'] as co
 export const TEXT_BATCH_ICON: IconName = 'iconpiliangwenzi';
 
 /**
- * 顶部带角标的按钮下标：组一 2、组二 1（角标 = 可加入自由面板，v1 仅展示）。
+ * 顶部带角标的按钮下标（**角标 = 这个按钮有抽屉/下拉面板**，2026-11-01 用户确认）。
  *
- * 组一原来还有 0（翻译）：翻译现在是**左键直接执行**（译文建在原层下方），
- * 不再是一个「可拖进自由面板」的动作，所以角标去掉（2026-11-01 用户裁定）。
+ * 组一 `[2]`：只有「创建按钮」有面板。
+ * 0（翻译）的角标已去掉：翻译是**左键直接执行**（译文建在原层下方），没有面板可展开。
+ *
+ * ⚠️ 现状与口径不一致的一处：1（拆分文本）有 `SplitPanel` 抽屉，却不在这个数组里 ——
+ * 见 `docs/` 与交付说明，是否补角标待定（不要顺手改，先问）。
  */
 export const TOP_BADGES_ONE: readonly number[] = [2];
 export const TOP_BADGES_TWO: readonly number[] = [1];
