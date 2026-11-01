@@ -25,8 +25,13 @@ export const TOP_TITLES_TWO = ['复制文字属性', '粘贴文字属性'] as co
  */
 export const TEXT_BATCH_ICON: IconName = 'iconpiliangwenzi';
 
-/** 顶部带角标的按钮下标：组一 0/2、组二 1（角标 = 可加入自由面板，v1 仅展示） */
-export const TOP_BADGES_ONE: readonly number[] = [0, 2];
+/**
+ * 顶部带角标的按钮下标：组一 2、组二 1（角标 = 可加入自由面板，v1 仅展示）。
+ *
+ * 组一原来还有 0（翻译）：翻译现在是**左键直接执行**（译文建在原层下方），
+ * 不再是一个「可拖进自由面板」的动作，所以角标去掉（2026-11-01 用户裁定）。
+ */
+export const TOP_BADGES_ONE: readonly number[] = [2];
 export const TOP_BADGES_TWO: readonly number[] = [1];
 
 export const BOTTOM_ICONS_ONE: readonly IconName[] = [
