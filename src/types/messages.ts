@@ -414,6 +414,20 @@ export const MSG = {
     emptyDraft: '还没有输入文字'
   },
 
+  /** 矢量化：选中图层 → 形状层（直接替换原层） */
+  vectorize: {
+    /** 选中不是恰好 1 个（0 个或多个都算） */
+    needOne: '请先选中一个图层（只能一个）',
+    /** 转出来没有可用的路径（纯色块 / 空白层） */
+    empty: '这个图层没有可转成路径的形状',
+    /** wasm 引擎没加载到（vendor 没随部署带上） */
+    noEngine: '矢量引擎没加载成功，请重新部署扩展',
+    /** vtracer 自己报错 */
+    convertFailed: '矢量转换失败',
+    /** 成功（层已经在画布上，不再多话） */
+    done: '已转为矢量形状层'
+  },
+
   /** 凭证（OCR + 翻译，同一份 `credentials.json`） */
   credentials: {
     /** 粘贴的整段文本认不出（不是 JSON、或既没有 ocr 也没有 translate 节） */

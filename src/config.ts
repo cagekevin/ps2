@@ -76,3 +76,15 @@ export const NAME_MAX = 15;
 export const MASTER_GROUP_NAME = '✨ 智能重构布局';
 /** 子组名前缀（后面接 1、2、3…） */
 export const GROUP_PREFIX = '模块 ';
+
+/* ---------------- 矢量化（vtracer） ---------------- */
+
+/**
+ * 位图转 SVG 的参数。
+ *
+ * `preset: 'bw'`：PS 的形状层只有**一种**填充色，彩色分层会变成多个层（那是另一件事），
+ * 所以先只做单色。`mode: 'spline'`：曲线用平滑点，比 `polygon` 圆角更像原图
+ * （实测同一图标 polygon 852 B / spline 5.2 KB，差别在圆角是折线还是曲线）。
+ * `filterSpeckle: 4`：丢掉 4px 以下的噪点，避免碎成一堆小路径。
+ */
+export const VECTORIZE_OPTIONS = { preset: 'bw', mode: 'spline', filterSpeckle: 4 } as const;

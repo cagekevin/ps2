@@ -31,13 +31,14 @@ import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 /* 批量文字的私有解析器：单独一个文件，**不能**从 `./text-batch` 引 —— 那个文件 import 本文件的
    `CAP`，反过来引就是运行时环（`check:cycles` 会红） */
 import { createReportRaw, layersRaw, writeReportRaw } from './text-batch-raw';
-/* OCR 的私有解析器：同样单独文件（写进 `./ocr.ts` 会成运行时环） */
-import { exportPathRaw } from './ocr-raw';
+
 /* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */
 import type { AddedTemplate } from './template';
 
 /** 「多选」类操作至少 2 个图层：位置对换 / 颜色互换 / 按间距分布都要成对才有意义 */
-const requireTwoLayers = () => requireSelection(2);
+const requireTwoLayers = () => requireSelection({ min: 2 });
+/** 矢量化：只能作用于**恰好一个**图层（多选时不知道该转哪个） */
+const requireOneLayer = () => requireSelection({ exact: 1 }, MSG.vectorize.needOne);
 
 /** 字体信息载荷：必须是对象且 `fonts` 非空，否则算读失败（没有字体项的信息没有意义） */
 function fontsOf(data: unknown): Record<string, unknown> | null {
@@ -66,6 +67,7 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
   return { id, name, ext, width, height };
 }
 import {
+  exportPathRaw,
   lenientVoid,
   parseDataEnvelope,
   parseFontFamily,
@@ -76,6 +78,7 @@ import {
   strictPayload,
   unwrapRaw
 } from './raw';
+import { replaceReportRaw } from './vectorize-raw';
 
 /** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
 export const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
@@ -296,6 +299,20 @@ export const CAP = {
 
   /* 建层不单列能力：OCR 走 `textCreateAll`（`mode: "absolute"` 那一支），与「批量文字」同一个入口 */
 
+  /* ---------------- 矢量化（自写 jsx，`core` 门只能直调） ---------------- */
+
+  /** 导出选中图层为白底 PNG：返回图片绝对路径（选中不是恰好 1 个时 jsx 返回 `need-one`） */
+  vecExport: {
+    fn: 'mm_vec_exportLayer', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    require: requireOneLayer, parse: exportPathRaw
+  },
+
+  /** 用解析好的路径点建形状层并替换原图层：整次一条历史 */
+  vecReplace: {
+    fn: 'mm_vec_replaceWithPath', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    require: requireOneLayer, parse: replaceReportRaw
+  },
+
   /* ---------------- 常用页（§11.4：通道按原版调用点分，不按前缀猜） ---------------- */
 
   /** 放大 / 缩小：直调（原版 `jsx`），没选中图层由 jsx 自己返回约定值 */
@@ -384,7 +401,7 @@ export const CAP = {
    */
   templateAdd: {
     fn: 'ps_mbAddPsd', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: () => requireSelection(1),
+    require: () => requireSelection({ min: 1 }),
     parse: strictPayload({
       whenFalse: MSG.template.noSelection,
       whenFailed: MSG.template.saveFailed,

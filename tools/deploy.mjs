@@ -50,7 +50,14 @@ for (const dir of ['CSXS', 'dist', 'jsx', 'preset']) {
 }
 
 /* 校验：缺文件或出现嵌套目录直接失败 */
-const required = ['CSXS/manifest.xml', 'dist/index.html', 'jsx/main.jsx'];
+const required = [
+  'CSXS/manifest.xml',
+  'dist/index.html',
+  'jsx/main.jsx',
+  /* 矢量化的 wasm 运行时（`public/vendor/` 由 Vite 原样拷进 dist）：缺了功能直接不可用 */
+  'dist/vendor/vtracer/index.js',
+  'dist/vendor/vtracer/pkg/vtracer_wasm_bg.wasm'
+];
 const missing = required.filter((file) => !existsSync(join(target, file)));
 if (missing.length) {
   console.error('部署失败，缺少:', missing.join(', '));

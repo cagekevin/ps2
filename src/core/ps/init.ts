@@ -81,6 +81,9 @@ export const CORE_FUNCS = [
   'mm_text_createAll',
   /* OCR：只导出画布（建层走 `mm_text_createAll`，不另开函数） */
   'mm_ocr_exportImage',
+  /* 矢量化：导出选中层 / 用路径点建形状层 */
+  'mm_vec_exportLayer',
+  'mm_vec_replaceWithPath',
   /* 诊断：官方能力探测 */
   'mm_diag_vendor'
 ] as const;

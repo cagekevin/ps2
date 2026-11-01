@@ -39,6 +39,7 @@ import {
 } from '../../commands/font-set';
 import type { AlignAxis } from '../../commands/font-set';
 import { loadFontList } from '../../commands/font';
+import { vectorizeSelection } from '../../commands/vectorize';
 import type { FontItem } from '../../domain/font-item';
 import type { CreateButtonConfig, FontSetSettings, PasteFontConfig } from '../../domain/font-set';
 import type { QuickFont } from '../../domain/quick-font';
@@ -178,6 +179,14 @@ export function useFontPanel() {
       MSG.font.translateDone
     );
   }, [run, settings.ztTranslate.from, settings.ztTranslate.to]);
+
+  /**
+   * 选中图层 → 矢量形状层（**直接替换**原层）。
+   * 前置条件「恰好选中一个图层」由命令层判（`selectionCount`），页面不重复判。
+   */
+  const onVectorize = useCallback(() => {
+    void run(() => vectorizeSelection(), MSG.vectorize.done);
+  }, [run]);
 
   /* ---------- 底部：对齐 / 分布 ---------- */
 
@@ -449,6 +458,7 @@ export function useFontPanel() {
     onSplit,
     onApplyCreateButton,
     onTranslate,
+    onVectorize,
     onCopyFont,
     onPasteFont,
     onAlign,

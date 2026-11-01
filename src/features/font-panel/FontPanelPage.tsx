@@ -124,7 +124,12 @@ export default function FontPanelPage() {
               />
             ))}
 
-            <span className="mm-divider mm-divider--vertical" />
+            {/* 选中图层 → 转矢量：占掉原来的分隔线位置（分隔线因此删掉，用户 2026-11-01 定的） */}
+            <IconButton
+              name="iconshiliang"
+              title="选中图层 → 转矢量（直接替换原层）"
+              onClick={() => page.onVectorize()}
+            />
 
             {TOP_ICONS_TWO.map((icon, index) => (
               <IconPanel

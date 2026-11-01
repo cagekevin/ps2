@@ -24,6 +24,9 @@ import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/res
  */
 const RAW_FAILURES: Record<string, ErrorCode> = {
   'no-doc': 'PS_NO_DOC',
+  /* 矢量化专用：选中不是恰好一个图层。正常由命令层先用 `selectionCount()` 拦掉，
+     这里是 jsx 侧的兜底（万一两边判断不同步，不能把它当成一个文件路径） */
+  'need-one': 'PS_REJECTED',
   'not-shape': 'PS_WRONG_LAYER',
   skipped: 'PS_SKIPPED',
   '-1': 'PS_REJECTED'
@@ -38,6 +41,7 @@ export function unwrapRaw(raw: string): Result<void> {
   const code = RAW_FAILURES[trimmed];
   if (code) return failWithDetail(code, MSG.codeReason[code], `raw:${trimmed}`);
   return ok(undefined);
+
 }
 
 /* ---------------- 失败构造器（三个语义各一个，模块私有、不导出） ---------------- */
@@ -315,4 +319,19 @@ export function strictData(fallback: string): Parser<unknown> {
     }
     return ok(dataOf(value));
   };
+}
+
+/**
+ * 「jsx 只返回一个绝对路径」的通用解析器（导出图 / 导出 SVG 都用它）。
+ *
+ * 以前这份在 `ocr-raw.ts` 里，矢量化要用就得抄第二份 —— 同形解析器两份必然走形，
+ * 所以上移到公共清单：`no-doc` 折 `PS_NO_DOC`，空串算宿主没给结果。
+ */
+export function exportPathRaw(raw: string): Result<string> {
+  const guard = unwrapRaw(raw);
+  if (guard.status === 'error') return guard;
+
+  const path = raw.trim();
+  if (!path) return failWithDetail('PS_BAD_PAYLOAD', MSG.badPayload, 'raw:empty');
+  return ok(path);
 }

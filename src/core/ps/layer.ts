@@ -84,7 +84,7 @@ export function requireShapeLayer(): Promise<Result<void>> {
  * 与 `getLayerState` 分成两个 jsx：那个被 `layer-watcher` 每 800ms 调一次，返回协议不能动
  * （新旧 jsx 混用会静默解析错）；这个只在「需要多选」的能力点击时调，低频。
  */
-export async function getSelectionCount(): Promise<Result<number>> {
+async function getSelectionCount(): Promise<Result<number>> {
   /* 同上：域内基础设施，不进表 */
   const call = await callDirect('mm_layer_getSelection', [], { gate: 'core' });
   if (call.status === 'error') return call;
@@ -92,24 +92,36 @@ export async function getSelectionCount(): Promise<Result<number>> {
 }
 
 /**
- * 多选前提：至少 `min` 个图层被选中。
+ * 选中数量的判据：**至少 N 个** 或 **恰好 N 个**。
  *
- * 用在「成对才有意义」的操作上：位置对换、图层颜色互换、按间距分布——单选时 PS 会返回
- * `-1`（一句笼统的「请确认已选中图层」），这里提前说清「当前选中几个、需要几个」。
- * 数量不足不是故障（多选几个就好），用 `PS_WRONG_LAYER` 让 `StateHint` 走灰字。
+ * 用判别式入参而不是两个函数（`requireSelection` / `requireExactSelection`）：
+ * 它们答的是同一个问题（选中数够不够），两份实现必然在文案与边界上走形。
  */
-export async function requireSelection(min: number): Promise<Result<void>> {
+type SelectionRule = { min: number } | { exact: number };
+
+/**
+ * 选中数量前提（**唯一实现**）：`{ min }` 至少 N 个、`{ exact }` 恰好 N 个。
+ *
+ * 用在「成对才有意义」或「只能作用于一个层」的操作上：单选时 PS 会返回 `-1`
+ * （一句笼统的「请确认已选中图层」），这里提前说清「当前选中几个、需要几个」。
+ * 数量不符不是故障（多选几个 / 少选几个就好），用 `PS_WRONG_LAYER` 让 `StateHint` 走灰字。
+ *
+ * `reason` 由业务给（例如「请先选中一个图层」）：**判据在这里，文案归调用方** ——
+ * 同一个判据在不同功能里的说法不一样，硬编一句在 core 里等于让业务没法说话。
+ */
+export async function requireSelection(rule: SelectionRule, reason?: string): Promise<Result<void>> {
   const count = await getSelectionCount();
   if (count.status === 'error') return count;
 
-  if (count.value < min) {
-    return failWithDetail(
-      'PS_WRONG_LAYER',
-      `当前选中 ${count.value} 个图层，需要至少 ${min} 个`,
-      `selection:${count.value}`
-    );
-  }
-  return ok(undefined);
+  const actual = count.value;
+  const failed = 'exact' in rule ? actual !== rule.exact : actual < rule.min;
+  if (!failed) return ok(undefined);
+
+  const fallback = 'exact' in rule
+    ? `当前选中 ${actual} 个图层，需要恰好 ${rule.exact} 个`
+    : `当前选中 ${actual} 个图层，需要至少 ${rule.min} 个`;
+
+  return failWithDetail('PS_WRONG_LAYER', reason ?? fallback, `selection:${actual}`);
 }
 
 /*

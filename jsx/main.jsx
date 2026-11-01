@@ -572,6 +572,127 @@ function mm_ocr_exportImage(quality) {
 /* 建层不在这里：OCR 走 `mm_text_createAll` 的 `mode: "absolute"` 那一支，
    与「批量文字」共用 `mm_text_newLayer`。别再往本段加第二个建层函数。 */
 
+/* ---------------- 矢量化：导出选中层 / 用路径点建形状 ---------------- */
+
+/**
+ * 导出**选中的那个图层**为白底 PNG（选中必须恰好 1 个），返回图片绝对路径。
+ *
+ * 为什么铺白底：vtracer 把透明区当黑色，透明底会转出一整块黑（实测过）。
+ * 为什么用新文档：`flatten()` 只能在整份文档上做，图层级没有等价操作。
+ * 位置不用换算：新文档与原文档同尺寸同分辨率，复制过去的图层坐标不变。
+ */
+function mm_vec_exportLayer() {
+	return mm_safe("mm_vec_exportLayer", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		if (mm_text_selectedIndexes().length !== 1) return "need-one";
+
+		var target = doc.activeLayer;
+		var dir = new Folder(Folder.temp.fsName + "/ps_vec_engine");
+		if (!dir.exists) dir.create();
+
+		var path = dir.fsName + "/temp_layer.png";
+		if (File(path).exists) File(path).remove();
+
+		var temp = app.documents.add(
+			doc.width, doc.height, doc.resolution, "vec_tmp",
+			NewDocumentMode.RGB, DocumentFill.WHITE
+		);
+		try {
+			app.activeDocument = temp;
+			target.duplicate(temp, ElementPlacement.PLACEATBEGINNING);
+			temp.flatten();
+			temp.saveAs(new File(path), new PNGSaveOptions(), true, Extension.LOWERCASE);
+		} finally {
+			temp.close(SaveOptions.DONOTSAVECHANGES);
+			app.activeDocument = doc;
+		}
+
+		return path;
+	});
+}
+
+/** 建形状主体：在 suspendHistory 里跑，结果挂 `$.global.__mm_vecReport` */
+function mm_vec_doReplace() {
+	var payload = $.global.__mm_vecPayload;
+	var doc = app.activeDocument;
+	var target = doc.activeLayer;
+	/* 名字在删除前读：形状层沿用原层名，用户才认得出哪一层被替换了 */
+	var name = target.name;
+	var report = { ok: 0 };
+
+	var pathItem = doc.pathItems.add(name, []);
+	pathItem.name = name;
+
+	for (var s = 0; s < payload.subpaths.length; s++) {
+		var spec = payload.subpaths[s];
+		if (!spec || !spec.points || spec.points.length < 2) continue;
+
+		var sub = pathItem.subPathItems.add();
+		for (var p = 0; p < spec.points.length; p++) {
+			var src = spec.points[p];
+			var point = sub.pathPoints.add();
+			point.anchor = [src.anchor[0], src.anchor[1]];
+			point.leftDirection = [src.left[0], src.left[1]];
+			point.rightDirection = [src.right[0], src.right[1]];
+			point.kind = src.smooth ? PointKind.SMOOTH : PointKind.CORNERPOINT;
+		}
+		sub.closed = spec.closed === true;
+		report.ok += 1;
+	}
+
+	/* 先建新层再填充：`fillPath` 填的是当前层，直接填在原层上再删就一起没了 */
+	var shapeLayer = doc.artLayers.add();
+	shapeLayer.name = name;
+	doc.activeLayer = shapeLayer;
+
+	var color = new SolidColor();
+	color.rgb.red = payload.color.r;
+	color.rgb.green = payload.color.g;
+	color.rgb.blue = payload.color.b;
+	pathItem.fillPath(color, ColorBlendMode.NORMAL, 100, false);
+
+	target.remove();
+	$.global.__mm_vecReport = report;
+}
+
+/**
+ * 用前端解析好的路径点建形状层并删掉原图层：
+ * `{ name, color: { r, g, b }, subpaths: [{ closed, points: [{ anchor, left, right, smooth }] }] }`
+ * → `{ ok: N }`（N = 建成的子路径数）。
+ *
+ * 本函数**不算任何坐标**：SVG 的 `d` 解析在 `domain/vectorize`，这里只赋值。
+ * 单位临时切 px（路径点用的是画布像素），结束恢复。
+ */
+function mm_vec_replaceWithPath(payloadJson) {
+	return mm_safe("mm_vec_replaceWithPath", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var payload = JSON.parse(payloadJson);
+		if (!payload || !payload.subpaths || !payload.subpaths.length) return { ok: 0 };
+
+		var originalRuler = app.preferences.rulerUnits;
+		var originalType = app.preferences.typeUnits;
+		app.preferences.rulerUnits = Units.PIXELS;
+		app.preferences.typeUnits = TypeUnits.PIXELS;
+
+		$.global.__mm_vecPayload = payload;
+		$.global.__mm_vecReport = null;
+		try {
+			app.activeDocument.suspendHistory("转为矢量形状", "mm_vec_doReplace()");
+		} finally {
+			app.preferences.rulerUnits = originalRuler;
+			app.preferences.typeUnits = originalType;
+			$.global.__mm_vecPayload = null;
+		}
+
+		var report = $.global.__mm_vecReport || { ok: 0 };
+		$.global.__mm_vecReport = null;
+		return report;
+	});
+}
+
 /* ---------------- 诊断 ---------------- */
 
 /**

@@ -217,6 +217,7 @@ src/
 │  ├─ image/      图片解码（FileReader / canvas）
 │  ├─ credentials/ 凭证（OCR / 翻译两节，`credentials.json`，**不进 git**）
 │  ├─ ocr/        云 OCR（百度）：`blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
+│  ├─ vectorize/  位图转 SVG 的 wasm 引擎（`vtracer`，从 `public/vendor/` 按扩展路径 require）
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
@@ -238,6 +239,11 @@ src/
 ```
 
 `src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**；`docs/参考/` 只放参考脚本（**不参与构建、不部署、不被任何代码 import**，见该目录 `README.md`）。
+
+**第三方运行时放 `public/`**（与 `public/CSInterface.js` 同一类：不参与打包、由 Vite 原样拷进 `dist/`）。
+`public/vendor/vtracer/` 是位图转 SVG 的 wasm 包（692 KB，其中 wasm 653 KB），运行时用
+`nodeRequire('<扩展目录>/dist/vendor/vtracer/index.js')` 加载。
+**为什么不放 `src/`**：会被 Vite 打包，破坏 wasm-bindgen 的 `require('fs')` / `__dirname`。
 
 ### 依赖方向（只允许向下；**静态方向只写这一份**）
 

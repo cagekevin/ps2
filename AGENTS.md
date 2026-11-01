@@ -48,6 +48,7 @@
 
 1. `docs/CONVENTIONS.md` —— 唯一工程标准，回答「怎么写」
 2. `docs/GOVERNANCE.md` —— 治理规则，回答「什么时候必须改、改不动怎么办」
+3. `docs/JSX-通道与自写指南.md` —— **接 jsx 能力前必读**：新增/修改 `jsx/main.jsx` 的函数、能力表行、`CORE_FUNCS` 之前必须读完。它回答「这条 PS 能力该走 vendor 直调还是自写 jsx、jsx 里能做什么不能做什么、返回值怎么约定」。**跳过这一步的典型事故**：把本该在 jsx 里做的事搬到命令层、或自己发明一套返回值约定（见 §〇「同一能力两个样本」）
 
 要求：
 
@@ -56,7 +57,7 @@
 - 第一次回复里必须有一行确认，格式固定：
 
   ```
-  已读完 docs/CONVENTIONS.md + docs/GOVERNANCE.md；本次最相关条款：§x、§y
+  已读完 docs/CONVENTIONS.md + docs/GOVERNANCE.md + docs/JSX-通道与自写指南.md；本次最相关条款：§x、§y
   ```
 
   并附上这两条条款的**实际内容要点**（照文件写，不许凭记忆复述）。没有这行确认，视为违规开工。
