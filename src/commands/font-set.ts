@@ -62,6 +62,7 @@ import {
 } from '../domain/quick-font';
 import { normalizeTextColor, type RgbColor } from '../domain/text-info';
 import { TRANSLATE_URL } from '../config';
+import { readTranslateCredentials } from '../core/credentials';
 import {
   buildTranslateParams,
   DAILY_LIMIT,
@@ -69,7 +70,8 @@ import {
   encodeText,
   MAX_TEXT_LENGTH,
   decodeTranslateItems,
-  decodeTranslateResponse
+  decodeTranslateResponse,
+  resolveTargetLang
 } from '../domain/translate';
 import { readSystemFontCache } from '../repo/font-repo';
 import {
@@ -227,6 +229,15 @@ export async function translate(input: {
   from: string;
   to: string;
 }): Promise<Result<void>> {
+  const credentials = readTranslateCredentials();
+  if (credentials.status === 'error') {
+    /* 还没配凭证是「设置缺失」，不是「文件不存在」：换一句话说，用户才知道去哪补 */
+    if (credentials.code === 'NOT_FOUND') {
+      return failWithDetail('NOT_FOUND', MSG.font.translateNoCredentials, credentials.detail);
+    }
+    return credentials;
+  }
+
   const counterRead = readTranslateCounter();
   if (counterRead.status === 'error') {
     log.warn('翻译计数读取失败，本次按 0 次处理', { reason: counterRead.reason });
@@ -259,7 +270,14 @@ export async function translate(input: {
     const source = sources[index] ?? '';
     const response = await nodeGet(
       TRANSLATE_URL,
-      buildTranslateParams({ text: source, from: input.from, to: input.to })
+      /* 目标语言 `auto` 在这里兜成中文：百度不接受 auto 作目标（`domain/translate` 一处判） */
+      buildTranslateParams({
+        text: source,
+        from: input.from,
+        to: resolveTargetLang(input.to),
+        appId: credentials.value.appId,
+        key: credentials.value.key
+      })
     );
     if (response.status === 'error') return response;
 

@@ -100,6 +100,7 @@
 | 鉴权 | `src/core/auth/index.ts` | token + 版本化 key；401 订阅表走 `core/feedback/channel` |
 | 环境 | `src/core/env/index.ts` | 版本号、扩展 ID |
 | 网络 | `src/core/http/client.ts` | 唯一请求入口 |
+| 凭证 | `src/core/credentials/index.ts` | 凭证唯一持有者：OCR（API Key / Secret Key）+ 翻译（AppID / 密钥），分节存 `credentials.json`，**不进 git**；存一节必须保留另一节（先读后合并） |
 | Node HTTP | `src/core/http/node-http.ts` | **无 CORS 头的第三方接口唯一出口**：`nodeGet` / `nodePost` 按 URL 协议选 `http`/`https`；只回正文原文（不判状态码，百度把错误写在 200 的 JSON 里）；日志不写 url（地址常带 token）；`jsonpGet` 已删，别再插 `<script>` |
 | 接口登记 | `src/core/http/endpoints.ts` | 标注来源与验证状态 |
 | 动作库形状 | `src/domain/action-library.ts` | 7 形状里的 4 个 + 解码（结构 reject / 项 filter）+ 11 个纯编辑函数；`group` 执行必带、别名空串 = 删别名、删分组补「默认分组」 |

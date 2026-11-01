@@ -16,14 +16,23 @@ describe('translate', () => {
   });
 
   it('签名顺序是 md5(appid + q + salt + key)', () => {
-    /* 期望值由 node crypto 对同一串 UTF-8 文本算出，锁住拼接顺序与 salt 的用途 */
-    const params = buildTranslateParams({ text: '你好', from: 'auto', to: 'en', salt: '123' });
-    expect(params.sign).toBe('1b8e0e4979fcd813224859d525e24bdb');
+    /* 期望值由 node crypto 对同一串 UTF-8 文本算出，锁住拼接顺序与 salt 的用途。
+       用假凭证：真密钥只存在 `credentials.json`，不进仓库 */
+    const params = buildTranslateParams({
+      text: '你好',
+      from: 'auto',
+      to: 'en',
+      appId: 'test-app',
+      key: 'test-key',
+      salt: '123'
+    });
+    expect(params.sign).toBe('c0e7626880a1f1604b0c5e36303bdcdf');
+    expect(params.appid).toBe('test-app');
     expect(params.salt).toBe('123');
     expect(params._time).toBe('123');
   });
 
-  it('响应解析：两代成功码都认，错误码折 CORRUPT 且 detail 带 error_msg', () => {
+  it('响应解析：两代成功码都认，已知错误码按语义折、未知码才 CORRUPT', () => {
     expect(decodeTranslateResponse({ error_code: '52000', trans_result: [{ dst: 'Hello' }] })).toEqual({
       status: 'ok',
       value: 'Hello'
@@ -33,12 +42,26 @@ describe('translate', () => {
       value: 'Hello'
     });
 
-    const bad = decodeTranslateResponse({ error_code: '54003', error_msg: 'Invalid Access Limit' });
-    expect(bad.status).toBe('error');
-    if (bad.status === 'error') {
-      expect(bad.code).toBe('CORRUPT');
-      expect(bad.detail).toContain('Invalid Access Limit');
+    /* 54003 频控 → NETWORK（不是「数据坏了」） */
+    const busy = decodeTranslateResponse({ error_code: '54003', error_msg: 'Invalid Access Limit' });
+    expect(busy.status).toBe('error');
+    if (busy.status === 'error') {
+      expect(busy.code).toBe('NETWORK');
+      expect(busy.detail).toContain('Invalid Access Limit');
     }
+
+    /* 54004 欠费 → FORBIDDEN，且不再说「返回数据无法识别」 */
+    const quota = decodeTranslateResponse({ error_code: '54004', error_msg: 'Please recharge' });
+    expect(quota.status).toBe('error');
+    if (quota.status === 'error') {
+      expect(quota.code).toBe('FORBIDDEN');
+      expect(quota.reason).toBe(MSG.font.translateQuota);
+    }
+
+    /* 表里没有的码才归 CORRUPT */
+    const unknown = decodeTranslateResponse({ error_code: '99999', error_msg: 'weird' });
+    expect(unknown.status).toBe('error');
+    if (unknown.status === 'error') expect(unknown.code).toBe('CORRUPT');
   });
 
   it('1000 字边界：上限常量是 1000，边界长度往返不丢字', () => {

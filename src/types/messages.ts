@@ -345,6 +345,18 @@ export const MSG = {
     copyStyleFirst: '请先复制字体样式',
     noTextToTranslate: '没有可翻译的文本',
     translateLimit: '今天的翻译次数已用完，请明天再试',
+    /** 翻译成功：译文新建在原文下方，原文不动 */
+    translateDone: '翻译完成，译文已建在原图层下方',
+    /** 翻译凭证没配：读 `credentials.json` 得 `NOT_FOUND` 时用这句，不冒充网络错误 */
+    translateNoCredentials: '还没配置百度翻译的 AppID 和密钥（设置页可填）',
+    /** 百度翻译 52001/52002/54003/54005：超时 / 系统错 / 频控 */
+    translateBusy: '翻译接口繁忙，稍后再试',
+    /** 52003/54001/58000：未授权、签名错、IP 非法 —— 都是 appid/key 那一套不对 */
+    translateUnauthorized: '翻译接口未授权，请检查 appid / key',
+    /** 54004/58002：余额不足或额度用完（内置那对官方 key 已欠费，换自己的） */
+    translateQuota: '翻译接口额度用完或余额不足，请在 config.ts 换用自己的 appid / key',
+    /** 54000/58001：必填参数缺失或语言方向不支持 */
+    translateParams: '翻译参数不对（语言方向可能不支持）',
     missingPostScript: '缺少 PostScript 名，无法换字体',
     keepOnePreset: '至少要保留一个层级预设',
     keepOneQuickFont: '至少要保留一个快捷字体',
@@ -402,6 +414,13 @@ export const MSG = {
     emptyDraft: '还没有输入文字'
   },
 
+  /** 凭证（OCR + 翻译，同一份 `credentials.json`） */
+  credentials: {
+    /** 粘贴的整段文本认不出（不是 JSON、或既没有 ocr 也没有 translate 节） */
+    badText: '粘贴的内容认不出：需要有 ocr 或 translate 一节',
+    saved: '凭证已保存'
+  },
+
   /**
    * OCR（百度云）。
    *
@@ -423,8 +442,6 @@ export const MSG = {
     created: '已建好文字图层，可在「改字」页点「全部」或「选中」后修改',
     /** 有识别结果缺坐标被跳过（少了几行） */
     dropped: '有识别结果无法解析，已跳过',
-    /** 设置页保存凭证 */
-    saved: '凭证已保存'
   },
 
   codeReason: {

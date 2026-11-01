@@ -215,7 +215,8 @@ src/
 │  ├─ dialog/     文件对话框（CEP fs API）
 │  ├─ feedback/   提示条 / 全屏加载的**状态 + 通道原语**（`channel.ts`：订阅 / 通知 / 挂载门；零 React，components 只渲染）
 │  ├─ image/      图片解码（FileReader / canvas）
-│  ├─ ocr/        云 OCR（百度）：`credentials`（凭证）/ `blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
+│  ├─ credentials/ 凭证（OCR / 翻译两节，`credentials.json`，**不进 git**）
+│  ├─ ocr/        云 OCR（百度）：`blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）

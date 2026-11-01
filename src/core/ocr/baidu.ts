@@ -20,7 +20,7 @@ import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type ErrorCode, type Result } from '../../types/result';
 import type { OcrBlock, OcrLine } from '../../types/ocr';
 import { mergeBlocks } from './blocks';
-import type { BaiduCredentials } from './credentials';
+import type { OcrCredentials } from '../credentials';
 
 
 
@@ -52,7 +52,7 @@ function tokenOf(raw: unknown): Result<{ token: string; expiresIn: number }> {
 }
 
 /** 取 token：同 API Key 且未过期就复用（提前 5 分钟视为过期） */
-async function getAccessToken(credentials: BaiduCredentials): Promise<Result<string>> {
+async function getAccessToken(credentials: OcrCredentials): Promise<Result<string>> {
   const now = Date.now();
   if (cached && cached.apiKey === credentials.apiKey && cached.expiresAt > now) {
     return ok(cached.token);
@@ -137,7 +137,7 @@ export function decodeBaiduWords(raw: unknown): Result<{ lines: OcrLine[]; dropp
 
 async function recognizeOnce(
   imageBase64: string,
-  credentials: BaiduCredentials
+  credentials: OcrCredentials
 ): Promise<Result<{ lines: OcrLine[]; dropped: number }>> {
   const token = await getAccessToken(credentials);
   if (token.status === 'error') return token;
@@ -158,7 +158,7 @@ async function recognizeOnce(
 /** 识别一张 base64 图：行级框 → 合并成段；`dropped` 是认不出框、被跳过的行数 */
 export async function recognize(
   imageBase64: string,
-  credentials: BaiduCredentials
+  credentials: OcrCredentials
 ): Promise<Result<{ blocks: OcrBlock[]; dropped: number }>> {
   let recognized = await recognizeOnce(imageBase64, credentials);
 

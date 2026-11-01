@@ -26,7 +26,7 @@ import { useToast } from '../../hooks/useToast';
 import { download, upload } from '../../commands/cloud';
 import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
-import { getOcrCredentials, setOcrCredentials } from '../../commands/ocr';
+import { getCredentialsText, setCredentialsText } from '../../commands/credentials';
 import { booleanOptionOf } from '../../domain/common-use-options';
 import { UNITS, unitIndexOf } from '../../domain/units';
 import { useCloudStore } from '../../store/cloud';
@@ -54,8 +54,11 @@ export default function SettingsPage() {
    * OCR 凭证：进页面读一次，改动只在点「保存」时落盘（不做逐字写）。
    * 读失败由 `reportFailure` 留痕；`NOT_FOUND`（还没配）不算故障，静默。
    */
-  const [ocrApiKey, setOcrApiKey] = useState('');
-  const [ocrSecretKey, setOcrSecretKey] = useState('');
+  /*
+   * 凭证：**一个单行框，整段粘贴**（OCR 与翻译都在这一段里）。
+   * 用户只做一次：粘进去 → 保存 → 以后再也不用看。字段级解析在 `core/credentials`。
+   */
+  const [credText, setCredText] = useState('');
   const reportFailure = useReportFailure();
 
   const navigate = useNavigate();
@@ -84,22 +87,22 @@ export default function SettingsPage() {
   }, [load, loadOptions, loadCloud]);
 
   useEffect(() => {
-    const credentials = getOcrCredentials();
-    if (credentials.status === 'ok') {
-      setOcrApiKey(credentials.value.apiKey);
-      setOcrSecretKey(credentials.value.secretKey);
+    const text = getCredentialsText();
+    if (text.status === 'ok') {
+      /* 单行框：把换行压成空格显示（`JSON.parse` 不在乎，粘回去照样能解析） */
+      setCredText(text.value.replace(/\s*\n\s*/g, ' ').trim());
       return;
     }
-    reportFailure(credentials, { quiet: ['NOT_FOUND'], spin: false });
+    reportFailure(text, { quiet: ['NOT_FOUND'], spin: false });
   }, [reportFailure]);
 
   const current = UNITS[unitIndexOf(settings.appUnit)] ?? UNITS[0];
 
-  /** 保存 OCR 凭证：成功提示由 hook 出（`success`），失败带 code/detail 进日志 */
-  function saveOcrCredentials(): void {
-    void run(() => setOcrCredentials({ apiKey: ocrApiKey, secretKey: ocrSecretKey }), {
+  /** 整段导入凭证：只覆盖贴进来的那几节，没贴的原样保留 */
+  function saveCredentials(): void {
+    void run(() => setCredentialsText(credText), {
       spin: false,
-      success: MSG.ocr.saved
+      success: MSG.credentials.saved
     });
   }
 
@@ -230,32 +233,21 @@ export default function SettingsPage() {
           重置常用功能
         </Button>
 
-        {/* OCR 凭证：存 `%APPDATA%\Maomao\credentials.json`（不进 prefs，`CONVENTIONS` §4.8）。
-            两个字段各占一行：面板只有 200 多宽，一行塞两个输入框会挤成两截 */}
-        <div className="mm-settings__section">OCR（百度云）</div>
+        {/* 凭证：**整段粘贴一次就完**。存 `data` 根（mac `~/Library/Application Support/Maomao/`、
+            Windows `%APPDATA%\Maomao\`，同一个 `getSystemPath('userData')`，平台无关），不进 git。
+            单行框而不是大 textarea：用户只粘一次、以后不看，占地方没意义 */}
+        <div className="mm-settings__section">凭证（OCR + 翻译）</div>
 
         <div className="mm-u-row mm-settings__row">
-          <span className="mm-settings__label">API Key</span>
           <Input
             className="mm-u-grow"
-            value={ocrApiKey}
-            placeholder="应用的 API Key"
-            onChange={(event) => setOcrApiKey(event.target.value)}
+            value={credText}
+            placeholder="整段粘贴：含 ocr / translate"
+            onChange={(event) => setCredText(event.target.value)}
           />
         </div>
 
-        <div className="mm-u-row mm-settings__row">
-          <span className="mm-settings__label">Secret Key</span>
-          <Input
-            className="mm-u-grow"
-            type="password"
-            value={ocrSecretKey}
-            placeholder="应用的 Secret Key"
-            onChange={(event) => setOcrSecretKey(event.target.value)}
-          />
-        </div>
-
-        <Button onClick={saveOcrCredentials}>保存 OCR 凭证</Button>
+        <Button onClick={saveCredentials}>保存凭证</Button>
 
         <div className="mm-settings__section">云同步</div>
 

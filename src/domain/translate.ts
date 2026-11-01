@@ -10,17 +10,47 @@
  *   3. 结束语言的默认值是 `auto`，但面板**显示**「英文」（原版自身不一致，照抄）
  */
 
-import { failWithDetail, ok, type Result } from '../types/result';
+import { failWithDetail, ok, type ErrorCode, type Result } from '../types/result';
 import { decodeList } from '../types/decode-list';
 import { isRecord } from '../types/guards';
 import { MSG } from '../types/messages';
 import { md5 } from './md5';
-import { TRANSLATE_APP_ID, TRANSLATE_KEY } from '../config';
 
-/** 地址与凭证（原版硬编码，`app.v4.js:42816-42818`）在 `src/config.ts`，本文件只放签名与解码 */
+/** 凭证由调用方传（`credentials.json`，不进 git）；本文件只放签名与解码 */
 
 /** 单段文本上限（`app.v4.js:43339`）；每日次数上限见 `DAILY_LIMIT`，两者不是一回事 */
 export const MAX_TEXT_LENGTH = 1000;
+
+/**
+ * 目标语言不能是 `auto`：百度要求明确目标语种，原版设置里默认 `to: 'auto'` 直接发会被拒。
+ *
+ * 兜成中文（原版面板显示的目标语言也是中文）。**只此一处判**，命令层不再自己兜。
+ */
+export function resolveTargetLang(to: string): string {
+  return to === 'auto' || !to ? 'zh' : to;
+}
+
+/**
+ * 百度翻译的错误码 → 本仓码 + 一句话。
+ *
+ * 以前所有非 0 码都折成 `CORRUPT`「返回数据无法识别」——账户欠费（54004）会被显示成
+ * 「数据坏了」，用户去修一个没坏的东西。表里没有的码才归 `CORRUPT`。
+ *
+ * 码表来源：百度翻译开放平台文档（错误码说明）。
+ */
+const TRANSLATE_ERRORS: Record<string, { code: ErrorCode; reason: string }> = {
+  '52001': { code: 'TIMEOUT', reason: MSG.font.translateBusy },
+  '52002': { code: 'NETWORK', reason: MSG.font.translateBusy },
+  '52003': { code: 'AUTH', reason: MSG.font.translateUnauthorized },
+  '54000': { code: 'VALIDATION', reason: MSG.font.translateParams },
+  '54001': { code: 'AUTH', reason: MSG.font.translateUnauthorized },
+  '54003': { code: 'NETWORK', reason: MSG.font.translateBusy },
+  '54004': { code: 'FORBIDDEN', reason: MSG.font.translateQuota },
+  '54005': { code: 'NETWORK', reason: MSG.font.translateBusy },
+  '58000': { code: 'FORBIDDEN', reason: MSG.font.translateUnauthorized },
+  '58001': { code: 'VALIDATION', reason: MSG.font.translateParams },
+  '58002': { code: 'FORBIDDEN', reason: MSG.font.translateQuota }
+};
 
 /** 每日翻译次数上限（`app.v4.js:42900`，原版就是 380，不是 1000） */
 export const DAILY_LIMIT = 380;
@@ -69,17 +99,20 @@ export function buildTranslateParams(input: {
   text: string;
   from: string;
   to: string;
+  /** 调用方给（来自 `credentials.json`，不进 git）；本函数不持有密钥 */
+  appId: string;
+  key: string;
   salt?: string;
 }): Record<string, string> {
   const salt = input.salt ?? String(Date.now());
 
   return {
     q: input.text,
-    appid: TRANSLATE_APP_ID,
+    appid: input.appId,
     salt,
     from: input.from,
     to: input.to,
-    sign: md5(TRANSLATE_APP_ID + input.text + salt + TRANSLATE_KEY),
+    sign: md5(input.appId + input.text + salt + input.key),
     _time: salt
   };
 }
@@ -97,8 +130,12 @@ export function decodeTranslateResponse(raw: unknown): Result<string> {
 
   const code = raw.error_code;
   if (code !== undefined && String(code) !== '0' && String(code) !== '52000') {
-    const message = typeof raw.error_msg === 'string' ? raw.error_msg : `error_code:${String(code)}`;
-    return failWithDetail('CORRUPT', MSG.badPayload, `api:${message}`);
+    const key = String(code);
+    const message = typeof raw.error_msg === 'string' ? raw.error_msg : `error_code:${key}`;
+    /* 已知码按语义折（账户欠费不该显示成「返回数据无法识别」）；未知码才归 CORRUPT */
+    const known = TRANSLATE_ERRORS[key];
+    if (known) return failWithDetail(known.code, known.reason, `api:${key}:${message}`);
+    return failWithDetail('CORRUPT', MSG.badPayload, `api:${key}:${message}`);
   }
 
   const results = raw.trans_result;

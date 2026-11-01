@@ -7,7 +7,7 @@
  * 顶部 6 个图标的开合全部交给 `IconPanelGroup`（互斥由它管，页面不持有 panel 状态）：
  *   拆分 = 左键开面板
  *   生成按钮 / 粘贴文字属性 = 左键执行，右键开设置面板
- *   翻译 = 一直禁用（方案未定）
+ *   翻译 = 左键执行（译文新建在原图层下方，不替换原文；语言取设置里的 `ztTranslate`）
  *   批量文字 = 普通按钮，点开弹窗（不展开面板；原来这个位置是「调整文本方向」，已删）
  */
 
@@ -103,9 +103,12 @@ export default function FontPanelPage() {
                 icon={icon}
                 title={TOP_TITLES_ONE[index] ?? ''}
                 badge={TOP_BADGES_ONE.includes(index)}
-                disabled={index === 0}
                 onPrimary={
-                  index === 2 ? (event) => (event.ctrlKey ? page.onCtrlClick() : page.onApplyCreateButton()) : undefined
+                  index === 0
+                    ? () => page.onTranslate()
+                    : index === 2
+                      ? (event) => (event.ctrlKey ? page.onCtrlClick() : page.onApplyCreateButton())
+                      : undefined
                 }
                 panel={
                   index === 1 ? (

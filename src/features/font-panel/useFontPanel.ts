@@ -34,7 +34,8 @@ import {
   setStyle,
   setTracking,
   split as splitCommand,
-  textAlign
+  textAlign,
+  translate
 } from '../../commands/font-set';
 import type { AlignAxis } from '../../commands/font-set';
 import { loadFontList } from '../../commands/font';
@@ -165,6 +166,18 @@ export function useFontPanel() {
       if (applied) void refreshText();
     });
   }, [run, settings.ztPasteFont, refreshText]);
+
+  /**
+   * 翻译当前文字层：译文**新建在原文图层下方**，原文一个字不动（官方那个「替换 / 不替换」
+   * 选项我们只留一种）。语言取设置里的 `ztTranslate`，目标语言为 `auto` 时兜成中文
+   * （百度要求目标语言必须明确，`domain/translate.resolveTargetLang` 一处判）。
+   */
+  const onTranslate = useCallback(() => {
+    void run(
+      () => translate({ from: settings.ztTranslate.from, to: settings.ztTranslate.to }),
+      MSG.font.translateDone
+    );
+  }, [run, settings.ztTranslate.from, settings.ztTranslate.to]);
 
   /* ---------- 底部：对齐 / 分布 ---------- */
 
@@ -435,6 +448,7 @@ export function useFontPanel() {
     persist,
     onSplit,
     onApplyCreateButton,
+    onTranslate,
     onCopyFont,
     onPasteFont,
     onAlign,

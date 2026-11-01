@@ -14,7 +14,7 @@
 
 import { MASTER_GROUP_NAME, OCR_MAX_IMAGE_BYTES, OCR_QUALITIES } from '../config';
 import { recognize } from '../core/ocr/baidu';
-import { readCredentials, saveCredentials, type BaiduCredentials } from '../core/ocr/credentials';
+import { readOcrCredentials } from '../core/credentials';
 import { exportImage } from '../core/ps/ocr';
 import { createTextLayers } from '../core/ps/text-batch';
 import { fileSizeAt, readBase64At, removeFileAt } from '../core/storage';
@@ -25,16 +25,6 @@ import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 
 
-
-/** 读凭证：`NOT_FOUND` = 还没配（设置页据此显示空输入，不当故障） */
-export function getOcrCredentials(): Result<BaiduCredentials> {
-  return readCredentials();
-}
-
-/** 保存凭证：只在设置页的「保存」里调 */
-export function setOcrCredentials(credentials: BaiduCredentials): Promise<Result<void>> {
-  return saveCredentials(credentials);
-}
 
 /** 删临时图：失败只记日志（临时产物删不掉不该让用户以为识别失败） */
 function dropTemp(path: string): void {
@@ -52,7 +42,7 @@ function dropTemp(path: string): void {
 export async function ocrToLayers(): Promise<
   Result<{ groups: number; layers: number; dropped: number; fontMissing: boolean }>
 > {
-  const credentials = readCredentials();
+  const credentials = readOcrCredentials();
   if (credentials.status === 'error') {
     /* 还没配凭证是「设置缺失」，不是「文件不存在」：换一句话说，用户才知道去哪补 */
     if (credentials.code === 'NOT_FOUND') {

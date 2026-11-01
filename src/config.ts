@@ -23,15 +23,13 @@ export const CLOUD_SYNC_URL =
 
 /* ---------------- 百度翻译 ---------------- */
 
-/** 百度翻译通用接口（注意是 `http://`，`nodeGet` 会按协议选 `http` 模块） */
-export const TRANSLATE_URL = 'http://api.fanyi.baidu.com/api/trans/vip/translate';
-
 /**
- * 官方内置应用的 appid / key（原版硬编码的那一对，不是我们自己的账号）。
- * 换成自己的账号就改这两行。
+ * 百度翻译通用接口（注意是 `http://`，`nodeGet` 会按协议选 `http` 模块）。
+ *
+ * **appid / key 不在这里**：本文件进 git，密钥写进来会被推到远端。
+ * 翻译凭证在 `credentials.json`（`core/credentials`），设置页填、不进仓库。
  */
-export const TRANSLATE_APP_ID = '20200914000565553';
-export const TRANSLATE_KEY = 'GhNw0VLPC2EiKagG8Xwn';
+export const TRANSLATE_URL = 'http://api.fanyi.baidu.com/api/trans/vip/translate';
 
 /* ---------------- 百度 OCR ---------------- */
 

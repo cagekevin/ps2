@@ -28,6 +28,8 @@ const WHITELIST = [
   /* 字体面板「批量文字」入口：与 `icon-nav_piliangtaoban` 同形，但 viewBox 收成图形包围盒，
      放在工具图标排里才不会小一号（nav 那个留白是按导航格留的） */
   'iconpiliangwenzi',
+  /* 字体面板「选中图层 → 转矢量」入口：Phosphor file-svg(duotone) 改造，viewBox 同样收成包围盒 */
+  'iconshiliang',
   /* 底部设置项 */
   'iconyonghushezhi',
   /* 样式页底栏：四个新建分组图标各不相同（原版就是四种）+ 导入 / 导出 */
