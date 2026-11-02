@@ -27,6 +27,8 @@ interface Props {
   onCommit: (value: number) => void;
   /** 有预设档位时显示箭头；不传则不显示 */
   onPreset?: () => void;
+  /** 输入位内部两侧的 ±1 微调（字号用）：每点一次按当前值 ±1、取整后提交 */
+  stepper?: boolean;
 }
 
 function clamp(value: number, min?: number, max?: number): number {
@@ -44,7 +46,8 @@ export function NumberField({
   max,
   presetOpen = false,
   onCommit,
-  onPreset
+  onPreset,
+  stepper = false
 }: Props) {
   /* 外部值变了才回填（切图层 / 读回属性），用户正在输入的草稿不被覆盖 */
   const { draft: text, setDraft, resetDraft } = useDraft(value, (current) => current);
@@ -62,6 +65,19 @@ export function NumberField({
     onCommit(next);
   }
 
+  /**
+   * ±1 微调：结果必须是整数，所以先加减再 `Math.round`。
+   * 基准取草稿（用户可能正在输入），草稿不是数字时退回外部值。
+   */
+  function step(delta: 1 | -1): void {
+    const parsed = Number.parseFloat(text.trim());
+    const base = Number.isFinite(parsed) ? parsed : Number.parseFloat(value);
+    if (!Number.isFinite(base)) return;
+    const next = clamp(Math.round(base + delta), min, max);
+    setDraft(String(next));
+    onCommit(next);
+  }
+
   return (
     <div className="mm-font-panel__number" title={title}>
       {icon ? (
@@ -71,6 +87,18 @@ export function NumberField({
       ) : null}
 
       <span className="mm-font-panel__number-box mm-input-surface">
+        {stepper ? (
+          <button
+            type="button"
+            className="mm-font-panel__number-step"
+            title="减小"
+            aria-label="减小"
+            onClick={() => step(-1)}
+          >
+            −
+          </button>
+        ) : null}
+
         <Input
           className="mm-font-panel__number-input"
           type="text"
@@ -81,6 +109,19 @@ export function NumberField({
           onKeyDown={enterSubmit(commit)}
         />
         {suffix ? <span className="mm-font-panel__number-suffix">{suffix}</span> : null}
+
+        {stepper ? (
+          <button
+            type="button"
+            className="mm-font-panel__number-step"
+            title="增大"
+            aria-label="增大"
+            onClick={() => step(1)}
+          >
+            +
+          </button>
+        ) : null}
+
         {onPreset ? (
           <button
             type="button"

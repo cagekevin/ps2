@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>批量文字 · 改字页版式对比（现状 / 方案 A / 方案 B）</title>
+<style>
+  /* token 值照抄 src/styles/tokens.css；本文件只是 mockup，src 内不许抄这段 */
+  :root{
+    --mm-space-tight:2px; --mm-space-1:4px; --mm-space-inline:6px; --mm-space-2:8px;
+    --mm-space-3:12px; --mm-space-4:16px;
+    --mm-control-h:26px; --mm-tab-line-h:20px; --mm-line-16:16px;
+    --mm-font-xs:11px; --mm-font-sm:12px; --mm-font-md:13px;
+    --mm-radius-sm:2px; --mm-radius-md:4px; --mm-radius-lg:6px; --mm-border-w:1px;
+    --mm-color-bg-base:#363636; --mm-color-bg-hover:#3d3d3d; --mm-color-bg-raised:#535353;
+    --mm-color-bg-raised-hover:#575757; --mm-color-bg-input:#2c2c2c;
+    --mm-color-bg-overlay:rgba(64,64,64,.96); --mm-color-bg-bar:#545454; --mm-color-bg-header:#333;
+    --mm-color-border:#2e2e2e; --mm-color-border-control:#4b4b4b;
+    --mm-color-text:#c3c3c3; --mm-color-text-strong:#f5f5f5; --mm-color-text-dim:#9a9a9a;
+    --mm-color-text-faint:#8e8e8e; --mm-color-text-inverse:#fff;
+    --mm-color-accent:#006fff; --mm-color-accent-hover:#2a86ff;
+    --mm-color-mask:rgba(0,0,0,.45);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{background:#1a1a1a;color:var(--mm-color-text);padding:var(--mm-space-4);
+    display:flex;gap:var(--mm-space-4);align-items:flex-start;}
+
+  .case{width:340px;flex:0 0 auto;}
+  .case--narrow{width:264px;}
+  .case h2{font-size:var(--mm-font-md);color:var(--mm-color-text-strong);
+    margin-bottom:var(--mm-space-1);}
+  .case h2 em{font-style:normal;color:var(--mm-color-accent);margin-left:var(--mm-space-1);}
+  .case > p{font-size:var(--mm-font-xs);line-height:1.7;color:var(--mm-color-text-dim);
+    margin-bottom:var(--mm-space-2);}
+  .case ul{margin:var(--mm-space-2) 0 0 var(--mm-space-3);padding-left:var(--mm-space-1);
+    border-left:var(--mm-border-w) solid var(--mm-color-border-control);}
+  .case li{font-size:var(--mm-font-xs);line-height:1.7;color:var(--mm-color-text-dim);
+    list-style:none;}
+  .case li b{color:var(--mm-color-text);font-weight:normal;}
+  .case li::before{content:"· ";color:var(--mm-color-text-faint);}
+
+  /* ===== CEP 面板壳 ===== */
+  .cep{position:relative;width:100%;height:520px;background:var(--mm-color-bg-base);
+    border-radius:var(--mm-radius-lg);overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  .cep__head{height:30px;flex:none;background:var(--mm-color-bg-header);display:flex;align-items:center;
+    padding:0 var(--mm-space-2);font-size:var(--mm-font-md);color:var(--mm-color-text-strong);}
+  .cep__body{padding:var(--mm-space-2);display:flex;flex-direction:column;gap:var(--mm-space-2);}
+  .fake-field{height:var(--mm-control-h);background:var(--mm-color-bg-input);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    display:flex;align-items:center;padding:0 var(--mm-space-2);
+    font-size:var(--mm-font-sm);color:var(--mm-color-text-faint);}
+
+  /* ===== 弹窗（高度写死百分比：切 tab 不跳） ===== */
+  .mask{position:absolute;inset:0;background:var(--mm-color-mask);
+    display:flex;align-items:center;justify-content:center;}
+  .modal{display:flex;flex-direction:column;gap:var(--mm-space-2);
+    width:85%;height:76%;padding:var(--mm-space-3);border-radius:var(--mm-radius-md);
+    border:var(--mm-border-w) solid var(--mm-color-border-control);
+    background:var(--mm-color-bg-base);box-shadow:0 4px 12px rgba(0,0,0,.35);overflow:hidden;}
+
+  /* ===== 现状：head 一行 = tab + 三个 ghost 按钮 ===== */
+  .head{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);
+    flex:0 0 auto;min-height:var(--mm-control-h);}
+  .tabs{display:flex;align-items:center;flex:0 0 auto;width:88px;}
+  .tabs__cell{display:flex;flex:1;min-width:0;}
+  .tabs__tab{width:100%;height:var(--mm-tab-line-h);border:none;background:none;
+    color:var(--mm-color-text-dim);font-size:var(--mm-font-sm);text-align:center;cursor:pointer;}
+  .tabs__tab--on{color:var(--mm-color-accent);}
+  .tabs__tab:hover{background:var(--mm-color-bg-hover);}
+  .tabs__line{width:var(--mm-border-w);height:var(--mm-tab-line-h);background:var(--mm-color-border-control);}
+  .acts{display:flex;align-items:center;gap:var(--mm-space-1);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:var(--mm-control-h);
+    padding:0 var(--mm-space-2);border:none;border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-raised);color:inherit;font-size:var(--mm-font-sm);
+    white-space:nowrap;cursor:pointer;}
+  .btn:hover:not(:disabled){background:var(--mm-color-bg-raised-hover);}
+  .btn--ghost{background:none;}
+  .btn--ghost:hover:not(:disabled){background:var(--mm-color-bg-hover);}
+  .btn--primary{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);}
+  .btn--primary:hover:not(:disabled){background:var(--mm-color-accent-hover);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn--sm{height:var(--mm-tab-line-h);padding:0 var(--mm-space-inline);font-size:var(--mm-font-xs);}
+
+  /* ===== 现状：表格三列 ===== */
+  .pane{display:flex;flex-direction:column;gap:var(--mm-space-2);flex:1 1 auto;min-height:0;}
+  .table{display:flex;flex-direction:column;gap:var(--mm-space-1);flex:0 0 auto;}
+  .table__head,.trow{display:flex;align-items:center;gap:var(--mm-space-1);
+    padding:0 var(--mm-space-1);width:100%;overflow:hidden;}
+  .table__head{height:var(--mm-line-16);border-bottom:var(--mm-border-w) solid var(--mm-color-border);
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .table__list{display:flex;flex-direction:column;height:72px;overflow-y:auto;
+    scrollbar-gutter:stable;}
+  .trow{height:18px;border-radius:var(--mm-radius-sm);}
+  .trow--on{background:rgba(0,111,255,.14);box-shadow:inset calc(var(--mm-border-w) * 2) 0 0 var(--mm-color-accent);}
+  .col-no{flex:0 0 auto;width:16px;text-align:right;font-size:var(--mm-font-xs);
+    color:var(--mm-color-text-faint);}
+  .col-name{flex:0 0 auto;width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);}
+  .col-text{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .trow--on .col-name{color:var(--mm-color-text-strong);}
+  .trow--on .col-text{color:var(--mm-color-text);}
+  /* 现状的致命处：列宽写死 60px，弹窗一窄，「原文」列被压到换行 */
+  .nowrap{white-space:nowrap;}
+
+  .empty{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);line-height:1.7;}
+
+  .field{display:flex;flex-direction:column;gap:var(--mm-space-1);flex:1 1 auto;min-height:0;}
+  .lbl{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);flex:0 0 auto;}
+  textarea{width:100%;background:var(--mm-color-bg-input);color:var(--mm-color-text);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    padding:var(--mm-space-1);font-size:var(--mm-font-sm);line-height:var(--mm-line-16);
+    font-family:inherit;resize:none;flex:1 1 auto;min-height:80px;}
+  textarea:focus{outline:var(--mm-border-w) solid var(--mm-color-accent);border-color:transparent;}
+  .status{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);min-height:var(--mm-line-16);}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);}
+
+  /* ===== 方案 A：head 分两层 ===== */
+  .head-a{display:flex;flex-direction:column;gap:var(--mm-space-2);flex:0 0 auto;}
+  .src{display:flex;align-items:center;gap:var(--mm-space-1);flex-wrap:wrap;}
+  .src__label{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);flex:0 0 auto;}
+  .src__count{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);margin-left:auto;}
+
+  /* 方案 A：表格瘦身成「# / 图层」两列 */
+  .list2{display:flex;flex-direction:column;gap:var(--mm-space-1);flex:0 0 auto;}
+  .list2__head,.lrow{display:flex;align-items:center;gap:var(--mm-space-1);
+    padding:0 var(--mm-space-1);width:100%;overflow:hidden;}
+  .list2__head{height:var(--mm-line-16);border-bottom:var(--mm-border-w) solid var(--mm-color-border);
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .list2__list{display:flex;flex-direction:column;gap:var(--mm-space-tight);
+    height:56px;overflow-y:auto;scrollbar-gutter:stable;}
+  .lrow{height:18px;border-radius:var(--mm-radius-sm);}
+  .lrow--on{background:rgba(0,111,255,.14);
+    box-shadow:inset calc(var(--mm-border-w) * 2) 0 0 var(--mm-color-accent);}
+  .lrow .col-no{width:14px;}
+  .lrow .col-name{flex:1 1 auto;width:auto;min-width:0;}
+  .lrow--on .col-name{color:var(--mm-color-text-strong);}
+
+  /* 方案 A：空态 —— 一句提示 + 三个可点的入口（不是长句教程） */
+  .emptybox{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:var(--mm-space-2);flex:1 1 auto;min-height:0;
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-input);}
+  .emptybox__t{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .emptybox__acts{display:flex;gap:var(--mm-space-1);flex-wrap:wrap;justify-content:center;}
+
+  /* ===== 方案 B：行号槽 + 文本，行高对齐 ===== */
+  .gutterbox{display:flex;flex:1 1 auto;min-height:0;
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-input);overflow:hidden;}
+  .gutter{flex:0 0 auto;width:26px;padding:var(--mm-space-1) 0;
+    display:flex;flex-direction:column;text-align:right;
+    font-size:var(--mm-font-sm);line-height:var(--mm-line-16);color:var(--mm-color-text-faint);
+    border-right:var(--mm-border-w) solid var(--mm-color-border);}
+  .gutter__n{height:var(--mm-line-16);padding-right:var(--mm-space-1);}
+  .gutter__n--on{color:var(--mm-color-accent);background:rgba(0,111,255,.14);}
+  .gutterbox textarea{border:none;background:transparent;flex:1 1 auto;}
+  .gutterbox textarea:focus{outline:none;}
+  .gname{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);line-height:1.7;}
+</style>
+</head>
+<body>
+
+<!-- ========== 现状 ========== -->
+<section class="case case--narrow">
+  <h2>现状 <em>截图那样</em></h2>
+  <p>窄面板（弹窗 240 宽）下：5 个可点物挤在一行，「原文」列被压到换行，空态长句占两行。</p>
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小　行距　字距　颜色</div></div>
+    <div class="mask">
+      <div class="modal">
+        <div class="head">
+          <div class="tabs">
+            <div class="tabs__cell"><button type="button" class="tabs__tab">新建</button></div>
+            <span class="tabs__line"></span>
+            <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on">改字</button></div>
+          </div>
+          <div class="acts">
+            <button type="button" class="btn btn--ghost">OCR</button>
+            <button type="button" class="btn btn--ghost">全部</button>
+            <button type="button" class="btn btn--ghost">选中</button>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="table">
+            <div class="table__head">
+              <span class="col-no">#</span>
+              <span class="col-name">图层</span>
+              <span class="col-text">原<br/>文</span>
+            </div>
+            <div class="table__list">
+              <span class="empty">点「全部」或「选中」读取文字图层，<br/>或点「OCR」识别画布</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="lbl">替换（每行对应上面一层；留空 = 清空该行）</div>
+            <textarea spellcheck="false"></textarea>
+          </div>
+        </div>
+        <div class="status"></div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary" disabled>确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><b>一行五件事</b>：模式切换（新建 / 改字）与三个动作（OCR / 全部 / 选中）同层同权，全是文字按钮。</li>
+    <li><b>三个动作是 ghost</b>：透明无底，看不出是能按的按钮（STYLE §6：弹窗动作应为实心）。</li>
+    <li><b>空态长句</b>：把按钮名写死进句子里，按钮改名文案即失效；窄面板下换两行把表头顶乱。</li>
+    <li><b>「原文」列是重复信息</b>：读进来的原文已经整段进了下面输入框，这一列还会被挤到换行。</li>
+    <li><b>状态行常驻空行</b>：没消息也占 16 高。</li>
+  </ul>
+</section>
+
+<!-- ========== 方案 A ========== -->
+<section class="case">
+  <h2>方案 A <em>推荐</em></h2>
+  <p>tab 独占一行；读入动作单独成组、实心、文案自解释；表格瘦成「# / 图层」两列；空态给可点入口。</p>
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小　行距　字距　颜色</div></div>
+    <div class="mask">
+      <div class="modal">
+        <div class="head-a">
+          <div class="tabs">
+            <div class="tabs__cell"><button type="button" class="tabs__tab">新建</button></div>
+            <span class="tabs__line"></span>
+            <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on">改字</button></div>
+          </div>
+          <div class="src">
+            <span class="src__label">读入</span>
+            <button type="button" class="btn btn--sm">OCR 识别</button>
+            <button type="button" class="btn btn--sm">全部图层</button>
+            <button type="button" class="btn btn--sm">选中图层</button>
+            <span class="src__count">已读入 6 层</span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="list2">
+            <div class="list2__head">
+              <span class="col-no">#</span><span class="col-name">图层</span>
+            </div>
+            <div class="list2__list">
+              <div class="lrow"><span class="col-no">1</span><span class="col-name">图层 12</span></div>
+              <div class="lrow lrow--on"><span class="col-no">2</span><span class="col-name">图层 12 拷贝</span></div>
+              <div class="lrow"><span class="col-no">3</span><span class="col-name">图层 8</span></div>
+              <div class="lrow"><span class="col-no">4</span><span class="col-name">图层 8 拷贝 2</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="lbl">替换（每行对应上面一层；留空 = 清空该行）</div>
+            <textarea spellcheck="false">这里是第一层的文字
+这一层是段落，内部有换行⏎第二行在这
+这里是第三层的文字
+这里是第四层的文字</textarea>
+          </div>
+        </div>
+        <div class="status">已改 1 层（点确定写回）</div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><b>tab 独占一行</b>：模式切换与动作不再同排，窄面板也不会挤成一坨。</li>
+    <li><b>「读入」工具条</b>：三个按钮实心 + 文案自解释（「OCR 识别 / 全部图层 / 选中图层」），右侧显示「已读入 6 层」。</li>
+    <li><b>表格瘦成两列</b>：「原文」列删掉（输入框里已有），宽度问题直接消失；只留图层名 + 当前行高亮。</li>
+    <li><b>空态给入口</b>：一句话 + 三个可点按钮，不写长句教程。</li>
+    <li><b>状态行按需出现</b>：没消息就不占那一行。</li>
+  </ul>
+</section>
+
+<!-- ========== 方案 A 窄面板 ========== -->
+<section class="case case--narrow">
+  <h2>方案 A <em>窄面板 240</em></h2>
+  <p>同一套结构在截图那个宽度下：按钮换行不挤，表格两列不换行。</p>
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小</div></div>
+    <div class="mask">
+      <div class="modal">
+        <div class="head-a">
+          <div class="tabs">
+            <div class="tabs__cell"><button type="button" class="tabs__tab">新建</button></div>
+            <span class="tabs__line"></span>
+            <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on">改字</button></div>
+          </div>
+          <div class="src">
+            <span class="src__label">读入</span>
+            <button type="button" class="btn btn--sm">OCR 识别</button>
+            <button type="button" class="btn btn--sm">全部图层</button>
+            <button type="button" class="btn btn--sm">选中图层</button>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="list2">
+            <div class="list2__head"><span class="col-no">#</span><span class="col-name">图层</span></div>
+            <div class="list2__list">
+              <div class="lrow"><span class="col-no">1</span><span class="col-name">图层 12</span></div>
+              <div class="lrow lrow--on"><span class="col-no">2</span><span class="col-name">图层 12 拷贝</span></div>
+              <div class="lrow"><span class="col-no">3</span><span class="col-name">图层 8</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="lbl">替换（每行对应上面一层）</div>
+            <textarea spellcheck="false">这里是第一层的文字
+这一层是段落，内部有换行⏎第二行在这
+这里是第三层的文字</textarea>
+          </div>
+        </div>
+        <div class="status">已改 1 层</div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 方案 B ========== -->
+<section class="case">
+  <h2>方案 B <em>备选：行号槽</em></h2>
+  <p>砍掉表格，左侧行号槽与输入框行高对齐：行号即层号，当前行号变蓝。图层名放右侧提示。</p>
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小</div></div>
+    <div class="mask">
+      <div class="modal">
+        <div class="head-a">
+          <div class="tabs">
+            <div class="tabs__cell"><button type="button" class="tabs__tab">新建</button></div>
+            <span class="tabs__line"></span>
+            <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on">改字</button></div>
+          </div>
+          <div class="src">
+            <span class="src__label">读入</span>
+            <button type="button" class="btn btn--sm">OCR 识别</button>
+            <button type="button" class="btn btn--sm">全部图层</button>
+            <button type="button" class="btn btn--sm">选中图层</button>
+            <span class="src__count">已读入 6 层</span>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="gname">第 2 行 = 图层「图层 12 拷贝」</div>
+          <div class="gutterbox">
+            <div class="gutter">
+              <div class="gutter__n">1</div>
+              <div class="gutter__n gutter__n--on">2</div>
+              <div class="gutter__n">3</div>
+              <div class="gutter__n">4</div>
+              <div class="gutter__n">5</div>
+            </div>
+            <textarea spellcheck="false">这里是第一层的文字
+这一层是段落，内部有换行⏎第二行在这
+这里是第三层的文字
+这里是第四层的文字
+这里是第五层的文字</textarea>
+          </div>
+        </div>
+        <div class="status">已改 1 层（点确定写回）</div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><b>最干净</b>：只有一列内容，「哪一行对应哪一层」由行号直接说清，没有两栏对齐问题。</li>
+    <li><b>代价</b>：图层名只能放提示行（截图那样一行小字），多行时不好定位；行号槽要跟 textarea 行高对齐，多一层实现。</li>
+    <li><b>适合</b>：不在意图层名、只管改字。</li>
+  </ul>
+</section>
+
+</body>
+</html>

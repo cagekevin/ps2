@@ -21,6 +21,7 @@ import { IconButton } from '../../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../../components/IconPanel';
 import { SelectBox } from '../../../components/SelectBox';
 import type { FontItem } from '../../../domain/font-item';
+import { leadingPt } from '../../../domain/font-set';
 import { rgbCss, type TextInfo } from '../../../domain/text-info';
 import { ALIGN_TIP, ALIGN_TITLES } from '../font-panel-constants';
 import { NumberField } from './NumberField';
@@ -198,6 +199,7 @@ export function FontColor({
                   title="设置字体大小"
                   icon="iconshezhizitidaxiao"
                   min={1}
+                  stepper
                   presetOpen={active}
                   onCommit={onSize}
                   onPreset={toggle}
@@ -241,7 +243,7 @@ export function FontColor({
                   {defaults.leading.map((value) => (
                     <Button
                       key={`leading-${value}`}
-                      onClick={() => onLeading(value)}
+                      onClick={() => onLeading(leadingPt(info.size, value))}
                     >
                       {value}
                     </Button>

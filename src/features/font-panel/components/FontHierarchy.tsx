@@ -74,7 +74,7 @@ export function FontHierarchy({
   const current = presets[presetIndex];
 
   return (
-    <div className="mm-u-col">
+    <div className="mm-u-col mm-font-panel__hierarchy">
       <div className="mm-u-row mm-font-panel__row mm-font-panel__hierarchy-row">
         <SelectBox
           className="mm-u-grow"

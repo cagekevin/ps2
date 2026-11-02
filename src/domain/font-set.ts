@@ -120,6 +120,17 @@ function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every(isFiniteNumber);
 }
 
+/**
+ * 行距预设是**字号的倍数**：60 号字点「1.1」= 66pt。
+ *
+ * `sizeText` 是 `TextInfo.size`（字符串，可能是「12.5」）；解析不出数字时回 0
+ * ——0 是 PS 合法行距（`setLeading` 只拦负数），不替用户猜一个字号。
+ */
+export function leadingPt(sizeText: string, multiple: number): number {
+  const size = Number(sizeText);
+  return Number.isFinite(size) ? size * multiple : 0;
+}
+
 /** 6 级字号：不多不少、全部为正数 */
 export function validateLevels(levels: number[]): Result<number[]> {
   if (!Array.isArray(levels) || levels.length !== LEVEL_COUNT) {

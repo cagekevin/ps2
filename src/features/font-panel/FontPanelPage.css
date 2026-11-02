@@ -76,16 +76,19 @@
   align-items: flex-start;
 }
 
-/* 字距行的右半：里面只有一个勾选框（16 高，同排数字框 26 高），垂直居中才与左边对得上。
+/* 字距行的右半：里面只有一个勾选框（16 高，同排数字框 26 高）。
+   高度取控件档 26、内部再垂直居中 —— 否则半高只有 16，顶对齐后勾选框贴行顶、数字却在框中间。
    只给这一个半边不加 `display` 的例外规则：其余半边一旦变成 flex，
    里面的数字框会按内容收缩（flex item 的默认宽度是内容宽，不是 100%）。 */
 .mm-font-panel__half{
   display: flex;
   align-items: center;
+  height: var(--mm-control-h);
 }
 
 .mm-font-panel__gutter{
-  flex: 0 0 var(--mm-control-reserve);
+  /* 两列之间的空槽：原 30（借用输入位内边距档）在窄面板里显得空，收到组间 8 */
+  flex: 0 0 var(--mm-space-2);
 }
 
 /* 等宽按钮排 / 网格：形状由组合层 `.mm-btn-grid` 给，本页只注入列数。
@@ -149,6 +152,8 @@
   flex: 1;
   width: 100%;
   min-width: 0;
+  /* 数字一律居中：两侧是 ± 微调 / 预设箭头，左对齐会让数字贴着边框 */
+  text-align: center;
 }
 
 .mm-font-panel__number-suffix{
@@ -158,6 +163,32 @@
 .mm-font-panel__number-caret{
   display: inline-flex;
   flex: 0 0 auto;
+  /* 与左侧的「+」/ 数字留一档，否则两个符号挤在一起 */
+  margin-left: var(--mm-space-1);
+}
+
+/* ±1 微调按钮（字号专用）：在输入位**内部**两侧（减号左 / 加号右），不是成块按钮 ——
+   无底，只 hover 叠一档。边长取图标 sm 档（14），不新开尺寸档；比控件高 26 小一圈。 */
+.mm-font-panel__number-step{
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: var(--mm-icon-sm);
+  height: var(--mm-icon-sm);
+  padding: 0;
+  border: none;
+  border-radius: var(--mm-radius-sm);
+  background: none;
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mm-font-panel__number-step:hover{
+  background: var(--mm-color-bg-hover);
+  color: var(--mm-color-text);
 }
 
 /* 属性区（字体行 / 字重行 / 颜色行）：组内贴合，与其它区块之间留一档 */
@@ -208,6 +239,11 @@
 }
 
 .mm-font-panel__create{
+  gap: var(--mm-space-1);
+}
+
+/* 层级区：预设下拉行 + 6 档字号是两组，贴合档 4（与属性区同档），不贴在一起 */
+.mm-font-panel__hierarchy{
   gap: var(--mm-space-1);
 }
 
