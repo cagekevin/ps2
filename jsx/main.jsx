@@ -361,7 +361,8 @@ function mm_text_doWrite() {
 			continue;
 		}
 		try {
-			target.textItem.contents = patches[p].text;
+			/* PS 的换行是 `\r`：前端传过来的是 `\n`，不转就是「一行方块 / 不换行」 */
+			target.textItem.contents = String(patches[p].text).replace(/\n/g, "\r");
 		} catch (e) {
 			failed.push({ id: patches[p].id, reason: e.message });
 		}
@@ -404,7 +405,8 @@ function mm_text_newLayer(parent, kind, content, font, report) {
 
 	var item = layer.textItem;
 	if (kind) item.kind = kind;
-	item.contents = content;
+	/* 同上：新建 / OCR 的段落也可能带 `\n`，PS 只认 `\r` */
+	item.contents = String(content).replace(/\n/g, "\r");
 
 	if (font) {
 		try {

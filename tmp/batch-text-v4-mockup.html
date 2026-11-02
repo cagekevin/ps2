@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>批量文字 · 改全部 / 改选中 / OCR（新建并入）</title>
+<style>
+  /* token 值照抄 src/styles/tokens.css；本文件只是 mockup，src 内不许抄这段 */
+  :root{
+    --mm-space-tight:2px; --mm-space-1:4px; --mm-space-inline:4px; --mm-space-2:8px;
+    --mm-space-3:12px; --mm-space-4:16px;
+    --mm-control-h:26px; --mm-tab-line-h:20px; --mm-line-16:16px;
+    --mm-font-xs:11px; --mm-font-sm:12px; --mm-font-md:13px;
+    --mm-radius-sm:2px; --mm-radius-md:4px; --mm-radius-lg:6px; --mm-border-w:1px;
+    --mm-color-bg-base:#363636; --mm-color-bg-hover:#3d3d3d; --mm-color-bg-raised:#535353;
+    --mm-color-bg-raised-hover:#575757; --mm-color-bg-input:#2c2c2c;
+    --mm-color-bg-header:#333;
+    --mm-color-border:#2e2e2e; --mm-color-border-control:#4b4b4b;
+    --mm-color-text:#c3c3c3; --mm-color-text-strong:#f5f5f5; --mm-color-text-dim:#9a9a9a;
+    --mm-color-text-faint:#8e8e8e; --mm-color-text-inverse:#fff;
+    --mm-color-accent:#006fff; --mm-color-accent-hover:#2a86ff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{background:#1a1a1a;color:var(--mm-color-text);padding:var(--mm-space-4);
+    display:flex;gap:var(--mm-space-4);align-items:flex-start;flex-wrap:wrap;}
+  .case{width:340px;}
+  .case h2{font-size:var(--mm-font-md);color:var(--mm-color-text-strong);margin-bottom:var(--mm-space-1);}
+  .case > p{font-size:var(--mm-font-xs);line-height:1.7;color:var(--mm-color-text-dim);
+    margin-bottom:var(--mm-space-2);}
+  .case ul{margin:var(--mm-space-2) 0 0 var(--mm-space-3);padding-left:var(--mm-space-1);
+    border-left:var(--mm-border-w) solid var(--mm-color-border-control);}
+  .case li{font-size:var(--mm-font-xs);line-height:1.7;color:var(--mm-color-text-dim);list-style:none;}
+  .case li b{color:var(--mm-color-text);font-weight:normal;}
+
+  .cep{position:relative;width:100%;height:560px;background:var(--mm-color-bg-base);
+    border-radius:var(--mm-radius-lg);overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  .cep__head{height:30px;flex:none;background:var(--mm-color-bg-header);display:flex;align-items:center;
+    padding:0 var(--mm-space-2);font-size:var(--mm-font-md);color:var(--mm-color-text-strong);}
+  .cep__body{padding:var(--mm-space-2);display:flex;flex-direction:column;gap:var(--mm-space-1);}
+  .fake-field{height:var(--mm-control-h);background:var(--mm-color-bg-input);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    display:flex;align-items:center;padding:0 var(--mm-space-2);
+    font-size:var(--mm-font-sm);color:var(--mm-color-text-faint);}
+
+  .mask{position:absolute;inset:0;background:rgba(0,0,0,.45);
+    display:flex;align-items:center;justify-content:center;}
+  .modal{display:flex;flex-direction:column;gap:var(--mm-space-2);
+    width:88%;height:80%;padding:var(--mm-space-3);border-radius:var(--mm-radius-md);
+    border:var(--mm-border-w) solid var(--mm-color-border-control);
+    background:var(--mm-color-bg-base);box-shadow:0 4px 12px rgba(0,0,0,.35);overflow:hidden;}
+
+  /* 三个 tab：改全部 / 改选中 / OCR */
+  .tabs{display:flex;align-items:center;flex:0 0 auto;}
+  .tabs__cell{display:flex;flex:1;min-width:0;}
+  .tabs__tab{width:100%;height:var(--mm-tab-line-h);border:none;background:none;
+    color:var(--mm-color-text-dim);font-size:var(--mm-font-sm);text-align:center;cursor:pointer;}
+  .tabs__tab--on{color:var(--mm-color-accent);}
+  .tabs__tab:hover{background:var(--mm-color-bg-hover);}
+  .tabs__line{width:var(--mm-border-w);height:var(--mm-tab-line-h);background:var(--mm-color-border-control);}
+
+  .pane{display:flex;flex-direction:column;gap:var(--mm-space-2);flex:1 1 auto;min-height:0;}
+  .pane[hidden]{display:none;}
+
+  /* 状态行：说明当前是新建还是替换 */
+  .state{display:flex;align-items:center;gap:var(--mm-space-1);flex:0 0 auto;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);}
+  .state b{color:var(--mm-color-text-strong);font-weight:normal;}
+  .state__clear{margin-left:auto;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:var(--mm-control-h);
+    padding:0 var(--mm-space-2);border:none;border-radius:var(--mm-radius-md);
+    background:var(--mm-color-bg-raised);color:inherit;font-size:var(--mm-font-sm);
+    white-space:nowrap;cursor:pointer;}
+  .btn:hover:not(:disabled){background:var(--mm-color-bg-raised-hover);}
+  .btn--primary{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);}
+  .btn--primary:hover:not(:disabled){background:var(--mm-color-accent-hover);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn--sm{height:var(--mm-tab-line-h);padding:0 var(--mm-space-inline);font-size:var(--mm-font-xs);}
+
+  .lbl{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);flex:0 0 auto;}
+  .status{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);min-height:var(--mm-line-16);}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);flex:0 0 auto;}
+
+  textarea{width:100%;background:var(--mm-color-bg-input);color:var(--mm-color-text);
+    border:var(--mm-border-w) solid var(--mm-color-border);border-radius:var(--mm-radius-md);
+    padding:var(--mm-space-1);font-size:var(--mm-font-sm);line-height:var(--mm-line-16);
+    font-family:inherit;resize:none;flex:1 1 auto;min-height:90px;}
+  textarea:focus{outline:var(--mm-border-w) solid var(--mm-color-accent);border-color:transparent;}
+
+  .list{display:flex;flex-direction:column;gap:var(--mm-space-tight);flex:0 0 auto;}
+  .list__head,.lrow{display:flex;align-items:center;gap:var(--mm-space-1);
+    padding:0 var(--mm-space-1);width:100%;overflow:hidden;}
+  .list__head{height:var(--mm-line-16);border-bottom:var(--mm-border-w) solid var(--mm-color-border);
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);}
+  .list__body{display:flex;flex-direction:column;gap:var(--mm-space-tight);
+    height:56px;overflow-y:auto;}
+  .lrow{height:18px;}
+  .lrow--on{background:rgba(0,111,255,.14);
+    box-shadow:inset calc(var(--mm-border-w) * 2) 0 0 var(--mm-color-accent);}
+  .col-no{flex:0 0 auto;width:14px;text-align:right;font-size:var(--mm-font-xs);
+    color:var(--mm-color-text-faint);}
+  .col-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:var(--mm-font-xs);color:var(--mm-color-text-dim);}
+  .lrow--on .col-name{color:var(--mm-color-text-strong);}
+
+  .big{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--mm-space-2);
+    flex:1 1 auto;min-height:0;border:var(--mm-border-w) solid var(--mm-color-border);
+    border-radius:var(--mm-radius-md);background:var(--mm-color-bg-input);padding:var(--mm-space-2);}
+  .big__t{font-size:var(--mm-font-sm);color:var(--mm-color-text);}
+  .big__h{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);text-align:center;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<section class="case">
+  <h2>批量文字 · 三个 tab</h2>
+  <p>「新建」并入「改全部 / 改选中」：同一个输入框，没有读入图层时就是新建。点「清空」回到新建态。</p>
+  <div class="cep">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小　行距　字距</div></div>
+    <div class="mask">
+      <div class="modal">
+        <div class="tabs" id="tabs" role="tablist">
+          <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on" data-pane="all">改全部</button></div>
+          <span class="tabs__line"></span>
+          <div class="tabs__cell"><button type="button" class="tabs__tab" data-pane="selected">改选中</button></div>
+          <span class="tabs__line"></span>
+          <div class="tabs__cell"><button type="button" class="tabs__tab" data-pane="ocr">OCR</button></div>
+        </div>
+
+        <!-- 改全部：默认已读入 4 层（替换态），点「清空」回到新建态 -->
+        <div class="pane" id="pane-all">
+          <div class="state">
+            <span>已读入 <b>4</b> 层 · 每行替换对应层</span>
+            <button type="button" class="btn btn--sm state__clear" id="clear-all">清空</button>
+          </div>
+          <div class="list" id="list-all">
+            <div class="list__head"><span class="col-no">#</span><span class="col-name">全部图层</span></div>
+            <div class="list__body">
+              <div class="lrow"><span class="col-no">1</span><span class="col-name">图层 12</span></div>
+              <div class="lrow lrow--on"><span class="col-no">2</span><span class="col-name">图层 12 拷贝</span></div>
+              <div class="lrow"><span class="col-no">3</span><span class="col-name">图层 8</span></div>
+              <div class="lrow"><span class="col-no">4</span><span class="col-name">图层 8 拷贝 2</span></div>
+            </div>
+          </div>
+          <div class="lbl" id="label-all">替换（每行对应上面一层；留空 = 清空该行）</div>
+          <textarea id="ta-all" spellcheck="false">这里是第一层的文字
+这一层是段落，内部有换行⏎第二行在这
+这里是第三层的文字
+这里是第四层的文字</textarea>
+        </div>
+
+        <!-- 改选中：同样两种态 -->
+        <div class="pane" id="pane-selected" hidden>
+          <div class="state">
+            <span>已读入 <b>2</b> 层 · 每行替换对应层</span>
+            <button type="button" class="btn btn--sm state__clear" id="clear-selected">清空</button>
+          </div>
+          <div class="list" id="list-selected">
+            <div class="list__head"><span class="col-no">#</span><span class="col-name">选中的图层</span></div>
+            <div class="list__body">
+              <div class="lrow"><span class="col-no">1</span><span class="col-name">图层 12 拷贝</span></div>
+              <div class="lrow"><span class="col-no">2</span><span class="col-name">图层 8</span></div>
+            </div>
+          </div>
+          <div class="lbl" id="label-selected">替换（每行对应上面一层；留空 = 清空该行）</div>
+          <textarea id="ta-selected" spellcheck="false">这一层是段落，内部有换行⏎第二行在这
+这里是第三层的文字</textarea>
+        </div>
+
+        <!-- OCR：整块动作 -->
+        <div class="pane" id="pane-ocr" hidden>
+          <div class="big">
+            <div class="big__t">识别当前画布上的文字</div>
+            <div class="big__h">导出画布 → 云端识别 → 按坐标新建文字层；<br/>建完不会自动读入，要改字回「改全部 / 改选中」</div>
+            <button type="button" class="btn">开始识别</button>
+          </div>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary" id="ok">写回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul>
+    <li><b>没有「新建」tab</b>：改全部 / 改选中里，没读入图层就是新建态。</li>
+    <li><b>顶部一句话说明当前态</b>：已读入 N 层 · 每行替换对应层 / 未读入图层 · 每行新建一层。</li>
+    <li><b>「清空」回到新建态</b>：读入后想新建，点它清掉图层，输入框保留。</li>
+    <li><b>底部主按钮跟着态变</b>：新建态 = 新建，替换态 = 写回，OCR = 开始识别。</li>
+  </ul>
+</section>
+
+<section class="case">
+  <h2>同一套 · 新建态（点「清空」后）</h2>
+  <p>图层被清空，输入框还在，顶部文案变成新建，主按钮变「新建」。</p>
+  <div class="cep" style="height:480px">
+    <div class="cep__head">字体</div>
+    <div class="cep__body"><div class="fake-field">字体　大小</div></div>
+    <div class="mask">
+      <div class="modal" style="width:94%;height:84%">
+        <div class="tabs">
+          <div class="tabs__cell"><button type="button" class="tabs__tab tabs__tab--on">改全部</button></div>
+          <span class="tabs__line"></span>
+          <div class="tabs__cell"><button type="button" class="tabs__tab">改选中</button></div>
+          <span class="tabs__line"></span>
+          <div class="tabs__cell"><button type="button" class="tabs__tab">OCR</button></div>
+        </div>
+        <div class="pane">
+          <div class="state">
+            <span>未读入图层 · 每行新建一层</span>
+          </div>
+          <div class="lbl">每行一个文字图层</div>
+          <textarea spellcheck="false">第一行文字
+第二行文字
+第三行文字</textarea>
+        </div>
+        <div class="status">已改 1 层</div>
+        <div class="foot">
+          <button type="button" class="btn">取消</button>
+          <button type="button" class="btn btn--primary">新建</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('#tabs .tabs__tab');
+  const panes = {
+    all: document.getElementById('pane-all'),
+    selected: document.getElementById('pane-selected'),
+    ocr: document.getElementById('pane-ocr')
+  };
+  const ok = document.getElementById('ok');
+  const status = document.getElementById('status');
+  const okText = { all: '写回', selected: '写回', ocr: '开始识别' };
+  const statusText = { all: '已读入 4 层', selected: '已读入 2 层', ocr: '' };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((item) => item.classList.toggle('tabs__tab--on', item === tab));
+      Object.entries(panes).forEach(([key, pane]) => {
+        pane.hidden = key !== tab.dataset.pane;
+      });
+      ok.textContent = okText[tab.dataset.pane];
+      status.textContent = statusText[tab.dataset.pane];
+    });
+  });
+
+  /* 清空 = 回到新建态：列表收起、文案变新建、主按钮变新建、输入框清空 */
+  function wireClear(buttonId, listId, labelId, taId) {
+    document.getElementById(buttonId).addEventListener('click', () => {
+      document.getElementById(listId).hidden = true;
+      document.getElementById(labelId).textContent = '每行一个文字图层';
+      document.getElementById(taId).value = '';
+      document.getElementById(taId).placeholder = '第一行文字\n第二行文字';
+      ok.textContent = '新建';
+      status.textContent = '未读入图层 · 每行新建一层';
+    });
+  }
+  wireClear('clear-all', 'list-all', 'label-all', 'ta-all');
+  wireClear('clear-selected', 'list-selected', 'label-selected', 'ta-selected');
+</script>
+
+</body>
+</html>

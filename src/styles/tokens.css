@@ -149,7 +149,6 @@
   --mm-dialog-offset-x: 90px;
 
   /* 批量文字弹窗（字体面板顶部入口） */
-  --mm-batch-tabs-w: 88px;      /* 模式 tab 条：两个 tab 各 44 */
   --mm-batch-list-h: 108px;     /* 原文列表：6 行 × 18 */
   --mm-batch-row-h: 18px;       /* 原文列表一行：这栏只当「现在改的是哪层」的指示条，不承担阅读 */
   --mm-batch-no-w: 16px;        /* 行号列 */

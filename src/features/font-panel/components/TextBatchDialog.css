@@ -20,10 +20,11 @@
   overflow: hidden;
 }
 
-/* tab 条按内容宽靠左：右边还要放「全部 / 读取」 */
+/* tab 条：三个 tab 等分整行（改全部 / 改选中 / OCR）。
+   **不能写 `flex: 1`** —— 弹窗是纵向 flex，那会让 tab 条纵向拉伸、把内容推下去。 */
 .mm-text-batch__tabs{
-  width: var(--mm-batch-tabs-w);
   flex: 0 0 auto;
+  width: 100%;
 }
 
 .mm-text-batch__tools{
@@ -143,4 +144,50 @@
   min-height: var(--mm-line-16);
   font-size: var(--mm-font-xs);
   color: var(--mm-color-text-dim);
+}
+
+/* 状态行：一句话说明当前是新建还是替换；「清空」贴右 */
+.mm-text-batch__state{
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  flex: 0 0 auto;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-dim);
+}
+
+.mm-text-batch__state strong{
+  color: var(--mm-color-text);
+  font-weight: normal;
+}
+
+.mm-text-batch__state-clear{
+  margin-left: auto;
+}
+
+/* OCR 页：整块只说明，执行交给底部主按钮 */
+.mm-text-batch__ocr-pane{
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-2);
+  border: var(--mm-border-w) solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-input);
+  text-align: center;
+}
+
+.mm-text-batch__ocr-title{
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text);
+}
+
+.mm-text-batch__ocr-hint{
+  font-size: var(--mm-font-xs);
+  line-height: 1.7;
+  color: var(--mm-color-text-faint);
 }
