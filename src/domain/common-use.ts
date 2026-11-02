@@ -254,6 +254,11 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
 
     const name = textOf(item.name);
     const svg = textOf(item.svg);
+    /* **既没有名字也没有图标 = 上屏就是一个空白格**（原版写坏的日志残项，
+       形如 `{ created:'导出图片', comName:'comexport' }`，2026-11-02 真机又出现一次）。
+       解码放行是为了不把整份判坏，能不能上屏在这里判 —— 这条判据原先只写在注释里，
+       代码没做，于是空白格照样上屏。 */
+    if (!name && !svg) continue;
     const filled = typeof item.fillSvg === 'string' && item.fillSvg ? stripHash(item.fillSvg) : null;
     const comName = textOf(item.comName);
     /* 缺 id 但有 comName 时用 comName 兜底：`comName` 是「这个按钮做什么」的稳定标识，

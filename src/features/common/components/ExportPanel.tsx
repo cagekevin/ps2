@@ -4,12 +4,14 @@
  * 11 个 `cyExport` 字段 + `compress` 的 4 个子键，逐条照 `13-常用-V2` §1.1-E / §5.5。
  * 写设置一律 `setOption('cyExport.<字段>')` / `('cyExport.compress.<子键>')`，**面板不读写文件**。
  *
- * 三处与原版不同（都是已登记的偏离，别顺手改回去）：
+ * 两处与原版不同（都是已登记的偏离，别顺手改回去）：
  *   - **A-3**：品质框 Enter 提交（官方 blur）。不为一处 blur 给 `TextField` 加第五种提交时机。
- *   - **A-4**：PNG 档用 `Segment`（PNG-24 / PNG-8），官方是白底下拉；同页不出现第二套 28/30 高控件。
  *   - 批量 PSD 的 `>30` 确认：页面先 `listPsdFiles()` 拿数量 → 超阈值才 `useConfirm` →
  *     再调 `exportPsdFiles(files)`。**阈值与判据只有一处**（`domain.needsBatchConfirm`），
  *     命令层不再重复判（那条分支不可达，已删）。
+ *
+ * PNG 位深**已改回官方形状**（原 A-4 用 `Segment`）：PNG 档与 JPG 档同一个「品质 + 控件」，
+ * 只是控件从输入框换成下拉（`SelectBox`，PNG-24 / PNG-8）。
  *
  * 图层名跟随读 `store/app.layerName`（A-1）：`app/layer-watcher` 是全项目唯一图层订阅者，
  * 这里不再订阅事件。
@@ -19,6 +21,7 @@ import { useMemo } from 'react';
 import { IconPanel, IconPanelGroup, sectionTrigger } from '../../../components/IconPanel';
 import { IconButton } from '../../../components/IconButton';
 import { Segment } from '../../../components/Segment';
+import { SelectBox } from '../../../components/SelectBox';
 import { TextField } from '../../../components/TextField';
 import { CheckBox } from '../../../components/CheckBox';
 import { RadioButton } from '../../../components/RadioButton';
@@ -162,15 +165,20 @@ export function ExportPanel() {
           onChange={(value) => write('ext', value)}
         />
         {text(config.ext) === 'PNG' ? (
-          <Segment
-            ariaLabel={'PNG 位深'}
-            value={flag(config.png8) ? 'PNG-8' : 'PNG-24'}
-            options={[
-              { value: 'PNG-24', label: 'PNG-24' },
-              { value: 'PNG-8', label: 'PNG-8' }
-            ]}
-            onChange={(value) => write('png8', value === 'PNG-8')}
-          />
+          /* PNG 档：与 JPG 档同一个形状 —— 「品质」标签 + 一个控件，只是控件换成下拉
+             （官方就是白底下拉；两档选项少，下拉比段选更省横向空间） */
+          <div className="mm-u-row mm-common__field-group">
+            <span className="mm-common__field-label">{'品质'}</span>
+            <SelectBox
+              className="mm-common__field-select"
+              options={[
+                { value: 'PNG-24', label: 'PNG-24' },
+                { value: 'PNG-8', label: 'PNG-8' }
+              ]}
+              value={flag(config.png8) ? 'PNG-8' : 'PNG-24'}
+              onChange={(value) => write('png8', value === 'PNG-8')}
+            />
+          </div>
         ) : (
           /* 「品质 + 输入框」先自成一个整体：外层铺满只分出「段选 | 这一组」。
              三个元素平铺会被均分空隙，二字就飘到中间去了 */
@@ -253,19 +261,23 @@ export function ExportPanel() {
 
       <div className="mm-divider" />
 
-      <RadioButton
-        name="common-save-type"
-        label={'使用导出Web方式(可以切片)'}
-        checked={num(config.saveType) === 1}
-        onChange={() => write('saveType', 1)}
-      />
-      <RadioButton
-        name="common-save-type"
-        title={'与ctrl+shift+s保存一样'}
-        label={'使用另存为方式(不压缩)'}
-        checked={num(config.saveType) === 2}
-        onChange={() => write('saveType', 2)}
-      />
+      {/* 两个保存方式是**同一块**：包起来按「组内」4 排，
+          不包的话会各占一块、被面板的块间距拉开（2026-11-02） */}
+      <div className="mm-u-col mm-common__stack">
+        <RadioButton
+          name="common-save-type"
+          label={'使用导出Web方式(可以切片)'}
+          checked={num(config.saveType) === 1}
+          onChange={() => write('saveType', 1)}
+        />
+        <RadioButton
+          name="common-save-type"
+          title={'与ctrl+shift+s保存一样'}
+          label={'使用另存为方式(不压缩)'}
+          checked={num(config.saveType) === 2}
+          onChange={() => write('saveType', 2)}
+        />
+      </div>
 
       <div className="mm-divider" />
 

@@ -7,10 +7,40 @@
 .mm-common__panel{
   display: flex;
   flex-direction: column;
-  /* 面板里的行与行之间取「组内」4：抽屉里空间紧，8 会把面板撑得过长 */
-  gap: var(--mm-space-1);
+  /*
+   * **块与块之间**取「弹窗内段落」档 12：面板里的每一项（保存到 / 命名 / 两个单选 /
+   * 每个折叠组）都是一块，块之间必须明显大于块内（4）与「折叠标题 → 正文」（8），
+   * 否则整屏间距一样大，读不出分组（2026-11-02 截图）。
+   * 同一块的成员要用容器包起来（`.mm-common__stack` / `__form-body`），别靠这条 gap 分组。
+   */
+  gap: var(--mm-space-3);
   width: 100%;
   /* 底色不在这里：7 个面板都是 IconPanel 抽屉的内容，抽屉壳 `__box::before` 已铺 #222 */
+}
+
+/*
+ * 常用页抽屉：**标题 → 正文收紧到 8**。
+ *
+ * 容器 `.mm-icon-panel__box` 是 margin-top 8 + padding-top 8 = 16，比块间距离还大，
+ * 标题反而更像归给上一块。这里只去掉**外部的 margin-top**（页面自己的间距），
+ * padding 属于抽屉表面的留白，不动；也不改 `icon-panel.css`，字体面板等其它页面照原样。
+ */
+.mm-common__panel .mm-icon-panel__box{
+  margin-top: 0;
+}
+
+/* 同一块里的若干行（两个另存方式单选这类）：块内取「组内」4 */
+.mm-common__stack{
+  gap: var(--mm-space-1);
+}
+
+/*
+ * 面板最后一块的下外边距不参与排版：后面没有内容了，留着就是底部凭空多一截空白
+ * （2026-11-02 截图里最后一个折叠下面那一大块，其中 8px 是这里）。
+ * 只去 margin，抽屉表面的 padding 不动。
+ */
+.mm-common__panel > :last-child .mm-icon-panel__box{
+  margin-bottom: 0;
 }
 
 /* 横排两端铺满走公共 `.mm-u-row`，同排控件之间取同行并列档 */
@@ -70,6 +100,28 @@
    套一层之后外层只分「段选 | 这一组」，组内按同行并列档贴住。 */
 .mm-common__field-group{
   gap: var(--mm-space-inline);
+}
+
+/* 「品质」输入框按内容定宽：`TextField` 默认吃满容器（`flex: 1 1 auto`），
+   不拦的话这一行剩下的宽度全被它吃掉，输入框拖得比整行还长（2026-11-02 截图）。
+   定宽后腾出来的宽度归左边的段选 —— JPG / PNG 两块跟着变宽，更好点。 */
+.mm-common__field-group > .mm-text-field{
+  flex: 0 0 auto;
+  width: var(--mm-quality-w);
+}
+
+/* 这一行的段选可以更宽：`.mm-segment` 默认定宽 100，本行是「段选 + 品质」两件，
+   多出来的宽度给段选，两块各占一半，比 100 更像个二选一控件。 */
+.mm-common__panel-row > .mm-segment{
+  flex: 1 1 auto;
+  width: auto;
+}
+
+/* PNG 档的位深下拉：与「品质」输入框同位置、同高度，宽度装得下 `PNG-24` + 箭头。
+   触发器默认 `width: 100%`，不拦就会跟着整行拉长。 */
+.mm-common__field-select{
+  flex: 0 0 auto;
+  width: var(--mm-quality-select-w);
 }
 
 /* 一排 2 个按钮：网格走组合层 `.mm-btn-grid`，**只注入列数** ——

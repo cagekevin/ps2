@@ -45,7 +45,7 @@ describe('COMMON_USE_SEED', () => {
 describe('toTiles 的下标空间', () => {
   it('坏项被跳过时 index 仍是文件里的真实下标', () => {
     /* 视图与写回共用原始记录：过滤后重新编号会让拖拽移动相邻的那一项 */
-    const tiles = toTiles([{ id: 'a' }, { name: '没有 id' }, { id: 'c' }]);
+    const tiles = toTiles([{ id: 'a', name: 'a' }, { name: '没有 id' }, { id: 'c', name: 'c' }]);
 
     expect(tiles.map((tile) => tile.id)).toEqual(['a', 'c']);
     expect(tiles.map((tile) => tile.index)).toEqual([0, 2]);
@@ -113,18 +113,22 @@ describe('toTiles', () => {
   });
 
   it('isShow 缺失按显示，显式 false 才隐藏', () => {
-    const tiles = toTiles([{ id: 'a', svg: '#x' }, { id: 'b', isShow: false }, { id: 'c', isShow: true }]);
+    const tiles = toTiles([
+      { id: 'a', name: 'a', svg: '#x' },
+      { id: 'b', name: 'b', isShow: false },
+      { id: 'c', name: 'c', isShow: true }
+    ]);
     expect(tiles.map((tile) => tile.visible)).toEqual([true, false, true]);
   });
 
   it('没有 id 的项不进视图（不拿下标冒充 id）', () => {
-    const tiles = toTiles([{ id: 'a' }, { name: '无 id' }]);
+    const tiles = toTiles([{ id: 'a', name: 'a' }, { name: '无 id' }]);
     expect(tiles.map((tile) => tile.id)).toEqual(['a']);
   });
 
   it('缺 id 的项用 comName 当 id，仍进视图', () => {
     const tiles = toTiles([
-      { id: 'a' },
+      { id: 'a', name: 'a' },
       { created: '按间距分布', comName: 'comspacing', name: '按间距分布' }
     ]);
     expect(tiles.map((tile) => tile.id)).toEqual(['a', 'comspacing']);
@@ -132,9 +136,24 @@ describe('toTiles', () => {
   });
 
   it('comName 为空串按「不可展开」处理', () => {
-    const tiles = toTiles([{ id: 'a', comName: '' }, { id: 'b', comName: 'comspacing' }]);
+    const tiles = toTiles([
+      { id: 'a', name: 'a', comName: '' },
+      { id: 'b', name: 'b', comName: 'comspacing' }
+    ]);
     expect(tiles[0]?.comName).toBeNull();
     expect(tiles[1]?.comName).toBe('comspacing');
+  });
+
+  it('既没有 name 也没有 svg 的残项**不进视图**（否则上屏是空白格）', () => {
+    /* 原版写坏的日志残项：{ created:'导出图片', comName:'comexport' }，2026-11-02 真机又出现 */
+    const tiles = toTiles([
+      { id: 'a', name: 'a' },
+      { created: '导出图片', comName: 'comexport' },
+      { id: 'b', name: 'b' }
+    ]);
+    expect(tiles.map((tile) => tile.id)).toEqual(['a', 'b']);
+    /* index 仍是文件里的真实下标：拖拽写回不能把相邻项移走 */
+    expect(tiles.map((tile) => tile.index)).toEqual([0, 2]);
   });
 });
 

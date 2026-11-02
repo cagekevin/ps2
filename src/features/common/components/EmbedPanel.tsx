@@ -68,15 +68,19 @@ export function EmbedPanel() {
 
       <div className="mm-divider" />
 
-      {LINK_OBJECT_VALUES.map((value) => (
-        <RadioButton
-          key={value}
-          name="common-link-object"
-          label={LINK_OBJECT_LABELS[value]}
-          checked={linkObjectOf(options) === value}
-          onChange={() => setLinkObject(value)}
-        />
-      ))}
+      {/* 三档链接方式是**同一块**（互斥选项）：包起来按「组内」4 排，
+          不包会被面板的块间距拉开，看着像三个独立设置（2026-11-02） */}
+      <div className="mm-u-col mm-common__stack">
+        {LINK_OBJECT_VALUES.map((value) => (
+          <RadioButton
+            key={value}
+            name="common-link-object"
+            label={LINK_OBJECT_LABELS[value]}
+            checked={linkObjectOf(options) === value}
+            onChange={() => setLinkObject(value)}
+          />
+        ))}
+      </div>
 
       <CheckBox
         label={'删除下一图层'}
