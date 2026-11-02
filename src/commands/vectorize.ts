@@ -14,7 +14,13 @@ import { log } from '../core/logger';
 import { exportLayer, replaceWithPath } from '../core/ps/vectorize';
 import { readTextAt, removeFileAt } from '../core/storage';
 import { rasterToSvg } from '../core/vectorize/vtracer';
-import { extractSvgPaths, hexToRgb, parseSvgPath } from '../domain/vectorize';
+import {
+  extractSvgPaths,
+  hexToRgb,
+  isCanvasBackground,
+  parseSvgPath,
+  svgCanvasSize
+} from '../domain/vectorize';
 
 /** 临时产物删不掉只记日志：不影响结果，不该让用户以为转换失败 */
 function dropTemp(path: string): void {
@@ -43,7 +49,7 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
   const pngPath = exported.value;
   const svgPath = pngPath.replace(/\.png$/i, '.svg');
 
-  const converted = rasterToSvg(pngPath, svgPath);
+  const converted = await rasterToSvg(pngPath, svgPath);
   if (converted.status === 'error') {
     dropTemp(pngPath);
     return converted;
@@ -63,8 +69,27 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
     return fail('VALIDATION', MSG.vectorize.empty);
   }
 
-  /* 每条 `<path>` 可能含多条子路径；全部并进同一个形状层（PS 的一个 PathItem 可含多条） */
+  /*
+   * 每条 `<path>` 可能含多条子路径；除**铺满画布的背景**外全部并进同一个形状层
+   * （PS 的一个 PathItem 可含多条子路径）。
+   *
+   * 背景必须丢掉：vtracer 的 `bw` 档先吐一条覆盖全画布的底色 path，并进来就填成整块实心，
+   * 表现就是「路径画的不对」（真机 2026-11-02）。
+   */
+  /*
+   * 画布尺寸是「哪条是背景」这条判据的输入。认不出就没有判据 —— 不许当成
+   * 「没有背景」继续跑：那样背景会被并进形状层，用户看到整块实心，而日志里什么都没有。
+   */
+  const canvas = svgCanvasSize(svgText.value);
+  if (!canvas) {
+    dropTemp(pngPath);
+    dropTemp(svgPath);
+    return failWithDetail('CORRUPT', MSG.corrupt, 'svg:no-size');
+  }
+
   const subpaths: VectorSubPath[] = [];
+  let fill: string | null = null;
+
   for (const entry of entries) {
     const parsed = parseSvgPath(entry.d);
     if (parsed.status === 'error') {
@@ -72,7 +97,11 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
       dropTemp(svgPath);
       return parsed;
     }
+    if (isCanvasBackground(parsed.value, canvas)) continue;
+
     subpaths.push(...parsed.value);
+    /* 填充色取**第一条非背景**路径的 fill（背景那条的 fill 是底色，不是用户要的色） */
+    if (fill === null) fill = entry.fill;
   }
 
   if (!subpaths.length) {
@@ -81,8 +110,15 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
     return fail('VALIDATION', MSG.vectorize.empty);
   }
 
-  /* 单色填充：取第一个 path 的 fill（`preset:'bw'` 下是 #000000），认不出就用黑色 */
-  const color = hexToRgb(entries[0]?.fill ?? null) ?? { r: 0, g: 0, b: 0 };
+  /* 认不出填色就是引擎输出不合契约（`bw` 档必带 `#rrggbb`）：报出去，不猜一个颜色顶替 */
+  const rgb = hexToRgb(fill);
+  if (!rgb) {
+    dropTemp(pngPath);
+    dropTemp(svgPath);
+    return failWithDetail('CORRUPT', MSG.corrupt, `svg:fill:${fill ?? 'missing'}`);
+  }
+
+  const color = rgb;
 
   const written = await replaceWithPath({ color, subpaths });
 

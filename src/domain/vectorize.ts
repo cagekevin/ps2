@@ -273,6 +273,57 @@ export function extractSvgPaths(svg: string): SvgPathEntry[] {
   return entries;
 }
 
+/**
+ * `<svg width="…" height="…">` → 画布尺寸；认不出返回 `null`。
+ *
+ * 只用来判「哪条 path 是背景」，不参与坐标换算 —— vtracer 输出的 `d` 已经是画布像素。
+ */
+export function svgCanvasSize(svg: string): { width: number; height: number } | null {
+  const tag = /<svg\b[^>]*>/.exec(svg)?.[0];
+  if (!tag) return null;
+
+  const read = (name: string): number | null => {
+    const raw = new RegExp(`\\b${name}="([^"]*)"`).exec(tag)?.[1];
+    const value = raw ? Number.parseFloat(raw) : Number.NaN;
+    return Number.isFinite(value) && value > 0 ? value : null;
+  };
+
+  const width = read('width');
+  const height = read('height');
+  return width !== null && height !== null ? { width, height } : null;
+}
+
+/**
+ * 这条路径是不是「铺满整张画布的背景」。
+ *
+ * vtracer 的 `bw` 档一定先吐一条覆盖全画布的底色 path（白底）。把它并进形状层，
+ * 填出来就是整块实心 —— 用户看到的就是「路径画的不对」（真机 2026-11-02）。
+ * 判据用面积比 0.99，不做四舍五入：浮点坐标的边界常差零点几像素。
+ */
+export function isCanvasBackground(
+  subpaths: readonly VectorSubPath[],
+  canvas: { width: number; height: number }
+): boolean {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const subpath of subpaths) {
+    for (const point of subpath.points) {
+      minX = Math.min(minX, point.anchor[0]);
+      maxX = Math.max(maxX, point.anchor[0]);
+      minY = Math.min(minY, point.anchor[1]);
+      maxY = Math.max(maxY, point.anchor[1]);
+    }
+  }
+
+  if (!Number.isFinite(minX)) return false;
+
+  const area = Math.max(0, maxX - minX) * Math.max(0, maxY - minY);
+  return area >= canvas.width * canvas.height * 0.99;
+}
+
 /** `#rrggbb` → `{ r, g, b }`；认不出返回 null（调用方决定兜底色） */
 export function hexToRgb(hex: string | null): { r: number; g: number; b: number } | null {
   if (!hex) return null;

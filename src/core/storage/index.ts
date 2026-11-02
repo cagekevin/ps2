@@ -49,7 +49,8 @@ interface NodeFs {
   rmdirSync(path: string): void;
 }
 
-function getFs(): NodeFs | null {
+/** 取 `fs`。**失败原样往上抛**（`detail` 带 `node:fs:<原因>`），不在这一层重包成 `null` */
+function getFs(): Result<NodeFs> {
   return nodeRequire<NodeFs>('fs');
 }
 
@@ -67,11 +68,16 @@ function filePath(root: StorageRoot, name: string): string {
   return buildPath(getUserDataPath(), root, name);
 }
 
+/**
+ * 存在性探针：**只回布尔**，是唯一的 `boolean` 出口（调用方要的是「在不在」，不是失败原因）。
+ * 取不到 `fs` 与「文件不存在」在这里是同一个答案，所以这一处不重包 `Result` ——
+ * 需要区分原因的调用方走 `readTextResult` 那类 `Result` 接口。
+ */
 export function exists(name: string, root: StorageRoot = 'data'): boolean {
   const fs = getFs();
-  if (!fs) return false;
+  if (fs.status === 'error') return false;
   try {
-    return fs.existsSync(filePath(root, name));
+    return fs.value.existsSync(filePath(root, name));
   } catch {
     return false;
   }
@@ -79,8 +85,9 @@ export function exists(name: string, root: StorageRoot = 'data'): boolean {
 
 /** 读文件正文的唯一实现：凡是「路径 → 文本」都走这里 */
 function readTextFile(absPath: string, label: string): Result<string> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     if (!fs.existsSync(absPath)) return failWithDetail('NOT_FOUND', MSG.codeReason.NOT_FOUND, `path:${absPath}`);
@@ -116,8 +123,9 @@ function dirnameOf(absPath: string): string {
 
 /** 写文件的唯一实现；`backup` 决定是否把原文复制到 `.bak` */
 function writeTextFile(absPath: string, text: string, backup: boolean): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     if (backup && fs.existsSync(absPath)) {
@@ -143,8 +151,9 @@ function writeTextFile(absPath: string, text: string, backup: boolean): Result<v
  * 更早的版本已经没有了——这不是 bug，是「单版本备份」的固有代价。
  */
 export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   const target = filePath(root, name);
   const backup = `${target}.bak`;
@@ -164,8 +173,9 @@ export function restoreBackup(name: string, root: StorageRoot = 'data'): Result<
 
 /** 二进制文件复制（导入覆盖前的旧文件回收；不能按 utf8 读图片/PSD） */
 export function copyFileAt(fromAbs: string, toAbs: string): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     fs.mkdirSync(dirnameOf(toAbs), { recursive: true });
@@ -213,8 +223,9 @@ export function writeTextAtomic(
  * `PSD/<id>.info/`）结构固定为平铺，用不上递归。
  */
 export function removeDir(name: string, root: StorageRoot = 'data'): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   const target = filePath(root, name);
   try {
@@ -235,8 +246,9 @@ export function removeDir(name: string, root: StorageRoot = 'data'): Result<void
  * 在业务层自己 `Buffer.toString('base64')` 会长出第二份 base64 实现（`core/cep/base64` 已有一份）。
  */
 export function readBase64At(absPath: string): Result<string> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     if (!fs.existsSync(absPath)) {
@@ -251,8 +263,9 @@ export function readBase64At(absPath: string): Result<string> {
 
 /** 任意绝对路径的字节数（判第三方接口的体积上限用） */
 export function fileSizeAt(absPath: string): Result<number> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     if (!fs.existsSync(absPath)) {
@@ -267,8 +280,9 @@ export function fileSizeAt(absPath: string): Result<number> {
 
 /** 删任意绝对路径的文件；本来就不存在也算成功（临时产物用） */
 export function removeFileAt(absPath: string): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   try {
     if (!fs.existsSync(absPath)) return ok(undefined);
@@ -282,8 +296,9 @@ export function removeFileAt(absPath: string): Result<void> {
 
 /** 删除文件；文件本来就不存在也算成功（目标已达成） */
 export function removeFile(name: string, root: StorageRoot = 'data'): Result<void> {
-  const fs = getFs();
-  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'fs:null');
+  const fsResult = getFs();
+  if (fsResult.status === 'error') return fsResult;
+  const fs = fsResult.value;
 
   const target = filePath(root, name);
   try {

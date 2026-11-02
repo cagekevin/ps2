@@ -38,6 +38,19 @@ function bucketOf(errorCode: number): ErrorCode {
   return 'NETWORK';
 }
 
+/**
+ * 失败码 → 用户能照着做的那句话。
+ *
+ * 原来一律回「文字识别失败」，用户只知道坏了、不知道该去改凭证还是等额度
+ * （真机 2026-11-02：「不知道真实原因是什么」）。`detail` 仍带百度原文与码，不藏现场。
+ */
+function reasonOf(code: ErrorCode): string {
+  if (code === 'AUTH') return MSG.ocr.authFailed;
+  if (code === 'FORBIDDEN') return MSG.ocr.quotaExceeded;
+  if (code === 'VALIDATION') return MSG.ocr.imageRejected;
+  return MSG.ocr.recognizeFailed;
+}
+
 function tokenOf(raw: unknown): Result<{ token: string; expiresIn: number }> {
   if (!isRecord(raw)) return failWithDetail('CORRUPT', MSG.corrupt, 'baidu:token');
 
@@ -45,7 +58,7 @@ function tokenOf(raw: unknown): Result<{ token: string; expiresIn: number }> {
   if (typeof accessToken !== 'string' || !accessToken) {
     const error = typeof raw.error === 'string' ? raw.error : '';
     const description = typeof raw.error_description === 'string' ? raw.error_description : '';
-    return failWithDetail('VALIDATION', MSG.ocr.recognizeFailed, `baidu:token:${error}:${description}`);
+    return failWithDetail('AUTH', MSG.ocr.authFailed, `baidu:token:${error}:${description}`);
   }
   const expiresIn = typeof raw.expires_in === 'number' ? raw.expires_in : 0;
   return ok({ token: accessToken, expiresIn });
@@ -96,7 +109,7 @@ export function decodeBaiduWords(raw: unknown): Result<{ lines: OcrLine[]; dropp
   if (typeof errorCode === 'number' && errorCode !== 0) {
     const message = typeof raw.error_msg === 'string' ? raw.error_msg : '';
     const code = errorCode === 110 || errorCode === 111 ? 'AUTH' : bucketOf(errorCode);
-    return failWithDetail(code, MSG.ocr.recognizeFailed, `baidu:${errorCode}:${message}`);
+    return failWithDetail(code, reasonOf(code), `baidu:${errorCode}:${message}`);
   }
 
   const words = raw.words_result;

@@ -71,7 +71,7 @@ import {
   MAX_TEXT_LENGTH,
   decodeTranslateItems,
   decodeTranslateResponse,
-  resolveTargetLang
+  targetLangOf
 } from '../domain/translate';
 import { readSystemFontCache } from '../repo/font-repo';
 import {
@@ -238,14 +238,23 @@ export async function translate(input: {
     return credentials;
   }
 
-  const counterRead = readTranslateCounter();
-  if (counterRead.status === 'error') {
-    log.warn('翻译计数读取失败，本次按 0 次处理', { reason: counterRead.reason });
-  }
+  /*
+   * 目标语言先判：只有 `en`。
+   * 以前是「auto → 中文」的兜底，等于替用户猜语言；现在配置不对就失败。
+   */
+  const target = targetLangOf(input.to);
+  if (target.status === 'error') return target;
 
-  const counter = counterRead.status === 'ok' ? counterRead.value : null;
-  const max = counter && counter.max > 0 ? counter.max : DAILY_LIMIT;
-  if (counter && counter.num >= max) {
+  /*
+   * 计数读不到就**不能翻**：读失败时按 0 次放行，等于把「配额状态未知」当成
+   * 「今天一次没用」—— 那是静默成功，配额超了也不会有人知道。
+   */
+  const counterRead = readTranslateCounter();
+  if (counterRead.status === 'error') return counterRead;
+
+  const counter = counterRead.value;
+  const max = counter.max > 0 ? counter.max : DAILY_LIMIT;
+  if (counter.num >= max) {
     return failWithDetail('VALIDATION', MSG.font.translateLimit, `max:${max}`);
   }
 
@@ -256,8 +265,12 @@ export async function translate(input: {
   if (items.status === 'error') return items;
   if (items.value.length === 0) return fail('VALIDATION', MSG.font.noTextToTranslate);
 
-  const sources = items.value.map((item) => decodeText(item.text));
-  const total = sources.reduce((sum, text) => sum + text.length, 0);
+  /*
+   * 源文本只从 `items` 取：原来另建一份 `sources` 数组按同一套下标取，
+   * 多一份数组就多一次错位机会，还得用 `?? ''` 把取空兜住 —— 那是静默。
+   */
+  let total = 0;
+  for (const item of items.value) total += decodeText(item.text).length;
   if (total > MAX_TEXT_LENGTH) {
     return failWithDetail(
       'VALIDATION',
@@ -266,15 +279,13 @@ export async function translate(input: {
     );
   }
 
-  for (let index = 0; index < items.value.length; index += 1) {
-    const source = sources[index] ?? '';
+  for (const item of items.value) {
     const response = await nodeGet(
       TRANSLATE_URL,
-      /* 目标语言 `auto` 在这里兜成中文：百度不接受 auto 作目标（`domain/translate` 一处判） */
       buildTranslateParams({
-        text: source,
+        text: decodeText(item.text),
         from: input.from,
-        to: resolveTargetLang(input.to),
+        to: target.value,
         appId: credentials.value.appId,
         key: credentials.value.key
       })
@@ -288,17 +299,19 @@ export async function translate(input: {
     const parsed = decodeTranslateResponse(raw.value);
     if (parsed.status === 'error') return parsed;
 
-    const item = items.value[index];
-    if (item) item.dst = encodeText(parsed.value);
+    item.dst = encodeText(parsed.value);
   }
 
   const written = await setTranslateText(items.value);
   if (written.status === 'error') return written;
 
-  /* 计数写失败只记日志：文档已经改好了，不能因为计数提示失败让用户以为没翻译 */
+  /*
+   * 计数写失败**不许静默**：译文已经进了文档，所以不能报「翻译失败」（用户会以为白翻了）；
+   * 但也不能当没事（下次配额就算错了）。用一条把两件事都说清的失败。
+   */
   const counted = await bumpTranslateCounter(dayKey());
   if (counted.status === 'error') {
-    log.warn('翻译计数写入失败', { reason: counted.reason });
+    return failWithDetail('IO_ERROR', MSG.font.translateCountFailed, counted.detail);
   }
 
   return ok(undefined);

@@ -430,7 +430,23 @@ let WASM_VECTOR_LEN = 0;
 
 const wasmPath = `${__dirname}/vtracer_wasm_bg.wasm`;
 const wasmBytes = require('fs').readFileSync(wasmPath);
-const wasmModule = new WebAssembly.Module(wasmBytes);
-let wasmInstance = new WebAssembly.Instance(wasmModule, __wbg_get_imports());
-let wasm = wasmInstance.exports;
-wasm.__wbindgen_start();
+let wasm = null;
+
+/**
+ * 异步初始化（本仓对 vendor 的唯一改动，见 `public/vendor/vtracer/README-patch.md`）。
+ *
+ * 原生成代码在这里直接 `new WebAssembly.Module(bytes)` —— 那是**同步编译**，
+ * 而 Chromium 主线程禁止对 >4KB 的 buffer 同步编译（CEP 面板就是主线程），
+ * 真机报 `WebAssembly.Compile is disallowed on the main thread`。
+ * 改成 `WebAssembly.compile`（异步，主线程允许）后再 `instantiate`。
+ * 调用方必须在用任何导出函数前 `await __wbg_init()`，否则 `wasm` 还是 null。
+ */
+async function __wbg_init() {
+    if (wasm) return;
+    const module = await WebAssembly.compile(wasmBytes);
+    const instance = await WebAssembly.instantiate(module, __wbg_get_imports());
+    wasm = instance.exports;
+    wasm.__wbindgen_start();
+}
+
+exports.__wbg_init = __wbg_init;

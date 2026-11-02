@@ -48,10 +48,25 @@ export const useTextStore = create<TextState>()((set, get) => ({
   async refresh() {
     refreshSeq += 1;
     const seq = refreshSeq;
+
     const raw = await getTextInfoRaw();
     if (seq !== refreshSeq) return;
 
     if (raw.status === 'error') {
+      /*
+       * 「是不是文字图层」这条判据已经由 `getTextInfoRaw` → `requireTextLayer` 判过了，
+       * 它的结论就是 `PS_WRONG_LAYER`。所以这里**不再自己判一次类型**，只按码分流：
+       *
+       *   `VALIDATION` = 官方单层接口拒了这次请求（选中多个图层时它回「多个图层不处理」）。
+       *   那不是失败，是这一屏不该拿数量当判据 —— 保留上一次快照，不弹红字。
+       *   其它码（没加载 / 类型不对 / 宿主报错）照旧报出来。
+       */
+      if (raw.code === 'VALIDATION') {
+        log.warn('文字属性本次没读到，保留上一次快照', { reason: raw.reason, detail: raw.detail });
+        set({ stale: true });
+        return;
+      }
+
       /* 旧值保留在 `info` 里（清空会让面板闪成默认值），由页面用遮罩挡住 */
       log.warn('读取文字属性失败', { code: raw.code, reason: raw.reason });
       set({ failure: raw, stale: true });

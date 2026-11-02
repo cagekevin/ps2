@@ -1,9 +1,8 @@
 // 【范本】是什么：样式库文件的导出/导入编解码 —— `.kux` 容器、`.kus/.kug` 扁平清单、`.kuc/.kuf` 裸组数组，纯函数
 // 唯一入口：三种顶层形态的编解码与「导入时 id 重写」只能经过这里
-// 替代了什么：`domain/ku-format.ts` 只有读取侧的形态识别；写侧与 id 重写此前没有（台账 T-48 尾部）
 // 谁在用：`repo/ku-archive.ts`
 // 禁止：不读文件、不碰 CEP；base64 编解码由调用方注入（与 `ku-format` 的 `decode` 同口径）
-// 结果：与全仓一致用 `Result<T>`，不再有第二套 `Decoded/DecodeFail`
+//       失败一律用 `Result<T>` 表达，不新增第二套 `Decoded/DecodeFail`
 
 import { decodeKuData, isKuLibraryFileName, kuLibraryKind } from './ku-format';
 import type { KuKind, StyleWarehouseIndex } from './style-library';

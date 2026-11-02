@@ -26,6 +26,14 @@ interface Props {
   disabled?: boolean;
   /** 展开中（M3 接手子面板后由页面传） */
   active?: boolean;
+  /**
+   * 开关类格子的**开启**状态（目前只有「自动填充颜色」）。
+   *
+   * 与 `active` 是两件事：`active` = 面板展开中（底色凹下去一档），
+   * `on` = 这个开关现在是开的（官方做法是**图标变色**，不换底色、不走 hover 那张图）。
+   * 不传 = 这个格子不是开关，`aria-pressed` 沿用 `active`。
+   */
+  on?: boolean;
   /** 左键：交给 `IconPanel` 的 handlers（本组件不判「是执行还是展开」） */
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   onMouseDown: (event: MouseEvent<HTMLButtonElement>) => void;
@@ -38,6 +46,7 @@ export function TileButton({
   index,
   disabled = false,
   active = false,
+  on,
   onClick,
   onMouseDown,
   onContextMenu
@@ -49,6 +58,7 @@ export function TileButton({
     'mm-common__tile',
     hasFilled ? 'mm-common__tile--filled' : '',
     active ? 'mm-common__tile--active' : '',
+    on ? 'mm-common__tile--on' : '',
     disabled ? 'mm-common__tile--disabled' : ''
   ]
     .filter(Boolean)
@@ -61,7 +71,8 @@ export function TileButton({
       data-index={index}
       title={tile.title || tile.name}
       aria-disabled={disabled}
-      aria-pressed={active}
+      /* 开关格子按「开没开」报状态，其余格子保持原来的「展开中」 */
+      aria-pressed={on ?? active}
       onClick={onClick}
       onMouseDown={onMouseDown}
       onContextMenu={onContextMenu}

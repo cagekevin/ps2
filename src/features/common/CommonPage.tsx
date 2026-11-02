@@ -231,19 +231,27 @@ export default function CommonPage() {
                        「自动填充颜色」是开关（不在 `TILE_COMMANDS` 里），单独算可点；都没有 = 灰态 */
                     const enabled =
                       panel !== undefined || command !== undefined || tile.id === AUTO_FILL_TILE_ID;
+                    /* 开关类（自动填充颜色）没有命令、也不展开面板，左键必须直接交给 `activate`：
+                       不传 `onPrimary` 时 `IconPanel` 会走 `flip()`，而它的 `panel` 为空 → 直接 return，
+                       点上去什么都不发生（这就是「点了没反应」的来源）。 */
+                    const primary =
+                      command !== undefined || tile.id === AUTO_FILL_TILE_ID
+                        ? () => page.activate(tile)
+                        : undefined;
                     return (
                       <IconPanel
                         key={tile.id}
                         id={tile.id}
                         title={tile.title || tile.name}
                         panel={panel}
-                        onPrimary={command ? () => page.activate(tile) : undefined}
+                        onPrimary={primary}
                         trigger={(handlers) => (
                           <TileButton
                             tile={tile}
                             index={tile.index}
                             disabled={!enabled}
                             active={handlers.active}
+                            on={tile.id === AUTO_FILL_TILE_ID ? page.autoFillOn : undefined}
                             onClick={handlers.onClick}
                             onContextMenu={handlers.onContextMenu}
                             onMouseDown={(event) => page.startDrag(event, tile.index)}

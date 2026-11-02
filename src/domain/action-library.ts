@@ -136,8 +136,15 @@ function decodeItem(value: unknown, path: string): Result<ActionItem> {
  * 组用 `reject`（不是数组 / 不是对象 / `list` 不是数组 = 文件结构不对），
  * 组内动作用 `filter`（缺 `group`/`name` 只跳过那一项）。
  * `dropped` 通过闭包收集——`decodeList` 逐项串行调用，顺序稳定。
+ *
+ * `pathPrefix` **必填**：动作库有多个仓库文件，只写 `root` 的话
+ * 「文件无法识别」在日志里指不出是哪个文件，排障只能靠猜（`TD-03-4`）。
+ * 调用方传文件名，`detail` 就是 `<文件名>` / `<文件名>[2].list[1]`。
  */
-export function decodeLibrary(raw: unknown): Result<{ groups: ActionLibraryFile; dropped: Dropped[] }> {
+export function decodeLibrary(
+  raw: unknown,
+  pathPrefix: string
+): Result<{ groups: ActionLibraryFile; dropped: Dropped[] }> {
   const dropped: Dropped[] = [];
 
   const decoded = decodeList<ActionGroup>(
@@ -160,7 +167,7 @@ export function decodeLibrary(raw: unknown): Result<{ groups: ActionLibraryFile;
       });
     },
     'reject',
-    'root'
+    pathPrefix
   );
 
   if (decoded.status === 'error') return decoded;

@@ -2,48 +2,14 @@
  * 【范本】执行一条命令：包 loading + 反馈 + 原因留痕
  *
  * 唯一入口：`features/*` 调 `commands/*` 的动作用它。
- * 替代了什么：
- *   - `features/common` 里三份一模一样的「`loading.run` + `toast.error`」
- *     （`useCommonPage` / `SpacingPanel` / `ReferencePanel`）
- *   - `features/style/useStyleActions` 的 `runWithToast` / `runWithFeedback` 实现体
- *     （它们现在只保留两个动词名 + 一句配置，逻辑都在这里）
- * 谁在用：常用页与两个子面板、样式面板。
+ * 谁在用：常用页与两个子面板、样式页、字体面板、字体管理、设置页、首页。
  * 禁止：
  *   - 在这里做业务判断（成功/失败由命令给）
  *   - 丢掉 `code` / `detail`：toast 只显示给人看的那句，机器现场必须进日志
- *
- * ## 迁移记录：15 处手写「失败提示」已全部收进来（2026-10-28）
- *
- * 前置条件是两件事同时做到：
- *   1. 提示条 / 遮罩的**状态**从 `components/*` 下沉到 `core/feedback/*`（否则 `hooks` 反向
- *      依赖 `components`，`CONVENTIONS` §3 越界）；
- *   2. 本 hook 加 `spin?: false`（默认仍转圈，4 个既有调用点行为不变）。
- *
- * 收法三种，**都是为了不逼调用方绕过同一入口**：
- *
- * | 位置 | 原样 | 现在 |
- * |---|---|---|
- * | `features/font-panel/useFontPanel` | 3 处手写 + 1 个 `run`（`Promise<boolean>`） | 3 处直接 `runCommand`；`run` 变成**薄适配器**（只把 `Result` 折成 `boolean`，20 多处调用点签名不动） |
- * | `features/settings/SettingsPage` | 3 处（含乐观写回滚） | `spin: false` + 拿返回值回滚，失败提示由 hook 出 |
- * | `features/font-manage/useFontManage` | `notify`（`Promise<boolean>`） | 同 `useFontPanel.run`：薄适配器委托给本 hook |
- * | `features/font-manage/useTagActions` | 2 处（`CANCELLED` 静默） | `quiet: ['CANCELLED']`，正好是本 hook 的既有槽 |
- * | `features/home/HomePage` | 4 处（诊断 / 清日志 / 复制 / ping） | 全部走本 hook，`spin` 按各处原行为选 |
- * | `features/style/useStyleActions` | `toastFailure(result)`（**读路径**，只弹不记） | `useReportFailure()` + `reasonOf: styleReason`，与写路径同一个出口、同样留痕 |
- * | `features/style/StylePage` | 图片解析失败只弹字面量，且 `extractImageColors` 抛错时**无人捕获** | 折成 `Result` 走 `runCommand`，抛错进 `detail` |
- *
- * **收益**：这 15 处此前失败时只弹 toast、**不写 `log.warn(code, detail)`**，机器现场只剩各命令
- * 自己的日志；现在统一留痕。`StylePage` 那处还顺带修掉一个无人捕获的 rejection
- * （原来 `extractImageColors` 一 reject，遮罩消失、界面没反应、日志空白）。
- *
- * ## 还剩 6 处 `toast.error`，为什么不算漏
- *
- * 全部是**字面量、没有 `Result` 来源**的用户操作不成立提示：
- * `请输入缩放倍数` / `标签名不能为空` / `标签「x」已存在` / `没有可复制的内容` /
- * `没有选中仓库` / `这个渐变项缺少数据`。
- *
- * 判据：**能不能写出一个 `Result`？** 写不出来（没有失败码、没有 `detail`、没有可留痕的机器现场），
- * 就不是「某个操作失败了」，而是「这个操作不成立」，不该进本 hook。可复核的口径：
- * `grep "toast\.error(" src/features` 的结果里**不带 `result` 的才允许存在**。
+ *   - 把「操作不成立」的字面量提示塞进来（`请输入缩放倍数` 这类）：判据是
+ *     **能不能写出一个 `Result`？** 写不出来（没有失败码、没有 `detail`、没有可留痕的现场），
+ *     就不是「某个操作失败了」，而是「这个操作不成立」。可复核口径：
+ *     `grep "toast\.error(" src/features` 的结果里**不带 `result` 的才允许存在**。
  */
 
 import { useCallback } from 'react';

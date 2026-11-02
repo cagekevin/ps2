@@ -41,6 +41,7 @@ export const OCR_URL = 'https://aip.baidubce.com/rest/2.0/ocr/v1/general';
 export const OCR_MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 /** 一次往返上限：大图识别 5–10s，给 30s；低于 15s 会误杀 */
 export const OCR_TIMEOUT_MS = 30_000;
+
 /** 导出质量档：q8 超上限就降一档，三档都超才报错 */
 export const OCR_QUALITIES = [8, 6, 4] as const;
 

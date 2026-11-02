@@ -67,11 +67,17 @@ export function CommonUseWatcher() {
     const subscriptions: Subscription[] = [];
 
     /*
-     * **顺序有意义**：`imageDropped` 上挂两个回调时，官方是先 `relink` 后 `embed`
-     * （`13-常用-V2` §0.2 第 4 条 / `ps/src/commands/commonUse.ts:564-575`）——
-     * 先嵌入再改链接，那时图层已经不是「置入」状态了。监听按插入顺序触发，
-     * 所以 relink 必须写在 embed 前面。**别按可读性重排这两块。**
+     * **顺序 = 官方注册顺序**：`app.v4.js` 的 `mounted` 里先注册 `cyDragInAutoEmbed`（`:38222`）、
+     * 后注册 `cyOpenDranInToLinkObject`（`:38225`）；同一事件 ID 上按注册顺序触发，
+     * 所以是**先 embed、后 relink**。
+     *
+     * 这里原先反着写，注释还把官方说成「先 relink 后 embed」，于是 relink 落在图层
+     * 还没走完嵌入那一步时，表现就是「勾了拖入转链接但没反应」（`TD-01-29`）。
+     * **别按可读性重排这两块。**
      */
+    if (embedOnDrop) {
+      subscriptions.push({ name: 'imageDropped', onEvent: () => run(embedImage(), '拖入自动嵌入失败') });
+    }
     if (relinkOnDrop) {
       subscriptions.push({
         name: 'imageDropped',
@@ -84,9 +90,6 @@ export function CommonUseWatcher() {
           run(relinkPlacedLayer(path), '拖入转链接智能对象失败');
         }
       });
-    }
-    if (embedOnDrop) {
-      subscriptions.push({ name: 'imageDropped', onEvent: () => run(embedImage(), '拖入自动嵌入失败') });
     }
     if (embedOnPaste) {
       subscriptions.push({ name: 'imagePasted', onEvent: () => run(embedImage(), '粘贴自动嵌入失败') });

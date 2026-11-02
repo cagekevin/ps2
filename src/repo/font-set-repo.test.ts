@@ -55,7 +55,7 @@ describe('font-set-repo', () => {
     expect(settings.status).toBe('ok');
     if (settings.status === 'ok') {
       expect(settings.value.ztHierarych).toEqual([92, 48, 36, 24, 15, 12]);
-      expect(settings.value.ztTranslate.from).toBe('auto');
+      expect(settings.value.ztTranslate).toEqual({ from: 'zh', to: 'en', delete: true });
     }
 
     expect(readQuickFonts()).toEqual({ status: 'ok', value: { index: 0, list: [] } });

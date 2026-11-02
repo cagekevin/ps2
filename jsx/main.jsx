@@ -21,13 +21,20 @@ function mm_log(message) {
 	} catch (e) { }
 }
 
-/** 统一异常边界：任何异常都转成 error:xxx 并落日志 */
+/**
+ * 统一异常边界：任何异常都转成 error:xxx 并落日志。
+ *
+ * **返回值必须带上行号**：只回 `e.message` 时，前端拿到的是一句没有现场的宿主原话
+ *（「您只能从最前面的文档复制图层。」），既不知道哪一步抛的，也无法和源码对位。
+ * 格式固定 `error:<原话> @line <行号>`，由 `core/cep/bridge.callJsx` 拆成
+ * reason（原话，给用户）与 detail（含行号，给排障）。改格式必须同步那处。
+ */
 function mm_safe(name, fn) {
 	try {
 		return fn();
 	} catch (e) {
 		mm_log(name + " ERROR: " + e.message + " @line " + e.line);
-		return "error:" + e.message;
+		return "error:" + e.message + " @line " + e.line;
 	}
 }
 
@@ -599,18 +606,47 @@ function mm_vec_exportLayer() {
 			doc.width, doc.height, doc.resolution, "vec_tmp",
 			NewDocumentMode.RGB, DocumentFill.WHITE
 		);
+		/* 同上：导出过程中的「文件已存在 / 是否替换」一类窗口一律不弹，结束恢复 */
+		var originalDialogs = app.displayDialogs;
+		app.displayDialogs = DialogModes.NO;
 		try {
-			app.activeDocument = temp;
+			/*
+			 * **源文档必须先成为当前文档**：PS 跨文档 `duplicate` 只允许从「最前面的文档」复制，
+			 * 否则抛「您只能从最前面的文档复制图层。」（真机 2026-11-02，行号钉在这里）。
+			 * 新建 `temp` 后当前文档已经是 temp，`target` 却属于 doc —— 所以先把 doc 置前，
+			 * 复制完再切回 temp 做 flatten / save。三步顺序不能省。
+			 */
+			app.activeDocument = doc;
 			target.duplicate(temp, ElementPlacement.PLACEATBEGINNING);
+			app.activeDocument = temp;
 			temp.flatten();
 			temp.saveAs(new File(path), new PNGSaveOptions(), true, Extension.LOWERCASE);
 		} finally {
+			app.displayDialogs = originalDialogs;
 			temp.close(SaveOptions.DONOTSAVECHANGES);
 			app.activeDocument = doc;
 		}
 
 		return path;
 	});
+}
+
+/**
+ * 路径名：默认就用图层名，重名时递增成 `图层名_01` / `_02` …
+ *
+ * 不递增的话 PS 会自己改叫「礼盒 副本」「礼盒 副本 2」，用户认不出哪个是这次转的。
+ */
+function mm_vec_uniquePathName(base) {
+	var doc = app.activeDocument;
+	var used = {};
+	for (var i = 0; i < doc.pathItems.length; i++) used[doc.pathItems[i].name] = true;
+
+	if (!used[base]) return base;
+	for (var n = 1; n < 100; n++) {
+		var candidate = base + "_" + (n < 10 ? "0" + n : String(n));
+		if (!used[candidate]) return candidate;
+	}
+	return base;
 }
 
 /** 建形状主体：在 suspendHistory 里跑，结果挂 `$.global.__mm_vecReport` */
@@ -620,38 +656,96 @@ function mm_vec_doReplace() {
 	var target = doc.activeLayer;
 	/* 名字在删除前读：形状层沿用原层名，用户才认得出哪一层被替换了 */
 	var name = target.name;
+	var pathItem;
 	var report = { ok: 0 };
 
-	var pathItem = doc.pathItems.add(name, []);
-	pathItem.name = name;
-
+	/*
+	 * ExtendScript 的路径只有**一种**建法：先把所有 `SubPathInfo` 攒成一个数组，
+	 * 再一次性 `doc.pathItems.add(name, 数组)`。
+	 * `pathItem.subPathItems` 是**只读集合**，没有 `.add()`（`pathPoints` 同理）——
+	 * 原写法 `pathItem.subPathItems.add()` 必然抛「不是函数」（真机 2026-11-02，@line 646）。
+	 * 数据链因此是：payload.subpaths → SubPathInfo[] → `pathItems.add`，中间不能追加。
+	 */
+	var subPaths = [];
 	for (var s = 0; s < payload.subpaths.length; s++) {
 		var spec = payload.subpaths[s];
 		if (!spec || !spec.points || spec.points.length < 2) continue;
 
-		var sub = pathItem.subPathItems.add();
+		var points = [];
 		for (var p = 0; p < spec.points.length; p++) {
 			var src = spec.points[p];
-			var point = sub.pathPoints.add();
+			var point = new PathPointInfo();
 			point.anchor = [src.anchor[0], src.anchor[1]];
 			point.leftDirection = [src.left[0], src.left[1]];
 			point.rightDirection = [src.right[0], src.right[1]];
-			point.kind = src.smooth ? PointKind.SMOOTH : PointKind.CORNERPOINT;
+			/*
+			 * 平滑点叫 **`SMOOTHPOINT`**，不是 `SMOOTH`：PS 26.7 上 `PointKind.SMOOTH`
+			 * 一读就抛「无效枚举值」（真机 2026-11-02，@line 659）。
+			 * 已用 COM 探针实测：`PointKind.SMOOTHPOINT` / `PointKind.CORNERPOINT` 有效，
+			 * `ShapeOperation.SHAPEADD` 有效。
+			 */
+			point.kind = src.smooth ? PointKind.SMOOTHPOINT : PointKind.CORNERPOINT;
+			points.push(point);
 		}
+
+		var sub = new SubPathInfo();
 		sub.closed = spec.closed === true;
+		/*
+		 * `operation` **必须写**：ExtendScript 的 `SubPathInfo` 没有「默认 SHAPEADD」这回事，
+		 * 不写就是未初始化，`pathItems.add` 当场抛「属性未初始化」（真机 2026-11-02，@line 683）。
+		 * 与 `PointKind` 不同，`ShapeOperation` 这个枚举在本宿主上是有效的。
+		 */
+		sub.operation = ShapeOperation.SHAPEADD;
+		sub.entireSubPath = points;
+		subPaths.push(sub);
 		report.ok += 1;
 	}
+
+	/* 一个子路径都没建成就不建层、不删原层：让调用方按 `ok: 0` 报「没有可转的形状」 */
+	if (!subPaths.length) {
+		mm_log("mm_vec_replaceWithPath got subs=" + payload.subpaths.length + " built=0");
+		$.global.__mm_vecReport = report;
+		return;
+	}
+
+	/*
+	 * 路径名沿用图层名；重名时按 `图层名_01`、`_02` 递增（PS 自己会改叫「副本」，更难认）。
+	 * **名字只在 `add` 时给一次**：`add` 之后再 `pathItem.name = …` 会抛
+	 * 「命令"重命名"的参数当前是无效的」（真机 2026-11-02，@line 714）—— 建路径时名字已经生效。
+	 */
+	var pathName = mm_vec_uniquePathName(name);
+	pathItem = doc.pathItems.add(pathName, subPaths);
+
+	/*
+	 * 落一条现场到 jsx 日志：前端算出的点数与 PS 实际建成的点数必须一致，
+	 * 不一致就说明「传过去少了」或「PS 只建了一部分」—— 这两种的修法完全不同，
+	 * 没有这行就只能靠猜（真机 2026-11-02：前端解析出 1167 点，PS 里只有 86 点）。
+	 */
+	mm_log(
+		"mm_vec_replaceWithPath got subs=" + payload.subpaths.length +
+		" built=" + subPaths.length +
+		" added=" + pathItem.subPathItems.length +
+		" points=" + pathItem.subPathItems[0].pathPoints.length
+	);
 
 	/* 先建新层再填充：`fillPath` 填的是当前层，直接填在原层上再删就一起没了 */
 	var shapeLayer = doc.artLayers.add();
 	shapeLayer.name = name;
 	doc.activeLayer = shapeLayer;
 
+	/*
+	 * `fillPath` **只能无参调用**：PS 26.7 上传任何参数（颜色 / 混合模式 / 不透明度）
+	 * 都会抛「用户取消了操作」，无参版本用当前前景色正常填充 —— COM 探针实测过四种形态
+	 * （真机 2026-11-02，@line 713）。所以先把前景色设成目标色，填完再还原。
+	 */
+	var previousForeground = app.foregroundColor;
 	var color = new SolidColor();
 	color.rgb.red = payload.color.r;
 	color.rgb.green = payload.color.g;
 	color.rgb.blue = payload.color.b;
-	pathItem.fillPath(color, ColorBlendMode.NORMAL, 100, false);
+	app.foregroundColor = color;
+	pathItem.fillPath();
+	app.foregroundColor = previousForeground;
 
 	target.remove();
 	$.global.__mm_vecReport = report;
@@ -674,8 +768,14 @@ function mm_vec_replaceWithPath(payloadJson) {
 
 		var originalRuler = app.preferences.rulerUnits;
 		var originalType = app.preferences.typeUnits;
+		/*
+		 * 关掉模态框：建路径 / 填充这些调用在部分 PS 版本上会弹「存储路径」「是否替换」之类的窗口，
+		 * 一次矢量化能被追问好几次（真机 2026-11-02）。脚本化操作不该打断用户，结束后原样恢复。
+		 */
+		var originalDialogs = app.displayDialogs;
 		app.preferences.rulerUnits = Units.PIXELS;
 		app.preferences.typeUnits = TypeUnits.PIXELS;
+		app.displayDialogs = DialogModes.NO;
 
 		$.global.__mm_vecPayload = payload;
 		$.global.__mm_vecReport = null;
@@ -684,6 +784,7 @@ function mm_vec_replaceWithPath(payloadJson) {
 		} finally {
 			app.preferences.rulerUnits = originalRuler;
 			app.preferences.typeUnits = originalType;
+			app.displayDialogs = originalDialogs;
 			$.global.__mm_vecPayload = null;
 		}
 

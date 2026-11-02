@@ -70,7 +70,10 @@ export const FONT_SET_DEFAULTS: FontSetSettings = {
     tracking: true
   },
   ztCreateButton: { type: 2, isLine: false, padding: '10,20' },
-  ztTranslate: { from: 'auto', to: 'auto', delete: true },
+  /* 默认方向 **中文 → 英文**：本工具的用户是中文设计师，翻译是为了出英文版
+     （用户 2026-11-02 拍板）。目标语言**只有 `en` 一种**，别的地方不兜、不猜
+     （`domain/translate.targetLangOf` 一处判，不是 `en` 就失败）。 */
+  ztTranslate: { from: 'zh', to: 'en', delete: true },
   ztDistributedIsFixed: false,
   ztDistributionFilter: true,
   ztDefaultSize: [6, 8, 10, 11, 12, 14, 16, 18, 24, 30, 36, 48, 60, 72, 84, 96, 108, 120],

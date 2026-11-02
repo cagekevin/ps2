@@ -129,7 +129,25 @@ export function linkObjectOf(options: CommonUseOptions): LinkObjectValue {
  */
 export function exportConfigOf(options: CommonUseOptions): Record<string, unknown> {
   const raw = options.cyExport;
-  return mergeCommonUseOptions(EXPORT_CONFIG_DEFAULTS, isRecord(raw) ? raw : {});
+  const merged = mergeCommonUseOptions(EXPORT_CONFIG_DEFAULTS, isRecord(raw) ? raw : {});
+  /*
+   * `quality` 交给 jsx 前必须是**数字**。
+   *
+   * 官方在面板里由 `checkQuality` 归一（`app.v4.js:36896`：字符串先剥非数字，再夹 1–100），
+   * 所以宿主侧拿到的一直是 number；而文件里可以是 `"80"`（旧版或别的入口写的）。
+   * 不归一的话，同一个 `cyExport` 块里只有这一个字段的类型与官方不同 ——
+   * 宿主按类型分支时就会走出另一条路。归一放在这里（唯一读配置的地方），调用点不各自转。
+   */
+  merged.quality = normalizeQuality(merged.quality);
+  return merged;
+}
+
+/** 官方 `checkQuality`（`app.v4.js:36896`）：剥非数字 + 夹 1–100，非法值回 100 */
+function normalizeQuality(value: unknown): number {
+  const digits = typeof value === 'string' ? value.replace(/[^\d]/g, '') : value;
+  const num = typeof digits === 'number' ? digits : Number(digits);
+  if (!Number.isFinite(num) || num <= 0 || num > 100) return 100;
+  return Math.round(num);
 }
 
 /** 文件里缺了哪些键（供 store 报「N 项设置缺失，已用官方默认」） */

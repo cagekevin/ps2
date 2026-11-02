@@ -10,7 +10,12 @@ export interface VectorPoint {
   anchor: [number, number];
   left: [number, number];
   right: [number, number];
-  /** 两侧控制柄共线（PS 里显示为平滑点） */
+  /**
+   * 两侧控制柄共线（PS 里显示为平滑点）。
+   *
+   * 唯一消费者是 jsx 的 `point.kind`，对应 `PointKind.SMOOTHPOINT` / `CORNERPOINT`
+   * —— 注意不是 `SMOOTH`，那个名字在 PS 26.7 上读一下就抛「无效枚举值」。
+   */
   smooth: boolean;
 }
 

@@ -49,30 +49,31 @@ describe('decodeIndex：三种坏形状', () => {
 });
 
 describe('decodeLibrary：结构 reject、项 filter', () => {
-  it('顶层不是数组 → CORRUPT', () => {
-    expect(decodeLibrary({ groups: [] }).status).toBe('error');
+  it('顶层不是数组 → CORRUPT，detail 指到调用方给的文件名', () => {
+    const result = decodeLibrary({ groups: [] }, 'sj_actionStore_1.json');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.detail).toBe('sj_actionStore_1.json');
   });
 
   it('组不是对象 → 整份 CORRUPT（结构错）', () => {
-    expect(decodeLibrary([{ groupName: 'A', show: true, list: [] }, 3]).status).toBe('error');
+    expect(decodeLibrary([{ groupName: 'A', show: true, list: [] }, 3], 'lib').status).toBe('error');
   });
 
   it('动作项缺 group / name → 跳过并记账，组仍在', () => {
-    const result = decodeLibrary([
-      { groupName: 'A', show: true, list: [{ name: '缺 group' }, { group: 'A', name: 'ok' }] }
-    ]);
+    const result = decodeLibrary(
+      [{ groupName: 'A', show: true, list: [{ name: '缺 group' }, { group: 'A', name: 'ok' }] }],
+      'lib'
+    );
     expect(result.status).toBe('ok');
     if (result.status === 'ok') {
       expect(result.value.groups[0]?.list).toEqual([{ group: 'A', name: 'ok' }]);
       expect(result.value.dropped).toHaveLength(1);
-      expect(result.value.dropped[0]?.path).toBe('root[0].list[0]');
+      expect(result.value.dropped[0]?.path).toBe('lib[0].list[0]');
     }
   });
 
   it('缺 show 按展开处理；空串 alias = 无别名', () => {
-    const result = decodeLibrary([
-      { groupName: 'A', list: [{ group: 'A', name: 'a1', alias: '' }] }
-    ]);
+    const result = decodeLibrary([{ groupName: 'A', list: [{ group: 'A', name: 'a1', alias: '' }] }], 'lib');
     expect(result.status).toBe('ok');
     if (result.status === 'ok') {
       expect(result.value.groups[0]?.show).toBe(true);

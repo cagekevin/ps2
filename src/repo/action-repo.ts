@@ -79,8 +79,8 @@ export interface LibraryRead {
   dropped: Dropped[];
 }
 
-function decodeLibraryFile(raw: unknown): Result<LibraryRead> {
-  const decoded = decodeLibrary(raw);
+function decodeLibraryFile(raw: unknown, fileName: string): Result<LibraryRead> {
+  const decoded = decodeLibrary(raw, fileName);
   if (decoded.status === 'error') return decoded;
   return ok({ groups: decoded.value.groups, dropped: decoded.value.dropped });
 }
@@ -92,8 +92,8 @@ function decodeLibraryFile(raw: unknown): Result<LibraryRead> {
  * 拿它当写入值，文件就会变成 `{ groups, dropped }` —— 下一次 `decodeLibrary` 要求顶格是数组，
  * 直接 `CORRUPT`，用户的动作库等于被这次编辑写坏（`TD-03-3`，单测 `action-repo.test.ts` 钉住）。
  */
-function decodeLibraryGroups(raw: unknown): Result<ActionGroup[]> {
-  const decoded = decodeLibrary(raw);
+function decodeLibraryGroups(raw: unknown, fileName: string): Result<ActionGroup[]> {
+  const decoded = decodeLibrary(raw, fileName);
   if (decoded.status === 'error') return decoded;
   return ok(decoded.value.groups);
 }
@@ -131,7 +131,9 @@ export function readLibrary(): Result<LibraryRead> {
   }
 
   const read = readOrEmpty(
-    readJsonFile(entry.fileName, ROOT, `动作库「${entry.name}」`, decodeLibraryFile),
+    readJsonFile(entry.fileName, ROOT, `动作库「${entry.name}」`, (raw) =>
+      decodeLibraryFile(raw, entry.fileName)
+    ),
     () => ok({ groups: defaultLibrary(), dropped: [] })
   );
   if (read.status === 'error') return read;
@@ -156,7 +158,7 @@ export async function updateLibrary(
     entry.fileName,
     ROOT,
     `动作库「${entry.name}」`,
-    decodeLibraryGroups,
+    (raw) => decodeLibraryGroups(raw, entry.fileName),
     mutator,
     { missing: defaultLibrary }
   );
@@ -294,7 +296,7 @@ export async function applyBundle(bundle: ActionBundle): Promise<Result<void>> {
     const library = parseJson(text, `动作库「${entry.name}」`);
     if (library.status === 'error') return library;
 
-    const decoded = decodeLibrary(library.value);
+    const decoded = decodeLibrary(library.value, entry.fileName);
     if (decoded.status === 'error') return decoded;
 
     writes.push({ name: entry.fileName, text });

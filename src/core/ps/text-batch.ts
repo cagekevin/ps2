@@ -38,7 +38,9 @@ export interface TextCreateConfig {
   mode?: 'stack';
   lines: string[];
   sizes: number[];
-  font: { hjm: string; mz: string; zz: string };
+  /* 只有 `hjm`：jsx 的 `mm_text_newLayer` 只读这一个（`cfg.font && cfg.font.hjm`），
+     另两个字段从没有消费者 —— 同一件事不留两种形状 */
+  font: { hjm: string };
   align: 0 | 1 | 2;
 }
 

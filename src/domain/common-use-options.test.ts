@@ -138,6 +138,17 @@ describe('官方默认值（唯一出处）', () => {
     expect(extra.foo).toBe(1);
   });
 
+  it('exportConfigOf：quality 一律归一成数字（官方 checkQuality 同一条规则）', () => {
+    const quality = (raw: unknown): unknown =>
+      exportConfigOf(pickCommonUseOptions({ cyExport: { quality: raw } })).quality;
+
+    expect(quality('80')).toBe(80);
+    expect(quality('80abc')).toBe(80);
+    expect(quality(0)).toBe(100);
+    expect(quality(101)).toBe(100);
+    expect(quality('')).toBe(100);
+  });
+
   it('missingOptionKeys：缺键与「用户选了默认值」必须能分开', () => {
     expect(missingOptionKeys(pickCommonUseOptions({}))).toHaveLength(17);
     expect(missingOptionKeys(pickCommonUseOptions({ cyShowZoom: false }))).toHaveLength(16);

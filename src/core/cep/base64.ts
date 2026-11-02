@@ -12,7 +12,8 @@ interface BufferLike {
 }
 
 function bufferMod(): { Buffer: BufferLike } | null {
-  return nodeRequire<{ Buffer: BufferLike }>('buffer');
+  const result = nodeRequire<{ Buffer: BufferLike }>('buffer');
+  return result.status === 'ok' ? result.value : null;
 }
 
 export function encodeBase64(text: string): string {

@@ -95,8 +95,8 @@ export async function ocrToLayers(): Promise<
   const created = await createTextLayers({
     mode: 'absolute',
     master: MASTER_GROUP_NAME,
-    /* 与「批量文字」新建同一个字体常量：仓里只有一个字体名出处，jsx 不写 */
-    font: { hjm: DEFAULT_CREATE_FONT.hjm },
+    /* 字体只有一处出处：`DEFAULT_CREATE_FONT`（与「新建」同一份，jsx 不写字体名） */
+    font: { ...DEFAULT_CREATE_FONT },
     groups: layout.groups
   });
   if (created.status === 'error') return created;

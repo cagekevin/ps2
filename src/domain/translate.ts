@@ -22,12 +22,17 @@ import { md5 } from './md5';
 export const MAX_TEXT_LENGTH = 1000;
 
 /**
- * 目标语言不能是 `auto`：百度要求明确目标语种，原版设置里默认 `to: 'auto'` 直接发会被拒。
+ * 目标语言只有一个：**英文**。
  *
- * 兜成中文（原版面板显示的目标语言也是中文）。**只此一处判**，命令层不再自己兜。
+ * 以前这里把 `auto` / 空串兜成中文 —— 那是替用户猜语言。用户 2026-11-02 明确：
+ * 「只能翻译成英文，不存在其他兜底，翻译不成功就是失败」。
+ * 所以配置里不是 `en` 就报错（设置坏了要看得见），不替它挑一个语言。
+ *
+ * **只此一处判**，命令层不再自己兜、也不自己造句。
  */
-export function resolveTargetLang(to: string): string {
-  return to === 'auto' || !to ? 'zh' : to;
+export function targetLangOf(to: string): Result<'en'> {
+  if (to === 'en') return ok('en');
+  return failWithDetail('VALIDATION', MSG.font.translateTargetInvalid, `to:${to || 'empty'}`);
 }
 
 /**

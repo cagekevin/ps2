@@ -187,9 +187,11 @@ function assertExportPath(): Result<void> {
   const raw = exportConfig().path;
   if (typeof raw !== 'string' || !raw.trim()) return ok(undefined);
 
+  /* 判不了目录就是判不了：把 `fs` 的失败原样上抛（`detail` 带 `node:fs:<原因>`），
+     不许当成「目录没问题」放过去 —— 那是把环境缺失伪装成校验通过。 */
   const fs = nodeRequire<{ existsSync: (path: string) => boolean }>('fs');
-  if (!fs) return ok(undefined);
-  if (fs.existsSync(raw)) return ok(undefined);
+  if (fs.status === 'error') return fs;
+  if (fs.value.existsSync(raw)) return ok(undefined);
   return fail('VALIDATION', MSG.common.badExportPath);
 }
 

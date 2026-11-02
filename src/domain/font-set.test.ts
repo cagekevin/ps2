@@ -53,7 +53,7 @@ describe('font-set', () => {
     expect(settings.ztHierarych).toEqual(FONT_SET_DEFAULTS.ztHierarych);
     expect(settings.ztPasteFont).toEqual(FONT_SET_DEFAULTS.ztPasteFont);
     expect(settings.ztCreateButton).toEqual(FONT_SET_DEFAULTS.ztCreateButton);
-    expect(settings.ztTranslate).toEqual({ from: 'zh', to: 'auto', delete: true });
+    expect(settings.ztTranslate).toEqual({ from: 'zh', to: 'en', delete: true });
     expect(settings.ztPreview).toBe(38);
   });
 

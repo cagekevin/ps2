@@ -6,10 +6,28 @@ import {
   encodeText,
   MAX_TEXT_LENGTH,
   decodeTranslateItems,
-  decodeTranslateResponse
+  decodeTranslateResponse,
+  targetLangOf
 } from './translate';
 
 describe('translate', () => {
+  /**
+   * 目标语言只有英文。以前 `auto` / 空串被兜成中文 —— 那是替用户猜语言，
+   * 现在必须失败（用户 2026-11-02 的判据）。
+   */
+  it('targetLangOf：只有 en 通过，其它值一律失败', () => {
+    expect(targetLangOf('en')).toEqual({ status: 'ok', value: 'en' });
+
+    for (const bad of ['auto', 'zh', '', 'EN']) {
+      const result = targetLangOf(bad);
+      expect(result.status).toBe('error');
+      if (result.status === 'error') {
+        expect(result.code).toBe('VALIDATION');
+        expect(result.reason).toBe(MSG.font.translateTargetInvalid);
+      }
+    }
+  });
+
   it('编码 → 解码可往返，含中文与标点', () => {
     const source = '你好，世界! 100%';
     expect(decodeText(encodeText(source))).toBe(source);

@@ -1,6 +1,5 @@
 // 是什么：图片取色 + 颜色量化的纯算法（原版 `nS` 整条链的可读移植：计数 → 分箱 → 容差合并 → 截断 → 百分比）
-// 替代了什么：原版 app.v4.js:54498 `nS` 把「建 canvas、画图、取像素、量化、算百分比」耦成一坨挂在 Style 页 methods 上；
-//             这里拆成「纯算法（本文件主体）」+「可注入的 canvas 缝（readPixelsFromImage）」
+//         算法主体在本文件；取像素走可注入的 `readPixelsFromImage`，本文件不碰 canvas
 // 谁在用：`/style` 页图片取色（原版 `getImgHex`，app.v4.js:54682-54693 → `nS(t, 350, 10, cb)`）
 // 关于 throw：本文件的 `throw new Error(...)` 全是**开发者断言**（注入缺失 / 尺寸非法），
 //   读者是写代码的人，不上 UI —— 不是失败表达，别改成 `Result`/`fail`。

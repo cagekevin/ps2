@@ -59,6 +59,29 @@ function byteLength(text: string): number {
   return new TextEncoder().encode(text).length;
 }
 
+/**
+ * 请求行与请求体：**地址自带的 query 必须保留**。
+ *
+ * 百度 OCR 把 `access_token` 挂在 URL 上，原来 POST 分支只取 `pathname`，把 query 整个丢掉 ——
+ * 百度收到的就是「没有凭证」，回 `unsupported_grant_type` / `110`，我们这边再翻译成「凭证无效」
+ * （真机 2026-11-02：整条 OCR 与翻译都因此不可用）。
+ * GET 的 `params` 追加在原有 query 之后；POST 的 `params` 仍走请求体。
+ */
+export function requestTarget(
+  url: URL,
+  method: 'GET' | 'POST',
+  params: Record<string, string>
+): { path: string; body: string } {
+  const query = new URLSearchParams(params).toString();
+  const isGet = method === 'GET';
+  const search = [url.search.replace(/^\?/, ''), isGet ? query : ''].filter(Boolean).join('&');
+
+  return {
+    path: search ? `${url.pathname}?${search}` : url.pathname,
+    body: isGet ? '' : query
+  };
+}
+
 function send(
   url: string,
   method: 'GET' | 'POST',
@@ -77,15 +100,12 @@ function send(
     }
 
     const mod = nodeRequire<NodeHttpModule>(parsed.protocol === 'http:' ? 'http' : 'https');
-    if (!mod) {
-      resolve(failWithDetail('NETWORK', MSG.codeReason.NETWORK, 'node:unavailable'));
+    if (mod.status === 'error') {
+      resolve(failWithDetail('NETWORK', MSG.codeReason.NETWORK, mod.detail));
       return;
     }
 
-    const query = new URLSearchParams(params).toString();
-    const isGet = method === 'GET';
-    const path = isGet && query ? `${parsed.pathname}?${query}` : parsed.pathname;
-    const body = isGet ? '' : query;
+    const { path, body } = requestTarget(parsed, method, params);
 
     let settled = false;
     const done = (result: Result<string>): void => {
@@ -95,12 +115,12 @@ function send(
     };
 
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (!isGet) {
+    if (method !== 'GET') {
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
       headers['Content-Length'] = String(byteLength(body));
     }
 
-    const req = mod.request(
+    const req = mod.value.request(
       { method, hostname: parsed.hostname, port: parsed.port, path, headers },
       (res) => {
         let text = '';
@@ -126,7 +146,7 @@ function send(
     });
 
     req.setTimeout(timeoutMs);
-    if (!isGet) req.write(body);
+    if (method !== 'GET') req.write(body);
     req.end();
   });
 }

@@ -70,3 +70,14 @@
 .mm-common__tile-icon{
   font-size: var(--mm-common-tile-icon);
 }
+
+/* 开关类格子「已开启」：常驻蓝色版图标（官方 `fillSvg`，图标自带 fill，不能靠 color 染）。
+   **单独一条，不并进上面 hover 那组**：hover 是临时态、开启是持久态，
+   共用一个选择器时改 hover 会顺手改掉开启态，两边都说不清（规则 12：蓝只表示需要被看见的状态）。 */
+.mm-common__tile--on .mm-common__tile-icon--rest{
+  display: none;
+}
+
+.mm-common__tile--on .mm-common__tile-icon--filled{
+  display: inline-flex;
+}

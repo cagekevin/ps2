@@ -13,6 +13,13 @@ import { log } from '../logger';
 import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 
+/**
+ * `mm_safe` 在 `error:` 后面追加行号时用的分隔符。
+ *
+ * 与 `jsx/main.jsx` 的 `mm_safe` 是一对：那边拼、这边拆，改一处必须同步另一处。
+ */
+const LINE_MARK = ' @line ';
+
 export interface CepEvent {
   type: string;
   scope: string;
@@ -160,8 +167,13 @@ export async function callJsx(
     return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${raw}`);
   }
   if (raw.startsWith('error:')) {
-    log.error('jsx 内部异常', { fn, reason: raw.slice(6) });
-    return failWithDetail('PS_ERROR', raw.slice(6), `raw:${raw}`);
+    /* `mm_safe` 的格式是 `error:<宿主原话> @line <行号>`：原话给用户，行号只进 detail。
+       不在这里拆的话，界面上会多出一截 `@line 604`（那是排障现场，不是用户的话）。 */
+    const body = raw.slice(6);
+    const cut = body.lastIndexOf(LINE_MARK);
+    const reason = cut >= 0 ? body.slice(0, cut) : body;
+    log.error('jsx 内部异常', { fn, reason: body });
+    return failWithDetail('PS_ERROR', reason, `raw:${raw}`);
   }
 
   return ok(raw);

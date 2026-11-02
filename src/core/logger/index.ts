@@ -3,6 +3,13 @@
  * 控制台 + %TEMP%\maomao.log。
  * 脱敏在内部完成，调用方无需关心，直接把上下文丢进来即可。
  * 读写日志文件走 core/cep/node，不用 window.cep.fs。
+ *
+ * **本文件是「兜底禁令」的明确例外**（`刀 4` 允许的两类之一：清理 / 自引用路径）：
+ * `logPath()` 拿不到 `os`/`path` 时返回 `null`、`appendToFile` / `readLogText` 里的
+ * `catch {}` 也都是静默的 —— 因为**日志不能给自己写日志**：这里再报一次失败会递归回
+ * `log.warn`，一路打爆调用栈。降级的代价只是「这次没留下日志」，不影响任何业务值，
+ * 所以允许尽力而为，且**不许**把失败包成业务返回值（`appendToFile` 返回 `void`）。
+ * 除这三处外，本仓别处不许照抄这个形状（`ADR-0008`）。
  */
 
 import { MSG } from '../../types/messages';
@@ -38,12 +45,8 @@ interface NodePath {
 function logPath(): string | null {
   const os = nodeRequire<NodeOs>('os');
   const path = nodeRequire<NodePath>('path');
-  if (!os || !path) return null;
-  try {
-    return path.join(os.tmpdir(), LOG_FILE);
-  } catch {
-    return null;
-  }
+  if (os.status === 'error' || path.status === 'error') return null;
+  return path.value.join(os.value.tmpdir(), LOG_FILE);
 }
 
 function maskText(text: string): string {
@@ -83,9 +86,9 @@ function toText(value: unknown): string {
 function appendToFile(line: string): void {
   const fs = nodeRequire<NodeFs>('fs');
   const file = logPath();
-  if (!fs || !file) return;
+  if (fs.status === 'error' || !file) return;
   try {
-    fs.appendFileSync(file, `${line}\n`);
+    fs.value.appendFileSync(file, `${line}\n`);
   } catch {
     /* 日志失败不影响业务 */
   }
@@ -146,9 +149,9 @@ export const log = {
 export function readLogText(): string {
   const fs = nodeRequire<NodeFs>('fs');
   const file = logPath();
-  if (!fs || !file) return '';
+  if (fs.status === 'error' || !file) return '';
   try {
-    return fs.readFileSync(file, 'utf8');
+    return fs.value.readFileSync(file, 'utf8');
   } catch {
     return '';
   }
@@ -164,9 +167,10 @@ export function readLogText(): string {
 export function clearLogText(): Result<void> {
   const fs = nodeRequire<NodeFs>('fs');
   const file = logPath();
-  if (!fs || !file) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'log:fs:false');
+  if (fs.status === 'error') return fs;
+  if (!file) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'log:path:empty');
   try {
-    fs.writeFileSync(file, '', 'utf8');
+    fs.value.writeFileSync(file, '', 'utf8');
     /* 折叠窗口也要一起清：否则清空后 3 秒内复现同一个问题，第一行会被当成「重复」吞掉 */
     recent.clear();
     return ok(undefined);

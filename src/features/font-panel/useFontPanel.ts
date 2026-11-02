@@ -170,8 +170,8 @@ export function useFontPanel() {
 
   /**
    * 翻译当前文字层：译文**新建在原文图层下方**，原文一个字不动（官方那个「替换 / 不替换」
-   * 选项我们只留一种）。语言取设置里的 `ztTranslate`，目标语言为 `auto` 时兜成中文
-   * （百度要求目标语言必须明确，`domain/translate.resolveTargetLang` 一处判）。
+   * 选项我们只留一种）。语言取设置里的 `ztTranslate`；目标语言只有英文，
+   * 不是 `en` 由 `domain/translate.targetLangOf` 直接判失败，页面不兜。
    */
   const onTranslate = useCallback(() => {
     void run(

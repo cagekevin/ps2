@@ -9,7 +9,9 @@
  * OCR 排最左是因为它「产出一批新层」，与右边两个「读已有层」不是同一类动作。
  *
  * 原文表只干一件事：告诉用户「现在改的是哪一层」。所以一行 18 高、11 号字，
- * 光标动到哪一行，哪一行整行高亮并滚进可视区（单向，不绑 scrollTop）。
+ * 编辑到哪一行就高亮哪一行 —— **高亮只在 `onChange` 里更新**，不挂在 click / keyup / select 上，
+ * 也不调 `scrollIntoView`：输入框上只允许有一条数据链（`draft`），
+ * 挂别的副作用会抢滚动与焦点，多图层时表现为「字打不进去」。
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -35,18 +37,14 @@ interface TextBatchDialogProps {
 export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
   const batch = useTextBatch(baseSize, onClose);
   const boxRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const [activeLine, setActiveLine] = useState(0);
 
   useDismiss(true, boxRef, onClose);
 
-  /* 光标在第几行 → 高亮第几层，并把它滚进可视区（只单向，不做双向 scrollTop 同步） */
+  /* 光标在第几行 → 高亮第几层（唯一写点，只由 onChange 调） */
   const syncActiveLine = useCallback((element: HTMLTextAreaElement) => {
     const before = element.value.slice(0, element.selectionStart ?? 0);
-    const line = (before.match(/\n/g) ?? []).length;
-    setActiveLine(line);
-    const row = listRef.current?.children[line];
-    if (row instanceof HTMLElement) row.scrollIntoView({ block: 'nearest' });
+    setActiveLine((before.match(/\n/g) ?? []).length);
   }, []);
 
   return (
@@ -119,7 +117,7 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
                 <span className="mm-text-batch__name">图层</span>
                 <span className="mm-text-batch__text">原文</span>
               </div>
-              <div className="mm-text-batch__list" ref={listRef}>
+              <div className="mm-text-batch__list">
                 {batch.layers.length === 0 ? (
                   <span className="mm-text-batch__empty">点「全部」或「选中」读取文字图层，或点「OCR」识别画布</span>
                 ) : (
@@ -149,10 +147,10 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
               className="mm-text-batch__draft"
               value={batch.draft}
               spellCheck={false}
-              onChange={(event) => batch.changeDraft(event.target.value)}
-              onClick={(event) => syncActiveLine(event.currentTarget)}
-              onKeyUp={(event) => syncActiveLine(event.currentTarget)}
-              onSelect={(event) => syncActiveLine(event.currentTarget)}
+              onChange={(event) => {
+                batch.changeDraft(event.target.value);
+                syncActiveLine(event.currentTarget);
+              }}
             />
           </>
         ) : (

@@ -349,6 +349,10 @@ export const MSG = {
     translateDone: '翻译完成，译文已建在原图层下方',
     /** 翻译凭证没配：读 `credentials.json` 得 `NOT_FOUND` 时用这句，不冒充网络错误 */
     translateNoCredentials: '还没配置百度翻译的 AppID 和密钥（设置页可填）',
+    /** 目标语言不是英文：只有一种目标语言，配置坏了就报出来，不替用户挑语言 */
+    translateTargetInvalid: '翻译目标只能是英文，请到设置里把目标语言改成英文',
+    /** 译文已写进文档，但次数没记上：两件事都要说清，不能只说「失败」也不能当没事 */
+    translateCountFailed: '译文已生成，但今日翻译次数没记上，请检查数据目录是否可写',
     /** 百度翻译 52001/52002/54003/54005：超时 / 系统错 / 频控 */
     translateBusy: '翻译接口繁忙，稍后再试',
     /** 52003/54001/58000：未授权、签名错、IP 非法 —— 都是 appid/key 那一套不对 */
@@ -444,6 +448,12 @@ export const MSG = {
   ocr: {
     /** 百度返回了认不出的结构，或 `error_code` 不在已知表里（原文进 `detail`） */
     recognizeFailed: '文字识别失败',
+    /** 凭证无效 / 过期（百度 110、111 重取 token 后仍失败）：用户能自己修，别让他猜 */
+    authFailed: '百度云凭证无效，请到设置页重新填写 API Key 和 Secret Key',
+    /** 额度用完 / 请求过于频繁（百度 17 / 18 / 19）：等一会儿或换账号，不是代码问题 */
+    quotaExceeded: '百度云识别额度已用完或请求过于频繁，稍后再试',
+    /** 图片被百度拒（格式 / 尺寸 / 空白）：换图或缩小画布 */
+    imageRejected: '百度云识别不了这张图，换个图或缩小画布再试',
     /** 凭证没配：读 `credentials.json` 得 `NOT_FOUND` 时用这句，不冒充网络错误 */
     noCredentials: '还没配置百度云 OCR 的 API Key 和 Secret Key',
     /** 识别成功但一块文字都没有（空白画布 / 纯图形） */

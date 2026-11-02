@@ -27,15 +27,15 @@ export const SIZE_RATIO = 0.5;
 export const MIN_SIZE = 6;
 
 /**
- * 新建文字的默认字体：思源黑体 CN / Regular。
+ * 建文字层的默认字体：**Noto Sans SC Regular**（本机装的就是它）。
  *
- * 三个字段是 `zt_setFontName(hjm, mz, zz)` 的入参形状，值取官方快捷字体默认列表的第一项
- * （`app.v4.js:40154` 的 `family: '思源黑体 CN'` 与它 `hjm` / `mz` 里的 Regular 那一档）。
+ * 全仓只有这一个字体常量 —— 批量文字「新建」与 OCR 识别后落层都走它。
+ * 原先还带 `mz` / `zz` 两个字段（照抄 `zt_setFontName` 的三参形状），但 jsx 只读
+ * `font.hjm`，另两个从没有消费者 —— 没人读的字段不留。
+ * 装不上时 jsx 会记进 `fontMissing`，不静默换成别的字体。
  */
 export const DEFAULT_CREATE_FONT = {
-  hjm: 'SourceHanSansCN-Regular',
-  mz: 'Source Han Sans CN Regular',
-  zz: 'Regular'
+  hjm: 'NotoSansSC-Regular'
 } as const;
 
 /** 新建文字的段落对齐：0 左 / 1 中 / 2 右。默认左，与官方智能排版的 `align=0` 一致 */

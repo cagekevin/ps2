@@ -14,6 +14,7 @@ import { parseJson } from '../types/json';
 import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 import { resolveKuGroups } from './ku-format';
+import { rgbCss } from './text-info';
 
 /** 四类库，顺序 = tab 顺序（原版 switchval，app.v4.js:54590） */
 export type KuKind = 'color' | 'gradient' | 'font' | 'style';
@@ -225,7 +226,8 @@ function fontColor(value: unknown): string {
   if (![r, g, b].every((channel) => typeof channel === 'number' && Number.isFinite(channel))) {
     return '';
   }
-  return `rgb(${r as number}, ${g as number}, ${b as number})`;
+  /* 拼串只走 `text-info.rgbCss`：那是 `--mm-swatch` 这类变量的唯一出处，这里不再抄一份 */
+  return rgbCss({ r: r as number, g: g as number, b: b as number });
 }
 
 function fontItem(raw: Record<string, unknown>): KuItem {

@@ -36,6 +36,12 @@ export function useCommonPage() {
   const showTransformation = useCommonUseStore((state) =>
     booleanOptionOf(state.options, 'cyShowTransformation')
   );
+  /*
+   * 「自动填充颜色」是**开关**：数据链只有一条 ——
+   * `sj_set.json` 的 `cyAutoFillColor` → store.options → 这里（默认值取官方表，默认 true）。
+   * 写回由 `commands.toggleAutoFill` 负责，它 `setOption` 落盘后会 `load()`，这里跟着重渲染。
+   */
+  const autoFillOn = useCommonUseStore((state) => booleanOptionOf(state.options, 'cyAutoFillColor'));
 
   /* 包 loading + 失败提示 + 原因留痕：只有一处实现（`hooks/useRunCommand`） */
   const run = useRunCommand();
@@ -114,6 +120,7 @@ export function useCommonPage() {
     failures,
     showZoom,
     showTransformation,
+    autoFillOn,
     expandedId,
     setExpandedId,
     zoomTo,
