@@ -144,7 +144,7 @@
 | 段选样式 | `src/components/Segment/segment.css` | 整条定宽 `--mm-segment-w`(100，两块各 50)、圆角 `--mm-radius-lg`(6)；未选中的底取输入位档（比所在表面深一档），选中项铺 accent 实底 + 反白 |
 | 段选 | `src/components/Segment/index.tsx` | 2–4 档并排互斥按钮组；高 `--mm-control-h`、圆角 `--mm-radius-md`、选中 `--mm-color-accent`；判据：**≤4 档且要并排看全 → 段选**，选项多 / 有列表语义 → `SelectBox`，逐项长文本 → `RadioButton` |
 | 浮层挂载 | `src/components/Portal/index.tsx` | 唯一 `document.body` 挂载点；只管挂，开关/定位不在这里 |
-| 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取） |
+| 下拉选择 | `src/components/SelectBox/index.tsx` | 箭头固定 `<Chevron>`（无 `arrowIcon` / `arrowSize` 参数）；面板宽度 = 触发器宽（inline 写死，**尺寸无变体、无 `--floating-width` 中间变量**），定位走 `useFloatingPosition` 且 `flip: false`（只左对齐向下，放不下只夹取）；表面两档 `variant`：`surface`（默认，输入位外观）/ `bare`（尺寸走输入位，只去底色与描边、hover 不叠底） |
 | 下拉样式 | `src/components/SelectBox/select-box.css` | 对齐原版 SelectBox |
 | 箭头 | `src/components/Chevron/index.tsx` | **全仓唯一箭头件**：`open` **必传** —— `open={开合状态}` 收起朝右（`-90deg`）/ 展开朝下（组头 / 抽屉标题 / 缩放行 / 标签展开）；`open="static"` 恒朝下、不表达开合（字体面板的 `NumberField` 预设箭头与 `DistributionHelp`「高级用法」、`SelectBox` 下拉 ∨）；图标统一 `iconzhankaizhedie`；**没有 `arrowIcon` / `size` 参数**，要第二个箭头形状就是违规 |
 | 箭头样式 | `src/components/Chevron/chevron.css` | `--closed` 的 `rotate(-90deg)` 全仓只此一处（只有 `open={false}` 会命中，`"static"` 恒朝下）；`transition` 走 `--mm-dur-fast` |
@@ -185,8 +185,9 @@
 | 页面底栏 | `src/components/BottomBar/index.tsx` | 26 高深底 + 30 宽图标按钮（hover 纯底色无描边）+ 1×13 竖线；页面不再自绘底栏 |
 | 图标按钮 | `src/components/IconButton/index.tsx` | 26×26 + 选中态 + 角标；修饰键不在这里判 |
 | 图标按钮样式 | `src/components/IconButton/icon-button.css` | 对齐原版 `.base-icon` |
-| 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」 |
+| 图标 + 展开面板 | `src/components/IconPanel/index.tsx` | 关闭只认触发器、互斥是 `exclusive` 开关、点外/Esc 不关；受控 `openId`/`onOpenChange` 用于「跨行只开一个」；多面板同开（`exclusive={false}`）按注册顺序排列（字号在前 / 行距在后），不按打开先后 |
 | 图标 + 展开面板样式 | `src/components/IconPanel/icon-panel.css` | `__box` 只给通栏（`width:100%`）+ `isolation: isolate`；**底色由 `__box::before` 左右铺满**（`left/right: calc(-1 * bleed)`、`z-index:-1`），内容盒与位置不动。左右通栏靠承载行声明的 `--mm-icon-panel-bleed`（页面根壳声明为 `--mm-page-pad-x`）；`__box` 上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）；不许用负 margin（会连内容一起拉宽） |
+| 缩放行样式 | `src/components/ZoomRow/zoom-row.css` | 缩放行 / 翻转行的公共样式（常用页与字体面板共用）：触发器定宽 `--mm-zoom-trigger-w`、行内档位等分、抽屉 5 列；抽屉宿主 `flex: 0 0 100%` 才能整宽推开 |
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 |
 | 输入框 | `src/components/TextField/index.tsx` | 左图标 / 右插槽 + Enter 提交；内部渲染 `ui.Input`；**不定宽**——外壳吃满容器（`flex: 1 1 auto`），要定宽给那个页面的局部 css（`STYLE.md` §6.1），组件不出宽度档位 |

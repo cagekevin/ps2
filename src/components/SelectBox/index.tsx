@@ -10,7 +10,9 @@
  * **没有 `arrowIcon` / `arrowSize` 参数**——需要别的箭头就是第二种形状，按约定不许有。
  *
  * 面板 = `Portal` 挂 body（不被任何滚动容器裁）+ `.mm-popover`（`global.css` 里的浮层壳）。
- * **没有变体**：宽度只有一个值（触发器宽），位置只有一个来源（`useFloatingPosition`）。
+ * **尺寸 / 位置没有变体**：宽度只有一个值（触发器宽），位置只有一个来源（`useFloatingPosition`）。
+ * 表面有 `surface`（默认，输入位外观）与 `bare`（尺寸仍走输入位，只去掉底色与描边、hover 不叠底）两档，
+ * 由组件自己叠类名 —— 页面不许覆盖 `.mm-input-surface` 的底色 / 边框。
  */
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useDismiss } from '../../hooks/useDismiss';
@@ -38,6 +40,8 @@ interface SelectBoxProps {
   footer?: (close: () => void) => ReactNode;
   /** 每项右侧的删除按钮；给了才渲染 */
   onRemove?: (value: string) => void;
+  /** 触发器表面：`surface`（默认，输入位外观）或 `bare`（无底色，只显示文字与箭头） */
+  variant?: 'surface' | 'bare';
 }
 
 export function SelectBox({
@@ -48,7 +52,8 @@ export function SelectBox({
   className = '',
   disabled = false,
   footer,
-  onRemove
+  onRemove,
+  variant = 'surface'
 }: SelectBoxProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -83,7 +88,9 @@ export function SelectBox({
       <button
         ref={triggerRef}
         type="button"
-        className={`mm-select-box__trigger mm-input-surface${className ? ` ${className}` : ''}`}
+        className={`mm-select-box__trigger mm-input-surface${
+          variant === 'bare' ? ' mm-select-box__trigger--bare' : ''
+        }${className ? ` ${className}` : ''}`}
         disabled={disabled}
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}

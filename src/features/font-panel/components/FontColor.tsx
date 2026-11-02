@@ -22,7 +22,7 @@ import { IconPanel, IconPanelGroup } from '../../../components/IconPanel';
 import { SelectBox } from '../../../components/SelectBox';
 import type { FontItem } from '../../../domain/font-item';
 import { leadingPt } from '../../../domain/font-set';
-import { rgbCss, type TextInfo } from '../../../domain/text-info';
+import { formatMetric, rgbCss, type TextInfo } from '../../../domain/text-info';
 import { ALIGN_TIP, ALIGN_TITLES } from '../font-panel-constants';
 import { NumberField } from './NumberField';
 
@@ -195,7 +195,7 @@ export function FontColor({
               title="字号预设"
               trigger={({ toggle, active }) => (
                 <NumberField
-                  value={info.size}
+                  value={formatMetric(info.size)}
                   title="设置字体大小"
                   icon="iconshezhizitidaxiao"
                   min={1}
@@ -229,7 +229,7 @@ export function FontColor({
               trigger={({ toggle, active }) => (
                 <NumberField
                   /* 原版：自动行距显示「(自动)」（`app.v4.js:1421662`），不显示 0 */
-                  value={info.useAutoLeading ? '(自动)' : String(info.leading)}
+                  value={info.useAutoLeading ? '(自动)' : formatMetric(String(info.leading))}
                   title="设置行距"
                   icon="iconshezhihangju"
                   min={0}
@@ -263,7 +263,7 @@ export function FontColor({
               title="字距预设"
               trigger={({ toggle, active }) => (
                 <NumberField
-                  value={String(info.tracking)}
+                  value={formatMetric(String(info.tracking))}
                   title="设置字间距"
                   icon="iconshezhijianju"
                   presetOpen={active}

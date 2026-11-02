@@ -31,61 +31,6 @@
 
 /* 纵向排列走公共 `.mm-u-col` */
 
-/* 缩放区两行（放大 / 缩小）之间取「组内」4 —— 由 `__zoom` 容器的 gap 给，
-   行自己不再写上下 padding（否则与容器的 gap 叠加，第一个行上方会多出一截） */
-.mm-common__zoom{
-  gap: var(--mm-space-1);
-}
-
-.mm-common__zoom-row{
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mm-space-1);
-  align-items: center;
-}
-
-.mm-common__zoom-row > .mm-icon-panel__host{
-  flex: 0 0 100%;
-}
-
-/* 官方 `inputcom1 mr5`：触发器定宽 + 图标/文字同排 */
-.mm-common__zoom-trigger{
-  display: inline-flex;
-  flex: 0 0 var(--mm-common-zoom-trigger-w);
-  gap: var(--mm-space-1);
-  align-items: center;
-  padding: 0 var(--mm-space-1);
-  border-radius: var(--mm-radius-md);
-  color: var(--mm-color-text);
-  cursor: pointer;
-}
-
-.mm-common__zoom-trigger:hover{
-  background: var(--mm-color-bg-hover);
-}
-
-.mm-common__zoom-label{
-  flex: 1 1 auto;
-}
-
-.mm-common__zoom-quick{
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  gap: var(--mm-space-1);
-  min-width: 0;
-}
-
-.mm-common__zoom-quick > .mm-common__preset{
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-/* 缩放全部档位：一排 5 个等宽按钮 —— 网格走组合层 `.mm-btn-grid`，这里只注入列数 */
-.mm-common__zoom-all{
-  --mm-btn-grid-cols: 5;
-}
-
 /* 区块间的分隔线直接用组合层 `.mm-divider`：线色/线宽由它给，
    上下留白由 `__body` 的 gap 给 —— 本页不需要任何覆写，所以不挂私有类。 */
 

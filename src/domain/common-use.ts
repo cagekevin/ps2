@@ -252,6 +252,7 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
 
     const item = decoded.value;
 
+    const name = textOf(item.name);
     const svg = textOf(item.svg);
     const filled = typeof item.fillSvg === 'string' && item.fillSvg ? stripHash(item.fillSvg) : null;
     const comName = textOf(item.comName);
@@ -262,7 +263,7 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
     tiles.push({
       id,
       index,
-      name: textOf(item.name),
+      name,
       title: textOf(item.title),
       icon: { rest: svg ? stripHash(svg) : '', filled },
       isMore: item.isMore === true,
@@ -277,19 +278,23 @@ export function toTiles(file: readonly unknown[] | null): CommonUseTile[] {
 }
 
 /**
- * 一项常用功能：必须是对象、且带非空 `id`。
+ * 一项常用功能：必须是对象，且**有东西可显示**——非空 `id`，或「缺 id 但带 `comName` 且有 name / svg」。
  *
  * 只判「这一项能不能用」，不改写、不补键——项里还有 `sort` / `openistrue` 等我们不认识的键，
  * 写回时必须原样保留。**一项坏不再让整份不可用**：调用方用 `decodeList(..., 'filter')`
  * 跳过它并记账（`sj_commonFunction.json` 第 10 项缺 id 曾导致整页 `CORRUPT`）。
+ *
+ * 缺 `id` 但带 `comName` 的项可能是用户自己加的按钮（真机出现过），不能一律丢；但
+ * **只有 `comName` 不算数**：原版写坏时留下过 `{ created:'嵌入图片', comName:'comembed' }`
+ * 这种残项（没有 name / svg），上屏就是一个空白格（2026-11-02 真机）。判据是
+ * 「有没有东西可显示」，不是「有没有 comName」。
  */
 export function decodeCommonUseItem(value: unknown, path: string): Result<CommonUseItem> {
   if (!isRecord(value)) return failWithDetail('CORRUPT', MSG.corrupt, path);
   if (typeof value.id === 'string' && value.id) return ok(value);
   /**
-   * 缺 `id` 但带 `comName` 的项**是能用的功能**，不是坏数据：
-   * 真机上 `sj_commonFunction.json` 第 13 项就是 `{ created: '按间距分布', comName: 'comspacing' }`，
-   * 一个键都不缺、只是没写 id。丢掉它等于把用户自己加的按钮吞掉。
+   * 缺 `id` 但带 `comName` 的项是能用的功能（用户自己加的按钮），不是坏数据：
+   * 真机出现过只写了 `created` + `comName`、没有 id 的项，丢掉它等于吞掉用户的按钮。
    * 这种情况用 `comName` 兜底当 id（见 `toTiles`），真正什么都没有的项才记账跳过。
    */
   if (typeof value.comName === 'string' && value.comName) return ok(value);

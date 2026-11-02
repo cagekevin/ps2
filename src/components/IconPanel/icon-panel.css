@@ -1,10 +1,25 @@
 /* 【范本】图标 + 展开面板样式 —— 新增同类代码照此结构。 */
 
+/* 面板宿主：可同时展开多个面板的组（字号 / 行距）靠 flex 列 + 每个面板的 `order`
+   固定顺序，DOM 挂载先后（= 打开先后）不影响显示顺序。 */
+.mm-icon-panel__host{
+  display: flex;
+  flex-direction: column;
+}
+
+/* 空宿主不占位：`flex: 0 0 100%` 的宿主即使没展开面板也会占一整行，
+   多行组（缩放两行 / 字号行距行）之间就凭空多出一份行距 —— 竖向看着比横向宽一倍 */
+.mm-icon-panel__host:empty{
+  display: none;
+}
+
 /* 抽屉面板：通栏铺满宿主行。
    底色 / 直角 / 内边距在视觉重写时补；左右通栏靠承载行声明的 `--mm-icon-panel-bleed`，
    不要在这里写 padding（`CONVENTIONS` §6 明文禁止给 `__box` 覆写 padding / 底色 / 圆角）。 */
 .mm-icon-panel__box{
   position: relative;
+  /* 排列序号：按 IconPanel 的注册顺序（树里的顺序），不按打开先后。序号由组件注入。 */
+  order: var(--mm-icon-panel-order, 0);
   /* 自成一个层叠上下文：伪元素的 z-index:-1 才落在内容之下、而不是父层背景之后 */
   isolation: isolate;
   display: flex;

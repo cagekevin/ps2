@@ -2,8 +2,8 @@
 
 .mm-chevron{
   flex: 0 0 auto;
-  /* 箭头是小标记，跟勾选对号同一档（12）；尺寸只在这里给，调用点不传 */
-  font-size: var(--mm-icon-xs);
+  /* 全仓箭头统一档（9）：折叠 / 下拉指示 / 数字框预设都用它；尺寸只在这里给，调用点不传 */
+  font-size: var(--mm-icon-xxs);
   transition: transform var(--mm-dur-fast) ease;
 }
 
@@ -21,5 +21,14 @@
  * 所以一处就能管住全部「箭头在前」的位置，页面不必各写一个间距（2026-10-31）。
  */
 .mm-chevron + *{
+  margin-inline-start: var(--mm-space-inline);
+}
+
+/*
+ * 箭头在文字**之后**（下拉触发器这类右侧箭头）：箭头自己不是第一个子元素时，
+ * 由它自己吃一份左间距。与上面那条互补 —— 那条管「箭头在前」，这条管「箭头在后」，
+ * 同一个箭头只会命中其中一条（`open={false}` 的折叠箭头在前，不受影响）。
+ */
+.mm-chevron:not(:first-child){
   margin-inline-start: var(--mm-space-inline);
 }

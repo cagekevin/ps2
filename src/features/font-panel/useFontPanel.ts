@@ -17,6 +17,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../../components/Toast';
 import { MSG } from '../../types/messages';
 import { useRunCommand } from '../../hooks/useRunCommand';
+import { flip as flipCommand, zoom as zoomCommand } from '../../commands/common-use';
+import type { FlipDirection } from '../../commands/common-use';
 import { align as alignCommand } from '../../commands/font-set';
 import {
   applyFontName,
@@ -130,6 +132,21 @@ export function useFontPanel() {
       return result.status === 'ok';
     },
     [runCommand]
+  );
+
+  /* 缩放 / 翻转：秒级内单次变换，不弹遮罩（与常用页一致） */
+  const onZoom = useCallback(
+    (scale: number) => {
+      void run(() => zoomCommand(scale));
+    },
+    [run]
+  );
+
+  const onFlip = useCallback(
+    (direction: FlipDirection) => {
+      void run(() => flipCommand(direction));
+    },
+    [run]
   );
 
   const persist = useCallback(
@@ -487,6 +504,8 @@ export function useFontPanel() {
     onColor,
     onStyle,
     onTextAlign,
-    onCtrlClick
+    onCtrlClick,
+    onZoom,
+    onFlip
   };
 }

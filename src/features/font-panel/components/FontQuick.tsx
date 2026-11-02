@@ -40,6 +40,7 @@ export function FontQuick({ fonts, index, onSelect, onApply, onAdd, onRemove }: 
             className="mm-font-panel__quick-select"
             options={options}
             value={String(index)}
+            variant="bare"
             onChange={(value) => onSelect(Number(value))}
             onRemove={(value) => onRemove(Number(value))}
             footer={(close) => (

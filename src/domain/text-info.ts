@@ -154,3 +154,13 @@ export function applyTextPatch(base: TextInfo | null, patch: Partial<TextInfo>):
     color: patch.color ? { ...patch.color } : { ...current.color }
   };
 }
+
+/**
+ * 文字属性数值的显示串：PS 返回的行距 / 字距是浮点（`62.400000000000006`），
+ * 直接 `String()` 会撑满输入框。最多两位小数、去掉末尾 0；解析不出数字（「(自动)」）原样返回。
+ */
+export function formatMetric(text: string): string {
+  const parsed = Number.parseFloat(text);
+  if (!Number.isFinite(parsed)) return text;
+  return String(Math.round(parsed * 100) / 100);
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyTextPatch,
   DEFAULT_TEXT_INFO,
+  formatMetric,
   normalizeTextColor,
   decodeTextInfo
 } from './text-info';
@@ -44,5 +45,12 @@ describe('text-info', () => {
     expect(patched.family).toBe(DEFAULT_TEXT_INFO.family);
 
     expect(patched.color).not.toBe(DEFAULT_TEXT_INFO.color);
+  });
+
+  it('数值显示：去掉浮点尾巴，最多两位小数，非数字原样', () => {
+    expect(formatMetric('62.400000000000006')).toBe('62.4');
+    expect(formatMetric('66.00000000000001')).toBe('66');
+    expect(formatMetric('62.456')).toBe('62.46');
+    expect(formatMetric('(自动)')).toBe('(自动)');
   });
 });

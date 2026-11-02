@@ -31,4 +31,6 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  /* 正文顶部留一档：内容不要贴着面板上沿。导航菜单不在这里，不受影响 */
+  padding-top: var(--mm-space-2);
 }

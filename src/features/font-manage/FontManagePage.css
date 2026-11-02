@@ -8,14 +8,14 @@
 
 /*
  * 筛选区（搜索 / 标签）与字体列表是**同一块东西**（筛完立刻看结果），
- * 页面壳给的组间档 8 在这里偏松 —— 收到贴合档 2。
+ * 页面壳给的组间档 8 在这里偏松 —— 收到组内档 4（与横向同档）。
  *
  * **「上」和「下」必须是同一个数**：标签行的上方距离 = toolbar 的 padding-top，
  * 下方距离 = toolbar 的 padding-bottom(0) + 这里的 gap。所以两边都取 2 ——
  * 否则同一行文字看着像没对齐（2026-10-31 用户指出）。
  */
 .mm-font{
-  gap: var(--mm-space-tight);
+  gap: var(--mm-space-1);
 }
 
 .mm-font__toolbar{
@@ -58,6 +58,7 @@
 .mm-font__filter-chips{
   display: flex;
   flex-wrap: wrap;
+  /* 筛选 chip 与标签行同档（4） */
   gap: var(--mm-space-1);
 }
 
@@ -98,11 +99,13 @@
 
 /* 横排两端铺满走公共 `.mm-u-row` */
 
-/* 标签行末尾的「+」：整块是按钮（`mm-btn` 的控件高），点区补成正方。
+/* 标签行末尾的「+」：高度必须与 chip 同档（`--mm-tag-strip-h` 22），
+   否则它把整行撑到 26，chip 居中后上下各空 2 —— 行间距变成 4+2+2=8，比列间距大一倍。
    标题行 / 右侧工具组 / 折叠箭头都删了 —— 标签现在就是一行 chips，
    「+」排在最后一个（折叠会把「+」一起裁掉，所以不做折叠，2026-10-31）。 */
 .mm-font__tags-add{
-  width: var(--mm-control-h);
+  width: var(--mm-tag-strip-h);
+  height: var(--mm-tag-strip-h);
   padding: 0;
 }
 

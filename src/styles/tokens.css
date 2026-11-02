@@ -25,7 +25,7 @@
      但规则 5 写的是「六档」，删掉就少一档、判据表也跟着残 —— 所以零引用也留着，别当冗余删。 */
   --mm-space-4: 16px;         /* 区块间 */
   --mm-space-tight: 2px;      /* 贴合：徽标内边距这类 */
-  --mm-space-inline: 6px;     /* 同行并列 */
+  --mm-space-inline: 4px;     /* 同行并列（与组内档同值：横排间距统一 4） */
   --mm-page-pad-x: 8px;       /* 页边：五页同值，没有横向例外（§7 规则 5）；由公共壳统一给 */
 
   /* ---------- 2. 尺寸 ---------- */
@@ -43,6 +43,7 @@
        （底栏不用这档：底栏外壳把里面的 svg 一律压成 sm 14，见 bottom-bar.css）
        nav  导航主项 —— 40 格里的唯一图标
      判定：同一层级出现第二种尺寸，那个少数派就是写错的，往多数那档并，不许加第六档。 */
+  --mm-icon-xxs: 9px;         /* 箭头档：全仓 `.mm-chevron` 统一用它 */
   --mm-icon-xs: 12px;
   --mm-icon-sm: 14px;
   --mm-icon-md: 16px;
@@ -93,7 +94,7 @@
   --mm-dur-fast: 120ms;
 
   /* 滚动条宽度 */
-  --mm-scrollbar-w: 8px;
+  --mm-scrollbar-w: 4px;
 
   /* ---------- 5. 导航 ---------- */
   --mm-nav-w: 40px;
@@ -165,7 +166,9 @@
   /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
   --mm-common-tile: 50px;
   --mm-common-tile-icon: 32px;
-  --mm-common-zoom-trigger-w: 72px;
+
+  /* 缩放行触发器（图标 + 文字 + 箭头）的定宽：常用页与字体面板共用 */
+  --mm-zoom-trigger-w: 72px;
 
 
   /* 弹层 / 浮层 */

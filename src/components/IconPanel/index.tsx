@@ -40,6 +40,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
   type ReactNode
 } from 'react';
@@ -70,6 +71,8 @@ interface GroupValue {
   /** 挂载计数：同 id 挂第二个说明 id 重复 */
   mount: (id: string) => number;
   unmount: (id: string) => void;
+  /** 面板排列序号（按 IconPanel 在树里的注册顺序，与打开先后无关） */
+  orderOf: (id: string) => number;
 }
 
 const GroupContext = createContext<GroupValue | null>(null);
@@ -103,6 +106,10 @@ export function IconPanelGroup({
   );
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const counts = useRef(new Map<string, number>());
+  /* 面板排列序号：按 IconPanel 首次挂载的顺序（= 树里的顺序）发号。
+     不按「谁先打开」—— 同一组里字号 / 行距可同时展开，顺序必须固定。 */
+  const orderRef = useRef(new Map<string, number>());
+  const seqRef = useRef(0);
 
   const commit = useCallback(
     (next: string[]) => {
@@ -127,6 +134,7 @@ export function IconPanelGroup({
   const isOpen = useCallback((id: string) => openIds.includes(id), [openIds]);
 
   const mount = useCallback((id: string) => {
+    if (!orderRef.current.has(id)) orderRef.current.set(id, seqRef.current++);
     const next = (counts.current.get(id) ?? 0) + 1;
     counts.current.set(id, next);
     return next;
@@ -144,9 +152,11 @@ export function IconPanelGroup({
     if (exclusive && !controlled) setInternalIds((current) => current.slice(-1));
   }, [exclusive, controlled]);
 
+  const orderOf = useCallback((id: string) => orderRef.current.get(id) ?? 0, []);
+
   const value = useMemo<GroupValue>(
-    () => ({ isOpen, toggle, host, mount, unmount }),
-    [isOpen, toggle, host, mount, unmount]
+    () => ({ isOpen, toggle, host, mount, unmount, orderOf }),
+    [isOpen, toggle, host, mount, unmount, orderOf]
   );
 
   return (
@@ -214,7 +224,7 @@ export function IconPanel({
   const group = useContext(GroupContext);
   if (!group) throw new Error('IconPanel 必须在 IconPanelGroup 内使用');
 
-  const { isOpen, toggle, host, mount, unmount } = group;
+  const { isOpen, toggle, host, mount, unmount, orderOf } = group;
   const open = isOpen(id);
   const panelId = useId();
 
@@ -289,7 +299,11 @@ export function IconPanel({
       {triggerNode}
       {panelNode && host
         ? createPortal(
-            <div id={panelId} className="mm-icon-panel__box">
+            <div
+              id={panelId}
+              className="mm-icon-panel__box"
+              style={{ '--mm-icon-panel-order': orderOf(id) } as CSSProperties}
+            >
               {panelNode}
             </div>,
             host

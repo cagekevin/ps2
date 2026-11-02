@@ -44,10 +44,15 @@
   flex: 0 0 auto;
 }
 
-/* 面板标题：比正文强一档、提一档字号（与弹窗标题同一组值） */
+/* 面板标题：与正文同字号、同文字色（本页是工具页，标题不需要比正文更抢眼） */
 .mm-home__panel-title{
-  color: var(--mm-color-text-strong);
-  font-size: var(--mm-font-md);
+  color: var(--mm-color-text);
+  font-size: var(--mm-font-sm);
+}
+
+/* 动作行：三个按钮按 3 列等分，宽度永远等于容器宽，不换行也不溢出 */
+.mm-home__actions{
+  --mm-btn-grid-cols: 3;
 }
 
 /* 行组：纵向排列走公共 `.mm-u-col`，这里只给行间一档（§6.2：纵向间距由承载容器给） */
@@ -61,14 +66,13 @@
   color: var(--mm-color-danger);
 }
 
-/* 复制 / 清空这类行内动作：可点动作用 accent 文字（规则 12 第 4 类用法），
-   不给实底 —— 它们不是这一行的主操作 */
+/* 复制 / 清空这类行内动作：用正文色，不抢正文；hover 才提亮一档 */
 .mm-home__link{
-  color: var(--mm-color-accent);
+  color: var(--mm-color-text);
 }
 
 .mm-home__link:hover:not(:disabled){
-  color: var(--mm-color-accent-hover);
+  color: var(--mm-color-text-strong);
 }
 
 /* 名称不压缩，值可压缩后截断：函数名永远看得全 */

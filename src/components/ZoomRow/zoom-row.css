@@ -1,0 +1,57 @@
+/* 【范本】缩放行 / 翻转行（常用页与字体面板共用，新增同类代码照此结构）。 */
+
+/* 两行（放大 / 缩小）之间与列间距同档（4） */
+.mm-zoom{
+  gap: var(--mm-space-1);
+}
+
+.mm-zoom-row{
+  display: flex;
+  flex-wrap: wrap;
+  /* 与数字小块同档（4） */
+  gap: var(--mm-space-1);
+  align-items: center;
+}
+
+/* 抽屉铺满整行：宿主是行的最后一个 flex item，占满 100% 才能整宽推开后续内容 */
+.mm-zoom-row > .mm-icon-panel__host{
+  flex: 0 0 100%;
+}
+
+/* 官方 `inputcom1 mr5`：触发器定宽 + 图标 / 文字 / 箭头同排。
+   表面（底色 / 描边 / 圆角 / 字号）走 `mm-input-surface`，这里只给排布与定宽。 */
+.mm-zoom-trigger{
+  display: inline-flex;
+  flex: 0 0 var(--mm-zoom-trigger-w);
+  gap: var(--mm-space-1);
+  align-items: center;
+  cursor: pointer;
+}
+
+.mm-zoom-trigger:hover{
+  background: var(--mm-color-bg-hover);
+}
+
+.mm-zoom-label{
+  flex: 1 1 auto;
+}
+
+.mm-zoom-quick{
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  /* 数字小块之间与 chip 同档（4） */
+  gap: var(--mm-space-1);
+  min-width: 0;
+}
+
+/* 行内档位等分剩余宽度（Button 根类 `.mm-btn`，不另挂私有类） */
+.mm-zoom-quick > .mm-btn{
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 抽屉里全部档位：一排 5 个等宽按钮，列数注入组合层 `.mm-btn-grid` */
+.mm-zoom-all{
+  --mm-btn-grid-cols: 5;
+}

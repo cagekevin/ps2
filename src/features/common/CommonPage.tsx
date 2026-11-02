@@ -13,15 +13,13 @@
  */
 
 import type { ReactNode } from 'react';
-import { Chevron } from '../../components/Chevron';
-import { Button } from '../../components/ui';
-import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
+import { FlipRow, ZoomRow } from '../../components/ZoomRow';
+import { ZOOM_LEVELS } from '../../components/ZoomRow/zoom-items';
 import { MSG } from '../../types/messages';
 import { StateHint } from '../../components/StateHint';
-import { Icon, type IconName } from '../../components/icons';
 import type { CommonUseTile } from '../../domain/common-use';
-import { AUTO_FILL_TILE_ID, FLIP_ITEMS, TILE_COMMANDS, ZOOM_LEVELS } from './common-constants';
+import { AUTO_FILL_TILE_ID, TILE_COMMANDS } from './common-constants';
 import { CustomTransformPanel } from './components/CustomTransformPanel';
 import { EmbedPanel } from './components/EmbedPanel';
 import { ExportPanel } from './components/ExportPanel';
@@ -62,87 +60,6 @@ function toRows(tiles: CommonUseTile[]): CommonUseTile[][] {
   return rows;
 }
 
-/** 一个缩放档位按钮：宽度由容器决定（行内 4 等分 / 抽屉里 5 列），自己不写宽 */
-function ZoomPreset({ value, onClick }: { value: number; onClick: () => void }) {
-  return (
-    <Button className="mm-common__preset" title={String(value)} onClick={onClick}>
-      {value}
-    </Button>
-  );
-}
-
-/**
- * 一行缩放：「放大 / 缩小」下拉 + 4 个常用档位。
- *
- * 下拉是 `IconPanel` 的抽屉（公共件，整宽推开后续内容），不是自绘浮层；
- * 点档位后由 `close()` 收起，否则用户得再点一次触发器才能继续操作。
- * 两行共用页面级的 `expandedId`，所以它与功能格的抽屉也互斥——同一时刻只开一个。
- */
-function ZoomRow({
-  id,
-  icon,
-  label,
-  quick,
-  all,
-  openId,
-  onOpenChange,
-  onPick
-}: {
-  id: string;
-  icon: IconName;
-  label: string;
-  quick: readonly number[];
-  all: readonly number[];
-  openId: string;
-  onOpenChange: (openId: string) => void;
-  onPick: (value: number) => void;
-}) {
-  return (
-    <IconPanelGroup
-      className="mm-common__zoom-row"
-      openId={openId}
-      onOpenChange={onOpenChange}
-    >
-      <IconPanel
-        id={id}
-        title={label}
-        trigger={(handlers) => (
-          <button
-            type="button"
-            className="mm-common__zoom-trigger"
-            aria-expanded={handlers['aria-expanded']}
-            aria-controls={handlers['aria-controls']}
-            onClick={handlers.toggle}
-          >
-            <Icon name={icon} />
-            <span className="mm-common__zoom-label">{label}</span>
-            <Chevron open={handlers['aria-expanded']} />
-          </button>
-        )}
-        panel={(close) => (
-          <div className="mm-btn-grid mm-common__zoom-all">
-            {all.map((value) => (
-              <ZoomPreset
-                key={value}
-                value={value}
-                onClick={() => {
-                  onPick(value);
-                  close();
-                }}
-              />
-            ))}
-          </div>
-        )}
-      />
-      <div className="mm-common__zoom-quick">
-        {quick.map((value) => (
-          <ZoomPreset key={value} value={value} onClick={() => onPick(value)} />
-        ))}
-      </div>
-    </IconPanelGroup>
-  );
-}
-
 export default function CommonPage() {
   const page = useCommonPage();
   const visibleTiles = page.tiles.filter((tile) => tile.visible);
@@ -174,7 +91,7 @@ export default function CommonPage() {
 
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
-          <div className="mm-u-col mm-common__zoom">
+          <div className="mm-u-col mm-zoom">
             <ZoomRow
               id="zoom-enlarge"
               icon="iconfangda"
@@ -198,18 +115,7 @@ export default function CommonPage() {
           </div>
         ) : null}
 
-        {page.showTransformation ? (
-          <div className="mm-u-row mm-u-row--wrap mm-icon-row">
-            {FLIP_ITEMS.map((item) => (
-              <IconButton
-                key={item.direction}
-                name={item.icon}
-                title={item.title}
-                onClick={() => page.flipTo(item.direction)}
-              />
-            ))}
-          </div>
-        ) : null}
+        {page.showTransformation ? <FlipRow onFlip={page.flipTo} /> : null}
 
         <div className="mm-divider" />
 

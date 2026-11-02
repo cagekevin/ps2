@@ -6,6 +6,14 @@
   align-items: center;
 }
 
+/* 无表面变体：尺寸 / 内边距 / 字号仍走输入位，只把底色与描边去掉、hover 不叠底 ——
+   用于「只显示当前值」的场合（字体面板的快捷字体下拉）。 */
+.mm-select-box__trigger--bare,
+.mm-select-box__trigger--bare:hover{
+  background: none;
+  border-color: transparent;
+}
+
 
 .mm-select-box__icon{
   display: inline-flex;
@@ -14,6 +22,8 @@
   /* 外壳规定，不让调用点传：触发器里图标与文字同排 */
   font-size: var(--mm-icon-sm);
 }
+
+
 
 .mm-select-box__panel{
   /* 宽度 = 触发器宽：运行期由 TSX 注入 `--mm-select-panel-w`，这里只消费 */

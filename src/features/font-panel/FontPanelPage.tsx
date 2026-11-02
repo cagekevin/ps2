@@ -16,6 +16,8 @@ import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
 import { StateHint } from '../../components/StateHint';
+import { FlipRow, ZoomRow } from '../../components/ZoomRow';
+import { ZOOM_LEVELS } from '../../components/ZoomRow/zoom-items';
 import { DEFAULT_TEXT_INFO } from '../../domain/text-info';
 import { useFontPanel } from './useFontPanel';
 import { CreateButtonPanel } from './components/CreateButtonPanel';
@@ -49,9 +51,37 @@ export default function FontPanelPage() {
   const page = useFontPanel();
   /* 弹窗开关只在这一处：进弹窗读、关掉即弃，不建 store */
   const [batchOpen, setBatchOpen] = useState(false);
+  /* 缩放两行共用同一个开合值（跨行也互斥），与顶部图标行的抽屉互不影响 */
+  const [zoomOpen, setZoomOpen] = useState('');
 
   return (
     <div className="mm-font-panel">
+      {/* 缩放 / 翻转：与常用页共用 `components/ZoomRow`（`TD-09-19`），放页面最顶部 */}
+      <div className="mm-u-col mm-zoom">
+        <ZoomRow
+          id="zoom-enlarge"
+          icon="iconfangda"
+          label="放大"
+          quick={ZOOM_LEVELS.enlargePart}
+          all={ZOOM_LEVELS.enlargeAll}
+          openId={zoomOpen}
+          onOpenChange={setZoomOpen}
+          onPick={page.onZoom}
+        />
+        <ZoomRow
+          id="zoom-narrow"
+          icon="iconshousuo"
+          label="缩小"
+          quick={ZOOM_LEVELS.narrowPart}
+          all={ZOOM_LEVELS.narrowAll}
+          openId={zoomOpen}
+          onOpenChange={setZoomOpen}
+          onPick={page.onZoom}
+        />
+      </div>
+
+      <FlipRow onFlip={page.onFlip} />
+
       {page.settings.ztShowQuick ? (
         <FontQuick
           fonts={page.quickFonts.list}

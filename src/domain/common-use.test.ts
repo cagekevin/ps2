@@ -77,9 +77,17 @@ describe('decodeCommonUseItem', () => {
     if (result.status === 'ok') expect(result.value).toBe(item);
   });
 
-  it('缺 id 但带 comName → 仍然可用（真机上就有这种项）', () => {
-    /* `sj_commonFunction.json` 第 13 项就是这个形状：{ created, comName }，一个 id 都没有 */
-    const result = decodeCommonUseItem({ created: '按间距分布', comName: 'comspacing' }, 'root[12]');
+  it('缺 id 但带 comName 且有 name / svg → 仍然可用（用户自己加的按钮）', () => {
+    const result = decodeCommonUseItem(
+      { created: '按间距分布', comName: 'comspacing', name: '按间距分布' },
+      'root[12]'
+    );
+    expect(result.status).toBe('ok');
+  });
+
+  it('只有 comName、没有 name / svg 的残项 → 解码放行（由 toTiles 静默跳过）', () => {
+    /* 原版写坏的日志残项：{ created:'嵌入图片', comName:'comembed' }（2026-11-02 真机） */
+    const result = decodeCommonUseItem({ created: '嵌入图片', comName: 'comembed' }, 'root[3]');
     expect(result.status).toBe('ok');
   });
 
@@ -115,7 +123,10 @@ describe('toTiles', () => {
   });
 
   it('缺 id 的项用 comName 当 id，仍进视图', () => {
-    const tiles = toTiles([{ id: 'a' }, { created: '按间距分布', comName: 'comspacing' }]);
+    const tiles = toTiles([
+      { id: 'a' },
+      { created: '按间距分布', comName: 'comspacing', name: '按间距分布' }
+    ]);
     expect(tiles.map((tile) => tile.id)).toEqual(['a', 'comspacing']);
     expect(tiles[1]?.index).toBe(1);
   });

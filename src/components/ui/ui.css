@@ -164,25 +164,23 @@
   height: var(--mm-tag-strip-h);
   padding: 0 var(--mm-space-2);
   border-radius: var(--mm-radius-md);
-  /* 底 / 文字色 / hover 全由**所在表面**声明（规则 19）：深色面板上取页面档，
-     浅色浮层上由 `.mm-popover` 换成浅档 —— 同一个类两处都能用，没有「浅色版」第二套类 */
-  background: var(--mm-input-bg, var(--mm-color-bg-input));
-  color: var(--mm-input-color, var(--mm-color-text-chip));
+  /* 底与 Button 默认实心同档（`--mm-color-bg-raised`）：一排 chip 与旁边的数值按钮同一层，
+     不再按所在表面取输入位底 —— 输入位底在深色面板里是一块「黑块」，与按钮不是一层 */
+  background: var(--mm-color-bg-raised);
+  color: var(--mm-color-text-chip);
   font-size: var(--mm-font-sm);
   white-space: nowrap;
   cursor: pointer;
 }
 
-/* hover 只叠一档底色，文字色不动（状态表：hover = 叠底，不变蓝也不变亮） */
+/* hover 压暗一档（与实心按钮同一条 hover 档），文字色不动 */
 .mm-chip:hover{
-  background: var(--mm-hover-bg, var(--mm-color-bg-hover));
+  background: var(--mm-color-bg-raised-hover);
 }
 
-/* 选中态反白而不是变蓝：`REVIEW-2026-10-30` §4.1 定的结论 ——
-   一排 chip 里有多个选中时，accent 会把「哪个是当前筛选」和「chip 自己的内容」混成一层 */
+/* 选中：与普通 chip 同族，只把底提亮一档，文字色不动（不改蓝字、也不反白） */
 .mm-chip--on{
-  background: var(--mm-color-text-popover);
-  color: var(--mm-color-bg-popover);
+  background: var(--mm-color-bg-raised-hover);
 }
 
 /* 纯色块：正方形 + 小圆角，颜色由调用点注入 `--mm-swatch`（动态值只交变量，§14.1）。

@@ -157,9 +157,9 @@ button{
   height: 100%;
   min-height: 0;
   padding: 0 var(--mm-page-pad-x);
-  /* 区块之间（状态行 / 操作行 / 内容区、工具栏 / 列表…）：原版用 `mt10` 这一档（15 次，纵向主力），
-     落回六档的「组间」8。放在页面壳而不是各页，是为了七页同值（规则 5：没有横向例外，纵向同理）。 */
-  gap: var(--mm-space-2);
+  /* 区块之间（状态行 / 操作行 / 内容区、工具栏 / 列表…）：竖向与横向同档 4，
+     避免同一屏里「行间 8、列间 4」看着不一致。放在页面壳而不是各页，是为了七页同值。 */
+  gap: var(--mm-space-1);
   /* 不再预留滚动条槽：各页的滚动容器统一用 `overflow-y: overlay`（见各页 css），
      滚动条浮在页边里、不占宽度，天然不抖 —— 留着 `stable` 反而让右边多出 8。 */
   /* 承载行的左右 padding 合计：抽屉底色靠它左右铺满（`IconPanel` 的 `__box::before`） */
@@ -276,7 +276,8 @@ button{
 .mm-u-tiles{
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mm-space-inline);
+  /* 行列同 4：一排小块之间与其它横排同档 */
+  gap: var(--mm-space-1);
   align-items: center;
 }
 
@@ -321,6 +322,7 @@ button{
 .mm-btn-grid{
   display: grid;
   grid-template-columns: repeat(var(--mm-btn-grid-cols, 4), minmax(0, 1fr));
+  /* 文字 / 数字小块之间与 chip 同档（4）：这两类是同一层东西，间距不许一处一种 */
   gap: var(--mm-space-1);
 }
 

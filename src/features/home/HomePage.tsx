@@ -110,13 +110,18 @@ export default function HomePage() {
     await run(() => request('productList'), { success: MSG.home.reachable });
   }
 
+  /* 诊断 / 日志都是「展开 ↔ 收起」：再点一次收起来，不是只能开 */
   async function handleDiag() {
+    if (diag) {
+      setDiag(null);
+      return;
+    }
     const result = await run(() => diagVendor());
     if (result.status === 'ok') setDiag(result.value);
   }
 
   function handleLog() {
-    setLogText(readLogText());
+    setLogText((current) => (current === null ? readLogText() : null));
   }
 
   /**
@@ -181,10 +186,11 @@ export default function HomePage() {
         <span className="mm-home__value">{layerText}</span>
       </div>
 
-      <div className="mm-u-row mm-home__actions">
+      {/* 三个动作等分一行：`mm-btn-grid` 按列数均分，窄面板里既不换行也不溢出 */}
+      <div className="mm-btn-grid mm-home__actions">
         <Button onClick={handleDiag}>诊断官方能力</Button>
         <Button onClick={handleLog}>查看日志</Button>
-        <Button variant="primary" onClick={handlePing}>
+        <Button onClick={handlePing}>
           测试接口
         </Button>
       </div>
@@ -241,7 +247,7 @@ export default function HomePage() {
         {/* 面板常驻：删除 / 刷新随时可点，不必先「查看日志」把旧日志读上来 */}
         <div className="mm-home__panel mm-home__panel--grow">
           <PanelHead
-            title="日志（%TEMP%\\maomao.log）"
+            title="日志"
             actions={
               <>
                 {copyButton(logText ?? '', MSG.home.copiedLog)}

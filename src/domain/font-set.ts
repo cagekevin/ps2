@@ -128,7 +128,8 @@ function isNumberArray(value: unknown): value is number[] {
  */
 export function leadingPt(sizeText: string, multiple: number): number {
   const size = Number(sizeText);
-  return Number.isFinite(size) ? size * multiple : 0;
+  /* 两位小数：60 × 1.1 在浮点里是 66.00000000000001，直接写进 PS 会把面板显示撑满 */
+  return Number.isFinite(size) ? Math.round(size * multiple * 100) / 100 : 0;
 }
 
 /** 6 级字号：不多不少、全部为正数 */
