@@ -1,22 +1,25 @@
 /*
  * 全屏加载与路由懒加载占位。
  *
- * `.mm-loading__mask` 与 `.mm-modal-mask` 形状相同（fixed inset 0 + 居中），差别只在层级：
- * 加载要压在所有浮层之上，所以取 `--mm-z-loading`（200）而不是遮罩那一档。
+ * `.mm-loading__mask` 与 `.mm-modal-mask` 形状相同（fixed + 居中），差别在两点：
+ * ① 层级取 `--mm-z-loading`（200），压在所有浮层之上（加载不能让下面的下拉透出来）；
+ * ② 遮罩只盖「右侧正文区」（`inset: 0 0 0 var(--mm-nav-w)`），不盖左侧 40px 导航 ——
+ *    处理中是页面里的状态，左侧导航不该被压暗（与 `.mm-modal-mask` 同因）。
  *
- * 已知未补：遮罩没有压暗层 —— 转圈是「盖在页面上」而不是「盖住页面」。
- * 要压暗就在这里加 `--mm-color-mask`，别在调用点写。
+ * 底色用专用 token `--mm-color-mask-loading`（0.8，比通用遮罩更重，明确「盖住页面」）。
+ * 别在调用点写色值。
  */
 
 .mm-loading__mask{
   position: fixed;
-  inset: 0;
+  /* 只盖右侧正文区，不压左侧导航（与 `.mm-modal-mask` 同因） */
+  inset: 0 0 0 var(--mm-nav-w);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: var(--mm-z-loading);
-  /* 官方 loading-main：全屏半透明黑底，盖住页面（此前 known gap 未补，直接用遮罩 token） */
-  background: var(--mm-color-mask);
+  /* 处理中遮罩：比通用遮罩更重，明确盖住页面（0.8 黑底） */
+  background: var(--mm-color-mask-loading);
 }
 
 /* 路由懒加载占位（`router.tsx` 的 Suspense fallback）：单个文案居中 */

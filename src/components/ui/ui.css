@@ -279,6 +279,23 @@
   color: var(--mm-color-text);
 }
 
+/* 全屏弹窗变体：占满正文区（85% × 70%），配 `.mm-modal-mask--fullscreen` 盖住菜单栏。
+   批量文字 / 添加动作共用这一外壳 —— 两者视觉与尺寸一致（不再各自覆写 `.mm-modal`）。
+   底色走浮层档 `overlay`（比面板 base 高一档、近实心，与通用 `.mm-modal` 一致）；
+   亮线边框 + 投影双重界定「这是一个独立界面」；溢出兜在弹窗层，滚动交给内部内容。
+   gap / padding 沿用 `.mm-modal` 的 12。 */
+.mm-modal--fullscreen{
+  width: 85%;
+  height: 70%;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  background: var(--mm-color-bg-overlay);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  box-shadow: var(--mm-shadow-popover);
+  overflow: hidden;
+}
+
 /* head 与 actions 都是行类修饰符，与 `.mm-u-row` 同挂：head 是「标题左 / 关闭右」，
    actions 是两端铺满（取消左 / 确定右）—— 横排仍只有 `.mm-u-row` 一种（§6） */
 .mm-modal__head{

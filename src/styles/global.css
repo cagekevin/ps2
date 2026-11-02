@@ -130,6 +130,13 @@ button{
   justify-content: center;
 }
 
+/* 全屏遮罩：盖住整个面板（含左侧菜单栏）。
+   只给需要整屏覆盖的大弹窗（批量文字 / 添加动作）用 —— 它们占满正文区，盖住菜单栏才连贯；
+   其余居中弹窗仍走默认的「只盖右侧」（上方那条）。层级不变（仍低于浮层档）。 */
+.mm-modal-mask--fullscreen{
+  inset: 0;
+}
+
 .mm-check,
 .mm-radio{
   display: inline-flex;

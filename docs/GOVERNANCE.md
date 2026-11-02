@@ -198,7 +198,7 @@
 | 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口；前提类码（`PS_NO_DOC` / `PS_WRONG_LAYER`）灰字，不标红 |
 | 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
-| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-notice` / `.mm-modal`，都只出 CSS 契约、不带行为 |
+| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-notice` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |

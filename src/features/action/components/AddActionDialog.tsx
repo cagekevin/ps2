@@ -80,8 +80,8 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
   }
 
   return (
-    <div className="mm-modal-mask" role="dialog" aria-modal="true">
-      <div className="mm-u-col mm-modal mm-action-dialog">
+    <div className="mm-modal-mask mm-modal-mask--fullscreen" role="dialog" aria-modal="true">
+      <div className="mm-u-col mm-modal mm-modal--fullscreen mm-action-dialog">
         <div className="mm-modal__title">{'添加动作'}</div>
 
         <SelectBox

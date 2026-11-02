@@ -5,7 +5,7 @@
  * 顶部一句话说明当前是哪一种，「清空」把图层清掉回到新建态。
  *
  * 为什么是本页私有组件而不是公共件：形状只服务这一处（tab + 原文表 + 一个大 textarea），
- * 两处以上再抽（`CONVENTIONS` §4.8）。遮罩直接用 `global.css` 的 `.mm-modal-mask`。
+ * 两处以上再抽（`CONVENTIONS` §4.8）。外壳走 `.mm-modal--fullscreen`、遮罩走 `.mm-modal-mask--fullscreen`（全屏盖住菜单栏）。
  *
  * 「改全部 / 改选中」点 tab 即读入对应范围；OCR 是独立动作（建层后不自动读取）。
  *
@@ -84,10 +84,10 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
   const editing = batch.layers.length > 0;
 
   return (
-    <div className="mm-modal-mask" onClick={onClose}>
+    <div className="mm-modal-mask mm-modal-mask--fullscreen" onClick={onClose}>
       <div
         ref={boxRef}
-        className="mm-modal mm-u-col mm-text-batch"
+        className="mm-modal mm-modal--fullscreen mm-u-col mm-text-batch"
         role="dialog"
         aria-modal="true"
         aria-label={'批量文字'}

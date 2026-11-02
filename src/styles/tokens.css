@@ -252,7 +252,8 @@
   --mm-color-warn-a18: rgba(220, 220, 170, 0.18);
 
   /* 遮罩 / 半透明层 */
-  --mm-color-mask: rgba(0, 0, 0, 0.45);            /* 弹窗 / 全屏加载 */
+  --mm-color-mask: rgba(0, 0, 0, 0.45);            /* 弹窗 / 区域不可用 */
+  --mm-color-mask-loading: rgba(0, 0, 0, 0.8);      /* 全屏加载（处理中）：盖住右侧正文区，比通用遮罩更重 */
   --mm-color-mask-faint: rgba(0, 0, 0, 0.1);       /* 输入弹窗遮罩 */
   --mm-color-icon-hover: rgba(0, 0, 0, 0.2);       /* 图标按钮 hover 底 */
   --mm-color-nav-hover: rgba(0, 0, 0, 0.9);        /* 导航悬停 */

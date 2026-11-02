@@ -1,24 +1,8 @@
-/* 批量文字弹窗：整块编辑区，尺寸按内容区百分比给（95% × 70%），不写死 px。
-   高度用百分比而不是 max-height：新建 tab 只有一个输入框、改字 tab 多一张原文表，
-   max-height 会让高度跟着内容走，切 tab 就跳；百分比是确定值，不跳。
-
-   **必须同时重置 min/max-width**：这个弹窗挂的是公共壳 `.mm-modal`，它把宽度钉在
-   240–320（`--mm-modal-min-w` / `--mm-modal-max-w`）。只写 `width` 时会被 `max-width: 320`
-   截住 —— 之前"再宽一点"改了几轮都没生效，就是卡在这里，不是选择器优先级的问题。 */
-.mm-text-batch{
-  width: 85%;
-  height: 70%;
-  min-width: 0;
-  max-width: none;
-  /* 描边：面板底与弹窗底同色系，没有亮线就分不出"这是一个独立界面"。
-     用控件亮线那一档（#4b4b4b），不用更暗的普通描边。 */
-  border: var(--mm-border-w) solid var(--mm-color-border-control);
-  /* 不透明：`.mm-modal` 的 overlay 底是 rgba(.96)，整屏弹窗会透出下面的列表 */
-  background: var(--mm-color-bg-base);
-  gap: var(--mm-space-2);
-  /* 高度定了之后内容可能顶出去（面板被拉到很矮时），这里兜住，滚动交给里面的 textarea */
-  overflow: hidden;
-}
+/* 批量文字弹窗：整块编辑区。
+   外壳（尺寸 / 底色 / 边框 / 圆角 / 溢出）统一走 `.mm-modal--fullscreen`（ui.css）：
+   占满正文区 85% × 70%、不透明 base 底、亮线边框、溢出兜在弹窗层、gap/padding 沿用 12。
+   本文件只留内部结构样式（tab / 原文表 / 输入框 / 列表），不再覆写外壳。
+   遮罩走 `.mm-modal-mask--fullscreen`（global.css），盖住整个面板含菜单栏。 */
 
 /* tab 条：三个 tab 等分整行（改全部 / 改选中 / OCR）。
    **不能写 `flex: 1`** —— 弹窗是纵向 flex，那会让 tab 条纵向拉伸、把内容推下去。 */
