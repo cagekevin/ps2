@@ -67,6 +67,22 @@ describe('嵌入类的参数形状', () => {
   });
 });
 
+describe('psdList 的解析（TD-01-30）', () => {
+  it('宿主数组到前端是 JSON 文本 → 能力表必须解成值', () => {
+    /* `passthrough` 会把这段文本原样交给 decodePsdList，那边只认数组 ⇒ 必报「无法识别」 */
+    const raw = '["/a/1.psd","/a/2.psd"]';
+
+    expect(CAP.psdList.parse(raw)).toEqual({ status: 'ok', value: ['/a/1.psd', '/a/2.psd'] });
+  });
+
+  it('用户取消（-1）折成 PS_REJECTED，不当成数据坏', () => {
+    const result = CAP.psdList.parse('-1');
+
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('PS_REJECTED');
+  });
+});
+
 describe('智能填色两条 jsx 不混', () => {
   it('color → cy_smartFillColor；line → cy_smartFillLineColor', async () => {
     await smartFill('color');

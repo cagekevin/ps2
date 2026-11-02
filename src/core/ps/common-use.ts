@@ -122,7 +122,12 @@ export function getImagePath(): Promise<Result<unknown>> {
   return callCapability(CAP.imagePath);
 }
 
-/** 扫文件夹取 PSD 列表（`cy_getPsdForFolder`）：jsx 自己弹选目录，**无参**，返回同样不解码 */
+/**
+ * 扫文件夹取 PSD 列表（`cy_getPsdForFolder`）：jsx 自己弹选目录，**无参**。
+ *
+ * 返回**已解成值**（能力表用 `sentinelJson`）：宿主数组到前端是 JSON 文本，
+ * 不解就会让 `domain.decodePsdList` 收到字符串、判成「返回数据无法识别」。
+ */
 export function getPsdList(): Promise<Result<unknown>> {
   return callCapability(CAP.psdList);
 }

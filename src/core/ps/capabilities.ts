@@ -448,10 +448,18 @@ export const CAP = {
     parse: passthrough
   },
 
-  /** 扫文件夹取 PSD 列表：jsx 自己弹选目录，**无参**，返回同样不解码 */
+  /**
+   * 扫文件夹取 PSD 列表：jsx 自己弹选目录，**无参**。
+   *
+   * `sentinelJson` 而不是 `passthrough`：宿主给的数组到前端是 JSON **文本**
+   * （`callJsx` 对非字符串返回一律 `JSON.stringify`，`bridge.ts:154`），`passthrough`
+   * 会把文本原样交给 `domain.decodePsdList`，那边只认数组 ⇒ 批量导出列表必报
+   * 「返回数据无法识别」（`TD-01-30`，与 `getActionList` 同一类）。顺带把「用户取消」
+   * 的 `-1` 折成 `PS_REJECTED`，不再被当成数据坏。
+   */
   psdList: {
     fn: 'cy_getPsdForFolder', gate: 'vendor', channel: 'direct', timeout: READ_TIMEOUT,
-    parse: passthrough
+    parse: sentinelJson
   },
 
   /* ---------------- 常用页 v2：嵌入 / 智能对象 / 优化 / 变换 / 导出（plan 13 §1.2） ----------------
