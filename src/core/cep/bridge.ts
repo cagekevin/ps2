@@ -24,13 +24,16 @@ export interface CepEvent {
   type: string;
   scope: string;
   data: unknown;
+  /** 宿主 appId（Photoshop 是 `PHXS`）；注册脚本事件时 CEP 要求带上 */
+  appId?: string;
   extensionId?: string;
 }
 
 interface AdobeCep {
   evalScript(script: string, callback: (result: string) => void): void;
   getSystemPath(pathType: string): string;
-  getExtensionID(): string;
+  /** 原生方法名是**小写 d** 的 `getExtensionId`；`getExtensionID`（大写 D）是 CSInterface 那一层的名字 */
+  getExtensionId(): string;
   addEventListener(type: string, listener: (event: CepEvent) => void): void;
   dispatchEvent(event: unknown): void;
   getHostEnvironment(): string;
@@ -224,8 +227,14 @@ export function getUserDataPath(): string {
   return toLocalPath(window.__adobe_cep__?.getSystemPath('userData') ?? '');
 }
 
+/**
+ * 扩展 ID。**只能调原生 `getExtensionId`（小写 d）**：`window.__adobe_cep__` 上没有
+ * `getExtensionID`（大写 D 那个是 CSInterface 包装层的方法名），照大写写会抛
+ * `TypeError: not a function` —— PS 事件订阅整条链就是被这一句打断的（2026-11-02）。
+ */
 export function getExtensionId(): string {
-  return window.__adobe_cep__?.getExtensionID() ?? '';
+  const bridge = window.__adobe_cep__;
+  return typeof bridge?.getExtensionId === 'function' ? bridge.getExtensionId() : '';
 }
 
 /**

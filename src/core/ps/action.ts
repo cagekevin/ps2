@@ -3,14 +3,15 @@
  *
  * 两条 jsx，通道不同（`05` §3.1）：
  *   - `callAction`  → `dz_callAction`，**调度**（官方 `case 96 → jsxHistoryNoCheck`），参数是**整个 item**
- *   - `getActionList` → `dz_getActionList`，**直调**（官方 `jsxNoCheck`），**无参**，返回不解码
+ *   - `getActionList` → `dz_getActionList`，**直调**（官方 `jsxNoCheck`），**无参**，返回已解成值
  *
- * **照抄可运行的 Vue 版实践**（2026-10-29 决定）：`ps/src/cep/jsx/action.ts` 用同名函数、
- * 同样的参数形状，且 `dz_getActionList` 的返回形状它自己也标 `UNVERIFIED`（两种包装都兜）。
- * `05` 计划原要求「先真机探针、确认存在再登记」，现按用户指示直接登记；风险与兜底见 `init.ts` 的注释
- * 与 `05` §3.1 的改判记录。
+ * 两条都已真机确认存在（`typeof` = `function`）：`dz_getActionList` 返回裸数组，与
+ * `domain/action-library.mapPsActions` 的解码一致；`dz_callAction` 的实际执行仍未跑过。
+ * 参数形状照抄可运行的 Vue 版（`ps/src/cep/jsx/action.ts`，同名同形）。
  *
- * 返回形状不在本层猜：`getActionList` 用 `passthrough` 原样交出去，归一化在 `domain`。
+ * 返回形状不在本层猜：能力表用 `sentinelJson` 把 raw 解成值（宿主数组到前端已是 JSON 文本），
+ * 数组 / `{info:[]}` 两种包装的归一化仍在 `domain`。**不要退回 `passthrough`**：那会把文本
+ * 直接交给 `mapPsActions`，落成「文件无法识别」。
  */
 
 import { callCapability } from './capability';
@@ -38,7 +39,7 @@ export function callAction(item: PsActionItem): Promise<Result<void>> {
   return callCapability(CAP.callAction, [payload]);
 }
 
-/** 取 PS 动作面板的分组与动作：无参；返回**不解码**（形状由 `domain` 归一） */
+/** 取 PS 动作面板的分组与动作：无参；返回**已解成值**（`sentinelJson`），形状由 `domain` 归一 */
 export function getActionList(): Promise<Result<unknown>> {
   return callCapability(CAP.getActionList);
 }

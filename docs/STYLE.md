@@ -33,7 +33,7 @@
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，**没有 `variant`**：表面按所在表面走，见规则 15 / 19）；「左图标 + 右插槽 + Enter 提交」用 `components/TextField`（**宽度吃满容器，组件不提供宽度档位**；某处真要定宽就给那个页面的局部 css）。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」、给输入框加宽度档位 prop |
 | 多行输入 | `components/ui` 的 `Textarea`（**全仓唯一多行输入入口**）。表面与 `Input` 同一套（`--mm-input-bg` / `--mm-input-color`），**高度与 `resize` 不归它**：能多高、能不能拉由承载它的弹窗 / 页面局部 css 给 | 页面写裸 `<textarea>`、自己画边框与圆角、给控件加高度档位 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
-| 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
+| 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；层级取 `--mm-z-modal`，**低于浮层档**（弹窗内的下拉 / 菜单是 Portal 到 body 的浮层，遮罩压上去它们就看不见）；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
 | **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满**。**行里有 3 个以上元素、其中几个要挨在一起时，先分组**（嵌一层 `.mm-u-row` + 该组的 `gap`）—— 平铺会让 `space-between` 把空隙**均分成 n-1 份**，本该贴住的「标签 + 控件」被推到行中间（2026-10-31 导出抽屉的「品质」就是这么飘的）。**换行且要挨着**（chip 排 / 色块排 / 格子排）用组合层 `.mm-u-tiles`（§6.2），不是本条。**但别把这条用到该均分的地方**：一排图标按钮本来就该**均分铺满**（一排 6 个就是 6 等分），给它加 `flex-start` 会挤成左边一坨、右边空一片 —— §6.2 的 `.mm-icon-row` 只补 `gap`，不加 `justify-content` | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
 | 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（浅色底 / 文字色 / 圆角 / 投影，**无描边**，见 §7 规则 16）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
@@ -99,7 +99,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 | 纯色块 | `.mm-swatch` | **只有形与色**的方块（边长 `--mm-swatch-w/h`、小圆角、背景取调用点注入的 `--mm-swatch`、hover 描边不叠底）：吸色弹窗的「提取的颜色」、重命名页的图层颜色。**与样式页 `.mm-style__item--color` 的区别**：那个是**可编辑格子**，还带底 / 选中 / 编辑态，不是同一个东西 | `ui.css` |
 | 角标 | `.mm-badge`，语义档 `--count` | 贴在别的东西上的**小计数或标记**（筛选计数）。档位只在**有消费者**时才加（2026-10-31 删掉零消费者的 `--info` / `--warn` 两档） | `ui.css` |
 | 数据健康提示 | `.mm-notice`，语义档 `--warn` / `--error` | 「N 项无法识别」「分类筛选已禁用」这类**读到了但数据不全**的内联提示。档位只在**有消费者**时才加 | `ui.css` |
-| 弹窗壳 | `.mm-modal` + `__head` / `__title` / `__body` / `__actions` / `__grow`（后两个是 `.mm-u-row` 修饰符） | 居中的小弹窗（确认 / 输入 / 新建标签）；全屏加载走 `.mm-modal-mask` + `Loading`，不挂 `.mm-modal` | `ui.css` |
+| 弹窗壳 | `.mm-modal` + `__head` / `__title` / `__body` / `__actions` / `__grow`（后两个是 `.mm-u-row` 修饰符） | 所有居中弹窗（确认 / 输入 / 新建标签 / 添加动作 / 批量文字 / 图片取色），与 `mm-u-col` 同挂；全屏加载走 `.mm-modal-mask` + `Loading`，不挂 `.mm-modal` | `ui.css` |
 
 **已知例外一处**：`InputDialog` 不挂 `.mm-modal` —— 它的位置是「30% 高 + 左偏 90」而不是屏幕居中（原版行为，
 理由写在 `InputDialog/index.tsx` 文件头）。它的表面值（`mm-input-dialog.css`）与 `.mm-modal` 取同一组 token，
@@ -189,7 +189,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
    | 区块之间（纵向） | 容器 `gap` | 页面壳 / 承载容器 | `--mm-space-2` 8（原版 `mt10`） |
    | 组内（纵向） | 容器 `gap` | 承载容器 | `--mm-space-1` 4（原版 `mt6`） |
    | 同行并列（横向） | 行容器 `gap` | 行容器 | `--mm-space-inline` 6 |
-   | 弹窗内段落 | 弹窗壳 `gap` | `.mm-modal` / `.mm-input-dialog__main` / `.mm-action-dialog` | `--mm-space-3` 12（原版 `mt15`；12/8 = 1.5 与原版 15/10 同比例） |
+   | 弹窗内段落 | 弹窗壳 `gap` | `.mm-modal` / `.mm-input-dialog__main`（只有这两个壳） | `--mm-space-3` 12（原版 `mt15`；12/8 = 1.5 与原版 15/10 同比例） |
    | 控件内部 | `padding` | 控件自己的 css | `space-1` / `space-2` |
 
    **`margin` 只许三种用途**，不许拿它做普通块间距：

@@ -474,7 +474,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 | 函数 | 通道 | 参数 | 说明 |
 |---|---|---|---|
 | `dz_callAction` | **调度**（`ps_onJsx`，官方 `case 96 → jsxHistoryNoCheck`） | `[{ group, name, alias? }]` **整个 item** | 只传 `name` 会执行到别的组（官方 `:1823179`）；`alias` 只在显示用，执行仍靠 `group + name` |
-| `dz_getActionList` | **直调**（`jsxNoCheck`） | 无参 | 返回**裸数组**（2026-10-30 真机）：`[{ name: <组名>, children: [{ name, isAdd }] }]`。`isAdd` 未用；`{ info: [...] }` 包装仍未见过，`mapPsActions` 继续兜着 |
+| `dz_getActionList` | **直调**（`jsxNoCheck`） | 无参 | 返回**裸数组**（2026-10-30 真机）：`[{ name: <组名>, children: [{ name, isAdd }] }]`。`isAdd` 未用；`{ info: [...] }` 包装仍未见过，`mapPsActions` 继续兜着。**到前端是 JSON 文本**（`callJsx` 对非字符串返回一律 `JSON.stringify`，`bridge.ts:154`），能力表用 `sentinelJson` 解；用 `passthrough` 会让文本进 `mapPsActions`，落成「文件无法识别」（2026-11-02 真机） |
 
 两条要点：
 

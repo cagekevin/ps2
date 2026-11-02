@@ -283,7 +283,14 @@ function decodeEventPayload(raw: unknown): PhotoshopEventPayload | null {
   return parsed.value;
 }
 
-/** 原版 `bindEvent`：桥收对象不是 JSON 字符串，不补 appId */
+/**
+ * 原版 `bindEvent`（`app.v4.js:4985-4993`）：`new CSEvent(type, 'APPLICATION')` → 设
+ * `extensionId` / `data` → `dispatchEvent`。字段集合照抄，**桥收的是对象、不是 JSON 串**，
+ * `appId` 保持 `undefined`（原版构造后就是这个值）。
+ *
+ * 同机已验证能收事件的实现（`D:\稿定设计助理-存档\app\src\cep\events.ts`）传的就是这种
+ * 普通对象 —— 所以这里不需要 `window.CSEvent`，也不许把它当必要条件。
+ */
 function registerPhotoshopEvent(typeId: string): boolean {
   const bridge = getBridge();
   const id = getExtensionId();

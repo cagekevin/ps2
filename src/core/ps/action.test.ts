@@ -13,6 +13,7 @@ vi.mock('./capability', () => ({
 }));
 
 import { CAP } from './capabilities';
+import { ok } from '../../types/result';
 import { callAction, getActionList } from './action';
 
 beforeEach(() => {
@@ -42,5 +43,13 @@ describe('getActionList', () => {
 
     expect(calls[0]?.spec).toBe(CAP.getActionList);
     expect(calls[0]?.args).toEqual([]);
+  });
+
+  it('能力表把 JSON 文本解成值（`passthrough` 会把文本交给 mapPsActions，落成「文件无法识别」）', () => {
+    const raw = '[{"name":"默认动作","children":[{"name":"投影","isAdd":false}]}]';
+
+    expect(CAP.getActionList.parse(raw)).toEqual(
+      ok([{ name: '默认动作', children: [{ name: '投影', isAdd: false }] }])
+    );
   });
 });

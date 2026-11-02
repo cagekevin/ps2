@@ -255,8 +255,8 @@ function mm_style_getForegroundColor() {
  *
  * 【待核实】写这段的机器上没装 PS，整段运行时行为一次都没跑过。四条按 `docs/plan/04`
  * §6.2 的真机清单验：
- *   1. `mm_text_selectedIndexes` 的 `getIndex` 与 `mm_text_walkLayers` 的摊平下标是否同序
- *      （不同序的表现：选 2 层却读出别的层 —— 越界时这里返回空表，宁可空也不猜）
+ *   1. `mm_text_selectedIndexes` 的 `getIndex` 与 `mm_text_walkIndexOrder` 是否同序
+ *      （同序才取得到选中层；不同序时越界会直接报 `error:`，不再返回空表装作没选中）
  *   2. `suspendHistory` 的字符串参数能不能访问 `$.global` 上的补丁与报告
  *      （不行的表现：报告永远是 null → 返回 `{ ok: 0 }`，但图层其实已经改了）
  *   3. 第一层不设 `position` 时到底落在哪、相对堆叠的 1.6 倍行距够不够
@@ -274,11 +274,30 @@ function mm_text_walkLayers(parent, out) {
 }
 
 /**
+ * 深度优先摊平，**按 PS 图层序号的顺序**：从下往上，组内先子层、后组自己。
+ *
+ * 选中集合给的是 `getIndex("Lyr ")`（PS 自己的编号），数的就是这个顺序。
+ * 拿它去索引「面板顺序」（从上往下、组在子层之前）的数组必然错位：
+ * 选中的是文字层，取到的却是别的层，过滤掉非文字层之后就是一张空表。
+ */
+function mm_text_walkIndexOrder(parent, out) {
+	var layers = parent.layers;
+	for (var i = layers.length - 1; i >= 0; i--) {
+		var layer = layers[i];
+		if (layer.typename === "LayerSet") {
+			mm_text_walkIndexOrder(layer, out);
+			out.push(layer);
+		} else {
+			out.push(layer);
+		}
+	}
+}
+
+/**
  * PS 里当前选中的图层序号。
  *
  * 只用 `getIndex`（§10.2 实测可用）；`getIdentifier` 在本机取不到 id，不要换。
- * 返回的序号与 `mm_text_walkLayers` 的摊平下标是否一致 **UNVERIFIED**，
- * 所以调用方对越界一律当「没读到」处理，绝不猜。
+ * 这些序号要用 `mm_text_walkIndexOrder` 的数组去索引，不是 `mm_text_walkLayers` 的。
  */
 function mm_text_selectedIndexes() {
 	var ref = new ActionReference();
@@ -312,16 +331,23 @@ function mm_text_readAll(scope) {
 		if (scope === "selection") {
 			var indexes = mm_text_selectedIndexes();
 			if (!indexes.length) return { layers: [] };
+
+			/* 序号按 PS 的编号顺序取层，再记成 id 集合；输出仍走 `all`（面板顺序） */
+			var psOrder = [];
+			mm_text_walkIndexOrder(app.activeDocument, psOrder);
+			picked = {};
 			for (var k = 0; k < indexes.length; k++) {
-				if (indexes[k] < 0 || indexes[k] >= all.length) return { layers: [] };
+				var target = psOrder[indexes[k]];
+				/* 越界 = 两套编号又错开了：报出来，不假装「没选中文字层」 */
+				if (!target) return "error:选中序号 " + indexes[k] + " 超出图层数 " + psOrder.length;
+				picked[String(target.id)] = true;
 			}
-			picked = indexes;
 		}
 
 		var layers = [];
 		for (var i = 0; i < all.length; i++) {
-			if (picked && !mm_text_hasIndex(picked, i)) continue;
 			var layer = all[i];
+			if (picked && !picked[String(layer.id)]) continue;
 			if (mm_layer_kindOf(layer) !== "text") continue;
 			layers.push({
 				id: String(layer.id),
@@ -332,13 +358,6 @@ function mm_text_readAll(scope) {
 		}
 		return { layers: layers };
 	});
-}
-
-function mm_text_hasIndex(list, value) {
-	for (var i = 0; i < list.length; i++) {
-		if (list[i] === value) return true;
-	}
-	return false;
 }
 
 /** 历史组里真正写字的那一步（只碰 `contents`，样式一个都不动） */
@@ -489,7 +508,9 @@ function mm_text_doCreateAbsolute() {
 
 			for (var i = 0; i < group.layers.length; i++) {
 				var spec = group.layers[i];
-				var layer = mm_text_newLayer(set, null, spec.content, cfg.font, report);
+				/* 传的是**字体名**（`{ hjm }` 里的字符串），不是 `cfg.font` 对象本身 ——
+				   传对象时 `item.font = {…}` 必抛，报告里就成了「字体没设上」 */
+				var layer = mm_text_newLayer(set, null, spec.content, cfg.font && cfg.font.hjm, report);
 				layer.name = spec.name;
 
 				var item = layer.textItem;

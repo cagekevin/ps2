@@ -26,15 +26,19 @@ const ID_1298866208 = '1298866208';
 const ID_1131180832 = '1131180832';
 const ID_437 = '437';
 
-/** 假 CEP 桥：记录注册过的 ID，并留一个能触发回调的把手 */
+/** 假 CEP 桥：记录注册过的 ID 与事件对象，并留一个能触发回调的把手 */
 function makeBridge() {
   const registered: string[] = [];
+  const events: unknown[] = [];
   const handlers = new Map<string, (event: unknown) => void>();
   return {
     registered,
+    events,
     api: {
-      getExtensionID: () => 'ext-1',
+      /* 原生方法名是小写 d：`getExtensionID`（大写 D）在 `window.__adobe_cep__` 上不存在 */
+      getExtensionId: () => 'ext-1',
       dispatchEvent: (event: { type: string; data: string }) => {
+        events.push(event);
         registered.push(event.data);
       },
       addEventListener: (type: string, listener: (event: unknown) => void) => {
@@ -52,7 +56,7 @@ function makeBridge() {
   };
 }
 
-/** 最小 `window` 桩：node 环境没有 `window`，本模块读 `window.__adobe_cep__` */
+/** 最小 `window` 桩：node 环境没有 `window`，本模块只读 `window.__adobe_cep__` */
 function setWindow(cep: unknown): void {
   (globalThis as unknown as { window?: unknown }).window = { __adobe_cep__: cep };
 }
@@ -251,6 +255,23 @@ describe('判据辅助函数', () => {
 
     expect(mod.isForegroundSetd({ eventData: { null: { _property: 'foregroundColor' } } })).toBe(true);
     expect(mod.isForegroundSetd({ eventData: { null: { _property: 'backgroundColor' } } })).toBe(false);
+  });
+});
+
+describe('注册事件（官方 bindEvent）', () => {
+  it('字段照官方：type / APPLICATION / extensionId / data=事件ID，appId 保持 undefined', async () => {
+    const { mod, bridge } = await load();
+
+    await mod.subscribeHostEvent('imageDropped', () => {});
+
+    expect(bridge.registered).toEqual(['1349280544']);
+    expect(bridge.events[0]).toEqual({
+      type: 'com.adobe.PhotoshopRegisterEvent',
+      scope: 'APPLICATION',
+      appId: undefined,
+      extensionId: 'ext-1',
+      data: '1349280544'
+    });
   });
 });
 

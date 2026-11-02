@@ -52,6 +52,10 @@
   width: 100%;
   padding: 0 var(--mm-space-1);
   overflow: hidden;
+  /* 行高不许被压：列表是 flex 列且 `overflow-y:auto`，默认 `flex-shrink:1` 会把
+     28 行一起挤进固定高度（每行只剩 3~4px，文字全叠在一起，滚动条也不出现）。
+     mockup 的行是 block 子元素，压根没有这条坑。 */
+  flex: 0 0 auto;
 }
 
 .mm-text-batch__row--head{
@@ -68,6 +72,10 @@
   height: var(--mm-batch-list-h);
   overflow-y: auto;
   scrollbar-gutter: stable;
+  /* 光标跟随靠行的 `offsetTop`，而 `offsetTop` 量的是**最近的定位祖先** ——
+     这里不写 `position`，行会量到 body 的绝对位置，滚动值永远是错的（列表直接到底，
+     高亮行不在视野里，看着就是「对应不准」）。所以滚动容器自己必须是 offsetParent。 */
+  position: relative;
 }
 
 .mm-text-batch__list .mm-text-batch__row{

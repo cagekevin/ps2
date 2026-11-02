@@ -253,8 +253,38 @@ export function lenientVoid(fallback: string): Parser<void> {
 
 
 /**
- * 约定值先折失败，再当 JSON 解析（严格）：`mm_style_getForegroundColor` 这一档。
- * 与 `strictVoid` 的区别是没有 err 信封可判，解析出来就是载荷本身。
+ * 严格写：**只认宿主明说成功**（`ok` / `OK` / `1` / `{ err: 0 }` / `{ code: "OK" }`）。
+ *
+ * 与 `lenientVoid` 的差别只有一处：`undefined` / 空串 / `0` 不再算成功，落 `PS_BAD_PAYLOAD`
+ * 并把 raw 进 `detail`。什么时候必须用它：**「没生效」本身看不出来的写操作** ——
+ * `Layer_placedLayerRelinkToFile`（拖入自动转链接）原先用 `lenientVoid`，
+ * 于是「没转成」既不报错也不留痕，日志里查不到任何东西（2026-11-02）。
+ *
+ * `fallback` 只给 `{ err: 1 }` 且宿主没给 `msg` 时兜底，其余一律不猜。
+ */
+export function strictVoid(fallback: string): Parser<void> {
+  return (raw) => {
+    const guard = unwrapRaw(raw);
+    if (guard.status === 'error') return guard;
+
+    const text = raw.trim();
+    if (text === 'ok' || text === 'OK' || text === '1') return ok(undefined);
+
+    const parsed = parseJsxRaw(raw);
+    if (parsed.status === 'ok' && isRecord(parsed.value)) {
+      const value = parsed.value;
+      if (value.code === 'OK') return ok(undefined);
+      if (value.err === 0) return ok(undefined);
+      if (typeof value.err === 'number') return hostRejected(value, raw, fallback);
+    }
+
+    return unrecognized(raw);
+  };
+}
+
+/**
+ * 约定值先折失败，再当 JSON 解析（严格）：**宿主直接返回载荷、没有 err 信封**的读能力用它
+ * （`mm_style_getForegroundColor` / `dz_getActionList`）。解析出来就是载荷本身，不再拆 `data`。
  */
 export function sentinelJson(raw: string): Result<unknown> {
   const guard = unwrapRaw(raw);

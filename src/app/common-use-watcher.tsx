@@ -61,35 +61,56 @@ export function CommonUseWatcher() {
   const relinkOnDrop = useCommonUseStore((s) => booleanOptionOf(s.options, 'cyOpenDranInToLinkObject'));
   const smartFillOn = useCommonUseStore((s) => booleanOptionOf(s.options, 'cyAutoFillColor'));
   const guideOn = useCommonUseStore((s) => s.guideOn);
+  const loadOptions = useCommonUseStore((s) => s.load);
+
+  /*
+   * **必须自己先读一次设置**：`store/common-use.load()` 原先只有「常用页 / 设置页」调，
+   * 而本组件在**所有页面**常驻。停在其它页面时 `options` 一直是官方默认值
+   * （`cyOpenDranInToLinkObject` 默认 false）⇒ 拖入转链接永不订阅、智能填色按默认 true
+   * 反而乱跑（2026-11-02 真机：开关状态 `relinkOnDrop:false`，而文件里是 true）。
+   */
+  useEffect(() => {
+    loadOptions();
+  }, [loadOptions]);
 
   useEffect(() => {
+    /* 先把六个开关的**生效值**打出来：事件驱动的功能「没反应」时，第一个要回答的就是
+       「effect 跑了没 / 它看到的开关是什么」。没有这行就只能靠猜（2026-11-02 查了一下午）。 */
+    log.info('常用页事件订阅：开关状态', {
+      embedOnDrop,
+      embedOnPaste,
+      embedOnClipMask,
+      relinkOnDrop,
+      smartFillOn,
+      guideOn
+    });
+
     /* 只列**当前开着**的语义：关着的开关不留空监听，退订即行为 */
     const subscriptions: Subscription[] = [];
 
     /*
-     * **顺序 = 官方注册顺序**：`app.v4.js` 的 `mounted` 里先注册 `cyDragInAutoEmbed`（`:38222`）、
-     * 后注册 `cyOpenDranInToLinkObject`（`:38225`）；同一事件 ID 上按注册顺序触发，
-     * 所以是**先 embed、后 relink**。
+     * **顺序 = 官方派发顺序：先 relink、后 embed**。
      *
-     * 这里原先反着写，注释还把官方说成「先 relink 后 embed」，于是 relink 落在图层
-     * 还没走完嵌入那一步时，表现就是「勾了拖入转链接但没反应」（`TD-01-29`）。
+     * 依据是 `app.v4.js` 的**派发处**（`:69463-69466`，`case 1349280544`）：
+     *   `handleKey("cyOpenDranInToLinkObject", r); handleKey("cyDragInAutoEmbed", r);`
+     * 不是 `mounted` 里的注册顺序（`:38222` / `:38225`）—— 注册只决定「开关开着才挂」，
+     * 谁先跑由派发处决定。这里一度按注册顺序排成 embed 在前，结果嵌入先把置入层变成
+     * 普通智能对象，relink 再跑时已经没有「置入」可转 ⇒ 勾了拖入转链接但没反应（`TD-01-29`）。
      * **别按可读性重排这两块。**
      */
-    if (embedOnDrop) {
-      subscriptions.push({ name: 'imageDropped', onEvent: () => run(embedImage(), '拖入自动嵌入失败') });
-    }
     if (relinkOnDrop) {
       subscriptions.push({
         name: 'imageDropped',
         onEvent: (payload) => {
-          const path = droppedPathOf(payload);
-          if (!path) {
-            log.warn('拖入转链接缺少文件路径，已跳过', { payload });
-            return;
-          }
-          run(relinkPlacedLayer(path), '拖入转链接智能对象失败');
+          /* 空路径的判据只在命令层（`relinkPlacedLayer` 的 `path:empty`）：
+             这里再判一次就成了第二个判据，而且会把「载荷里没有 _path」吞成一句 warn，
+             看不出宿主到底发了什么 —— 拖入自动转链接就查不到东西（2026-11-02）。 */
+          run(relinkPlacedLayer(droppedPathOf(payload) ?? ''), '拖入转链接智能对象失败');
         }
       });
+    }
+    if (embedOnDrop) {
+      subscriptions.push({ name: 'imageDropped', onEvent: () => run(embedImage(), '拖入自动嵌入失败') });
     }
     if (embedOnPaste) {
       subscriptions.push({ name: 'imagePasted', onEvent: () => run(embedImage(), '粘贴自动嵌入失败') });
@@ -143,7 +164,13 @@ export function CommonUseWatcher() {
           return;
         }
         unsubscribes.push(result.value);
-      });
+      })
+        /* 订阅里抛出来（`dispatchEvent` 被宿主拒、构造 CSEvent 失败）时，promise 会静默
+           变成 unhandled rejection —— 表现就是「开关开着、什么日志都没有」（2026-11-02）。 */
+        .catch((error: unknown) => {
+          /* `String(error)`：CEP 抛出来的不是 Error，直接塞进 ctx 会被序列化成 `{}` */
+          log.error('常用页事件订阅抛出异常', { name, message: String(error) });
+        });
     }
 
     return () => {

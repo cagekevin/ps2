@@ -76,6 +76,7 @@ import {
   sentinelJson,
   strictData,
   strictPayload,
+  strictVoid,
   unwrapRaw
 } from './raw';
 import { replaceReportRaw } from './vectorize-raw';
@@ -479,10 +480,15 @@ export const CAP = {
     label: '导入多图片', parse: unwrapRaw
   },
 
-  /** 转链接智能对象（改路径）：直调，参数 `[path]` */
+  /**
+   * 转链接智能对象（改路径）：直调，参数 `[path]`。
+   *
+   * `strictVoid` 而不是 `lenientVoid`：这个函数「没生效」时界面什么都看不出来（拖入自动转链接
+   * 就是），宽解析会把「宿主没给成功信号」当成成功，日志里一条都不留。
+   */
   relinkPlacedLayer: {
     fn: 'Layer_placedLayerRelinkToFile', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: lenientVoid(MSG.coreOps.relink)
+    parse: strictVoid(MSG.coreOps.relink)
   },
 
   toLinkSmartObject: {
@@ -554,10 +560,18 @@ export const CAP = {
     label: '动作', parse: unwrapRaw
   },
 
-  /** 取 PS 动作面板的分组与动作：直调、无参；返回形状交给 `domain` 归一（Vue 版也是这么做的） */
+  /**
+   * 取 PS 动作面板的分组与动作：直调、无参。
+   *
+   * `sentinelJson` 而不是 `passthrough`：`callJsx` 对非字符串返回一律 `JSON.stringify`
+   * （`bridge.ts:154`），宿主给的数组到这里是**文本**；`passthrough` 会把这段文本原样交给
+   * `domain/action-library.mapPsActions`，那边只认数组 / `{info:[]}` ⇒ 落到 `CORRUPT`
+   * 「文件无法识别」，弹窗永远打不开（2026-11-02 真机）。数组 / `{info:[]}` 两种包装仍由
+   * `mapPsActions` 归一，这里只做「文本 → 值」。
+   */
   getActionList: {
     fn: 'dz_getActionList', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: passthrough
+    parse: sentinelJson
   },
 
   /* ---------------- 常用页 v2：事件驱动（无 UI 按钮，由 watcher 触发） ---------------- */

@@ -12,6 +12,7 @@ import {
   passthrough,
   strictData,
   strictPayload,
+  strictVoid,
   unwrapRaw
 } from './raw';
 
@@ -177,6 +178,28 @@ describe('lenientVoid', () => {
         expect(result.detail).toContain('raw:');
       }
     }
+  });
+});
+
+describe('strictVoid', () => {
+  const parse = strictVoid(FALLBACK);
+
+  it('只认宿主明说成功', () => {
+    for (const raw of ['ok', 'OK', '1', RAWS.normal, RAWS.codeOk]) {
+      expect(verdict(parse(raw))).toBe('ok');
+    }
+  });
+
+  it('`undefined` / 空串 / `0` 不再算成功（与 lenientVoid 的唯一差别）', () => {
+    for (const raw of ['undefined', '', 'null', '0']) {
+      expect(verdict(parse(raw))).toBe(`PS_BAD_PAYLOAD:${MSG.badPayload}`);
+    }
+  });
+
+  it('err:1 仍是宿主拒绝；约定值仍折对应码', () => {
+    expect(verdict(parse(RAWS.errMsg))).toBe('VALIDATION:请选择文字图层');
+    expect(verdict(parse(RAWS.errBare))).toBe(`VALIDATION:${FALLBACK}`);
+    expect(verdict(parse(RAWS.rejected))).toBe(`PS_REJECTED:${MSG.codeReason.PS_REJECTED}`);
   });
 });
 

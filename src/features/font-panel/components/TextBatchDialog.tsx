@@ -9,13 +9,14 @@
  *
  * 「改全部 / 改选中」点 tab 即读入对应范围；OCR 是独立动作（建层后不自动读取）。
  *
- * 原文表只干一件事：告诉用户「现在改的是哪一层」。所以一行 18 高、11 号字，
- * 编辑到哪一行就高亮哪一行 —— **高亮只在 `onChange` 里更新**，不挂在 click / keyup / select 上，
- * 也不调 `scrollIntoView`：输入框上只允许有一条数据链（`draft`），
- * 挂别的副作用会抢滚动与焦点，多图层时表现为「字打不进去」。
+ * 原文表只干一件事：告诉用户「现在改的是哪一层」。一行 18 高、11 号字，**默认只显示 3 行**
+ * （`--mm-batch-list-h`），多的靠列表自己滚 —— 它不该把弹窗撑高。
+ * 光标在哪行就高亮哪行，并把那一行滚进视野；滚动**只改列表自己的 `scrollTop`**，
+ * 不许用 `scrollIntoView`（会连弹窗一起滚，打字时还会抢滚动位置，表现为「字打不进去」）。
+ * 高亮只由 `onChange` / `onSelect` 更新，不挂 click / keyup。
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Spin } from '../../../components/Spin';
 import { Button, Textarea, stopClickPropagation } from '../../../components/ui';
 import { encodeLayers } from '../../../domain/text-batch';
@@ -40,16 +41,31 @@ interface TextBatchDialogProps {
 export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
   const batch = useTextBatch(baseSize, onClose);
   const boxRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>('all');
   const [activeLine, setActiveLine] = useState(0);
 
   useDismiss(true, boxRef, onClose);
 
-  /* 光标在第几行 → 高亮第几层（唯一写点，只由 onChange 调） */
+  /* 光标在第几行 → 高亮第几层（唯一写点：`onChange` 打字、`onSelect` 移动光标都走它） */
   const syncActiveLine = useCallback((element: HTMLTextAreaElement) => {
     const before = element.value.slice(0, element.selectionStart ?? 0);
     setActiveLine((before.match(/\n/g) ?? []).length);
   }, []);
+
+  /* 列表只显示 3 行，光标跑到视野外就把那一行滚进来。
+     **只改列表自己的 `scrollTop`**：`scrollIntoView` 会连页面/弹窗一起滚，
+     而且会在打字过程中抢滚动位置（多图层时表现为「字打不进去」）。 */
+  useEffect(() => {
+    const list = listRef.current;
+    const row = list?.children.item(activeLine);
+    if (!list || !(row instanceof HTMLElement)) return;
+
+    const top = row.offsetTop;
+    const bottom = top + row.offsetHeight;
+    if (top < list.scrollTop) list.scrollTop = top;
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+  }, [activeLine, batch.layers.length]);
 
   /* 三个 tab 都是「点即执行」：改全部/改选中读入，OCR 直接识别并在成功后切回改全部 */
   function pickTab(next: Tab): void {
@@ -135,7 +151,7 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
                     <span className="mm-text-batch__name">图层</span>
                     <span className="mm-text-batch__text">原文</span>
                   </div>
-                  <div className="mm-text-batch__list">
+                  <div ref={listRef} className="mm-text-batch__list">
                     {batch.layers.map((layer, index) => (
                       <div
                         key={layer.id}
@@ -165,6 +181,8 @@ export function TextBatchDialog({ baseSize, onClose }: TextBatchDialogProps) {
                     batch.changeDraft(event.target.value);
                     syncActiveLine(event.currentTarget);
                   }}
+                  /* 点一下 / 按方向键把光标挪到别的行：高亮与列表滚动都要跟上（`onSelect` 就是「光标或选区变了」） */
+                  onSelect={(event) => syncActiveLine(event.currentTarget)}
                 />
               </>
             ) : (

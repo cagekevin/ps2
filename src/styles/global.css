@@ -121,7 +121,10 @@ button{
      写 `inset: 0` 时居中基准是整窗口，dev（浏览器）里弹窗会整体偏左，且导航也被压暗。
      CEP 面板里导航同样存在（40px），所以这里在两种环境里语义一致。 */
   inset: 0 0 0 var(--mm-nav-w);
-  z-index: var(--mm-z-tooltip);
+  /* 取遮罩自己的档（900），**低于浮层档**（`--mm-z-dropdown` 1000）：
+     弹窗内的下拉 / 右键菜单是 Portal 到 body 的浮层，遮罩压在上面它们就永远看不见
+     （2026-11-02「添加动作」的分组下拉被遮罩压住，透出下面的动作列表）。 */
+  z-index: var(--mm-z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

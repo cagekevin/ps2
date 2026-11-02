@@ -81,7 +81,7 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
 
   return (
     <div className="mm-modal-mask" role="dialog" aria-modal="true">
-      <div className="mm-action-dialog">
+      <div className="mm-u-col mm-modal mm-action-dialog">
         <div className="mm-modal__title">{'添加动作'}</div>
 
         <SelectBox
@@ -90,21 +90,30 @@ export function AddActionDialog({ actions, onConfirm, onClose }: Props) {
           onChange={setCurrent}
         />
 
-        <CheckBox label={'全选'} checked={allChecked} indeterminate={halfChecked} onChange={toggleAll} />
+        {/* 全选与列表是**同一组**（全选就是这份列表的批量开关）：两者间距取组内档，
+            不能各占一个「弹窗内段落」，否则全选下面会空出 12、而项与项只有 4 */}
+        <div className="mm-action-dialog__group">
+          <CheckBox
+            label={'全选'}
+            checked={allChecked}
+            indeterminate={halfChecked}
+            onChange={toggleAll}
+          />
 
-        <div className="mm-action-dialog__list">
-          {items.length ? (
-            items.map((item) => (
-              <CheckBox
-                key={keyOf(item)}
-                label={item.name}
-                checked={selected.has(keyOf(item))}
-                onChange={() => toggleOne(item)}
-              />
-            ))
-          ) : (
-            <div className="mm-action-dialog__empty">{MSG.action.emptyGroup}</div>
-          )}
+          <div className="mm-action-dialog__list">
+            {items.length ? (
+              items.map((item) => (
+                <CheckBox
+                  key={keyOf(item)}
+                  label={item.name}
+                  checked={selected.has(keyOf(item))}
+                  onChange={() => toggleOne(item)}
+                />
+              ))
+            ) : (
+              <div className="mm-action-dialog__empty">{MSG.action.emptyGroup}</div>
+            )}
+          </div>
         </div>
 
         <div className="mm-action-dialog__footer">
