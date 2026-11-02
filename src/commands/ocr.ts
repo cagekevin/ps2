@@ -60,7 +60,7 @@ export async function ocrToLayers(): Promise<
       dropTemp(imagePath);
       return exported;
     }
-    imagePath = exported.value;
+    imagePath = exported.value.path;
 
     const size = fileSizeAt(imagePath);
     if (size.status === 'error') {

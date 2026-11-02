@@ -24,3 +24,21 @@ export interface VectorSubPath {
   closed: boolean;
   points: VectorPoint[];
 }
+
+/**
+ * 导出图 + 它相对文档的位置。
+ *
+ * **`path` 里的坐标是「导出图自己的像素」**（`0..exportWidth`），不是文档坐标：
+ * 路径点必须经 `domain/vectorize.scaleSubpaths` 换算回文档，偏移与比例都在那条函数里。
+ * 三个字段缺一不可 —— 少了 `bounds` 会把层建到左上角，少了 `exportWidth` 会整体缩放错。
+ */
+export interface VectorExport {
+  /** 导出 PNG 的绝对路径 */
+  path: string;
+  /** PNG 的实际像素宽（= 图层宽 × 放大倍数，取整后的值） */
+  exportWidth: number;
+  /** PNG 的实际像素高 */
+  exportHeight: number;
+  /** 图层在文档里的 bounds（px，文档坐标），路径点要加回这个偏移 */
+  bounds: { left: number; top: number; width: number; height: number };
+}

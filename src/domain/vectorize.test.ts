@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractSvgPaths, hexToRgb, parseSvgPath } from './vectorize';
+import type { VectorPoint, VectorSubPath } from '../types/vectorize';
+import { extractSvgPaths, hexToRgb, parseSvgPath, scaleSubpaths } from './vectorize';
 
 /** 取第一条子路径（多数用例只有一条） */
 function first(d: string) {
@@ -84,13 +85,93 @@ describe('parseSvgPath', () => {
     expect(result.status).toBe('error');
     if (result.status === 'error') {
       expect(result.code).toBe('VALIDATION');
-      expect(result.reason).toContain('弧线');
+      /* 用户看的话统一来自 MSG，具体是哪条指令只进 detail */
+      expect(result.detail).toContain('cmd:A');
     }
   });
 
   it('空数据给 VALIDATION，不是空数组', () => {
     const result = parseSvgPath('   ');
     expect(result.status).toBe('error');
+  });
+
+  it('参数不足的 d 明确报错，不静默跳过', () => {
+    /* C 需要 6 个参数，这里只有 4 个 */
+    const result = parseSvgPath('M0 0 C10 0 20 0');
+    expect(result.status).toBe('error');
+    if (result.status !== 'error') return;
+    expect(result.code).toBe('VALIDATION');
+    expect(result.detail).toContain('args:4');
+  });
+
+  it('闭合曲线的起点拿到进入控制柄，与起点重合的末点被去掉', () => {
+    /* 第二段曲线的终点回到起点：起点的 left 应取该段的 c2 = (50,0) */
+    const subpath = first('M0,0 C10,0 20,0 30,0 C40,0 50,0 0,0 Z');
+
+    expect(subpath.points).toHaveLength(2);
+    expect(subpath.points[0]?.anchor).toEqual([0, 0]);
+    expect(subpath.points[0]?.left).toEqual([50, 0]);
+    expect(subpath.closed).toBe(true);
+  });
+
+  it('末点离起点很远时不合并（直线闭合保持原样）', () => {
+    const subpath = first('M0 0 L10 0 L10 10 Z');
+
+    expect(subpath.points).toHaveLength(3);
+    expect(subpath.points[0]?.left).toEqual([0, 0]);
+  });
+});
+
+describe('scaleSubpaths', () => {
+  function point(anchor: [number, number], left: [number, number], right: [number, number]): VectorPoint {
+    return { anchor, left, right, smooth: true };
+  }
+
+  it('按 bounds / export 的比例换算，并加回图层左上角', () => {
+    const subpaths: VectorSubPath[] = [{ closed: true, points: [point([100, 50], [90, 40], [110, 60])] }];
+
+    /* 600 → 300 是 0.5 倍，再平移 (20, 10) */
+    const result = scaleSubpaths(subpaths, {
+      exportWidth: 600,
+      exportHeight: 300,
+      bounds: { left: 20, top: 10, width: 300, height: 150 }
+    });
+
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.value[0]?.points[0]?.anchor).toEqual([70, 35]);
+    expect(result.value[0]?.points[0]?.left).toEqual([65, 30]);
+    expect(result.value[0]?.points[0]?.right).toEqual([75, 40]);
+  });
+
+  it('横竖比例分开算：取整导致的两边比例差异不许共用同一个 scale', () => {
+    const subpaths: VectorSubPath[] = [{ closed: false, points: [point([600, 600], [600, 600], [600, 600])] }];
+
+    const result = scaleSubpaths(subpaths, {
+      exportWidth: 600,
+      exportHeight: 601,
+      bounds: { left: 0, top: 0, width: 300, height: 300 }
+    });
+
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    const anchor = result.value[0]?.points[0]?.anchor;
+    expect(anchor?.[0]).toBe(300);
+    expect(anchor?.[1]).toBeCloseTo((300 * 600) / 601, 6);
+  });
+
+  it('导出尺寸为 0 时报 VALIDATION，不静默返回原坐标', () => {
+    const subpaths: VectorSubPath[] = [{ closed: true, points: [point([1, 1], [1, 1], [1, 1])] }];
+
+    const result = scaleSubpaths(subpaths, {
+      exportWidth: 0,
+      exportHeight: 100,
+      bounds: { left: 0, top: 0, width: 100, height: 100 }
+    });
+
+    expect(result.status).toBe('error');
+    if (result.status !== 'error') return;
+    expect(result.code).toBe('VALIDATION');
   });
 });
 

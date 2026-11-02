@@ -1,10 +1,11 @@
 /**
- * 矢量化命令：选中图层 → 白底 PNG → vtracer → 路径点 → 形状层（替换原层）。
+ * 矢量化命令：选中图层 → 白底 PNG（只导图层，长边不足先放大）→ vtracer
+ * → 路径点换算回文档坐标 → 形状层（替换原层）。
  *
  * 时序不能乱，**删除原层在最后一步**（jsx 里做的）：前面任何一步失败，原图层都还在。
  *
  * 三条硬规则同其它命令（`CONVENTIONS` §9）：不碰 DOM、不弹 toast、只返回 `Result<T>`。
- * 坐标解析全在 `domain/vectorize`，这里只编排。
+ * 坐标解析与换算全在 `domain/vectorize`，这里只编排。
  */
 
 import { MSG } from '../types/messages';
@@ -19,6 +20,7 @@ import {
   hexToRgb,
   isCanvasBackground,
   parseSvgPath,
+  scaleSubpaths,
   svgCanvasSize
 } from '../domain/vectorize';
 
@@ -46,7 +48,8 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
   const exported = await exportLayer();
   if (exported.status === 'error') return exported;
 
-  const pngPath = exported.value;
+  /* 导出图只有图层那么大（长边可能被放大过）：`bounds` 是它在文档里的位置与原始尺寸 */
+  const { path: pngPath, exportWidth, exportHeight, bounds } = exported.value;
   const svgPath = pngPath.replace(/\.png$/i, '.svg');
 
   const converted = await rasterToSvg(pngPath, svgPath);
@@ -120,7 +123,18 @@ export async function vectorizeSelection(): Promise<Result<{ points: number }>> 
 
   const color = rgb;
 
-  const written = await replaceWithPath({ color, subpaths });
+  /*
+   * 导出图坐标 → 文档坐标（**唯一换算点**）：导出图只有图层那么大，长边还可能被放大过，
+   * 不换算就是整层贴在画布左上角。
+   */
+  const placed = scaleSubpaths(subpaths, { exportWidth, exportHeight, bounds });
+  if (placed.status === 'error') {
+    dropTemp(pngPath);
+    dropTemp(svgPath);
+    return placed;
+  }
+
+  const written = await replaceWithPath({ color, subpaths: placed.value });
 
   dropTemp(pngPath);
   dropTemp(svgPath);

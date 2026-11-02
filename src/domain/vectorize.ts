@@ -12,8 +12,9 @@
  * 真遇到就明确报错，不猜。
  */
 
+import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
-import type { VectorPoint, VectorSubPath } from '../types/vectorize';
+import type { VectorExport, VectorPoint, VectorSubPath } from '../types/vectorize';
 
 export type { VectorPoint, VectorSubPath } from '../types/vectorize';
 
@@ -80,7 +81,7 @@ function tokenize(d: string): { cmd: string; args: number[] }[] {
  * 一段 `d` 可以有多条子路径（每个 `M` 开一条）；相对指令按当前点换算成绝对坐标。
  */
 export function parseSvgPath(d: string): Result<VectorSubPath[]> {
-  if (!d.trim()) return failWithDetail('VALIDATION', '路径数据是空的', 'd:empty');
+  if (!d.trim()) return failWithDetail('VALIDATION', MSG.vectorize.badPath, 'd:empty');
 
   const subpaths: VectorSubPath[] = [];
   let points: VectorPoint[] = [];
@@ -113,6 +114,23 @@ export function parseSvgPath(d: string): Result<VectorSubPath[]> {
     const upper = cmd.toUpperCase();
 
     if (upper === 'Z') {
+      /*
+       * 闭合段：vtracer 的曲线闭合是「最后一段的终点 = 起点」，于是列表末尾多出一个
+       * 与起点重合的点，而**起点的 `left`（进入控制柄）一直是零长度** ——
+       * 不把控制柄交还给它，每个闭合轮廓的起点都会变成一个尖角，圆角正是在那里走样。
+       */
+      const first = points[0];
+      const last = points[points.length - 1];
+      if (
+        first &&
+        last &&
+        last !== first &&
+        Math.hypot(last.anchor[0] - first.anchor[0], last.anchor[1] - first.anchor[1]) < 0.5
+      ) {
+        first.left = [last.left[0], last.left[1]];
+        points.pop();
+      }
+
       closed = true;
       flush();
       cx = startX;
@@ -123,16 +141,27 @@ export function parseSvgPath(d: string): Result<VectorSubPath[]> {
     }
 
     if (upper === 'A') {
-      return failWithDetail('VALIDATION', '不支持 SVG 弧线指令 A', 'cmd:A');
+      return failWithDetail('VALIDATION', MSG.vectorize.badPath, 'cmd:A');
     }
 
     /* 每条命令的参数个数；`M` 之后的重复组按 `L` 处理 */
     const arity: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2 };
     const step = arity[upper] ?? 0;
-    if (!step || args.length < step) continue;
+    /*
+     * 参数不足 = 这条 `d` 被截断：报出去，不许 `continue` 把剩下的当成没写 ——
+     * 截断的路径会安静地少一段，建出来的形状缺一块，而日志里什么都没有。
+     * `step === 0` 只会出现在未登记的命令上（`Z` 在上面已处理），同样报出去。
+     */
+    if (!step) {
+      return failWithDetail('VALIDATION', MSG.vectorize.badPath, `cmd:${cmd}`);
+    }
+    if (args.length < step) {
+      return failWithDetail('VALIDATION', MSG.vectorize.badPath, `cmd:${cmd} args:${args.length}`);
+    }
 
     for (let offset = 0; offset + step <= args.length; offset += step) {
       const a = args.slice(offset, offset + step);
+      /* 长度已由上面的 `args.length < step` 保证；`?? 0` 只是 `noUncheckedIndexedAccess` 的类型收窄 */
       const n = (i: number): number => a[i] ?? 0;
 
       /* `M` 的后续组是隐式 `L` */
@@ -241,7 +270,7 @@ export function parseSvgPath(d: string): Result<VectorSubPath[]> {
     for (const point of subpath.points) point.smooth = isSmooth(point);
   }
 
-  if (!subpaths.length) return failWithDetail('VALIDATION', '路径数据里没有点', `d:${d.slice(0, 60)}`);
+  if (!subpaths.length) return failWithDetail('VALIDATION', MSG.vectorize.badPath, `d:${d.slice(0, 60)}`);
   return ok(subpaths);
 }
 
@@ -322,6 +351,53 @@ export function isCanvasBackground(
 
   const area = Math.max(0, maxX - minX) * Math.max(0, maxY - minY);
   return area >= canvas.width * canvas.height * 0.99;
+}
+
+/**
+ * 导出图坐标 → 文档坐标。
+ *
+ * 导出图只有图层那么大（长边可能被放大过），所以两个比例要分开算：
+ * `sx = bounds.width / exportWidth`、`sy = bounds.height / exportHeight`。
+ * 用同一个比例会在非等比取整时累积误差，图层越窄越明显。
+ *
+ * 这里**必须**是唯一的换算点：jsx 只产出 `exportWidth / bounds`，不做加法；
+ * 命令层也不许自己乘一遍 —— 两处换算 = 两套判据。
+ */
+export function scaleSubpaths(
+  subpaths: readonly VectorSubPath[],
+  frame: Pick<VectorExport, 'exportWidth' | 'exportHeight' | 'bounds'>
+): Result<VectorSubPath[]> {
+  const { exportWidth, exportHeight, bounds } = frame;
+  /*
+   * 这里的校验是**纯函数自保**（除零会得到 NaN 并静默污染整条路径），
+   * 不是第二份判据：形状对不对由生产端的 `vecExportRaw` 定，它已经拦过一次。
+   */
+  if (!(exportWidth > 0) || !(exportHeight > 0) || !(bounds.width > 0) || !(bounds.height > 0)) {
+    return failWithDetail(
+      'VALIDATION',
+      MSG.vectorize.badExport,
+      `frame:${exportWidth}x${exportHeight} bounds:${bounds.width}x${bounds.height}`
+    );
+  }
+
+  const sx = bounds.width / exportWidth;
+  const sy = bounds.height / exportHeight;
+  const map = (point: readonly [number, number]): [number, number] => [
+    point[0] * sx + bounds.left,
+    point[1] * sy + bounds.top
+  ];
+
+  return ok(
+    subpaths.map((subpath) => ({
+      closed: subpath.closed,
+      points: subpath.points.map((point) => ({
+        anchor: map(point.anchor),
+        left: map(point.left),
+        right: map(point.right),
+        smooth: point.smooth
+      }))
+    }))
+  );
 }
 
 /** `#rrggbb` → `{ r, g, b }`；认不出返回 null（调用方决定兜底色） */

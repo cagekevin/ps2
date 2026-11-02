@@ -89,3 +89,16 @@ export const GROUP_PREFIX = '模块 ';
  * `filterSpeckle: 4`：丢掉 4px 以下的噪点，避免碎成一堆小路径。
  */
 export const VECTORIZE_OPTIONS = { preset: 'bw', mode: 'spline', filterSpeckle: 4 } as const;
+
+/**
+ * 导出图的长边目标（px）：小图层先放大到这个尺度再矢量化。
+ *
+ * 为什么必须放大：vtracer 的 spline 拟合按输入像素采样，300px 的圆角只有三十几个采样点，
+ * 拟合出来会发方；放大到 600 后同一圆角有七十几个采样点，形状明显更贴原图。
+ * 为什么是 600 而不是更大：实测 300→600→1200 圆角逐步变好，600 之后收益已经很小，
+ * 而 SVG 字节数与锚点数随尺寸线性上涨（1200 时锚点约为 300 的 4.5 倍）。
+ */
+export const VECTORIZE_TARGET_EDGE = 600;
+
+/** 放大上限：20px 的小图放大到 600 是 30 倍纯插值，只会更糊，不许无限放大 */
+export const VECTORIZE_MAX_UPSCALE = 8;

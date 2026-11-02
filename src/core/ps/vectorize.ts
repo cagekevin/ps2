@@ -5,14 +5,20 @@
  * 通道：直调（`gate: 'core'` 只允许 `direct`）。
  */
 
+import { VECTORIZE_MAX_UPSCALE, VECTORIZE_TARGET_EDGE } from '../../config';
 import type { Result } from '../../types/result';
-import type { VectorSubPath } from '../../types/vectorize';
+import type { VectorExport, VectorSubPath } from '../../types/vectorize';
 import { callCapability } from './capability';
 import { CAP } from './capabilities';
 
-/** 导出选中图层为白底 PNG（选中必须恰好 1 个），返回绝对路径 */
-export function exportLayer(): Promise<Result<string>> {
-  return callCapability(CAP.vecExport, []);
+/**
+ * 导出选中图层为白底 PNG（选中必须恰好 1 个）。
+ *
+ * 只导出图层本身，长边不足 `VECTORIZE_TARGET_EDGE` 时先放大 —— 两个常数由这里传，
+ * jsx 一个数字都不写（`config.ts` 是唯一可调参数表）。
+ */
+export function exportLayer(): Promise<Result<VectorExport>> {
+  return callCapability(CAP.vecExport, [VECTORIZE_TARGET_EDGE, VECTORIZE_MAX_UPSCALE]);
 }
 
 /**

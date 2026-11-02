@@ -151,7 +151,7 @@ export default function SettingsPage() {
 
     if (result.status === 'error') return;
 
-    if (result.value.status === 'needs-confirm') {
+    if (result.value.outcome === 'needs-confirm') {
       const confirmed = await confirm({
         title: MSG.cloud.overwriteAsk,
         confirmText: MSG.cloud.overwrite

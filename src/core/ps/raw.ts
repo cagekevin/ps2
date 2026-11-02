@@ -351,17 +351,4 @@ export function strictData(fallback: string): Parser<unknown> {
   };
 }
 
-/**
- * 「jsx 只返回一个绝对路径」的通用解析器（导出图 / 导出 SVG 都用它）。
- *
- * 以前这份在 `ocr-raw.ts` 里，矢量化要用就得抄第二份 —— 同形解析器两份必然走形，
- * 所以上移到公共清单：`no-doc` 折 `PS_NO_DOC`，空串算宿主没给结果。
- */
-export function exportPathRaw(raw: string): Result<string> {
-  const guard = unwrapRaw(raw);
-  if (guard.status === 'error') return guard;
 
-  const path = raw.trim();
-  if (!path) return failWithDetail('PS_BAD_PAYLOAD', MSG.badPayload, 'raw:empty');
-  return ok(path);
-}

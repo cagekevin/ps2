@@ -2,7 +2,7 @@
  * 云同步命令（2 条：`upload` / `download`）
  *
  * 只有一次人工确认：上传前拉一次云端 rev，比台账新就问「确定覆盖？」。
- * **命令不弹窗**：`upload` 返回 `{ status: 'needs-confirm', cloudRev }`，页面用 `useConfirm()` 问，
+ * **命令不弹窗**：`upload` 返回 `{ outcome: 'needs-confirm', cloudRev }`，页面用 `useConfirm()` 问，
  * 确认后带 `force: true` 再调一次。
  *
  * 三条口径（`07` §3.6）：
@@ -36,8 +36,13 @@ import { fail, failWithDetail, ok, type Result } from '../types/result';
 const ACTION_PULL = 'pull_data';
 const ACTION_PUSH = 'push_data';
 
-/** 上传结果：`needs-confirm` 是**成功**臂（页面弹确认后再带 `force` 调一次） */
-export type UploadOutcome = { status: 'done' } | { status: 'needs-confirm'; cloudRev: number };
+/**
+ * 上传结果：`needs-confirm` 是**成功**臂（页面弹确认后再带 `force` 调一次）。
+ *
+ * 判别位叫 `outcome` 不叫 `status`：`status` 已经是 `Result` 的通用成败（`ok` / `error`），
+ * 同一个名字装两种语义，读代码的人会把「需要确认」当成一种失败。
+ */
+export type UploadOutcome = { outcome: 'done' } | { outcome: 'needs-confirm'; cloudRev: number };
 
 /**
  * 发一次请求并映射状态码。
@@ -116,7 +121,7 @@ export async function upload(options: { force?: boolean } = {}): Promise<Result<
 
   const cloudRev = cloud.value.rev;
   if (!options.force && needsOverwrite(cloudRev, readLedger()?.rev ?? 0)) {
-    return ok({ status: 'needs-confirm', cloudRev });
+    return ok({ outcome: 'needs-confirm', cloudRev });
   }
 
   const style = collectStyleUnit();
@@ -143,7 +148,7 @@ export async function upload(options: { force?: boolean } = {}): Promise<Result<
 
   await writeLedger(rev, updatedAt);
   useCloudStore.getState().load();
-  return ok({ status: 'done' });
+  return ok({ outcome: 'done' });
 }
 
 /**

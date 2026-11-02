@@ -67,7 +67,6 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
   return { id, name, ext, width, height };
 }
 import {
-  exportPathRaw,
   lenientVoid,
   parseDataEnvelope,
   parseFontFamily,
@@ -79,7 +78,8 @@ import {
   strictVoid,
   unwrapRaw
 } from './raw';
-import { replaceReportRaw } from './vectorize-raw';
+import { ocrExportRaw } from './ocr-raw';
+import { replaceReportRaw, vecExportRaw } from './vectorize-raw';
 
 /** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
 export const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
@@ -290,22 +290,26 @@ export const CAP = {
   /* ---------------- OCR（自写 jsx，`core` 门只能直调） ---------------- */
 
   /**
-   * 导出当前画布为 JPG：入参 `quality`（8 / 6 / 4）。
+   * 导出当前画布为 JPG：入参 `quality`（8 / 6 / 4），返回 `{ path, offset }`。
    * 体积上限由 `commands/ocr` 判（百度 4MB），这里不管。
    */
   ocrExport: {
     fn: 'mm_ocr_exportImage', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
-    parse: exportPathRaw
+    parse: ocrExportRaw
   },
 
   /* 建层不单列能力：OCR 走 `textCreateAll`（`mode: "absolute"` 那一支），与「批量文字」同一个入口 */
 
   /* ---------------- 矢量化（自写 jsx，`core` 门只能直调） ---------------- */
 
-  /** 导出选中图层为白底 PNG：返回图片绝对路径（选中不是恰好 1 个时 jsx 返回 `need-one`） */
+  /**
+   * 导出选中图层为白底 PNG：`{ path, exportWidth, exportHeight, bounds }`。
+   * 只导出图层本身（不是整份画布），长边不足 `VECTORIZE_TARGET_EDGE` 时先放大。
+   * 选中不是恰好 1 个时 jsx 返回 `need-one`；空图层返回 `skipped`。
+   */
   vecExport: {
     fn: 'mm_vec_exportLayer', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireOneLayer, parse: exportPathRaw
+    require: requireOneLayer, parse: vecExportRaw
   },
 
   /** 用解析好的路径点建形状层并替换原图层：整次一条历史 */

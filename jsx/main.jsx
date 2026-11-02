@@ -595,7 +595,12 @@ function mm_ocr_exportImage(quality) {
 			app.activeDocument = doc;
 		}
 
-		return path;
+		/*
+		 * 返回对象而不是裸路径：导出图这件事的形状与矢量化一致（`mm_vec_exportLayer`），
+		 * 下一个加导出的人只需要抄一种。`offset` 现在恒 0（整画布导出，图片坐标 = 文档坐标），
+		 * 选区识别落地后它才会非零。
+		 */
+		return { path: path, offset: { left: 0, top: 0 } };
 	});
 }
 
@@ -604,53 +609,107 @@ function mm_ocr_exportImage(quality) {
 
 /* ---------------- 矢量化：导出选中层 / 用路径点建形状 ---------------- */
 
+/** `bounds` 里的元素可能是 UnitValue 也可能是数字（PS 版本差异），统一取 px 数字 */
+function mm_vec_px(value) {
+	return (typeof value === "number") ? value : value.as("px");
+}
+
 /**
- * 导出**选中的那个图层**为白底 PNG（选中必须恰好 1 个），返回图片绝对路径。
+ * 导出**选中的那个图层**为白底 PNG（选中必须恰好 1 个）。
+ *
+ * → `{ path, exportWidth, exportHeight, bounds }`；`no-doc` / `need-one` / `skipped` / `error:…`
+ *
+ * **只导出图层本身，不导出整份画布**：3000×3000 的画布里放一个 300px 图标时，
+ * 99% 的像素是白底，vtracer 要在上面做聚类，又慢又没必要；而且路径点全是画布坐标，
+ * 后面没法按图层尺寸归一化。
+ *
+ * **长边小于 `targetEdge` 时先放大再存**（上限 `maxUpscale` 倍）：
+ * vtracer 的曲线拟合按输入像素采样，300px 的圆角只有三十几个采样点，拟合出来会发方。
+ * 只放大不缩小 —— 大图本来就能转好，缩小只会丢细节。
  *
  * 为什么铺白底：vtracer 把透明区当黑色，透明底会转出一整块黑（实测过）。
- * 为什么用新文档：`flatten()` 只能在整份文档上做，图层级没有等价操作。
- * 位置不用换算：新文档与原文档同尺寸同分辨率，复制过去的图层坐标不变。
  */
-function mm_vec_exportLayer() {
+function mm_vec_exportLayer(targetEdge, maxUpscale) {
 	return mm_safe("mm_vec_exportLayer", function () {
 		if (!app.documents.length) return "no-doc";
-
-		var doc = app.activeDocument;
 		if (mm_text_selectedIndexes().length !== 1) return "need-one";
 
+		var doc = app.activeDocument;
 		var target = doc.activeLayer;
-		var dir = new Folder(Folder.temp.fsName + "/ps_vec_engine");
-		if (!dir.exists) dir.create();
 
-		var path = dir.fsName + "/temp_layer.png";
-		if (File(path).exists) File(path).remove();
-
-		var temp = app.documents.add(
-			doc.width, doc.height, doc.resolution, "vec_tmp",
-			NewDocumentMode.RGB, DocumentFill.WHITE
-		);
-		/* 同上：导出过程中的「文件已存在 / 是否替换」一类窗口一律不弹，结束恢复 */
+		/*
+		 * 单位必须切 px：下面用数字建文档 / 平移 / 缩放，而 `bounds` 与 `doc.width`
+		 * 都是跟随标尺单位的 UnitValue —— 不切就可能把 300 当成厘米建出 300cm 的文档。
+		 */
+		var originalRuler = app.preferences.rulerUnits;
 		var originalDialogs = app.displayDialogs;
+		app.preferences.rulerUnits = Units.PIXELS;
 		app.displayDialogs = DialogModes.NO;
+
+		var temp = null;
 		try {
+			var box;
+			try {
+				box = target.bounds;
+			} catch (boundsError) {
+				/* 空图层 / 全透明：PS 连 bounds 都给不出，没有可转的内容。
+				   原因仍要落一行日志 —— 这条路径只回「跳过」，不落日志就查不到是哪一层。 */
+				mm_log("mm_vec_exportLayer bounds failed: " + boundsError.message);
+				return "skipped";
+			}
+
+			var left = mm_vec_px(box[0]);
+			var top = mm_vec_px(box[1]);
+			var w = mm_vec_px(box[2]) - left;
+			var h = mm_vec_px(box[3]) - top;
+			if (!(w >= 1) || !(h >= 1)) return "skipped";
+
+			var scale = targetEdge / Math.max(w, h);
+			if (scale < 1) scale = 1;
+			if (scale > maxUpscale) scale = maxUpscale;
+			var ew = Math.max(1, Math.round(w * scale));
+			var eh = Math.max(1, Math.round(h * scale));
+
+			var dir = new Folder(Folder.temp.fsName + "/ps_vec_engine");
+			if (!dir.exists) dir.create();
+			var path = dir.fsName + "/temp_layer.png";
+			if (File(path).exists) File(path).remove();
+
+			temp = app.documents.add(w, h, doc.resolution, "vec_tmp", NewDocumentMode.RGB, DocumentFill.WHITE);
+
 			/*
 			 * **源文档必须先成为当前文档**：PS 跨文档 `duplicate` 只允许从「最前面的文档」复制，
-			 * 否则抛「您只能从最前面的文档复制图层。」（真机 2026-11-02，行号钉在这里）。
+			 * 否则抛「您只能从最前面的文档复制图层。」（真机 2026-11-02）。
 			 * 新建 `temp` 后当前文档已经是 temp，`target` 却属于 doc —— 所以先把 doc 置前，
-			 * 复制完再切回 temp 做 flatten / save。三步顺序不能省。
+			 * 复制完再切回 temp 做平移 / 缩放 / flatten / save。顺序不能省。
 			 */
 			app.activeDocument = doc;
-			target.duplicate(temp, ElementPlacement.PLACEATBEGINNING);
+			var copy = target.duplicate(temp, ElementPlacement.PLACEATBEGINNING);
 			app.activeDocument = temp;
+
+			/* 平移到原点：临时文档只有图层那么大，不平移就会被裁掉一部分 */
+			copy.translate(-left, -top);
+
+			/* 尺寸不变时不重采样：多一次插值就是多一次模糊 */
+			if (ew !== Math.round(w) || eh !== Math.round(h)) {
+				temp.resizeImage(ew, eh, doc.resolution, ResampleMethod.BICUBIC);
+			}
+
 			temp.flatten();
 			temp.saveAs(new File(path), new PNGSaveOptions(), true, Extension.LOWERCASE);
-		} finally {
-			app.displayDialogs = originalDialogs;
-			temp.close(SaveOptions.DONOTSAVECHANGES);
-			app.activeDocument = doc;
-		}
 
-		return path;
+			return {
+				path: path,
+				exportWidth: temp.width.as("px"),
+				exportHeight: temp.height.as("px"),
+				bounds: { left: left, top: top, width: w, height: h }
+			};
+		} finally {
+			if (temp) temp.close(SaveOptions.DONOTSAVECHANGES);
+			app.activeDocument = doc;
+			app.preferences.rulerUnits = originalRuler;
+			app.displayDialogs = originalDialogs;
+		}
 	});
 }
 

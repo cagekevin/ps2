@@ -37,3 +37,16 @@ export interface OcrGroupSpec {
   name: string;
   layers: OcrLayerSpec[];
 }
+
+/**
+ * 导出图 + 它在文档里的偏移。
+ *
+ * `offset` 现在是恒 `{ 0, 0 }`：整画布导出时图片坐标就是文档坐标。
+ * 选区识别（`docs/plan/18-OCR只识别选区-2026-11-02.md`）落地后，裁切图的坐标要加回这个偏移。
+ * **形状先定死、功能后补**：否则「jsx 导出图」会出现裸路径与对象两种写法（`TD-01-31`）。
+ */
+export interface OcrExport {
+  path: string;
+  /** 裁切矩形左上角（px，文档坐标）；整画布导出时为 0 */
+  offset: { left: number; top: number };
+}
