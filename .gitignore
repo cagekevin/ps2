@@ -1,6 +1,9 @@
 node_modules/
 dist/
 
+# 一次性探针、mockup、交接单放这里，不进仓库
+tmp/
+
 *.tsbuildinfo
 .vite/
 .DS_Store
