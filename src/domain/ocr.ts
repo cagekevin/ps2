@@ -12,7 +12,7 @@
  */
 
 import { GROUP_GAP_RATIO, GROUP_PREFIX, NAME_MAX, SIZE_MULTIPLIER } from '../config';
-import type { OcrBlock, OcrGroupSpec, OcrLayerSpec } from '../types/ocr';
+import type { OcrBlock, OcrGroupSpec, OcrLayerSpec, OcrOffset } from '../types/ocr';
 
 /**
  * 块 → 建层指令。
@@ -20,13 +20,16 @@ import type { OcrBlock, OcrGroupSpec, OcrLayerSpec } from '../types/ocr';
  * **故意丢 `rect.width` / `rect.height`**：建层只用得到左上角与字号
  * （位置 `top + fontSize`、字号 `fontSize × 1.3`），框宽高在 PS 里由文字自己撑开。
  * 这两个字段在 `OcrBlock` 里仍有用（分组要 `height` 算间距），所以不能在上一步就删。
+ *
+ * `offset` 是**坐标偏移的唯一加法处**：识别坐标是导出图内的坐标，有选区导出时
+ * 图左上角不在文档原点，不加回来整批层会整体错位（jsx 只产出偏移，不做加法）。
  */
-function toLayer(block: OcrBlock): OcrLayerSpec {
+function toLayer(block: OcrBlock, offset: OcrOffset): OcrLayerSpec {
   return {
     name: block.content.replace(/[\r\n]/g, ' ').substring(0, NAME_MAX),
     content: block.content,
-    left: block.rect.left,
-    top: block.rect.top + block.fontSize,
+    left: block.rect.left + offset.left,
+    top: block.rect.top + block.fontSize + offset.top,
     size: block.fontSize * SIZE_MULTIPLIER
   };
 }
@@ -38,8 +41,14 @@ function toLayer(block: OcrBlock): OcrLayerSpec {
  *
  * **这里不判空块**：`core/ocr/blocks.mergeBlocks` 是唯一的过滤点（空行在那里就丢了），
  * 两处都判就是两个判据、且这里的计数永远收不到东西。
+ *
+ * `offset` **必填不给默认值**：只有 OCR 一个调用方，给默认值等于允许漏传而不报错
+ *（`CONVENTIONS` §4.3「必填 → 可选」是放宽，plan 18 §5）。
  */
-export function toOcrGroups(blocks: readonly OcrBlock[]): { groups: OcrGroupSpec[] } {
+export function toOcrGroups(
+  blocks: readonly OcrBlock[],
+  offset: OcrOffset
+): { groups: OcrGroupSpec[] } {
   const sorted = [...blocks].sort((a, b) => a.rect.top - b.rect.top);
   const groups: OcrGroupSpec[] = [];
   let layers: OcrLayerSpec[] = [];
@@ -57,7 +66,7 @@ export function toOcrGroups(blocks: readonly OcrBlock[]): { groups: OcrGroupSpec
       if (gap > GROUP_GAP_RATIO * last.fontSize) flush();
     }
 
-    layers.push(toLayer(block));
+    layers.push(toLayer(block, offset));
     last = block;
   }
 

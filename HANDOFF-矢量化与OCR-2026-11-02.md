@@ -48,18 +48,12 @@ npm run deploy     # 把 dist + jsx 推到 CEP 目录，不 deploy 就还是旧 
 
 ## 5. 第 3 步过了之后：OCR 选区识别
 
-落点全在 `docs/plan/18-OCR只识别选区-2026-11-02.md` §4（7 处）+ §5（契约）。**形状部分已经落地了，只剩功能**：
+落点全在 `docs/plan/18-OCR只识别选区-2026-11-02.md` §4（7 处）+ §5（契约）。**2026-11-03 已全部落地，未真机**：
 
-- 已就位：`types/ocr.ts` 的 `OcrExport`、`core/ps/ocr-raw.ocrExportRaw`、`core/ps/ocr.exportImage` 返回 `Result<OcrExport>`、jsx 返回 `{ path, offset }`（`offset` 恒 `{0,0}`）。
-- 要做的：jsx 里读 `selection.bounds` → clamp → 副本 `crop` → `offset` 填裁切矩形左上；`domain/ocr.toOcrGroups` 加第二参 `offset`（必填）；`commands/ocr` 透传。
-
-**动手前先确认一件事**（plan 18 §8 第 1 条）：拉个矩形选区，跑
-
-```javascript
-alert(app.activeDocument.selection.bounds.toSource())
-```
-
-看元素是 `UnitValue` 还是纯数字 —— 决定 `bounds[i].as('px')` 那行怎么写（数字上调用 `.as` 会抛）。把输出贴给接手的 AI。
+- jsx：`mm_ocr_exportImage` 切 px → `mm_ocr_selectionRect`（读 `selection.bounds` + clamp + 零尺寸兜底）→ 副本 `crop` → 返回 `{ path, offset }`。
+- 前端：`domain/ocr.toOcrGroups(blocks, offset)` 第二参必填、`toLayer` 加偏移；`commands/ocr` 的 `offset` 与 `imagePath` 同生命周期。
+- `bounds` 取数已确认（plan 18 §8 第 1 条）：PS 26.7 的 `selection.bounds.toSource()` 打印 `[{}, {}, {}, {}]`，即 4 个 `UnitValue`，统一走 `mm_px`。
+- 剩：plan 18 §7 的 6 条验收要真机跑一遍（尤其「有选区只建选区内的层、位置与肉眼一致」）。
 
 其余三条硬事实（已查证，不用再查）：无选区时 `selection.bounds` **抛异常**（不是返回整画布）；`crop` 吃 `[left, top, right, bottom]` 且单位跟 `rulerUnits`（进函数先切 `Units.PIXELS`）；裁完画布左上归零，偏移就是裁切矩形的左上角。
 
@@ -82,11 +76,11 @@ node tmp/vec-size-test.mjs # 表格数据：path 数 / 锚点 / 细线是否保�
 - 放大上限 8 倍：20px 的小图最多到 160px，不会硬拉到 600。
 - 空图层 / 全透明层返回 `skipped`（`PS_SKIPPED`），不报错、不建层。
 - `bw` 模式只出一色填充：彩色图标会被阈值化成单色，颜色取第一条非背景 path 的 `fill`。彩色分层是另一个功能。
-- OCR 的 `offset` 现在恒 0，接选区之前不要给它赋别的值 —— `toOcrGroups` 还没接第二参，赋了会静默错位。
+- OCR 的 `offset` 只在 `domain/ocr.toLayer` 加一次；jsx 只产出、命令层只透传，别在中间再算一遍（会双重偏移）。
 
 ## 8. 交接清单
 
 - 已推送：`2181448`（21 文件）。
 - 体检报告：`daily/架构日志/07-跨区-矢量化导出形状体检-2026-11-02.md`（四条债全结，主表剩 11 条）。
-- 未真机：本文 §3 的五件事全部。
-- 下一步只做一件事：§3 第 1–5 步跑完，再按 §5 做选区。
+- 未真机：本文 §3 的五件事全部 + plan 18 §7 的六条验收。
+- 下一步只做一件事：真机跑完 §3 第 1–5 步与 plan 18 §7，任一不过就停下来改，别叠加新功能。

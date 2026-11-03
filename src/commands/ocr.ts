@@ -22,6 +22,7 @@ import { log } from '../core/logger';
 import { toOcrGroups } from '../domain/ocr';
 import { DEFAULT_CREATE_FONT } from '../domain/text-batch';
 import { MSG } from '../types/messages';
+import type { OcrOffset } from '../types/ocr';
 import { failWithDetail, ok, type Result } from '../types/result';
 
 
@@ -34,7 +35,7 @@ function dropTemp(path: string): void {
 }
 
 /**
- * 当前画布 → 文字图层。
+ * 当前画布（有像素选区时只识别选区）→ 文字图层。
  *
  * 一次点击 = 一次 `suspendHistory`（撤销一步全撤）。识别结果**不返回给页面展示**：
  * 层已经在画布上，要改字去批量文字弹窗的「改字」页点「全部」。
@@ -52,6 +53,9 @@ export async function ocrToLayers(): Promise<
   }
 
   let imagePath = '';
+  /* `offset` 与 `imagePath` 同生命周期：体积循环里导出可能调 1–3 次，
+     拿第一轮的偏移配第三轮的图，建层会整体错位（plan 18 §5.2） */
+  let offset: OcrOffset = { left: 0, top: 0 };
   let bytes = 0;
 
   for (const quality of OCR_QUALITIES) {
@@ -61,6 +65,7 @@ export async function ocrToLayers(): Promise<
       return exported;
     }
     imagePath = exported.value.path;
+    offset = exported.value.offset;
 
     const size = fileSizeAt(imagePath);
     if (size.status === 'error') {
@@ -86,7 +91,7 @@ export async function ocrToLayers(): Promise<
   dropTemp(imagePath);
   if (recognized.status === 'error') return recognized;
 
-  const layout = toOcrGroups(recognized.value.blocks);
+  const layout = toOcrGroups(recognized.value.blocks, offset);
   if (!layout.groups.length) {
     return failWithDetail('VALIDATION', MSG.ocr.empty, `dropped:${recognized.value.dropped}`);
   }

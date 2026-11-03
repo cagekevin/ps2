@@ -38,6 +38,19 @@ function mm_safe(name, fn) {
 	}
 }
 
+/* ---------------- 单位 ---------------- */
+
+/**
+ * `bounds` 的元素可能是 UnitValue 也可能是数字（PS 版本差异），统一取 px 数字。
+ *
+ * 真机 2026-11-02 实测 PS 26.7：`selection.bounds.toSource()` 打印 `[{}, {}, {}, {}]`，
+ * 即 4 个 UnitValue；纯数字上调用 `.as()` 会抛，所以两种都得认。
+ * 矢量化导出与 OCR 导出共用这一处，不要再写第二个。
+ */
+function mm_px(value) {
+	return (typeof value === "number") ? value : value.as("px");
+}
+
 /* ---------------- 图层 ---------------- */
 
 /**
@@ -565,42 +578,87 @@ function mm_text_createAll(configJson) {
 /* ---------------- OCR：导出画布 / 按坐标建层 ---------------- */
 
 /**
- * 导出当前画布为 JPG（**合并可见图层**），返回图片绝对路径。
+ * 选区外接矩形（px，已 clamp 到画布）；无选区 / 零尺寸返回 null。
+ *
+ * **无选区时 `selection.bounds` 抛异常**（不是返回整画布），所以「有没有选区」只有这一处判据。
+ * clamp 是必须的：选区可以拉到画布外，`crop` 吃画布外矩形会直接抛错。
+ * 零尺寸（< 1px）按无选区处理 —— PS 里画不出零宽选区，这个分支只兜异常输入，
+ * 报成用户可见失败反而误导。
+ */
+function mm_ocr_selectionRect(doc) {
+	var bounds;
+	try {
+		bounds = doc.selection.bounds;
+	} catch (e) {
+		return null;
+	}
+	if (!bounds || bounds.length !== 4) return null;
+
+	var left = Math.max(0, mm_px(bounds[0]));
+	var top = Math.max(0, mm_px(bounds[1]));
+	var right = Math.min(doc.width.as("px"), mm_px(bounds[2]));
+	var bottom = Math.min(doc.height.as("px"), mm_px(bounds[3]));
+
+	if (right - left < 1 || bottom - top < 1) {
+		mm_log("mm_ocr_exportImage: selection too small, fallback to whole canvas");
+		return null;
+	}
+	return [left, top, right, bottom];
+}
+
+/**
+ * 导出当前画布为 JPG（**合并可见图层**）；有像素选区时只导出选区。
+ *
+ * → `{ path, offset }`，`offset` 是裁切矩形左上角（px，文档坐标），无选区时为 0。
+ * 识别回来的坐标是**图内坐标**，建层时加回 `offset` 才是文档坐标
+ *（加法只在 `domain/ocr.toLayer` 做一次，这里只产出偏移）。
  *
  * `duplicate(name, true)` 的第二参数是 mergeLayersOnly：只留合成图，隐藏层不参与。
  * 这与用户眼睛看到的画面一致，也是原 jsx 的做法。
  *
- * 与原 jsx 的一处差异：**失败也把副本关掉**（原实现 saveAs 抛错时副本会留在 PS 里，
- * 文档列表里多一个 temp_export）。
+ * 裁切在**副本**上做（`dup.crop`）：原文档的图层与选区一律不动。
+ *
+ * 与原 jsx 的两处差异：① 失败也把副本关掉（原实现 saveAs 抛错时副本会留在 PS 里，
+ * 文档列表里多一个 temp_export）；② 单位切 px —— `selection.bounds` 与 `crop` 都按
+ * 当前标尺单位解释，不切就可能把 300 当成 300cm 传进 crop
+ *（与 `mm_text_doCreateAbsolute` 同一套「存 → 设 → finally 还原」）。
  */
 function mm_ocr_exportImage(quality) {
 	return mm_safe("mm_ocr_exportImage", function () {
 		if (!app.documents.length) return "no-doc";
 
 		var doc = app.activeDocument;
-		var dir = new Folder(Folder.temp.fsName + "/ps_ocr_engine");
-		if (!dir.exists) dir.create();
+		var originalRuler = app.preferences.rulerUnits;
+		app.preferences.rulerUnits = Units.PIXELS;
 
-		var path = dir.fsName + "/temp_poster.jpg";
-		if (File(path).exists) File(path).remove();
-
-		var dup = doc.duplicate("temp_export", true);
+		var dup = null;
 		try {
+			/* 选区先读：副本带自己的选区状态，读了也不会更准，早读少一个中间态 */
+			var area = mm_ocr_selectionRect(doc);
+
+			var dir = new Folder(Folder.temp.fsName + "/ps_ocr_engine");
+			if (!dir.exists) dir.create();
+
+			var path = dir.fsName + "/temp_poster.jpg";
+			if (File(path).exists) File(path).remove();
+
+			dup = doc.duplicate("temp_export", true);
 			app.activeDocument = dup;
+			if (area) dup.crop(area);
+
 			var options = new JPEGSaveOptions();
 			options.quality = quality || 8;
 			dup.saveAs(new File(path), options, true, Extension.LOWERCASE);
-		} finally {
-			dup.close(SaveOptions.DONOTSAVECHANGES);
-			app.activeDocument = doc;
-		}
 
-		/*
-		 * 返回对象而不是裸路径：导出图这件事的形状与矢量化一致（`mm_vec_exportLayer`），
-		 * 下一个加导出的人只需要抄一种。`offset` 现在恒 0（整画布导出，图片坐标 = 文档坐标），
-		 * 选区识别落地后它才会非零。
-		 */
-		return { path: path, offset: { left: 0, top: 0 } };
+			return {
+				path: path,
+				offset: area ? { left: area[0], top: area[1] } : { left: 0, top: 0 }
+			};
+		} finally {
+			if (dup) dup.close(SaveOptions.DONOTSAVECHANGES);
+			app.activeDocument = doc;
+			app.preferences.rulerUnits = originalRuler;
+		}
 	});
 }
 
@@ -608,11 +666,6 @@ function mm_ocr_exportImage(quality) {
    与「批量文字」共用 `mm_text_newLayer`。别再往本段加第二个建层函数。 */
 
 /* ---------------- 矢量化：导出选中层 / 用路径点建形状 ---------------- */
-
-/** `bounds` 里的元素可能是 UnitValue 也可能是数字（PS 版本差异），统一取 px 数字 */
-function mm_vec_px(value) {
-	return (typeof value === "number") ? value : value.as("px");
-}
 
 /**
  * 导出**选中的那个图层**为白底 PNG（选中必须恰好 1 个）。
@@ -658,10 +711,10 @@ function mm_vec_exportLayer(targetEdge, maxUpscale) {
 				return "skipped";
 			}
 
-			var left = mm_vec_px(box[0]);
-			var top = mm_vec_px(box[1]);
-			var w = mm_vec_px(box[2]) - left;
-			var h = mm_vec_px(box[3]) - top;
+			var left = mm_px(box[0]);
+			var top = mm_px(box[1]);
+			var w = mm_px(box[2]) - left;
+			var h = mm_px(box[3]) - top;
 			if (!(w >= 1) || !(h >= 1)) return "skipped";
 
 			var scale = targetEdge / Math.max(w, h);
