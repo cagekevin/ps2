@@ -17,12 +17,13 @@ import { readTextAt, removeFileAt } from '../core/storage';
 import { rasterToSvg } from '../core/vectorize/vtracer';
 import {
   extractSvgPaths,
-  hexToRgb,
   isCanvasBackground,
   parseSvgPath,
   scaleSubpaths,
   svgCanvasSize
 } from '../domain/vectorize';
+/* 十六进制解析的唯一出口在 `domain/image-color`（`TD-02-7` 还账） */
+import { hexToRgb } from '../domain/image-color';
 
 /** 临时产物删不掉只记日志：不影响结果，不该让用户以为转换失败 */
 function dropTemp(path: string): void {

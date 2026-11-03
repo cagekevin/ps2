@@ -20,6 +20,7 @@ import { useRunCommand } from '../../hooks/useRunCommand';
 import { flip as flipCommand, zoom as zoomCommand } from '../../commands/common-use';
 import type { FlipDirection } from '../../commands/common-use';
 import { align as alignCommand } from '../../commands/font-set';
+import { applyRandomColors } from '../../commands/style';
 import {
   applyFontName,
   copyFont,
@@ -424,6 +425,14 @@ export function useFontPanel() {
     });
   }, [runCommand, patchText]);
 
+  /**
+   * 骰子：随机一对本地配色，设成 PS 的应用前景/背景色。
+   * **不 patch 文字属性** —— 改的是工具栏两个色块，文字颜色没变。
+   */
+  const onRandomColor = useCallback(() => {
+    void runCommand(() => applyRandomColors(), { spin: false });
+  }, [runCommand]);
+
   const onStyle = useCallback(
     (kind: 'caps' | 'kerning' | 'italic' | 'bold', value: boolean) => {
       void run(() => setStyle(kind, value)).then((done) => {
@@ -502,6 +511,7 @@ export function useFontPanel() {
     onLeading,
     onTracking,
     onColor,
+    onRandomColor,
     onStyle,
     onTextAlign,
     onCtrlClick,

@@ -45,6 +45,9 @@ const VENDOR_FILE = 'jsx/vendor.jsx';
 /**
  * 官方 jsx 里我们会用到的入口，缺一个就算 vendor 不可用。
  *
+ * 新增官方能力同样是 3 处同改（没有 ①，改成「确认 `jsx/vendor.jsx` 里有这个名字」）——
+ * 逐条清单见下方 `CORE_FUNCS` 的「3 处必须同改」。
+ *
  * **两条通道，别混**（实现只有一份，在 `./capability.ts` + `./capabilities.ts` 的 `channel` 字段）：
  *   调度 `ps_onJsx({ f, arr, n })` —— 渐变、图层样式，以及常用页里走调度的按钮（原版 jsxHistory*）
  *   直调 `fn(a, b)`               —— 字体（`ys_*`，参数 encodeText）、系统字体 / 文本属性 / 常用页另一半
@@ -59,6 +62,16 @@ const VENDOR_FILE = 'jsx/vendor.jsx';
 /**
  * 自有 jsx（`jsx/main.jsx`）里**能力层实际在用**的函数清单。
  *
+ * 【新增一条 PS 能力，3 处必须同改 —— 改了这里就要回头看另外两处】
+ *   ① jsx/main.jsx              写 function mm_<域>_<动作>
+ *   ② core/ps/capabilities.ts   加一行（fn / gate / channel / timeout / parse / require）
+ *   ③ core/ps/init.ts           名字登记进本清单（官方函数进 `VENDOR_FUNCS`）
+ * 漏 ③ ⇒ `npm run check` 红（下面那句「init.test 会校验」就是这道闸）；
+ * ② ③ 一起漏 ⇒ 探测不到这个名字，真机报的是 `EvalScript error.` 而不是
+ * `PS_UNREADY + detail: fn:xxx`，排查方向会跑偏。
+ * 官方函数没有 ①，改成「确认 `jsx/vendor.jsx` 里有这个名字」（那份只读，不能加注释）。
+ * 删能力三处一起删，逐项清单见 `docs/JSX-通道与自写指南.md` §6.2.1。
+ *
  * 与 `VENDOR_FUNCS` 对称，`core/ps/init.test.ts` 会校验「表里每个 `gate: 'core'` 的能力都在
  * 这里」。以前这段是 `load()` 里的内联数组，只有 3 项，漏了 `mm_style_applyShapeFill` /
  * `mm_style_applyBorderColor` / `mm_style_getForegroundColor`——函数缺失时 `core` 仍判为
@@ -71,10 +84,12 @@ export const CORE_FUNCS = [
   /* 图层：类型 / 名称 / 选中数量 */
   'mm_layer_getState',
   'mm_layer_getSelection',
-  /* 样式：形状填充 / 线框色 / 取前景色（应用颜色走 vendor 的 ys_useStyleColor） */
+  /* 样式：形状填充 / 线框色 / 取前景色 / 设应用前景+背景色
+     （把颜色上到图层走 vendor 的 ys_useStyleColor，不在这里） */
   'mm_style_applyShapeFill',
   'mm_style_applyBorderColor',
   'mm_style_getForegroundColor',
+  'mm_style_setAppColors',
   /* 批量文字：读全部 / 批量写回 / 新建 N 层（三个都是对外动作，进表） */
   'mm_text_readAll',
   'mm_text_writeAll',

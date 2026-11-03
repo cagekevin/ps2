@@ -757,7 +757,7 @@ core/ps/
 ├─ capability.ts 能力执行器：门 → 前置 → 调用 → 解析（唯一入口）
 ├─ capabilities.ts 能力表：一行一个能力，是「唯一事实」
 ├─ layer.ts     选择、类型、名称
-├─ style.ts     颜色 / 渐变 / 图层样式应用
+├─ style.ts     颜色 / 渐变 / 图层样式应用 + 应用前景/背景色
 ├─ font.ts      字体应用（ys_* 先检查再应用；ztgl_* 系统字体列表/应用）
 ├─ text.ts      文本属性（zt_* 直调；读返回 raw、写返回 Result<void>）
 ├─ text-batch.ts 批量文字（mm_text_* 自写 jsx，gate:'core' 只能直调）

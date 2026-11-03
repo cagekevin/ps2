@@ -43,6 +43,8 @@ interface Props {
   onLeading: (value: number) => void;
   onTracking: (value: number) => void;
   onColor: () => void;
+  /** 随机取一对本地配色，设成 PS 的应用前景色与背景色（不上图层） */
+  onRandomColor: () => void;
   onStyle: (kind: StyleKind, value: boolean) => void;
   onAlign: (input: { index: number; shift: boolean; paragraph: boolean }) => void;
 }
@@ -60,6 +62,7 @@ export function FontColor({
   onLeading,
   onTracking,
   onColor,
+  onRandomColor,
   onStyle,
   onAlign
 }: Props) {
@@ -149,6 +152,11 @@ export function FontColor({
           aria-label="设置颜色"
           onClick={onColor}
         />
+        {/*
+          行尾工具按钮，走默认 20 档（不挂 `--inline`）：骰子是立体方块，14 档下点数糊成一块。
+          点击只改 PS 的应用前景/背景色，不动文字颜色。
+        */}
+        <IconButton name="iconshaizi" title="随机前景色和背景色" onClick={onRandomColor} />
       </div>
 
       <div className="mm-u-row mm-u-row--wrap mm-icon-row">

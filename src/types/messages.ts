@@ -408,7 +408,8 @@ export const MSG = {
     relink: '转链接智能对象失败',
     optimizeDoc: '优化文档失败',
     batchName: '批量重命名失败',
-    layerColor: '设置图层颜色失败'
+    layerColor: '设置图层颜色失败',
+    appColors: '设置前景色和背景色失败'
   },
 
   /** 批量文字（新建 / 改字）：弹窗底部的状态行与写回失败 */

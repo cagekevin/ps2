@@ -30,6 +30,8 @@ const WHITELIST = [
   'iconpiliangwenzi',
   /* 字体面板「选中图层 → 转矢量」入口：Phosphor file-svg(duotone) 改造，viewBox 同样收成包围盒 */
   'iconshiliang',
+  /* 字体面板「随机配色」按钮：骰子（famicons dice-sharp，viewBox 512，实心单 path） */
+  'iconshaizi',
   /* 底部设置项 */
   'iconyonghushezhi',
   /* 样式页底栏：四个新建分组图标各不相同（原版就是四种）+ 导入 / 导出 */

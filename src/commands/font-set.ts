@@ -60,7 +60,8 @@ import {
   toQuickFont,
   type QuickFont
 } from '../domain/quick-font';
-import { normalizeTextColor, type RgbColor } from '../domain/text-info';
+import { normalizeTextColor } from '../domain/text-info';
+import type { RgbColor } from '../types/color';
 import { TRANSLATE_URL } from '../config';
 import { readTranslateCredentials } from '../core/credentials';
 import {

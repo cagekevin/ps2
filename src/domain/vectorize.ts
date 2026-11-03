@@ -400,15 +400,3 @@ export function scaleSubpaths(
   );
 }
 
-/** `#rrggbb` → `{ r, g, b }`；认不出返回 null（调用方决定兜底色） */
-export function hexToRgb(hex: string | null): { r: number; g: number; b: number } | null {
-  if (!hex) return null;
-  const value = hex.trim().replace(/^#/, '');
-  if (!/^[0-9a-fA-F]{6}$/.test(value)) return null;
-
-  return {
-    r: Number.parseInt(value.slice(0, 2), 16),
-    g: Number.parseInt(value.slice(2, 4), 16),
-    b: Number.parseInt(value.slice(4, 6), 16)
-  };
-}

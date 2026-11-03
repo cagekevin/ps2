@@ -24,6 +24,7 @@ import {
   getForegroundColor,
   getGradientInfo,
   saveLayerStyle,
+  setAppColors,
   setTool,
   type AppColor
 } from '../core/ps/style';
@@ -81,6 +82,7 @@ import {
   hexToCmyk,
   type GradientLibraryItem
 } from '../domain/image-color';
+import { randomColorPair } from '../domain/color-system';
 import { updateSwatchItems } from '../repo/swatch-repo';
 import { EXPANDED_GROUPS_KEY, useStyleLibraryStore } from '../store/style-library';
 import type { JsonMutator } from '../repo/json-file';
@@ -106,6 +108,9 @@ function toAppColor(item: Record<string, unknown>): Result<AppColor> {
   if (!hex) return failWithDetail('VALIDATION', MSG.codeReason.VALIDATION, 'color.hex:missing');
 
   const derived = hexToCmyk(hex);
+  /* 认不出的 hex 以前会算出 NaN 一路传给 vendor（静默坏色），现在显式失败 */
+  if (!derived) return failWithDetail('VALIDATION', MSG.codeReason.VALIDATION, `color.hex:invalid:${hex}`);
+
   return ok({
     hex,
     c: typeof raw.c === 'number' ? raw.c : derived.c,
@@ -135,6 +140,16 @@ export function applyBorderColorToLayer(item: Record<string, unknown>): Promise<
 /** 应用渐变：原版发的是 item.gradient，不是整个项 */
 export function applyGradientToLayer(gradient: unknown): Promise<Result<void>> {
   return applyGradient(gradient);
+}
+
+/**
+ * 随机取一对本地配色，设成 PS 的**应用**前景色与背景色（文字面板色块右侧的骰子）。
+ *
+ * 只改 PS 工具栏上那两个色块，不上图层、不写库文件 —— 与 `applyColor` 不是一回事。
+ * 配色数据在 `domain/color-pairs`（本地 300 对），不联网。
+ */
+export function applyRandomColors(): Promise<Result<void>> {
+  return setAppColors(randomColorPair());
 }
 
 /** 应用图层样式 */

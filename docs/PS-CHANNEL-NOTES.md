@@ -202,7 +202,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 ---
 
-## 十、颜色应用：只有 vendor 一条路
+## 十、颜色应用：图层上色只有 vendor 一条路
 
 `core/ps/style.ts` 的 `applyStyleColor` → `ps_onJsx('{"f":"ys_useStyleColor","arr":[色值],"n":"智能填充颜色"}')`。
 
@@ -225,6 +225,11 @@ vendor 内部不读它：我们直接发调度调用，不受它影响。
 
 vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyleColor`），**不留本地降级实现**。
 
+**设「应用」前景/背景色是另一回事**（2026-11-03）：`mm_style_setAppColors`（自写、直调）用
+`setd` + `Clr /FrgC` / `Clr /BckC` 改 PS 工具栏那两个色块，**不经过任何图层**，也不依赖文档。
+不调 vendor 的 `ys_setForegroundColor`：它只设前景，且 `App_setForegrounddColor`
+（`jsx/vendor.jsx:6103`）在 PS ≥ 21 上会「建临时图层 → 设色 → 删图层」，多出历史步。
+
 **适用图层（2026-10-28 真机确认）**：
 
 | 能力 | 适用图层 | 前置 |
@@ -232,6 +237,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 | `ys_useStyleColor`（点色块） | 任意（vendor 内部按图层类型处理） | 不判 |
 | `mm_style_applyShapeFill`（ctrl+点）/ `mm_style_applyBorderColor`（shift+点） | **只对形状**，jsx 对其它返回 `not-shape` | `requireShapeLayer` |
 | `ys_useGradient`（应用渐变） | 任意，**含文字图层** | 不判 |
+| `mm_style_setAppColors`（随机配色） | **不作用于图层**（只改应用前景/背景色） | 不判 |
 | `ps_ysBtnUseStyle`（应用图层样式） | 任意，**含文字图层** | 不判 |
 
 后两条如果加图层前置，会把正常操作挡住——所以表里明确不加，`capability.test.ts` 有用例钉住。

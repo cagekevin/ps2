@@ -3,6 +3,15 @@
  * 命名约定：mm_<域>_<动作>，与 src/core/ps/* 一一对应。
  * 返回值：'ok' / 'no-doc' / 'not-shape' / 'unknown:<kind>' / 'error:<message>'
  * 所有异常都写 %TEMP%\maomao-jsx.log，不吞错。
+ *
+ * 【新增一条 PS 能力，3 处必须同改 —— 改了这里就要回头看另外两处】
+ *   ① jsx/main.jsx              写 function mm_<域>_<动作>（本文件）
+ *   ② core/ps/capabilities.ts   加一行（fn / gate / channel / timeout / parse / require）
+ *   ③ core/ps/init.ts           名字登记进 CORE_FUNCS（官方函数进 VENDOR_FUNCS）
+ * 漏 ③ ⇒ `npm run check` 红（`init.test` 对账「表 → 清单」）；
+ * ② ③ 一起漏 ⇒ 探测不到这个名字，真机报的是 `EvalScript error.` 而不是
+ * `PS_UNREADY + detail: fn:xxx`，排查方向会跑偏。
+ * 删能力三处一起删，逐项清单见 docs/JSX-通道与自写指南.md §6.2.1。
  */
 
 function mm_s(id) { return stringIDToTypeID(id); }
@@ -125,6 +134,7 @@ function mm_layer_getSelection() {
  * 抄过来多选就静默不上色，而且前端拿不到「没生效」的信号。
  *
  * 本段只留「形状填充 / 线框色」：它们只作用于活动层的形状，与选中数量无关。
+ * 另有 `mm_style_setAppColors`：设的是**应用**前景/背景色，不上任何图层，不算「第二份上色」。
  */
 
 /**
@@ -152,27 +162,75 @@ function mm_style_setShapeColor(bXian, bTian, iCuXi, xR, xG, xB, tR, tG, tB) {
 
 	if (xR !== -1 && typeof xR !== "undefined") {
 		var strokeColor = new ActionDescriptor();
-		var strokeRgb = new ActionDescriptor();
-		strokeRgb.putDouble(mm_s("red"), xR);
-		strokeRgb.putDouble(mm_s("grain"), xG);
-		strokeRgb.putDouble(mm_s("blue"), xB);
-		strokeColor.putObject(mm_c("Clr "), mm_c("RGBC"), strokeRgb);
+		strokeColor.putObject(mm_c("Clr "), mm_c("RGBC"), mm_style_rgbDescriptor(xR, xG, xB));
 		d3.putObject(mm_s("strokeStyleContent"), mm_s("solidColorLayer"), strokeColor);
 	}
 
 	if (tR !== -1 && typeof tR !== "undefined") {
 		var fillColor = new ActionDescriptor();
-		var fillRgb = new ActionDescriptor();
-		fillRgb.putDouble(mm_s("red"), tR);
-		fillRgb.putDouble(mm_s("grain"), tG);
-		fillRgb.putDouble(mm_s("blue"), tB);
-		fillColor.putObject(mm_c("Clr "), mm_c("RGBC"), fillRgb);
+		fillColor.putObject(mm_c("Clr "), mm_c("RGBC"), mm_style_rgbDescriptor(tR, tG, tB));
 		d2.putObject(mm_c("FlCn"), mm_s("solidColorLayer"), fillColor);
 	}
 
 	d2.putObject(mm_s("strokeStyle"), mm_s("strokeStyle"), d3);
 	d1.putObject(mm_c("T   "), mm_s("shapeStyle"), d2);
 	executeAction(mm_c("setd"), d1, DialogModes.NO);
+}
+
+/**
+ * RGB 子描述符：形状填充 / 线框 / 应用前景背景色三处共用这一份。
+ * 键名是 `red` / `grain` / `blue`（官方 stringID，`grain` 就是绿，不是拼错）。
+ */
+function mm_style_rgbDescriptor(r, g, b) {
+	var rgb = new ActionDescriptor();
+	rgb.putDouble(mm_s("red"), r);
+	rgb.putDouble(mm_s("grain"), g);
+	rgb.putDouble(mm_s("blue"), b);
+	return rgb;
+}
+
+/** 取参数里的一个 RGB 三元组；缺字段或不是数字返回 null（不猜默认色） */
+function mm_style_rgbOf(value) {
+	if (!value) return null;
+	var r = Number(value.r);
+	var g = Number(value.g);
+	var b = Number(value.b);
+	if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+	return { r: r, g: g, b: b };
+}
+
+/**
+ * 设一个**应用级**颜色（`FrgC` 前景 / `BckC` 背景）。
+ *
+ * 为什么用描述符而不是 `app.foregroundColor = col`：后者在选中文字/形状图层时会把颜色
+ * 一并写到图层上（vendor 的 `App_setForegrounddColor` 为了绕开它，每次建一个临时图层再删，
+ * `jsx/vendor.jsx:6103`）——那会多出历史步。应用级属性直接走 `setd`，不经过图层。
+ */
+function mm_style_setAppColor(property, rgb) {
+	var d = new ActionDescriptor();
+	var ref = new ActionReference();
+	ref.putProperty(mm_c("Clr "), mm_c(property));
+	d.putReference(mm_s("null"), ref);
+	d.putObject(mm_c("T   "), mm_c("RGBC"), mm_style_rgbDescriptor(rgb.r, rgb.g, rgb.b));
+	executeAction(mm_c("setd"), d, DialogModes.NO);
+}
+
+/**
+ * 设应用前景色 + 背景色（随机配色按钮用），**不碰任何图层**。
+ * 参数是 JSON 文本：`{"foreground":{"r":0-255,"g":…,"b":…},"background":{…}}`。
+ * 返回 'ok' | 'error:…'；没有文档也能设，所以不判 `no-doc`。
+ */
+function mm_style_setAppColors(param) {
+	return mm_safe("mm_style_setAppColors", function () {
+		var pair = JSON.parse(param);
+		var fg = mm_style_rgbOf(pair && pair.foreground);
+		var bg = mm_style_rgbOf(pair && pair.background);
+		if (!fg || !bg) return "error:参数缺少 foreground/background";
+
+		mm_style_setAppColor("FrgC", fg);
+		mm_style_setAppColor("BckC", bg);
+		return "ok";
+	});
 }
 
 

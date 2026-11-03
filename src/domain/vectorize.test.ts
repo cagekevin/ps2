@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VectorPoint, VectorSubPath } from '../types/vectorize';
-import { extractSvgPaths, hexToRgb, parseSvgPath, scaleSubpaths } from './vectorize';
+import { extractSvgPaths, parseSvgPath, scaleSubpaths } from './vectorize';
 
 /** 取第一条子路径（多数用例只有一条） */
 function first(d: string) {
@@ -191,20 +191,6 @@ describe('extractSvgPaths', () => {
 
   it('没有 path 时返回空数组（由命令层报「没有形状」）', () => {
     expect(extractSvgPaths('<svg></svg>')).toEqual([]);
-  });
-});
-
-describe('hexToRgb', () => {
-  it('六位十六进制转 rgb', () => {
-    expect(hexToRgb('#000000')).toEqual({ r: 0, g: 0, b: 0 });
-    expect(hexToRgb('#ff8800')).toEqual({ r: 255, g: 136, b: 0 });
-    expect(hexToRgb('ff8800')).toEqual({ r: 255, g: 136, b: 0 });
-  });
-
-  it('认不出返回 null（调用方兜黑色）', () => {
-    expect(hexToRgb(null)).toBeNull();
-    expect(hexToRgb('#fff')).toBeNull();
-    expect(hexToRgb('red')).toBeNull();
   });
 });
 

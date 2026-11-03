@@ -1,9 +1,12 @@
 /**
  * 【范本】PS 样式应用能力
  *
- * **颜色只有一条路**：vendor 的 `ys_useStyleColor`，走调度通道 `ps_onJsx`。
+ * **把颜色上到图层只有一条路**：vendor 的 `ys_useStyleColor`，走调度通道 `ps_onJsx`。
  * 它一次处理**所有选中图层**，单选多选是同一个调用，前端不判数量、不循环 ——
  * 官方 `app.v4.js:17894-17900` 也是只发一项交给它。
+ *
+ * **设「应用」前景/背景色是另一件事**（`setAppColors` → 自写 `mm_style_setAppColors`）：
+ * 只改 PS 工具栏那两个色块，不经过任何图层，所以它不算第二套上色（见 `PS-CHANNEL-NOTES` §十）。
  *
  * 不能照抄色板面板那份 jsx（`sb_cy_SheZhiQianJingSe`）：它 `iTuCengGeShu == 1` 才上色，
  * 多选只设前景色，抄过来就是「界面提示成功、图层没变」。
@@ -23,6 +26,7 @@ import { WRITE_TIMEOUT } from '../cep/bridge';
 import { ROOTS } from '../storage';
 import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
+import type { ColorPair } from '../../types/color';
 import { callCapability, callDirect } from './capability';
 import { CAP } from './capabilities';
 import { parseErrEnvelope } from './raw';
@@ -70,6 +74,16 @@ export async function getForegroundColor(): Promise<Result<Record<string, unknow
 
   /* 载荷形状由 jsx 决定，这里只做类型收敛（与迁移前同一处断言，未加字段校验） */
   return ok(result.value as Record<string, unknown>);
+}
+
+/**
+ * 设应用前景色 + 背景色（随机配色按钮）：**不作用于任何图层**，也不依赖文档。
+ *
+ * 与 `applyStyleColor` 不是一回事：那个把颜色上到选中图层（vendor 的 `ys_useStyleColor`），
+ * 这个只改 PS 工具栏上那两个色块。参数只收 RGB —— PS 侧按 RGB 设色，不需要 CMYK。
+ */
+export function setAppColors(pair: ColorPair): Promise<Result<void>> {
+  return callCapability(CAP.appColors, [pair]);
 }
 
 /**

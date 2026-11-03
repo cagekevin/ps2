@@ -6,6 +6,8 @@
 // 禁止：本文件不碰 document / window / new Image；像素来源必须由调用方注入，
 //       因为 jsdom 没有真实 canvas 像素能力（见文件末「jsdom 边界」）
 
+import type { RgbColor } from '../types/color'
+
 /** 原版 `nS` 的默认目标宽度（app.v4.js:54498 `e = 350`；`e <= 1` 时按比例缩放） */
 export const DEFAULT_TARGET_WIDTH = 350
 
@@ -305,17 +307,35 @@ export async function extractImageColors(
 /* ─────────────── 以下为「提取结果 → 库项 / 应用载荷」的构造（原版移植） ─────────────── */
 
 /**
+ * `#rrggbb` → RGB；认不出返回 null（调用方决定兜底，不在这里猜）。
+ *
+ * **全仓唯一的十六进制解析**：`hexToCmyk` / `createGradientItem` / `color-system` 都走这里。
+ * 以前有三份（`vectorize.hexToRgb`、`hexToCmyk` 内部、`createGradientItem` 内联），
+ * 改一处口径要改三处，`TD-02-7` 就是这笔账。
+ */
+export function hexToRgb(hex: string | null): RgbColor | null {
+  if (!hex) return null;
+  const value = hex.trim().replace(/^#/, '');
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) return null;
+
+  return {
+    r: Number.parseInt(value.slice(0, 2), 16),
+    g: Number.parseInt(value.slice(2, 4), 16),
+    b: Number.parseInt(value.slice(4, 6), 16)
+  };
+}
+
+/**
  * 前端 RGB→CMYK 快速公式。
  *
  * 原版颜色类（`app.v4.js` 的 `w_` / `y_`）同样是前端 JS 计算，不是 PS 的 ICC 转换，
  * 所以库项里的 c/m/y/k 与 PS 内部值本就有偏差——这不是我们引入的误差。
  * 数值口径与 `mm_style_getForegroundColor` 一致：0-100 整数。
  */
-export function hexToCmyk(hex: string): { c: number; m: number; y: number; k: number } {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.slice(0, 2), 16) / 255;
-  const g = parseInt(value.slice(2, 4), 16) / 255;
-  const b = parseInt(value.slice(4, 6), 16) / 255;
+export function rgbToCmyk(rgb: RgbColor): { c: number; m: number; y: number; k: number } {
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
 
   const black = 1 - Math.max(r, g, b);
   if (black >= 1) return { c: 0, m: 0, y: 0, k: 100 };
@@ -326,6 +346,12 @@ export function hexToCmyk(hex: string): { c: number; m: number; y: number; k: nu
     y: Math.round(((1 - b - black) / (1 - black)) * 100),
     k: Math.round(black * 100)
   };
+}
+
+/** HEX → CMYK；认不出返回 null，由调用方显式失败（不在这里给一个看起来正常的颜色） */
+export function hexToCmyk(hex: string): { c: number; m: number; y: number; k: number } | null {
+  const rgb = hexToRgb(hex);
+  return rgb ? rgbToCmyk(rgb) : null;
 }
 
 /** 原版 `createGradientItem` 里的色标形状（`app.v4.js:52771-52785`） */
@@ -378,15 +404,17 @@ export function createGradientItem(name: string, pair: [string, string]): Gradie
   const step = smoothness / (hexes.length - 1);
 
   const colors: GradientColorStop[] = hexes.map((hex, index) => {
-    const cmyk = hexToCmyk(`#${hex}`);
+    /* 色值来自本文件提取的调色板，认不出说明上游坏了：给黑，不给 NaN（NaN 会让 vendor 拿到坏色值） */
+    const rgb = hexToRgb(hex) ?? { r: 0, g: 0, b: 0 };
+    const cmyk = rgbToCmyk(rgb);
     return {
       type: '1433629267',
       location: index * step,
       midpoint: 50,
       color: {
-        red: parseInt(hex.slice(0, 2), 16),
-        grain: parseInt(hex.slice(2, 4), 16),
-        blue: parseInt(hex.slice(4, 6), 16),
+        red: rgb.r,
+        grain: rgb.g,
+        blue: rgb.b,
         hexValue: hex,
         cyan: cmyk.c,
         magenta: cmyk.m,

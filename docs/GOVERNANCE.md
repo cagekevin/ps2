@@ -114,7 +114,7 @@
 | PS 动作 | `src/core/ps/action.ts` | 动作页两条 jsx：`dz_callAction`（**调度**，参数是**整个 item**，长任务 300s，是调度通道唯一的超时例外）+ `dz_getActionList`（**直调**，无参，`parse: sentinelJson`）。两条都是 `function`；`dz_getActionList` 返回**裸数组** `[{ name, children: [{ name, isAdd }] }]`，到前端是 JSON **文本**（`callJsx` 序列化），所以能力表必须先解成值，再由 `domain/action-library.mapPsActions` 归一两种包装。**不许用 `passthrough`**：文本直接进 `mapPsActions` 会落成 `CORRUPT`「文件无法识别」 |
 | PS 初始化 | `src/core/ps/init.ts` | jsx 加载 + 两扇门的能力探测：`CORE_FUNCS` / `VENDOR_FUNCS`（**条数不写在这里**，随能力增删变；要数直接读 `init.ts` 的数组），两清单都由 `init.test.ts` 与能力表对账（表里加一行必须同时加）；探测**本身**失败记进 `PsCapability.probeFailure`，不折成「清单里全部缺失」。**探测分两级**：只有 `CORE_REQUIRED`（`mm_layer_getState`）/ `VENDOR_REQUIRED`（`ps_onJsx` + `Sys_setSystemEnvInfo`）缺了才整门不可用；其余缺了记进 `PsCapability.missing`，由 `callCapability` 按 `spec.fn` 逐个报 `PS_UNREADY` + `detail: fn:<名字>` |
 | PS 图层 | `src/core/ps/layer.ts` | Result 转换；**前提判断的唯一出口**：`requireLayerKind(allow, need)` + `requireTextLayer` / `requireShapeLayer`（类型）、`requireSelection(min)`（多选数量，走独立的 `mm_layer_getSelection`），不满足返回 `PS_WRONG_LAYER`（reason 写明「当前是什么，需要什么」） |
-| PS 样式 | `src/core/ps/style.ts` | 颜色 / 渐变 / 图层样式全部走 `ps_onJsx`；颜色用 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部），前端不判数量不循环 |
+| PS 样式 | `src/core/ps/style.ts` | 颜色 / 渐变 / 图层样式全部走 `ps_onJsx`；颜色用 vendor 的 `ys_useStyleColor`，**单选多选同一个调用**（遍历在 vendor 内部），前端不判数量不循环。例外：设**应用**前景/背景色走自写 `mm_style_setAppColors`（直调，不作用于图层，见 `PS-CHANNEL-NOTES` §十） |
 | PS 诊断 | `src/core/ps/diag.ts` | 探测 vendor 函数与配置依赖；`runDebugScript` 把诊断页输入的一段 ExtendScript 原样发给宿主并回显结果——**唯一执行「页面递进来的代码」的入口**，只给 `/debug` 用，业务不许经它绕过 `core/ps` 建能力 |
 | PS 环境 | `src/core/ps/env.ts` | 注入官方 jsx 所需环境变量 |
 | 样式命令 | `src/commands/style.ts` | 颜色 / 渐变 / 字体 / 图层样式 / 修饰键 |

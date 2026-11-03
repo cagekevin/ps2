@@ -1,6 +1,15 @@
 /**
  * 本域（PS 能力）以此为准：`src/core/ps/capabilities.ts` 一行一个能力 + `core/ps/<域>.ts` 的薄函数。新增 jsx 只加表行，不写第二套通道 / 解析。
  *
+ * 【新增一条 PS 能力，3 处必须同改 —— 改了这里就要回头看另外两处】
+ *   ① jsx/main.jsx              写 function mm_<域>_<动作>
+ *   ② core/ps/capabilities.ts   加一行（fn / gate / channel / timeout / parse / require，本文件）
+ *   ③ core/ps/init.ts           名字登记进 CORE_FUNCS（官方函数进 VENDOR_FUNCS）
+ * 漏 ③ ⇒ `npm run check` 红（`init.test` 对账「表 → 清单」）；
+ * ② ③ 一起漏 ⇒ 探测不到这个名字，真机报的是 `EvalScript error.` 而不是
+ * `PS_UNREADY + detail: fn:xxx`，排查方向会跑偏。
+ * 删能力三处一起删，逐项清单见 `docs/JSX-通道与自写指南.md` §6.2.1。
+ *
  * 【范本】PS 能力表（唯一事实）
  *
  * 一行一个能力：`fn` 是 jsx 函数名，`parse` 决定「返回什么形状 + 认不出时算不算失败」。
@@ -692,6 +701,16 @@ export const CAP = {
   foregroundColor: {
     fn: 'mm_style_getForegroundColor', gate: 'core', channel: 'direct', timeout: READ_TIMEOUT,
     parse: sentinelJson
+  },
+
+  /**
+   * 设应用前景色 + 背景色（随机配色按钮）：设的是应用级属性，**不作用于任何图层**，
+   * 也不依赖文档，所以不带 `require`。
+   * 解析用 `strictVoid` 而不是 `lenientVoid`：后者不认 jsx 返回的 `'ok'`（`raw.ts:248`）。
+   */
+  appColors: {
+    fn: 'mm_style_setAppColors', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: strictVoid(MSG.coreOps.appColors)
   },
 
   /** 应用渐变：原版传项里的 `gradient` 字段，走调度 */

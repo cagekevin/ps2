@@ -12,12 +12,8 @@
 import { MSG } from '../types/messages';
 import { failWithDetail, ok, type Result } from '../types/result';
 import { isRecord } from '../types/guards';
-
-export interface RgbColor {
-  r: number;
-  g: number;
-  b: number;
-}
+/* 颜色类型住 `types/color`：`core/ps` 也要用，而 core 不许 import domain */
+import type { RgbColor } from '../types/color';
 
 /** 把通道值拼成 css 颜色串（`--mm-swatch` 这类变量的唯一出处） */
 export function rgbCss(color: RgbColor): string {

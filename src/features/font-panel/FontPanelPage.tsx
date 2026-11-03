@@ -119,6 +119,7 @@ export default function FontPanelPage() {
         onLeading={page.onLeading}
         onTracking={page.onTracking}
         onColor={page.onColor}
+        onRandomColor={page.onRandomColor}
         onStyle={page.onStyle}
         onAlign={page.onTextAlign}
       />
