@@ -3,6 +3,7 @@ import {
   COMMON_USE_SETTING_KEYS,
   booleanOptionOf,
   exportConfigOf,
+  exportSubdirOf,
   isCommonUseSettingKey,
   linkObjectOf,
   missingOptionKeys,
@@ -147,6 +148,14 @@ describe('官方默认值（唯一出处）', () => {
     expect(quality(0)).toBe(100);
     expect(quality(101)).toBe(100);
     expect(quality('')).toBe(100);
+  });
+
+  it('exportSubdirOf：PNG 进 PNG/，其余（含缺键、大小写）进 out/', () => {
+    expect(exportSubdirOf('PNG')).toBe('PNG');
+    expect(exportSubdirOf('png')).toBe('PNG');
+    expect(exportSubdirOf('JPG')).toBe('out');
+    expect(exportSubdirOf(undefined)).toBe('out');
+    expect(exportSubdirOf(42)).toBe('out');
   });
 
   it('missingOptionKeys：缺键与「用户选了默认值」必须能分开', () => {

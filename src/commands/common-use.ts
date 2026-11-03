@@ -60,6 +60,7 @@ import { MSG } from '../types/messages';
 import {
   booleanOptionOf,
   exportConfigOf,
+  exportSubdirOf,
   linkObjectOf,
   optionPatchOf,
   type CommonUseOptions
@@ -195,6 +196,29 @@ function assertExportPath(): Result<void> {
   return fail('VALIDATION', MSG.common.badExportPath);
 }
 
+/**
+ * 导出的落盘子目录（用户 2026-11-03 定）：PNG 进 `PNG/`，JPG 进 `out/`。
+ *
+ * 目录不存在就建（多级、幂等），建不出来原样上抛 `IO_ERROR` + `detail: mkdir:<原因>`。
+ * `path` 为空时**原样返回**：官方语义里空串是「用默认目录」，我们不去猜它落在哪。
+ */
+function withExportSubdir(config: Record<string, unknown>): Result<Record<string, unknown>> {
+  const base = typeof config.path === 'string' ? config.path.trim().replace(/[/\\]+$/, '') : '';
+  if (!base) return ok(config);
+
+  const dir = `${base}/${exportSubdirOf(config.ext)}`;
+
+  const fs = nodeRequire<{ mkdirSync: (path: string, options: { recursive: boolean }) => void }>('fs');
+  if (fs.status === 'error') return fs;
+  try {
+    fs.value.mkdirSync(dir, { recursive: true });
+  } catch (error) {
+    return failWithDetail('IO_ERROR', MSG.common.badExportSubdir, `mkdir:${String(error)}`);
+  }
+
+  return ok({ ...config, path: dir });
+}
+
 /** 嵌入图片：`bLink2` / `bDelete` 从设置取，`path` 恒空（官方不弹选图） */
 export function embedImage(): Promise<Result<void>> {
   const current = options();
@@ -323,8 +347,11 @@ export async function exportImage(): Promise<Result<void>> {
   const checked = assertExportPath();
   if (checked.status === 'error') return checked;
 
+  const config = withExportSubdir(exportConfig());
+  if (config.status === 'error') return config;
+
   loading.show(MSG.common.progressExport);
-  const exported = await exportImageJsx(exportConfig());
+  const exported = await exportImageJsx(config.value);
   loading.hide();
   return exported;
 }
@@ -333,7 +360,10 @@ export async function exportImage(): Promise<Result<void>> {
 export async function exportLayers(level: 1 | 2): Promise<Result<void>> {
   const checked = assertExportPath();
   if (checked.status === 'error') return checked;
-  return exportLayersJsx(level, exportConfig());
+
+  const config = withExportSubdir(exportConfig());
+  if (config.status === 'error') return config;
+  return exportLayersJsx(level, config.value);
 }
 
 /**

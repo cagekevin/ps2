@@ -142,6 +142,15 @@ export function exportConfigOf(options: CommonUseOptions): Record<string, unknow
   return merged;
 }
 
+/**
+ * 导出的落盘子目录名（用户 2026-11-03 定）：PNG 进 `PNG/`，其余进 `out/`。
+ *
+ * 只认 `cyExport.ext` 的两种官方取值；大小写不敏感，认不出按 JPG 处理（默认档）。
+ */
+export function exportSubdirOf(ext: unknown): 'PNG' | 'out' {
+  return String(ext).toUpperCase() === 'PNG' ? 'PNG' : 'out';
+}
+
 /** 官方 `checkQuality`（`app.v4.js:36896`）：剥非数字 + 夹 1–100，非法值回 100 */
 function normalizeQuality(value: unknown): number {
   const digits = typeof value === 'string' ? value.replace(/[^\d]/g, '') : value;
