@@ -5,8 +5,11 @@
  * 三条硬规则照 `CONVENTIONS` §9：不碰 DOM、不弹 toast、只返回 `Result<T>`。
  *
  * 识别链的顺序不能改（每一步失败都原样透传，不留半成品）：
- *   凭证 → 导出 → 判体积 → 读 base64 → 识别 → 布局 → 建层 → 删临时图
+ *   凭证 → 导出 → 判体积 → 读 base64 → 识别 → 布局 → 抹掉原文 → 建层 → 删临时图
  * 「先建层再删图」是因为失败时保留临时图对排查有用；成功才删。
+ *
+ * 抹掉原文是**附加步骤**：跳过（无选区 / 非位图）与失败都不阻断建层，只 `log.warn`。
+ * 代价是撤销变两步（填充一步、建层一步），plan 17 的「一次全撤」自此只对建层成立。
  *
  * **唯一的「不抛」例外**（`刀 4` 允许的两类之一：清理路径）：`dropTemp` 删临时图失败只
  * `log.warn`。删不掉不影响业务，也不许把它变成用户可见的失败——那是拿一个无关的错掩盖真正的错。
@@ -15,7 +18,7 @@
 import { MASTER_GROUP_NAME, OCR_MAX_IMAGE_BYTES, OCR_QUALITIES } from '../config';
 import { recognize } from '../core/ocr/baidu';
 import { readOcrCredentials } from '../core/credentials';
-import { exportImage } from '../core/ps/ocr';
+import { eraseOriginal, exportImage } from '../core/ps/ocr';
 import { createTextLayers } from '../core/ps/text-batch';
 import { fileSizeAt, readBase64At, removeFileAt } from '../core/storage';
 import { log } from '../core/logger';
@@ -94,6 +97,17 @@ export async function ocrToLayers(): Promise<
   const layout = toOcrGroups(recognized.value.blocks, offset);
   if (!layout.groups.length) {
     return failWithDetail('VALIDATION', MSG.ocr.empty, `dropped:${recognized.value.dropped}`);
+  }
+
+  /*
+   * 抹掉原文（内容识别填充），给原位换字用。
+   * **放在建层之前**：建层后活动层是新文字层，填充会打在文字层上。
+   * **失败不阻断**：文字层才是主交付，识别结果不可重现（网络 + 配额）；
+   * 抹没抹掉画布上一眼能看见，所以这里只留痕、不弹提示。
+   */
+  const erased = await eraseOriginal();
+  if (erased.status === 'error') {
+    log.warn('抹除原文失败', { code: erased.code, detail: erased.detail });
   }
 
   /* 建层走「批量文字」那个唯一入口（`mode: 'absolute'` 那一支），不另写一套 */

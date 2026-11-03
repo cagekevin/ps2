@@ -1,5 +1,5 @@
 /**
- * OCR 的 PS 能力：**只有导出画布**一个。
+ * OCR 的 PS 能力：导出画布 + 抹掉选区原文（内容识别填充）。
  *
  * 建层不在这里：OCR 走 `./text-batch.ts` 的 `createTextLayers`（入参 `mode: 'absolute'`），
  * 与「批量文字」新建是同一个入口、同一个 jsx 函数（`mm_text_createAll`），
@@ -21,4 +21,12 @@ import { CAP } from './capabilities';
  */
 export function exportImage(quality: 8 | 6 | 4): Promise<Result<OcrExport>> {
   return callCapability(CAP.ocrExport, [quality]);
+}
+
+/**
+ * 抹掉选区内容（内容识别填充），识别之后原位换字用。
+ * 只对位图有意义；无选区或活动层不是像素层时 jsx 什么都不做，同样返回成功。
+ */
+export function eraseOriginal(): Promise<Result<void>> {
+  return callCapability(CAP.ocrErase);
 }

@@ -4,6 +4,16 @@
  * 返回值：'ok' / 'no-doc' / 'not-shape' / 'unknown:<kind>' / 'error:<message>'
  * 所有异常都写 %TEMP%\maomao-jsx.log，不吞错。
  *
+ * 目录（行号会漂，按函数名搜；每段以 `---- 段名 ----` 的注释开头）：
+ *   日志 / 单位   mm_log  mm_safe  mm_px  mm_s  mm_c
+ *   图层          mm_layer_kindOf  mm_layer_getState  mm_layer_getSelection
+ *   样式          形状填充 / 线框 mm_style_setShapeColor  ·  应用前景背景色 mm_style_setAppColors
+ *                 取前景色 mm_style_getForegroundColor
+ *   批量文字      mm_text_readAll  mm_text_writeAll  mm_text_createAll（新建 / OCR 建层共用）
+ *   OCR           mm_ocr_selectionRect  mm_ocr_exportImage  mm_ocr_eraseOriginal
+ *   矢量化        mm_vec_exportLayer  mm_vec_replaceWithPath
+ *   诊断          mm_diag_vendor
+ *
  * 【新增一条 PS 能力，3 处必须同改 —— 改了这里就要回头看另外两处】
  *   ① jsx/main.jsx              写 function mm_<域>_<动作>（本文件）
  *   ② core/ps/capabilities.ts   加一行（fn / gate / channel / timeout / parse / require）
@@ -658,7 +668,8 @@ function mm_ocr_selectionRect(doc) {
 	var bottom = Math.min(doc.height.as("px"), mm_px(bounds[3]));
 
 	if (right - left < 1 || bottom - top < 1) {
-		mm_log("mm_ocr_exportImage: selection too small, fallback to whole canvas");
+		/* 中性文案：导出与抹除两个调用方共用这一个判据，写死导出函数名会指错地方 */
+		mm_log("mm_ocr_selectionRect: selection too small, treated as no selection");
 		return null;
 	}
 	return [left, top, right, bottom];
@@ -717,6 +728,30 @@ function mm_ocr_exportImage(quality) {
 			app.activeDocument = doc;
 			app.preferences.rulerUnits = originalRuler;
 		}
+	});
+}
+
+/**
+ * 抹掉选区里的内容（内容识别填充），OCR 之后原位换字用。
+ *
+ * **只对位图有意义**：文字烧在位图上时，识别完要把原文磨掉才能换新字；
+ * 文字本身就是图层的话删层就行，不需要这一步。
+ *
+ * 无选区、活动层不是像素层时**什么都不做**并返回 `'ok'`：
+ * 无选区会整层填充（不可逆毁图），非像素层 PS 会要求栅格化（同样不可逆）。
+ */
+function mm_ocr_eraseOriginal() {
+	return mm_safe("mm_ocr_eraseOriginal", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		if (!mm_ocr_selectionRect(doc)) return "ok";
+		if (mm_layer_kindOf(doc.activeLayer) !== "normal") return "ok";
+
+		var d = new ActionDescriptor();
+		d.putEnumerated(mm_c("Usng"), mm_c("FlCn"), mm_s("contentAware"));
+		executeAction(mm_c("Fl  "), d, DialogModes.NO);
+		return "ok";
 	});
 }
 

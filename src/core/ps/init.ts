@@ -94,8 +94,9 @@ export const CORE_FUNCS = [
   'mm_text_readAll',
   'mm_text_writeAll',
   'mm_text_createAll',
-  /* OCR：只导出画布（建层走 `mm_text_createAll`，不另开函数） */
+  /* OCR：导出画布 / 抹掉选区原文（建层走 `mm_text_createAll`，不另开函数） */
   'mm_ocr_exportImage',
+  'mm_ocr_eraseOriginal',
   /* 矢量化：导出选中层 / 用路径点建形状层 */
   'mm_vec_exportLayer',
   'mm_vec_replaceWithPath',

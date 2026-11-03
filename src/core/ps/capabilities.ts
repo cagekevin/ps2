@@ -314,6 +314,15 @@ export const CAP = {
     parse: ocrExportRaw
   },
 
+  /**
+   * 抹掉选区内容（内容识别填充），OCR 之后原位换字用。
+   * 无选区 / 非像素层 jsx 直接返回 `'ok'`（不做任何事），所以这里不判前置。
+   */
+  ocrErase: {
+    fn: 'mm_ocr_eraseOriginal', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: strictVoid(MSG.coreOps.eraseOriginal)
+  },
+
   /* 建层不单列能力：OCR 走 `textCreateAll`（`mode: "absolute"` 那一支），与「批量文字」同一个入口 */
 
   /* ---------------- 矢量化（自写 jsx，`core` 门只能直调） ---------------- */
