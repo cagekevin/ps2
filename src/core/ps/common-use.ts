@@ -14,8 +14,9 @@
  * 三处原版拼写照抄不改：`cy_BacthExportPsdToImage`（Bacth）、`cy_LayerReplace`（大写 L）、
  * `cy_ExportImage`（大写 E）——改成「正确拼写」等于函数不存在。
  *
- * 返回结构未真机验证：写函数用 `lenientVoid` / `unwrapRaw`，只把 raw 约定值（`-1` / `no-doc` 等）
- * 当失败，其余算成功；读函数用 `passthrough` 把 raw 原样交出去，解析在 domain。
+ * 返回结构未真机验证：写函数用 `lenientVoid` / `unwrapRaw`，把 raw 约定值（`-1` / `no-doc` 等）
+ * 当失败、其余算成功 —— 但**走调度通道的那批收不到失败**（`ps_onJsx` 恒回 `1`，见 `CONVENTIONS` §4.7），
+ * 它们的成败只靠能力表的 `require`；读函数用 `passthrough` 把 raw 原样交出去，解析在 domain。
  */
 
 import type { Result } from '../../types/result';

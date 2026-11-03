@@ -238,7 +238,7 @@ src/
 └─ app/           router、layout、providers、layer-watcher、common-use-watcher
 ```
 
-`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**；`docs/参考/` 只放参考脚本（**不参与构建、不部署、不被任何代码 import**，见该目录 `README.md`）。
+`src/` 之外：`tools/` 是本项目脚本（build-icons / check-* / deploy / new-feature / probe-ps / jsxbin）；`scripts/` 是通用辅助脚本集合（含 `mv-sync-refs.mjs`），不全是本项目在用，**以 `package.json` 实际命令为准**；`docs/参考/` 只放参考脚本（**不参与构建、不部署、不被任何代码 import**，见该目录 `README.md`）。
 
 **第三方运行时放 `public/`**（与 `public/CSInterface.js` 同一类：不参与打包、由 Vite 原样拷进 `dist/`）。
 `public/vendor/vtracer/` 是位图转 SVG 的 wasm 包（692 KB，其中 wasm 653 KB），运行时用
@@ -590,14 +590,20 @@ mutateRawGroups(warehouse, kind, (groups) => {
 
 ### 4.7 官方 jsx 有两条通道，按原版前端选择
 
-`jsx/vendor.jsx`（官方 jsxbin）里的函数有**两条**调用通道，**不能按函数名前缀猜**：
+`jsx/vendor.jsx`（官方 jsx 副本，源码形态见 `jsx/vendor.README.md`）里的函数有**两条**调用通道，**不能按函数名前缀猜**：
 
 | 原版前端 | 实际发出 | 用在哪 |
 |---|---|---|
 | `jsxHistory(fn, args, label)` | `ps_onJsx('{"f":fn,"arr":args,"n":label}')` | 渐变、图层样式；常用页里走调度那批（见 `PS-CHANNEL-NOTES` §11.4） |
 | `jsx(fn, args)` | `fn(args)` 直接调 | 字体（`ys_checkUseFont` / `ys_useFont` / `ztgl_initSystemList` / `ztgl_setFont`）、文本属性（`zt_*` / `layer_font_*`） |
 
-判断方法：看 app 的 `cep/transport.ts` 里调用点用的是 `jsxHistory` 还是 `jsx`，**不要凭 `ys_` 前缀推断**。
+判断方法：在 `docs/原版/app.v4.js`（官方前端**打包产物**；`cep/transport.ts` 是它在官方源码里的文件名，仓里没有这个文件）
+里 `grep -n "函数名"`：
+
+- 命中 `e.jsx(...)` / `e.jsxNoCheck(...)` → **直调**
+- 命中 `l("函数名", …, "jsxHistory"…)`（`l` 是派发表里记录「函数名 + 通道名」的小函数）或落在 switch 分支里 → **调度**
+
+**不要凭 `ys_` 前缀推断**。
 
 **同一个函数在不同面板可能用不同通道，也可能用同一通道但参数不同**，两种情况都别混：
 - 参数不同、通道相同：`cy_distributedByPitch` 在常用页是 `[axis, gap, sortMode]`（`:1262654`）、
@@ -606,6 +612,17 @@ mutateRawGroups(warehouse, kind, (groups) => {
 - 通道不同、函数同族：`cy_zoom` 直调、`cy_transformPosition` 走调度（§11.4 表第 3 列）
 
 调错通道的表现：`EvalScript error.`（脚本层面就炸）或「缺少必需值」（调度器上下文缺失）。
+
+**两条通道的返回值不是一套语义**（2026-11-03 读源码 + 真机实测，证据在 `jsx/vendor.README.md`）：
+
+- **调度通道拿不到失败**：`ps_onJsx` 把 `f(...)` 交给 `suspendHistory` 执行，内部返回值直接丢弃；
+  出错只弹一个「提醒」模态框，然后**照样 `return 1`**。所以 `channel: 'dispatch'` 的能力，
+  失败防线只有 `require` 前置与事后读回，**不能靠返回值判成败**（`raw.ts` 里 `-1 → PS_REJECTED`
+  这一行对调度能力永远命中不到）。
+- 可判的失败信号（`-1` / `{"err":1,…}`）只来自直调通道。
+- 所以**调度能力一律 `parse: dispatchAck`**（只认 `1` / `undefined`，不装能判失败）；
+  挂 `unwrapRaw` 会被 `capability.test` 的守卫拦下。失败对用户不是静默的 ——
+  内部函数自己 `_A()` 弹窗，但我们的 toast 仍会说「成功」，冲突时以 PS 弹窗为准（`TD-01-32`）。
 
 以下是**调度通道**的格式（`cep-events.js:156-165`）：
 

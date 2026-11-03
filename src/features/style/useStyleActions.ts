@@ -185,7 +185,7 @@ export function useStyleActions() {
    * - 颜色：读前景色
    * - 渐变：读当前图层的渐变定义
    * - 字体：读当前文字图层的字体属性
-   * - 样式：让 jsxbin 把图层样式存成 `kuStyle/<groupId>.psd`，成功后重读
+   * - 样式：让 vendor 把图层样式存成 `kuStyle/<groupId>.psd`，成功后重读
    */
   async function handleAddItem(groupIndex: number) {
     const warehouse = requireWarehouse();

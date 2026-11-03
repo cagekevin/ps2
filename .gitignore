@@ -8,3 +8,8 @@ tmp/
 .vite/
 .DS_Store
 **/.DS_Store
+
+# 解码器产物（源码在 tools/jsxbin/converter，node tools/jsxbin/build.mjs 现编）
+tools/jsxbin/converter/*.exe
+tools/jsxbin/converter/bin/
+tools/jsxbin/converter/obj/

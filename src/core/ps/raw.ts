@@ -44,6 +44,20 @@ export function unwrapRaw(raw: string): Result<void> {
 
 }
 
+/**
+ * 调度通道（`ps_onJsx`）的返回值：只可能是 `1`（走完，成败都是它）或 `undefined`（`f` 没写）。
+ *
+ * **它判不了成败**，别在这里加 `-1` 之类的失败分支 —— 那只会让下一个 AI 以为能判。
+ * 失败现场在 PS 侧：内部函数自己 `_A()` 弹模态框（`jsx/vendor.jsx` 每个 `return -1` 前一行都是它），
+ * 然后照样 `return 1`。所以调度能力只能靠 `require` 前置与事后读回（`CONVENTIONS` §4.7、`TD-01-32`）。
+ */
+export function dispatchAck(raw: string): Result<void> {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed === '1' || trimmed === 'undefined') return ok(undefined);
+  /* 能走到这里说明线上格式坏了（例如误挂了直调通道），报出来，别当成功 */
+  return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `raw:${trimmed}`);
+}
+
 /* ---------------- 失败构造器（三个语义各一个，模块私有、不导出） ---------------- */
 
 /**
@@ -214,7 +228,7 @@ export const passthrough: Parser<string> = (raw) => ok(raw);
  * | `no-doc` / `-1` / `not-shape` / `skipped` | 失败（对应码） | 约定值，`RAW_FAILURES` |
  * | 空串 / `undefined` / `null` | 成功 | 真机：`layer_font_setFontSize` / `setLeading` 都这样且已生效 |
  * | `0` | 成功 | 真机：`zt_setFontVision` 回 `0` 且生效 |
- * | `1` | 成功 | 调度约定 `r != -1` 即成功 |
+ * | `1` | 成功 | 调度通道唯一的返回值（成功失败都是它，见 `CONVENTIONS` §4.7）；直调通道里也是成功 |
  * | `{"code":"OK"}` | 成功 | 真机：`ztgl_setFont` 换好了字体就回这句 |
  * | `{"err":0}` | 成功 | 官方信封 |
  * | `{"err":1,"msg":…}` | 失败（宿主原话） | 官方信封 |
@@ -263,22 +277,15 @@ export function lenientVoid(fallback: string): Parser<void> {
  * `fallback` 只给 `{ err: 1 }` 且宿主没给 `msg` 时兜底，其余一律不猜。
  */
 export function strictVoid(fallback: string): Parser<void> {
+  /* 实现是 `lenientVoid` 的薄包装：只多拦「宿主没回话」那一档，约定值 / 信封 / 认不出
+     一律复用 —— 两份实现迟早漂，判据只能有一处。 */
+  const lenient = lenientVoid(fallback);
   return (raw) => {
-    const guard = unwrapRaw(raw);
-    if (guard.status === 'error') return guard;
-
     const text = raw.trim();
-    if (text === 'ok' || text === 'OK' || text === '1') return ok(undefined);
-
-    const parsed = parseJsxRaw(raw);
-    if (parsed.status === 'ok' && isRecord(parsed.value)) {
-      const value = parsed.value;
-      if (value.code === 'OK') return ok(undefined);
-      if (value.err === 0) return ok(undefined);
-      if (typeof value.err === 'number') return hostRejected(value, raw, fallback);
-    }
-
-    return unrecognized(raw);
+    /* 「没回话」在严格写里是失败信号；`lenientVoid` 把它当成功，所以必须在进它之前拦掉 */
+    if (text === '' || text === 'undefined' || text === 'null' || text === '0') return unrecognized(raw);
+    if (text === 'ok' || text === 'OK') return ok(undefined);
+    return lenient(raw);
   };
 }
 

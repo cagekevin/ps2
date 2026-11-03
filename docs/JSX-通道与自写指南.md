@@ -1,8 +1,8 @@
 # JSX 通道与自写指南
 
-> 回答两件事：**① 怎么调官方那个混淆过的 jsx，通道是怎么通的；② 哪些功能要自己写 jsx，具体怎么写。**
+> 回答两件事：**① 怎么调官方那份 jsx，通道是怎么通的；② 哪些功能要自己写 jsx，具体怎么写。**
 >
-> 全篇结论一句话：**调官方函数 = 往能力表加一行（函数名是字符串，函数体看不见不影响调用）；自己写 jsx = 往 `jsx/main.jsx` 加一个 `mm_<域>_<动作>` 函数，然后同样往表里加一行。**
+> 全篇结论一句话：**调官方函数 = 往能力表加一行（函数名是字符串，读不读函数体都不影响调用，但官方那份只读不改）；自己写 jsx = 往 `jsx/main.jsx` 加一个 `mm_<域>_<动作>` 函数（完全可读可写），然后同样往表里加一行。**
 
 ---
 
@@ -36,13 +36,46 @@ Photoshop ExtendScript                      ← vendor.jsx（官方副本）/ ma
 
 ---
 
+## 1.5 两份 jsx：一份只读，一份随便改
+
+链路末端是两个文件，**性质完全不同**，先认清这一点再谈通道：
+
+| | `jsx/main.jsx`（自写） | `jsx/vendor.jsx`（官方副本） |
+|---|---|---|
+| 来历 | 我们自己写的 | 官方 jsxbin **解码**（来历与补丁见 `vendor.README.md`） |
+| 函数名 | `mm_<域>_<动作>`，一看就知道干什么 | `ys_ / zt_ / cy_ / cmm_ / dz_ / mb_ / ps_ / Fs_ / Layer_ …`，官方命名 |
+| 变量名 | 有意义（`layer` / `rect` / `paths`） | **编译产物**：拼音缩写 + 单字母（`bYouZu` / `iChang` / `aMuBiao` / `e` / `t` / `n`） |
+| 可读性 | 完全可读 | 结构可读（分支、条件、返回值都看得懂），**变量名不可读** |
+| 能不能改 | **随便改**，改完 `npm run check` | **只读**：不改名、不重排、不「美化」。要改行为只能改**调用点** |
+| 为什么 | —— | 重解码会整份覆盖；改了名就和官方对照不上，下一个 AI 再也查不到出处 |
+
+**一句话判据：`mm_` 开头 = 我们的，随便改；其它前缀 = 官方的，只看不改。**
+（`capability.test` 已把这条卡成单向断言：`mm_` 的 fn 必须是 `gate: 'core'`。）
+
+### 1.5.1 走哪条
+
+| 场景 | 做什么 | 详见 |
+|---|---|---|
+| **官方有现成函数** | 能力表加一行（`gate: 'vendor'`）→ 登记 `VENDOR_FUNCS` → 薄函数 → 真机点一次 | §6.2 |
+| **官方没有 / 官方实现不合我们的用** | `jsx/main.jsx` 写 `mm_<域>_<动作>`（`mm_safe` 包、前置用约定值）→ 登记 `CORE_FUNCS` → 能力表加一行（`gate: 'core'`，只能 `direct`）→ 真机点一次 | §7 |
+
+### 1.5.2 读官方那份时的心法
+
+函数体是**能读的**（解码源码），但别指望变量名：
+
+- **看结构不看名字**：`if` 的条件、`return` 的值、`_A("…")` 的弹窗文案、`ps_funcStatus(-1)` 这些才是有信息的；
+- `bYouZu`（有没有组）、`iChang`（长度）、`aMuBiao`（目标）这类拼音缩写是编译产物，**按上下文猜**，猜不准就看它怎么被赋值；
+- 读它的目的只有两个：**参数怎么解**、**什么情况返回 `-1` / 弹窗**。读完就回去改调用点，不要顺手「整理」它。
+
+---
+
 ## 2. 两个分叉路口：`gate`（谁的函数）与 `channel`（怎么发）
 
 这两个是**正交的两件事**，别混。一个能力行里同时写着它们：
 
 | 分叉 | 在哪一步 | 管什么 | 取值 | 决定 |
 |---|---|---|---|---|
-| **`gate`** | 执行器第 1 步（`capability.ts:141` `GATE[spec.gate].ready()`） | 这个函数**是谁写的** | `core` = `jsx/main.jsx`（我们自写）<br>`vendor` = `jsx/vendor.jsx`（官方混淆） | 探测哪个文件、缺了报哪扇门 |
+| **`gate`** | 执行器第 1 步（`capability.ts:141` `GATE[spec.gate].ready()`） | 这个函数**是谁写的** | `core` = `jsx/main.jsx`（我们自写）<br>`vendor` = `jsx/vendor.jsx`（官方副本） | 探测哪个文件、缺了报哪扇门 |
 | **`channel`** | 执行器第 4 步（`capability.ts:127` `toWire`） | 这个调用**怎么发出去** | `direct` = 直接 `fn(args)`<br>`dispatch` = `ps_onJsx({f,arr,n})` | 线上形态、要不要历史组 |
 
 **顺序上先门后通道**：门在第一步就把「能不能用」定了，通道在第四步才决定「怎么发」。所以「谁的函数」永远先于「怎么发」。
@@ -65,6 +98,8 @@ vendor 侧可能因四种原因没开（见 §5.1），其中「环境变量注�
 3. **名字前缀**（辅助，**不完整**）：自写一律 `mm_*`；官方那批前缀很多 —— `ys_ / zt_ / ztgl_ / cy_ / cmm_ / dz_ / Fs_ / ps_mb* / mb_ / Layer_ / Tool_ / layer_ / ps_ys*`，
    而且以后还会遇到新的。**别拿前缀当判据**，只当"扫一眼大概是谁的"。
 
+> 文件本身的差别（谁能改、变量名为什么不可读）见 §1.5，这里只讲「怎么认」。
+
 **可机器验的那一半**：`mm_` 开头的 fn **必须**是 `gate: 'core'`（`capability.test` 有断言）。
 反过来不成立 —— 官方函数里也有 `layer_` / `Layer_` 这种，看着像自写其实是官方的，所以只能单向卡。
 
@@ -77,9 +112,9 @@ vendor 侧可能因四种原因没开（见 §5.1），其中「环境变量注�
 | 通道 | 线上形态 | 用在哪 |
 |---|---|---|
 | `direct` | 直接 `fn(参数…)` | 一次性调用：存模板、打开文件、开目录、读图层状态 |
-| `dispatch` | `ps_onJsx({ f: 'fn名', arr: [参数…], n: '日志标签' })` | 需要**历史组**的写操作：应用模板、更新预览图 |
+| `dispatch` | `ps_onJsx({ f: 'fn名', arr: [参数…], n: '日志标签' })` | 需要**历史组**的写操作：应用模板、更新预览图。**代价：拿不到返回值，判不了成败**（见 §4） |
 
-`dispatch` 的 `n` **只是日志标签**（会进 PS 日志面板），不传给 jsx 函数本身。原版里它叫 `jsxHistoryNoCheck`，`ps_onJsx` 调度器会自己把这次调用包成一个撤销组 —— **所以我们不在 jsx 里写 `suspendHistory`**（写了就是第二套撤销语义）。
+`dispatch` 的 `n` **只是日志标签**（会进 PS 日志面板），不传给 jsx 函数本身。原版里它叫 `jsxHistoryNoCheck`，`ps_onJsx` 调度器会自己把这次调用包成一个撤销组 —— **所以我们不在 jsx 里写 `suspendHistory`**（写了就是第二套撤销语义）。代价是它**恒回 `1`**：内部返回值被 `suspendHistory` 丢弃，失败只弹 PS 弹窗（`CONVENTIONS` §4.7）。
 
 `gate` 与 `channel` 是**判别联合**（`capability.ts:106`）：
 
@@ -145,6 +180,12 @@ export function applyTemplate(payload: TemplateUsePayload): Promise<Result<void>
 
 **不需要**在 jsx 里手动 `JSON.stringify`，也不需要在 jsx 里 try/catch 兜错（外层已经兜了；但见 §7.3 的 `mm_safe`，那是为了写日志）。
 
+**但走调度通道时上面这套不成立**（`channel: 'dispatch'`）：`ps_onJsx` 把 `f(...)` 拼成字符串交给
+`app.activeDocument.suspendHistory` 执行，**内部返回值直接被丢弃**，然后无条件 `return 1`。
+所以调度能力的 `raw` 只可能是 `'1'` 或 `'undefined'`，解析器一律 `dispatchAck`；
+失败现场在 PS 侧（内部函数自己 `_A()` 弹窗，见 `jsx/vendor.README.md` 的触发条件表）。
+详见 `CONVENTIONS` §4.7 与 `TD-01-32`。
+
 ---
 
 ## 5. 失败有七种形状，各有各的码
@@ -153,11 +194,12 @@ export function applyTemplate(payload: TemplateUsePayload): Promise<Result<void>
 |---|---|---|
 | 门未就绪（见下面「门关的四种原因」） | `capability.ts:142` | `PS_UNREADY` + `detail: core:false` / `vendor:false` |
 | 门就绪但**这一个函数**不存在（旧 jsx） | `capability.ts:151` | `PS_UNREADY` + `detail: fn:ps_mbAddPsd` |
-| 前置不满足（选中图层数不够） | `spec.require`（`requireSelection`，`layer.ts:101`） | `PS_WRONG_LAYER` + reason「当前选中 N 个图层，需要至少 M 个」 |
+| 前置不满足（选中图层数不够） | `spec.require`（`requireSelection`，`layer.ts:112`） | `PS_WRONG_LAYER` + reason「当前选中 N 个图层，需要至少 M 个」 |
 | 宿主明确拒绝（`{err:1}`） | 解析器的 `hostRejected` | `VALIDATION` + **句子优先宿主 `msg`**，没给才用调用方兜底 |
 | 宿主返回 `EvalScript error.`（脚本根本没跑起来） | `bridge.ts:158` | `PS_ERROR` + `detail: raw:EvalScript error.` |
 | jsx 内部抛错（`error:` 前缀） | `bridge.ts:162` | `PS_ERROR` + **reason 就是 jsx 抛的消息** |
 | 超时 | `bridge.ts:80` | `TIMEOUT`（**队列放行，PS 侧可能还在跑**） |
+| 调度通道内部失败（`return -1` 或抛错） | 我们**拿不到**（§4） | **没有码**：PS 侧自己弹模态框，界面仍提示成功（`TD-01-32`） |
 
 关键点：**函数名写错不会静默**。`funcMissing` 会把名字放进 `detail`，只禁这一个能力，不会让整个面板变红。
 
@@ -183,11 +225,11 @@ export function applyTemplate(payload: TemplateUsePayload): Promise<Result<void>
 
 ---
 
-## 6. 调官方混淆函数：加一行表就完事
+## 6. 调官方函数：加一行表就完事
 
-### 6.1 为什么函数体看不见也能调
+### 6.1 为什么只看函数名就够
 
-`jsx/vendor.jsx` 是 **jsxbin 混淆**的，读不到函数体。但调用根本不看函数体 —— 我们发的是**字符串函数名**：
+`jsx/vendor.jsx` 是官方 jsxbin 的**解码源码**（来历与修补见 `jsx/vendor.README.md`），函数体可读。但调用根本不看函数体 —— 我们发的是**字符串函数名**：
 
 ```ts
 // core/ps/capabilities.ts
@@ -200,19 +242,35 @@ templateAdd: {
 
 `fn: 'ps_mbAddPsd'` 就是全部魔法。这跟仓里早就在用的 `cmm_batchName` / `cy_openDirectory` / `ys_useFont` **一模一样**。
 
-### 6.2 五步清单（照做即可）
+### 6.2 六步清单（照做即可，第 0 步最容易漏）
 
 | # | 做什么 | 在哪 |
 |---|---|---|
-| 1 | 加一行能力 | `src/core/ps/capabilities.ts`（照邻居逐字段抄） |
+| 0 | **定通道**（它决定 `channel` + `parse` 两个字段） | `grep -n "函数名" docs/原版/app.v4.js`：命中 `e.jsx(...)` / `e.jsxNoCheck(...)` → `channel: 'direct'` + 按 §8 选解析器；命中 `l("函数名", …, "jsxHistory"…)`（派发表里记「函数名 + 通道名」的小函数）或落在 switch 分支里 → `channel: 'dispatch'` + `parse: dispatchAck`。**别照邻居抄通道** —— 同名函数可能两种形态（`cy_distributedByPitch` 就是直调 + 调度各一个能力） |
+| 1 | 加一行能力 | `src/core/ps/capabilities.ts`（字段照邻居抄，但 `channel` / `parse` 按第 0 步定） |
 | 2 | 名字登记进「在用清单」 | `src/core/ps/init.ts` 的 `VENDOR_FUNCS`（官方函数）或 `CORE_FUNCS`（自写函数） |
 | 3 | 写薄函数（两行） | `src/core/ps/<域>.ts`：`return callCapability(CAP.xxx, [参数])` |
 | 4 | 对账 | `init.test.ts:22` 会校验「`CAP` 里每个 `gate:'vendor'` 的 `fn` 都在 `VENDOR_FUNCS` 里」（差集必须为空），漏了即红；另外 `ps_onJsx` / `Sys_setSystemEnvInfo` 必须常驻清单 |
-| 5 | 真机点一次 | 名字错了会报 `PS_UNREADY` + `detail: fn:xxx` |
+| 5 | 真机点一次 | 名字错了会报 `PS_UNREADY` + `detail: fn:xxx`；**清单 ↔ jsx 的一致性只有真机能验**（第 4 步只管表 ↔ 清单） |
+
+### 6.2.1 删一个能力（反向清单，`grep -rn "函数名" src` 逐处对）
+
+删比加容易漏 —— 没有编译错误会提醒你「这里还留着」。七处按顺序清：
+
+| # | 在哪 | 漏了会怎样 |
+|---|---|---|
+| 1 | `capabilities.ts` 的能力行 | 留下孤儿能力（`init.test` 只查「表 → 清单」，查不出「表 → 没人调」） |
+| 2 | `init.ts` 的 `VENDOR_FUNCS` / `CORE_FUNCS` | 清单还在探它；缺了反而整门关 |
+| 3 | `core/ps/<域>.ts` 的薄函数 | 死导出 |
+| 4 | `commands/` 的入口 | 命令还能点，点了报错 |
+| 5 | 页面 / hook 的调用点 | 按钮还在，点了没反应 |
+| 6 | `PS-CHANNEL-NOTES` §11.x 的表行 | 文档留假行（那张表只作追溯，但别留死行） |
+| 7 | `tools/probe-ps.mjs` 的 `TARGETS` | 探针还在探一个没人用的函数 |
 
 ### 6.3 参数形状从哪查
 
-**只能从原版调用点查**（`docs/原版/app.v4.js`），不能猜：
+**两处都看，不能猜**：函数体在 `jsx/vendor.jsx`（解码源码，能读到它怎么解参），
+调用点在 `docs/原版/app.v4.js`（能读到前端怎么发）：
 
 ```js
 :66538  ps_mbAddPsd([this.path.psd])              → 入参就是一个目录
@@ -227,11 +285,11 @@ templateAdd: {
 ### 6.4 一个 `dispatch` 例子
 
 ```ts
-// 需要历史组 ⇒ dispatch，label 会成为 PS 日志标签
+// 需要历史组 ⇒ dispatch，label 会成为 PS 日志标签；调度通道的 parse 只能是 dispatchAck
 templateUse: {
   fn: 'mb_useTemplate', gate: 'vendor', channel: 'dispatch', label: '应用模板',
   timeout: READ_TIMEOUT,
-  parse: lenientVoid(MSG.template.useFailed)
+  parse: dispatchAck
 }
 ```
 
@@ -287,6 +345,7 @@ function mm_layer_getSelection() {
    | `'-1'` | `PS_REJECTED` |
 
    这些是「前提不满足」，不是故障 —— 界面标红会让人以为面板坏了。
+   **`'-1'` 只来自直调通道**：调度通道恒回 `'1'`，这个分支对它永不触发（`CONVENTIONS` §4.7）。
 2. **真异常才抛**（`mm_safe` 会转成 `error:` 并写 `%TEMP%\maomao-jsx.log`）。
 3. **日志尽力而为**：写不进去就吞掉（`mm_log` 里的空 catch 是故意的，唯一允许吞错的地方）。
 
@@ -294,11 +353,12 @@ function mm_layer_getSelection() {
 
 | 你想要的语义 | jsx 里 return | 前端配哪个解析器 |
 |---|---|---|
-| 只关心成没成 | `'ok'` / `{ err: 0 }` | `lenientVoid(失败文案)` |
+| 只关心成没成 | `'ok'` / `{ err: 0 }` | `lenientVoid(失败文案)`；「没生效本身看不出来」的写用 `strictVoid` |
+| 走调度通道（原版 `jsxHistory`） | 不用你决定 | `dispatchAck`（判不了成败，见 §4） |
 | 返回一个业务值 | 对象 `{ err: 0, data: {...} }` | `strictPayload({ accept })` 或 `strictData` |
 | 返回一个裸整数 | `'42'` | 写一个**本域私有**解析器（如 `layer.selectionCountRaw`），别加进 `raw.ts`；只要原样文本才用 `passthrough` |
 
-`dataOf`（`raw.ts:187`）会自动拆 `{ data }` —— 所以 `accept` 收到的是 `data` 里面那层，不用自己拆。
+`dataOf`（`raw.ts:205`）会自动拆 `{ data }` —— 所以 `accept` 收到的是 `data` 里面那层，不用自己拆。
 
 ### 7.5 历史组（撤销）
 
@@ -394,15 +454,23 @@ export async function callDirect(
 
 ## 8. 解析器怎么选（`core/ps/raw.ts`）
 
+**「怎么选」的唯一出处是 `capabilities.ts` 文件头那张 4 行表**（调度 / 直调写 / 只认约定值 / 读结构），
+下面只是逐条的判据说明：
+
 | 解析器 | 什么时候用 | 判据 |
 |---|---|---|
+| `dispatchAck` | **调度通道一律用它** | 只认 `'1'` / `'undefined'` / 空串，其余 `PS_ERROR`；判不了成败，失败在 PS 弹窗（§4） |
 | `lenientVoid(文案)` | 只关心成败的写操作 | `''` / `'undefined'` / `'0'` / `'1'` / `{err:0}` / `{code:'OK'}` 都算成功；`{err:N≠0}` 算宿主拒绝 |
+| `strictVoid(文案)` | 同上，但**「没生效本身看不出来」** | 与 `lenientVoid` 的唯一差别：`''` / `'undefined'` / `'null'` / `'0'` 算 `PS_BAD_PAYLOAD`。实现是 `lenientVoid` 的薄包装 |
+| `unwrapRaw` | 只认约定值、不解析结构 | 命中 `RAW_FAILURES` 折码，其余 `ok`（成功时调用方继续用原始 raw） |
 | `strictPayload({ whenFalse, whenFailed, accept })` | 返回 `{err, data}` 且要校验字段 | `false` → `VALIDATION`（前提不满足）；`err===1` → `hostRejected`（`VALIDATION`，句子优先宿主 `msg`）；`accept(data)` 返 `null` → **`CORRUPT`**（`malformed`，detail 给字段路径 + 原文前 120 字） |
 | `strictData(文案)` | 只要 `data`，不要字段校验 | `err≠0` 当失败，其余交 `data` |
-| `passthrough` | 返回结构**未实测**，原样交出 | `(raw) => ok(raw)`。按 JSON 解析会把裸路径判成坏数据时用它；**结构一旦实测就换成具名解析器 —— 它是缺口，不是常态**（`raw.ts:201`） |
+| `passthrough` | 返回结构**未实测**，原样交出 | `(raw) => ok(raw)`。按 JSON 解析会把裸路径判成坏数据时用它；**结构一旦实测就换成具名解析器 —— 它是缺口，不是常态**（`raw.ts:219`） |
 | `sentinelJson` | jsx 返回的是哨兵字符串（`'ok'` / `'no-doc'`） | 先折哨兵再解析 |
 
-**这 5 个就是全部。** 表里配不上这 5 个的时候，**不要往 `raw.ts` 加第 6 个** —— 那会让每个后来者多认一个他一辈子用不上的名字。正确做法是**写在你自己的域模块里**（`Parser<T>` 是个类型，不挑位置）：
+（`parseJsxRaw` / `parseErrEnvelope` / `parseDataEnvelope` 这些是零件，能力表里基本不直接挂。）
+
+通用档配不上时，**不要往 `raw.ts` 加新名字** —— 那会让每个后来者多认一个他一辈子用不上的名字。正确做法是**写在你自己的域模块里**（`Parser<T>` 是个类型，不挑位置）：
 
 ```ts
 // core/ps/layer.ts 末尾 —— 只服务 CAP.layerState 一个能力
@@ -464,9 +532,10 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
   → init.ts 的 CORE_FUNCS 加名字
 
 返回形状？
-  只关心成败   → lenientVoid
-  要字段校验   → strictPayload（校验写 accept）
-  只要 data     → strictData
-  结构未实测   → passthrough
-  都对不上      → 写在你自己的域模块里（别加进 raw.ts）
+  调度通道      → dispatchAck（判不了成败，别挂别的）
+  只关心成败    → lenientVoid；没生效看不出来的写用 strictVoid
+  要字段校验    → strictPayload（校验写 accept）
+  只要 data      → strictData
+  结构未实测    → passthrough
+  都对不上       → 写在你自己的域模块里（别加进 raw.ts）
 ```

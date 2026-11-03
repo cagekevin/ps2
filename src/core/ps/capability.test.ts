@@ -5,7 +5,7 @@ import { callJsx, LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridg
 import { CAP } from './capabilities';
 import { callCapability, type CapabilitySpec } from './capability';
 import { requireShapeLayer, requireTextLayer } from './layer';
-import { lenientVoid, parseSystemFontList } from './raw';
+import { dispatchAck, lenientVoid, parseSystemFontList } from './raw';
 import { funcMissing, requireVendor } from './init';
 import type * as BridgeModule from '../cep/bridge';
 
@@ -223,6 +223,20 @@ describe('CAP', () => {
 
     /* 例外只许一个，且必须点名 —— 多了说明有人在偷偷给自己开长超时 */
     expect(dispatches.filter(([, spec]) => isLongTask(spec)).map(([name]) => name)).toEqual(['callAction']);
+  });
+
+  it('调度通道的 parse 一律是 dispatchAck：它判不了成败，别挂能判失败的那个', () => {
+    /**
+     * `ps_onJsx` 恒回 `1`（内部返回值被 `suspendHistory` 丢弃），所以 `unwrapRaw` 的
+     * `-1 → PS_REJECTED` 分支对调度能力**永不触发**。挂上去只会让下一个 AI 以为能判失败，
+     * 然后照抄一份永不生效的失败处理。失败现场在 PS 侧弹窗，见 `CONVENTIONS` §4.7 与 `TD-01-32`。
+     */
+    const dispatches = Object.entries(CAP).filter(([, spec]) => spec.channel === 'dispatch');
+
+    expect(dispatches.length).toBeGreaterThan(0);
+    for (const [name, spec] of dispatches) {
+      expect(spec.parse, name).toBe(dispatchAck);
+    }
   });
 
   it('多选类能力共用同一个前置（位置对换 / 颜色互换 / 元素替换 / 两个分布形态）', () => {

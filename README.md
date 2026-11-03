@@ -103,10 +103,10 @@ src/
 
 jsx/
 ├─ main.jsx       自有 PS 能力（mm_*）
-├─ vendor.jsx     官方 jsx 副本（ys_*，jsxbin，原样复制）
+├─ vendor.jsx     官方 jsx 副本（ys_*，jsxbin 的解码源码，解码器已修）
 └─ vendor.README.md  来源、函数、依赖、升级方式
 
-tools/            deploy / check-templates / check-nav / new-feature / build-icons / extract-icons / probe-data
+tools/            deploy / check-templates / check-nav / new-feature / build-icons / extract-icons / probe-data / jsxbin
 docs/             见下方文档索引
 ```
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MSG } from '../../types/messages';
 import { failWithDetail, ok, type Result } from '../../types/result';
 import {
+  dispatchAck,
   envelopeMessage,
   lenientVoid,
   parseDataEnvelope,
@@ -15,6 +16,18 @@ import {
   strictVoid,
   unwrapRaw
 } from './raw';
+
+describe('dispatchAck', () => {
+  it('调度通道只会回 1 / undefined，其余算线上格式坏了', () => {
+    expect(dispatchAck('1').status).toBe('ok');
+    expect(dispatchAck('undefined').status).toBe('ok');
+    expect(dispatchAck('').status).toBe('ok');
+    /* 真走到这里说明通道挂错了（例如调度能力误用直调解析器），要报出来 */
+    const bad = dispatchAck('-1');
+    expect(bad.status).toBe('error');
+    if (bad.status === 'error') expect(bad.detail).toBe('raw:-1');
+  });
+});
 
 describe('unwrapRaw', () => {
   it('约定失败码折成对应子码，detail 带原始值', () => {
@@ -164,7 +177,7 @@ describe('lenientVoid', () => {
     expect(verdict(parse(RAWS.codeOk))).toBe('ok');
     /* PS 写操作成功时常常什么都不回 */
     for (const raw of ['undefined', '', 'null']) expect(verdict(parse(raw))).toBe('ok');
-    /* `zt_setFontVision` 回 0；调度约定 r != -1 即成功 */
+    /* `zt_setFontVision` 回 0；`1` 是调度通道唯一可能的值（成功失败都是它） */
     for (const raw of ['0', '1']) expect(verdict(parse(raw))).toBe('ok');
   });
 

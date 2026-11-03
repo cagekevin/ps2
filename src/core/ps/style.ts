@@ -87,13 +87,13 @@ export function getGradientInfo(): Promise<Result<unknown>> {
  * 保存当前图层样式到分组（原版 `app.v4.js:51532-51536`）。
  *
  * 发 `{ delArr: [], groupId, envDir: '/SheJiZhuLi' }`——`delArr` 是「删除样式后
- * 告诉 jsxbin 哪些该删」的临时清单，添加新样式不需要删东西，传空数组。
+ * 告诉 vendor 哪些该删」的临时清单，添加新样式不需要删东西，传空数组。
  *
- * jsxbin 自己负责把 PSD / 缩略图写进 `kuStyle/<groupId>.psd|png`；
+ * vendor 自己负责把 PSD / 缩略图写进 `kuStyle/<groupId>.psd|png`；
  * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后前端重读一次。
  */
 export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
-  /* envDir 是原版 jsxbin 写 PSD 时的目录名，与数据根同值——别在这里再写一份字面量 */
+  /* envDir 是原版写 PSD 时的目录名，与数据根同值——别在这里再写一份字面量 */
   const call = await callDirect(
     'ys_AddStyle',
     [{ delArr: [], groupId, envDir: ROOTS.legacy }],

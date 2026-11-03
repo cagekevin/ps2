@@ -2,7 +2,7 @@
  * 「猜 vendor 返回」只允许在 `core/ps` 与 `core/cep` 内（`ADR-0003` 防御归属）。
  *
  * 这是**跨文件规范扫描**，不是自证式断言：它读的是别人写的源码，注入一处越界导入必红。
- * 加这条的原因：vendor 是 JSXBIN，返回形状只能在这两层里猜；一旦命令层 / 页面层
+ * 加这条的原因：vendor 的返回形状只能在这两层里解释；一旦命令层 / 页面层
  * 自己 `parseJsxRaw` 或 `callJsx`，同一个 vendor 就有了第二份解释，改起来要顺着两处找。
  */
 import { readdirSync, readFileSync } from 'node:fs';

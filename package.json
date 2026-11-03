@@ -18,6 +18,7 @@
     "check:nav": "node tools/check-nav.mjs",
     "check": "npm run typecheck && npm run lint && npm run lint:css && npm run check:templates && npm run check:nav && npm run check:jsx && npm run test && node scripts/post-check.mjs",
     "check:jsx": "node tools/check-jsx-entry.mjs",
+    "vendor:decode": "node tools/jsxbin/decode.mjs",
     "new:feature": "node tools/new-feature.mjs"
   },
   "dependencies": {

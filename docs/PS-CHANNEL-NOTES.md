@@ -2,7 +2,8 @@
 
 > 这份文件只记**事实**，不记规矩。规矩在 `CONVENTIONS.md`，流程在 `GOVERNANCE.md`。
 >
-> 来源：2026-10-27 逐条真机验证 + 对照原版 `app.v4.js` / `cep-events.js` / `transport.ts` 与色板面板明文 jsx。
+> 来源：2026-10-27 逐条真机验证 + 对照原版前端与色板面板明文 jsx。
+> 原版前端的 `cep-events.js` / `transport.ts` 是**打包前的文件名**，仓里只有打包后的 `docs/原版/app.v4.js`（74k 行）—— 查调用点用 `grep -n "函数名" docs/原版/app.v4.js`。
 > 每条都写明「代码在哪」和「写错会怎样」，改代码前先看这里，别按直觉改。
 
 ---
@@ -78,9 +79,9 @@ mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字
 | `'no-doc'` | `PS_NO_DOC` | 提示用户 |
 | `'not-shape'` | `PS_WRONG_LAYER` | 提示用户 |
 | `'skipped'` | `PS_SKIPPED` | 提示「自动填充已关闭」 |
-| `'-1'` | `PS_REJECTED` | 提示「PS 拒绝执行」（原版判定 `r != -1` 为成功） |
+| `'-1'` | `PS_REJECTED` | 提示「PS 拒绝执行」。**只会来自直调通道**：调度通道（`ps_onJsx`）把内部返回值丢弃，永远回 `1`（见 `CONVENTIONS` §4.7） |
 | `'unknown:<kind>'` | 成功（不是失败码） | 图层类型白名单兜成 `unknown` |
-| `'1'` | 成功 | 成功（原版判定 `r != -1`） |
+| `'1'` | 成功 | 调度通道唯一的返回值（成功失败都是它），直调通道里也表示成功 |
 
 代码：`bridge.ts`（callJsx）、`core/ps/raw.ts`（unwrapRaw）。
 
@@ -94,7 +95,7 @@ mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字
 - 实现是 Promise 链先进先出；某条失败不影响后续（`evalQueue` 永远 resolve）。
 - 超时：默认 30s，写操作 60s，系统字体表 300s（`LONG_TIMEOUT`）。**超时后队列放行**，但 PS 侧可能仍在执行——日志会写「队列放行」，看到这句不要以为已经取消。
 - 文本属性（§11.3）：写操作（`zt_*` / `layer_font_*` / `cy_distributedByPitch`）一律 60s，读操作（`zt_getFontSimpleInfo` / `zt_getCurrentFontInfo` / `zt_getCurrentText`）走默认 30s。`zt_setFontColor` 会拉起系统取色器、用户可能停留很久，超时只放行队列、不取消 PS 侧，所以失败提示后要允许用户重试。
-- 轮询类调用传 `{ silent: true }`，不写 info 日志（`core/ps/layer.ts:40`）。
+- 轮询类调用传 `{ silent: true }`，不写 info 日志（`core/ps/layer.ts:32`）。
 
 ---
 
@@ -195,7 +196,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 判定顺序：`TEXT` → `SOLIDFILL`（形状）→ `SMARTOBJECT` → `GROUP` → `NORMAL` → 其它返回 `unknown:<原值>`。
 
-前端 `VALID_KINDS` 白名单再兜一层（`core/ps/layer.ts:12`），认不出的一律 `unknown`，不抛错。
+前端 `VALID_KINDS` 白名单再兜一层（`core/ps/layer.ts:15`），认不出的一律 `unknown`，不抛错。
 
 **选中数量是另一个 jsx**：`mm_layer_getSelection` 返回选中数（`'3'`），没有文档返回 `no-doc`。取数走 ActionManager 的 `targetLayers`（`list.count`），**不是** `app.activeDocument.activeLayers` —— 后者在部分 PS 版本上不存在（§10.2）。2026-10-30 真机已确认新实现返回 `'1'` 且不再抛「undefined 不是对象」。不并进 `mm_layer_getState` 的理由：后者被 `layer-watcher` 每 800ms 调用，改它的返回协议一旦新旧 jsx 混用就会静默解析错；独立函数缺失时探测能直接发现（`init.ts` 的 core 探针已含它）。
 
@@ -241,7 +242,7 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 
 | 路 | 链路 | 作用 |
 |---|---|---|
-| ① | 色板面板点色块 → CEP 事件 `com.fengzi.event.seban`（`type:'setColor'`）→ 主面板 `app.v4.js` 的 `handleSeBanEvent` → 开关 `cyAutoFillColor` 开 → `ys_useStyleColor(item, isFill=true)` | **多图层上色在这里**（vendor.jsx，加密，读不到实现） |
+| ① | 色板面板点色块 → CEP 事件 `com.fengzi.event.seban`（`type:'setColor'`）→ 主面板 `app.v4.js` 的 `handleSeBanEvent` → 开关 `cyAutoFillColor` 开 → `ys_useStyleColor(item, isFill=true)` | **多图层上色在这里**（vendor.jsx，解码源码见 `jsx/vendor.README.md`） |
 | ② | 色板面板自己的 jsx `sb_cy_SheZhiQianJingSe`（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx:32-33`） | **只处理单选**：`iTuCengGeShu == 1` 才上色，多选只设前景色 |
 
 所以上面第 2 条「多选不处理」说的是**色板面板 jsx**的行为；整条官方链路的「多选上色」能力来自主面板智能填充。
@@ -452,16 +453,19 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 1. **`cy_distributedByPitch` 有两个形态，别合并**：
    常用页间距面板是 `[axis, gap, sortMode]`（`app.v4.js:1262654`，三参、无 filter）；
    文本属性面板是 `[axis, value, 2, filter]`（`:1441105`）。第 3 个参数一个是排序模式（1 按图层 / 2 按坐标），
-   一个是固定的 `2`——看着像同一个东西，含义不同。`core/ps/text.distributeByPitch` 只服务文本面板。**两个形态的前置相同**：至少 2 个选中图层（`requireSelection(2)`），不要求文字图层——分布的对象是多个图层。同一条前置也挂在「位置对换」「图层颜色互换」上（这三个都是成对才有意义，单选时 PS 只回一句笼统的 `-1`）。
+   一个是固定的 `2`——看着像同一个东西，含义不同。`core/ps/text.distributeByPitch` 只服务文本面板。**两个形态的前置相同**：至少 2 个选中图层（`requireSelection(2)`），不要求文字图层——分布的对象是多个图层。同一条前置也挂在「位置对换」「图层颜色互换」上（这三个都是成对才有意义；单选时内部函数回 `-1`，但调度通道把这个值丢掉、我们收不到 —— 前置是唯一拦截点）。
    **通道也相同（两处都是 `jsxHistory`）**：常用页这边走调度，文本面板那边目前是直调，
    属已登记的 P1（`text.ts` 与 §11.3 第 1 条的例外说明），真机后统一成调度。
 2. **`gap` 是字符串**：原版把输入框原文（经 `ft.b` 补单位，如 `10px`）直接传下去。
    我方**不补单位**——`appUnit` 属设置页的键，常用页 repo 只读 17 个 `cy*` 键；
    真机若分布不生效，先把值改成 `10px` 再验（UNVERIFIED）。
 3. **`jsx` 与 `jsxNoCheck` 的差别是「先探选中图层」**：`jsx(fn,args)` 会先跑 `Layer_isSelectLayer()`，
-   返回 `0` / `"false"` 就不执行。我方两条都直调，不做这次预探，
-   没选中图层时的表现退化成一个普通的失败码（`-1` → `PS_REJECTED`），页面 toast 即可。UNVERIFIED
-4. **返回结构全部未验证**：v1 写函数只认 `raw.ts` 的约定值表（`-1` 等）与 `{ err: 1 }` 信封，
+   返回 `0` / `"false"` 就不执行。我方不做这次预探；走调度的能力**没有可读的失败信号**——`ps_onJsx`
+   把内部返回值丢掉、恒回 `1`，界面会照样提示成功。但**内部函数失败时会自己 `_A()` 弹窗**
+   （`jsx/vendor.jsx` 每个 `return -1` 前一行），所以用户不是完全无感：现场是「PS 弹窗说原因 + 我们 toast 说成功」，
+   以弹窗为准。要提前拦只能靠 `require` 前置或事后读回。UNVERIFIED
+4. **返回结构全部未验证**：v1 写函数只认 `raw.ts` 的约定值表（`-1` 等）与 `{ err: 1 }` 信封
+   ——**仅对直调通道有效**，调度通道永远回 `1`（见 `CONVENTIONS` §4.7）；
    解析不出结构按成功处理；读函数（`cy_getImagePath` / `cy_getPsdForFolder`）把 raw 原样交出。
    真机确认后必须收紧，别让宽松解析变成永久契约。
 

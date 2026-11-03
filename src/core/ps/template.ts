@@ -3,8 +3,8 @@
  *
  * **这里没有一行 jsx**：五个动作全是 `jsx/vendor.jsx` 里原版面板天天在跑的函数，
  * 我们只往 `capabilities.ts` 加表行、按名字调（`callCapability`）。
- * 函数体是 jsxbin 混淆的，看不见也不影响调用；名字错了 `funcMissing` 会报
- * `PS_UNREADY` + `detail: fn:ps_mbAddPsd`，不会静默。
+ * 函数体在 `jsx/vendor.jsx`（官方 jsxbin 的解码源码）里，调用只看名字；名字错了 `funcMissing`
+ * 会报 `PS_UNREADY` + `detail: fn:ps_mbAddPsd`，不会静默。
  *
  * 本文件只做一件事：给调用方一个**语义名字**，
  * 门 / 前置 / 超时 / 解析全在表里，不许在这里重写。

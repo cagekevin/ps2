@@ -231,7 +231,7 @@ export async function addFontFromLayer(
 /**
  * 把当前图层样式保存进分组（原版 `:51532-51560`）。
  *
- * `ys_AddStyle` 由 jsxbin 负责写 `kuStyle/<groupId>.psd` 和缩略图；
+ * `ys_AddStyle` 由 vendor 负责写 `kuStyle/<groupId>.psd` 和缩略图；
  * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后调用方重读。
  */
 export async function addStyleFromLayer(

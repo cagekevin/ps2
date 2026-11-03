@@ -14,10 +14,12 @@
 │  ├─ core.js             状态 / 持久化 / PS 通道 / 官方 vendor 加载与调度
 │  └─ app.js              渲染 / 交互 / 动作
 ├─ jsx\main.jsx           面板自己用到的 PS 能力（取色、形状工具）
-├─ jsx\vendor.jsx         官方 vendor（加密 jsxbin）原文件：多图层上色靠它
 ├─ docs\上色逻辑.md       上色逻辑的完整理解（官方做法 / PS 侧事实 / 验证判据）
 └─ img\                   图标（1~7 与 1a~7a）
 ```
+
+> `jsx\vendor.jsx`（官方 vendor 的 jsxbin 原件）已移到 `docs/参考/vendor.jsxbin`。
+> 本目录是**另一个项目的冻结快照**；本仓现行形态是解码源码 `jsx/vendor.jsx`，来历与补丁见其 `vendor.README.md`。
 
 ## 数据流
 
@@ -87,7 +89,7 @@ Get-ItemProperty HKCU:\Software\Adobe\CSXS.11 | Select PlayerDebugMode
 点色块 → js/app.js applyColor
        → js/core.js ps.dispatch('ys_useStyleColor', [项], '智能填充颜色')
        → 官方调度入口 ps_onJsx('{f,arr,n}')
-       → jsx/vendor.jsx（官方 vendor 加密 jsxbin 原文件）→ 一次处理所有选中图层
+       → jsx/vendor.jsx（官方 vendor；本仓是解码源码，原件在 docs/参考/vendor.jsxbin）→ 一次处理所有选中图层
 ```
 
 - 官方的多图层上色就是 `ys_useStyleColor` 做的，官方主面板只是转发事件；我们没有主面板，就自己转发同一跳

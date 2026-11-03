@@ -11,7 +11,7 @@
  *   被判成文件坏」这类假失败（真机 2026-10-30 踩过）。这里用 Photoshop COM 的 `DoJavaScript`
  *   直接批量问，AI 自己就能拿齐证据，不用人反复配合。
  *
- * 【一次调用跑完，不能拆】`jsx/vendor.jsx` 是 jsxbin，它定义的函数**活不过一次
+ * 【一次调用跑完，不能拆】`jsx/vendor.jsx` 里定义的函数**活不过一次
  *   `DoJavaScript` 调用**（实测：上一次调用里 `$.evalFile` 完 `ps_onJsx` 是 function，
  *   下一次调用就 `Sys_setSystemEnvInfo 不是函数`）。所以加载 + 注入 + 全部探测必须在
  *   同一段脚本里，中间不许断开。

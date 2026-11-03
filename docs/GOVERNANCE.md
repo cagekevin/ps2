@@ -204,7 +204,7 @@
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |
 | 样式动作 | `src/features/style/useStyleActions.ts` | 页面动作与交互状态收口 |
 | 脚手架 | `tools/new-feature.mjs` | 新 feature 生成 |
-| PS 返回形状探针 | `tools/probe-ps.mjs` | `npm run probe:ps`：用 PS COM `DoJavaScript` 批量拿所有 jsx 的真实返回，**AI 自己测，不靠人点面板**。加载 + 注入 + 探测必须在同一次调用（jsxbin 函数活不过一次调用）；只收集不判定（分类只在 `raw.ts`）；会改文档，用测试文档。用法见 `PS-CHANNEL-NOTES` §十六 |
+| PS 返回形状探针 | `tools/probe-ps.mjs` | `npm run probe:ps`：用 PS COM `DoJavaScript` 批量拿所有 jsx 的真实返回，**AI 自己测，不靠人点面板**。加载 + 注入 + 探测必须在同一次调用（jsx 函数活不过一次调用）；只收集不判定（分类只在 `raw.ts`）；会改文档，用测试文档。用法见 `PS-CHANNEL-NOTES` §十六 |
 | 范本自检 | `tools/check-templates.mjs` | 双向校验清单 |
 
 ### 4.2 标记规则

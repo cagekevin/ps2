@@ -13,6 +13,12 @@
  *   timeout 读 30s / 写 60s / 扫全机字体 300s
  *   parse   `./raw.ts` 的具名解析器；`lenientVoid` 是 UNVERIFIED 的历史妥协，收紧要单独一轮
  *
+ * **parse 怎么选**（照这张表，别自己发明组合）：
+ *   调度通道 → `dispatchAck`（判不了成败，守卫在 `capability.test`）
+ *   直调 · 写 → `lenientVoid`；「没生效本身看不出来」的写用 `strictVoid`（唯一差别：宿主没回话算失败）
+ *   直调 · 只认约定值、不解析结构 → `unwrapRaw`
+ *   直调 · 读结构 → `strictData` / `strictPayload` / `sentinelJson` / `passthrough`（严格度递减）
+ *
  * `require` 是执行器的**第一步**：先判「当前图层对不对」，不对就终止，一条 jsx 都不发。
  * 判定走 `./layer` 的 `requireLayerKind`（唯一出口），这里只引用它，不写图层类型映射。
  *
@@ -67,6 +73,7 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
   return { id, name, ext, width, height };
 }
 import {
+  dispatchAck,
   lenientVoid,
   parseDataEnvelope,
   parseFontFamily,
@@ -328,13 +335,13 @@ export const CAP = {
 
   flip: {
     fn: 'cy_transformPosition', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '自由变换', parse: unwrapRaw
+    label: '自由变换', parse: dispatchAck
   },
 
   /** 位置对换：两个图层互换位置，单选没有意义 */
   locationTrade: {
     fn: 'cy_locationTrade', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '位置对换', require: requireTwoLayers, parse: unwrapRaw
+    label: '位置对换', require: requireTwoLayers, parse: dispatchAck
   },
 
   /**
@@ -346,36 +353,36 @@ export const CAP = {
    */
   layerReplace: {
     fn: 'cy_LayerReplace', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '元素替换', require: requireTwoLayers, parse: unwrapRaw
+    label: '元素替换', require: requireTwoLayers, parse: dispatchAck
   },
 
   /** 图层颜色互换：两个图层互换颜色，单选没有意义 */
   exchangeLayerColor: {
     fn: 'cy_exchangeLayerColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '图层颜色互换', require: requireTwoLayers, parse: unwrapRaw
+    label: '图层颜色互换', require: requireTwoLayers, parse: dispatchAck
   },
 
   /** 修正边缘模糊：派发 key 是拼错的 `cy_coorectBlur`，函数名是这个 */
   correctBlur: {
     fn: 'cy_correctRectangleBlur', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '修正边缘模糊', parse: unwrapRaw
+    label: '修正边缘模糊', parse: dispatchAck
   },
 
   /** 填充线框互换：既是派发 key 也是函数名（`case 36` → `jsxHistory`） */
   swapWireframeFill: {
     fn: 'cy_swapWireframeFill', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '填充线框互换', parse: unwrapRaw
+    label: '填充线框互换', parse: dispatchAck
   },
 
   /** 按间距分布：常用页形态是 3 个参数（`gap` 是字符串），与文本面板的 4 参形态不是同一条调用 */
   distribute: {
     fn: 'cy_distributedByPitch', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '按间距分布', require: requireTwoLayers, parse: unwrapRaw
+    label: '按间距分布', require: requireTwoLayers, parse: dispatchAck
   },
 
   referenceWidth: {
     fn: 'cy_createSafeAreaGuide', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '生成安全区域参考线', parse: unwrapRaw
+    label: '生成安全区域参考线', parse: dispatchAck
   },
 
   /** 清除参考线：与切片同一个函数，参数 `1` */
@@ -421,7 +428,7 @@ export const CAP = {
   templateThumb: {
     /* dispatch 通道一律 30s（`capability.test` 的守卫：长任务例外只许 `callAction`） */
     fn: 'mb_amendPreview', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    parse: lenientVoid(MSG.template.thumbFailed)
+    parse: dispatchAck
   },
 
   /**
@@ -431,7 +438,7 @@ export const CAP = {
   templateUse: {
     /* 同上：dispatch 只能读超时档。置入一个大 PSD 通常几秒，30s 是合理上限 */
     fn: 'mb_useTemplate', gate: 'vendor', channel: 'dispatch', label: '应用模板',
-    timeout: READ_TIMEOUT, parse: lenientVoid(MSG.template.useFailed)
+    timeout: READ_TIMEOUT, parse: dispatchAck
   },
 
   /** 把库里的源 PSD 当新文档打开（给用户改） */
@@ -477,19 +484,19 @@ export const CAP = {
   /** 嵌入图片：`path` 恒空 = 用 PS 里当前置入的图，参数由 commands 拼 */
   embedImage: {
     fn: 'cy_insertionImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '嵌入图片', parse: unwrapRaw
+    label: '嵌入图片', parse: dispatchAck
   },
 
   /** 嵌入多图片：jsx 自己处理拖入的多图，无参 */
   embedMultipleImage: {
     fn: 'cy_embedMultipleImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '嵌入多图片', parse: unwrapRaw
+    label: '嵌入多图片', parse: dispatchAck
   },
 
   /** 导入多图片：参数 `[{ path, toLinkObject }]` */
   importMultipleImage: {
     fn: 'cy_importMultipleImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '导入多图片', parse: unwrapRaw
+    label: '导入多图片', parse: dispatchAck
   },
 
   /**
@@ -505,18 +512,18 @@ export const CAP = {
 
   toLinkSmartObject: {
     fn: 'cy_smartToLinkSmartObject', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '转链接智能对象', parse: unwrapRaw
+    label: '转链接智能对象', parse: dispatchAck
   },
 
   linkSmartObjectToSmartObject: {
     fn: 'cy_linkSmartObjectToSmartObject', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '转智能对象', parse: unwrapRaw
+    label: '转智能对象', parse: dispatchAck
   },
 
   /** 优化当前文档：参数是三个开关组成的一个对象 */
   optimizeDoc: {
     fn: 'cy_optimizeDoc', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '优化文档', parse: unwrapRaw
+    label: '优化文档', parse: dispatchAck
   },
 
   /** 优化单个 PSD：直调，参数 `[option, file]`；跨文档的循环在 commands（§8 例外） */
@@ -528,30 +535,30 @@ export const CAP = {
   /** 自定义变换：参数顺序由 `CustomTransformParams` 具名字段保证，见 `common-use.ts` */
   customBuildTransform: {
     fn: 'cy_customBuildTransform', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '自定义变换', parse: unwrapRaw
+    label: '自定义变换', parse: dispatchAck
   },
 
   /** 导出当前图片：整块 `cyExport`，导出比普通写慢，给 120s */
   exportImage: {
     fn: 'cy_ExportImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '导出图片', parse: unwrapRaw
+    label: '导出图片', parse: dispatchAck
   },
 
   /** 导出一级 / 二级图层：同一个配置块，函数不同 */
   exportFirstLevelLayers: {
     fn: 'cy_BatchExportLayer', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '批量导出一级图片', parse: unwrapRaw
+    label: '批量导出一级图片', parse: dispatchAck
   },
 
   exportSecondLevelLayers: {
     fn: 'cy_BatchExportSecondLayer', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '批量导出二级图片', parse: unwrapRaw
+    label: '批量导出二级图片', parse: dispatchAck
   },
 
   /** 单个 PSD 导图：`Bacth` 是官方拼写，照抄 */
   exportPsdImage: {
     fn: 'cy_BacthExportPsdToImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '导出 PSD', parse: unwrapRaw
+    label: '导出 PSD', parse: dispatchAck
   },
 
   /* ---------------- 动作页（05）：两条 jsx，通道不同 ---------------- */
@@ -569,7 +576,7 @@ export const CAP = {
        且全仓只有一个」，所以例外跟着能力走，不再在测试里维护第二份名字清单。 */
     longTask: true,
     fn: 'dz_callAction', gate: 'vendor', channel: 'dispatch', timeout: LONG_TIMEOUT,
-    label: '动作', parse: unwrapRaw
+    label: '动作', parse: dispatchAck
   },
 
   /**
@@ -591,19 +598,19 @@ export const CAP = {
   /** 智能填色：前景色方向 */
   smartFillColor: {
     fn: 'cy_smartFillColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '智能填充颜色', parse: unwrapRaw
+    label: '智能填充颜色', parse: dispatchAck
   },
 
   /** 智能填色：背景色方向（填边框色），与上一条是两个函数 */
   smartFillLineColor: {
     fn: 'cy_smartFillLineColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '智能填充边框颜色', parse: unwrapRaw
+    label: '智能填充边框颜色', parse: dispatchAck
   },
 
   /** 智能参考线：参数是 `singleRow` / `singleColumn` */
   smartReferenceLine: {
     fn: 'cy_smartReferenceLine', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '智能参考线', parse: unwrapRaw
+    label: '智能参考线', parse: dispatchAck
   },
 
   /* ---------------- 重命名页（06）：两条 jsx，都直调、都只发不读 ---------------- */
@@ -666,7 +673,7 @@ export const CAP = {
    */
   useStyleColor: {
     fn: 'ys_useStyleColor', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '智能填充颜色', parse: unwrapRaw
+    label: '智能填充颜色', parse: dispatchAck
   },
 
   /** 智能填充形状（ctrl + 点色块）：jsx 对非形状返回 `not-shape`，这里提前到第一步 */
@@ -690,7 +697,7 @@ export const CAP = {
   /** 应用渐变：原版传项里的 `gradient` 字段，走调度 */
   applyGradient: {
     fn: 'ys_useGradient', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '填充渐变色', parse: unwrapRaw
+    label: '填充渐变色', parse: dispatchAck
   },
 
   /** 切 PS 工具（快速吸色用 `Tool_set('eyedropperTool')`）：直调，但在官方副本里 */
@@ -702,6 +709,6 @@ export const CAP = {
   /** 应用图层样式：`{ ...项, groupId }`，走调度 */
   applyStyle: {
     fn: 'ps_ysBtnUseStyle', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
-    label: '应用样式', parse: unwrapRaw
+    label: '应用样式', parse: dispatchAck
   }
 } satisfies Record<string, CapabilitySpec<unknown>>;

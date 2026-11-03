@@ -26,7 +26,7 @@ export interface VendorDiag {
   btnUseStyle: string;
   setForegroundColor: string;
   useShapeFill: string;
-  /** 动作页（`05`）：执行 PS 动作 / 取动作列表，jsxbin 里静态搜不到，只能这样探 */
+  /** 动作页（`05`）：执行 PS 动作 / 取动作列表；探的是**装到扩展目录的那份**里在不在 */
   callAction: string;
   getActionList: string;
   /** 官方配置 sj_set.json 是否存在 */
