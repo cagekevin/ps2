@@ -284,6 +284,9 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     浮层里的图标与对号跟文字同色（`currentColor`），不许在浮层内单独写深色文字。
     浮层之间只允许两种差异：**宽度跟不跟触发器**（通栏 / 内容宽）、**贴左还是贴右**（`placement` 的
     `start` / `end`）。除这两条之外的差异就是第三种下拉，先合并再谈样式。
+    **toast 不在此档**（2026-11-04 定）：它不锚在触发器旁，是浮在内容上的独立表面，跟弹窗走
+    深色 overlay 族（`--mm-color-bg-overlay` + 亮线描边 + 投影，见 `components/Toast/Toast.css`）；
+    info / error 不换底，error 只把描边与文字换成 `--mm-color-danger`（同 `.mm-input--invalid`）。
 17. **图标与紧邻文字的间距只有一个值 `--mm-space-inline`(6)**，适用于勾选框 / 单选框 / 对号 /
     删除 / 「+」/ 折叠箭头这类小标记（12 档）。落地只有一种结构：**图标槽 + 文字** ——
     槽宽 `--mm-check-slot`(18) = 图标 12 + 间距 6；行容器给 `padding-left: var(--mm-check-slot)`，

@@ -1,8 +1,12 @@
 /*
- * Toast 容器与条目：贴底居中、不吃点击（`pointer-events: none`）。
+ * Toast 容器与条目：贴底居中、不吃点击（`pointer-events: none`）；状态在 `core/feedback/toast.ts`。
  *
- * 已知未补：条目还没有表面（底 / 圆角 / 内边距 / 文字色）——
- * 补的时候走 `.mm-popover` 那一档（规则 16：浮层浅底深字），不要在这里另造一套。
+ * 条目表面与弹窗同族：底 `--mm-color-bg-overlay`（tokens.css 注释即「弹窗 / toast」），
+ * 亮线描边 + 投影界定「浮在内容上的独立表面」——与 `.mm-modal--fullscreen` 同一语言；
+ * 不走 `.mm-popover` 的白底档（规则 16 只管锚在触发器旁的下拉 / 菜单族）。
+ * info / error 不换底、不换壳：error 只把描边与文字换成 danger
+ * （同 `.mm-input--invalid` 的「红只落描边与文字」，红底铺上半透明深底就是第二种表面）。
+ * 禁止：色值与 px 字面量（值只在 tokens.css）；给单条 toast 单独调底色。
  */
 
 .mm-toast{
@@ -13,10 +17,38 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: var(--mm-space-1);
   pointer-events: none;
   z-index: var(--mm-z-toast-top);
 }
 
 .mm-toast__item{
+  display: flex;
+  align-items: center;
+  min-height: var(--mm-control-h);
   max-width: 90%;
+  padding: var(--mm-space-1) var(--mm-space-2);
+  border: var(--mm-border-w) solid var(--mm-color-border-control);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-color-bg-overlay);
+  box-shadow: var(--mm-shadow-popover);
+  color: var(--mm-color-text-strong);
+  animation: mm-toast-in var(--mm-dur-fast);
+}
+
+.mm-toast__item--error{
+  border-color: var(--mm-color-danger);
+  color: var(--mm-color-danger);
+}
+
+/* 入场上浮 4 + 淡入：仓里没有运动距离专档，位移借用 `--mm-space-1`（4），不新增档位 */
+@keyframes mm-toast-in{
+  from{
+    opacity: 0;
+    transform: translateY(var(--mm-space-1));
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
