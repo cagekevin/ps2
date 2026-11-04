@@ -87,14 +87,14 @@
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它。**返回 `Result<T>`**（`detail` = `node:<模块名>:<异常>`），不返回 `null`：`catch {} → null` 会把「没有 Node 环境」与「按路径加载的包初始化失败」抹成同一件事，上层只能报一句「引擎没加载成功」（真机 2026-11-02 矢量化踩过） |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 |
 | 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 + 清空入口（诊断页） |
-| 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行） |
+| 存储 | `src/core/storage/index.ts` | 三根 + Result 读 + 原子写（备份/串行）；`dirnameOf` 是「取父目录」的唯一实现（`writeTextFile` 与批量导出共用，别在别处再写一遍 `lastIndexOf('/')`） |
 | 偏好 | `src/core/prefs/index.ts` | 界面状态持久化，key 强类型；`savePref(key, value)` 是「写入并立即落盘」的唯一入口（失败只记日志、不阻断业务），`flushPrefs` 不导出 |
 | 文本混淆 | `src/core/cep/text-codec.ts` | 字体参数编解码（原版 Xv） |
 | 字体应用 | `src/core/ps/font.ts` | `ys_*` 先检查再应用；`checkFontUsable` 不可用时返回**宿主原话**（「请选择文字图层!」/「字体缺失」），不再统一改写成「字体不可用」；`ztgl_setFont` 成功返回 `{"code":"OK"}`（不是 `err` 信封；解析用 `lenientVoid`，认不出就原样转发当成功）；`applyFont` / `getSystemFontList` 已进能力表 |
 | 文本属性 | `src/core/ps/text.ts` | `zt_*` 全部直调、**条数以能力表为准**（本行曾写 26/25/24/21 四个数字，每删一个能力就漂一次）；写只认约定值与 `{err:1}`；除读函数外都走能力表（`CAP.*`），前置写在表的 `require` 里（执行器第一步判定，不通过直接终止）：绝大多数带 `requireTextLayer`，`distributeByPitch` 带 `requireSelection(2)`（分布的对象是多个图层，不限于文字）；写一律 `lenientVoid` + 60s。非文字图层上这批写函数不报错、返回 `undefined`、什么都不做。`zt_changeTextBranchMerge` 已删（抛「没有这种元素」，是派发表 key 不是函数）；`zt_switchFontDirection` 已删（入口被「批量文字」替换，2026-10-31）。批量文字的三个 `mm_text_*` 在 `core/ps/text-batch.ts`，**不是范本**（未登记本表），解析器在同目录 `text-batch-raw.ts` —— 放回 `text-batch.ts` 会形成 `capabilities ↔ text-batch` 运行时环 |
 | PS 能力执行器 | `src/core/ps/capability.ts` | 唯一执行器：门（core / vendor）→ 前置 → 调用（直调 / 调度）→ 解析，四步固定；不认识任何 jsx 函数名与兜底文案，唯一认识的码是门失败的 `PS_UNREADY`；`gate` 与 `channel` 是判别联合，错组合编译不过 |
 | PS 能力表 | `src/core/ps/capabilities.ts` | 一行一个能力（`fn`/`gate`/`channel`/`timeout`/`parse`/`require`）；严格度由 `parse` 的解析器决定，新增能力只加一行 |
-| PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄 |
+| PS 常用页 | `src/core/ps/common-use.ts` | 26 个 `cy_*`（v1 覆盖 11 个 / 12 条命令 + 只登记 2）；**按原版调用点分通道**，三处拼写照抄。另有自写 `docExportPath`（`mm_doc_exportPath`，导出落盘目录解析 + 逐级建目录，gate core 直调）—— 基目录按 `pathType` 取「桌面 / 当前文档目录」，前端拿不到文档路径 |
 | 路径 | `src/core/paths/index.ts` | 路径拼接与资源 URL |
 | 命令层 | `src/commands/README.md` | 命令判定标准与写法 |
 | 鉴权 | `src/core/auth/index.ts` | token + 版本化 key；401 订阅表走 `core/feedback/channel` |
@@ -196,6 +196,7 @@
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 |
 | 命令执行 | `src/hooks/useRunCommand.ts` | 包 loading + 失败提示 + 原因留痕（code/detail 进日志，人话进 toast）；面板/页面不再各写一份 |
 | 页面消息行 | `src/components/MessageBar/index.tsx` | 【唯一入口】每页底部常驻消息行：本页全部状态话（前提不满足 / 空态 / 数据健康 / 读取失败）的唯一出口，行高锁死零位移（`TD-08-2` 收口）；`failureMessage`（Result→消息，soft 码灰字不标红）与 `mergeMessages`（error>warn>info、「；」连接）都在同模块，禁止页面自己造转换。操作回执仍归 toast，页面状态话归这里 |
+| 页面错误边界 | `src/components/ErrorBoundary/index.tsx` | 【唯一入口】路由内容区唯一的失败态：`React.lazy` 的 chunk 取不到（部署先删后拷、旧 hash 文件没了）或页面渲染抛错时，显示一句人话 + 异常原文 + 「重新加载」（`window.location.reload()`，唯一自愈动作 —— 旧 chunk 已被删，重试 `import()` 无意义）。只包内容区、导航在边界外，所以出错时还能切页；`router` 用 `key={pathname}` 换页即重建，失败后点导航立刻恢复 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
 | 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |

@@ -259,6 +259,22 @@ export function exportPsdImage(file: string, config: Record<string, unknown>): P
   return callCapability(CAP.exportPsdImage, [file, config]);
 }
 
+/**
+ * 导出目录的唯一解析处（目录由 jsx 侧建好，逐级创建）。
+ *
+ * `relativeDir` 是相对基目录的那一段（`1200`、`1200/PNG`、`PNG` 或空串），拼法在
+ * `domain/common-use-options.exportRelativeDirOf`。
+ * `baseDir` 只有批量导出 PSD 会传（每份落到它自己所在的目录）；空则按 `pathType`
+ * （1 桌面 / 其余当前文档目录）。文档没保存时 jsx 回 `unsaved`，`exportPathRaw` 折成官方那句。
+ */
+export function docExportPath(
+  pathType: number,
+  relativeDir: string,
+  baseDir: string
+): Promise<Result<string>> {
+  return callCapability(CAP.docExportPath, [pathType, relativeDir, baseDir]);
+}
+
 /* ---------------- v2：事件驱动（2 个函数 / 3 条 jsx） ---------------- */
 
 /** 智能填色：`color` = 前景色 → `cy_smartFillColor`；`line` = 背景色 → `cy_smartFillLineColor` */

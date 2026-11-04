@@ -182,11 +182,23 @@ describe('CAP', () => {
     expect(CAP.systemFontList.parse).toBe(parseSystemFontList);
   });
 
+  /*
+   * 名字带 `zt_` 但做的是**图层对齐**（vendor 里是 `Layer_align(...)`），不是文字属性。
+   * 判据看函数体不看前缀：加文字前置 = 非文字图层上点它必失败（2026-11-04 用户实测）。
+   */
+  const LAYER_ALIGN_FNS = [
+    'zt_setBackrgoudAlign',
+    'zt_setHorizontalCenters',
+    'zt_verticalCenter',
+    'zt_setUpDownAlign'
+  ];
+
   it('文字属性类能力全部带文字图层前置（执行器第一步，不通过就终止）', () => {
     /* 真机依据：非文字图层上这批写函数不报错、返回 `undefined`、什么都不做 */
     const textRows = Object.values(CAP).filter(
       (spec) =>
         spec.channel === 'direct' &&
+        !LAYER_ALIGN_FNS.includes(spec.fn) &&
         (spec.fn.startsWith('zt_') ||
           spec.fn.startsWith('layer_font_') ||
           spec.fn === 'ztgl_setFont' ||
@@ -196,6 +208,19 @@ describe('CAP', () => {
     expect(textRows.length).toBeGreaterThan(20);
     for (const spec of textRows) {
       expect('require' in spec ? spec.require : undefined).toBe(requireTextLayer);
+    }
+  });
+
+  it('图层对齐那批不许带文字前置（vendor 里是 Layer_align，与图层类型无关）', () => {
+    /* 与背景对齐（Selection_all + Layer_align）、顶/中/底（Layer_align(n+6)）：
+       前置条件 vendor 自己判，我们不加 */
+    expect('require' in CAP.setBackgroundAlign).toBe(false);
+    expect('require' in CAP.setUpDownAlign).toBe(false);
+
+    /* 两个分布：vendor 判「选中 ≥3 个图层」，要前置但绝不是文字前置 */
+    for (const spec of [CAP.setHorizontalCenters, CAP.setVerticalCenter]) {
+      expect(spec.require).toBeTypeOf('function');
+      expect(spec.require).not.toBe(requireTextLayer);
     }
   });
 

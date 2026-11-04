@@ -92,9 +92,17 @@ export const LINK_OBJECT_VALUES = [-1, 1, 2] as const;
 export type LinkObjectValue = (typeof LINK_OBJECT_VALUES)[number];
 export const LINK_OBJECT_DEFAULT: LinkObjectValue = -1;
 
-/** `cyExport` 的官方默认整块：11 个字段 + `compress` 的 4 个子键（`:65792-65809`） */
+/**
+ * `cyExport` 的默认整块：官方 11 个字段 + `compress` 的 4 个子键（`:65792-65809`）
+ * + 我们自己的 `subdir`（官方没有这个键，见下方注释）。
+ */
 export const EXPORT_CONFIG_DEFAULTS: Record<string, unknown> = {
-  path: '',
+  /*
+   * `subdir` 是我们的键（官方没有）：用户填的**子目录名**（2026-11-04 语义变更，
+   * 原来是 `path` = 绝对路径）。官方那个 `path` 我们不再读 —— 绝对路径由
+   * `mm_doc_exportPath` 按 `pathType` 算好再写进 `path`，用户填的值只当一段名字。
+   */
+  subdir: '',
   pathType: 2,
   name: '',
   ext: 'JPG',
@@ -143,12 +151,37 @@ export function exportConfigOf(options: CommonUseOptions): Record<string, unknow
 }
 
 /**
- * 导出的落盘子目录名（用户 2026-11-03 定）：PNG 进 `PNG/`，其余进 `out/`。
+ * 导出的**格式子目录**（用户 2026-11-04 定）：PNG 收进 `PNG/`，JPG **不分子目录**
+ * （直接落在目标目录，原来那个 `out/` 已取消）。
  *
  * 只认 `cyExport.ext` 的两种官方取值；大小写不敏感，认不出按 JPG 处理（默认档）。
  */
-export function exportSubdirOf(ext: unknown): 'PNG' | 'out' {
-  return String(ext).toUpperCase() === 'PNG' ? 'PNG' : 'out';
+export function exportFormatDirOf(ext: unknown): 'PNG' | '' {
+  return String(ext).toUpperCase() === 'PNG' ? 'PNG' : '';
+}
+
+/**
+ * 用户填的「子目录名」→ 合法的**单段**目录名（空串 = 不分子目录）。
+ *
+ * 只允许一段：带 `/` `\` `:` 一律拒绝 —— 那是绝对路径 / 多级路径的写法，
+ * 拼进基目录会写到用户没指定的地方。首尾斜杠先剥掉（手输 `1200/` 是很自然的手滑，不算错）。
+ */
+export function parseExportSubdir(value: unknown): Result<string> {
+  const raw = typeof value === 'string' ? value.trim().replace(/^[/\\]+|[/\\]+$/g, '') : '';
+  if (!raw) return ok('');
+  if (raw === '.' || raw === '..' || /[/\\:]/.test(raw)) {
+    return failWithDetail('VALIDATION', MSG.common.badSubdir, `subdir:${raw}`);
+  }
+  return ok(raw);
+}
+
+/**
+ * 相对基目录的那一段：`1200` + PNG → `1200/PNG`；JPG 或没填名字 → 只剩有的那一段。
+ *
+ * 拼法只此一处：命令层与 jsx 都不许自己接 `/`。
+ */
+export function exportRelativeDirOf(subdir: string, ext: unknown): string {
+  return [subdir, exportFormatDirOf(ext)].filter(Boolean).join('/');
 }
 
 /** 官方 `checkQuality`（`app.v4.js:36896`）：剥非数字 + 夹 1–100，非法值回 100 */

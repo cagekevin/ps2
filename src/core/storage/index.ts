@@ -116,7 +116,16 @@ export function readTextAt(absPath: string): Result<string> {
   return readTextFile(absPath, absPath);
 }
 
-function dirnameOf(absPath: string): string {
+/**
+ * 取父目录（**唯一实现**）：`C:/a/b.psd` → `C:/a`。
+ *
+ * 两种分隔符都认（Windows 手输 / PS 返回的 `fsName` 都是反斜杠）。
+ * 没有分隔符时原样返回 —— 调用方拿去 `mkdirSync` 也不会把根搞坏。
+ *
+ * 导出是给 `commands` 用的（批量导出 PSD 要知道每份文件落在哪个目录）；
+ * 放在这里而不是 `core/paths`：那边 import 了本文件的 `ROOTS`，反向 import 会成环。
+ */
+export function dirnameOf(absPath: string): string {
   const index = Math.max(absPath.lastIndexOf('/'), absPath.lastIndexOf('\\'));
   return index <= 0 ? absPath : absPath.slice(0, index);
 }

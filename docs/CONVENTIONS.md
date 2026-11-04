@@ -762,7 +762,7 @@ core/ps/
 ├─ text.ts      文本属性（zt_* 直调；读返回 raw、写返回 Result<void>）
 ├─ text-batch.ts 批量文字（mm_text_* 自写 jsx，gate:'core' 只能直调）
 ├─ text-batch-raw.ts 上面三个能力的私有解析器（单独文件，避免与 capabilities 成环）
-├─ common-use.ts 常用页按钮（cy_*，两条通道各占一半，逐个看原版调用点）
+├─ common-use.ts 常用页按钮（cy_*，两条通道各占一半，逐个看原版调用点）；另有自写 `docExportPath`（导出目录解析）
 ├─ rename.ts    重命名（cmm_batchName / cmm_setLayerColor，直调 + 只发不读）
 ├─ env.ts       环境变量注入
 └─ diag.ts      能力诊断

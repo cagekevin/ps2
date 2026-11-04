@@ -19,7 +19,6 @@
  *   - 批量循环在前端（跨文档，一次 evalScript 只能作用于当前文档，`CONVENTIONS` §8 例外）。
  */
 
-import { nodeRequire } from '../core/cep/node';
 import { loading } from '../core/feedback/loading';
 import {
   batchOptimizeDoc as batchOptimizeDocJsx,
@@ -27,6 +26,7 @@ import {
   correctBlur as correctBlurJsx,
   customBuildTransform as customBuildTransformJsx,
   distribute as distributeJsx,
+  docExportPath,
   embedImage as embedImageJsx,
   embedMultipleImage as embedMultipleImageJsx,
   exchangeLayerColor as exchangeLayerColorJsx,
@@ -55,14 +55,16 @@ import {
   type OptimizeOptions
 } from '../core/ps/common-use';
 import { setTool } from '../core/ps/style';
+import { dirnameOf } from '../core/storage';
 import { COMMON_USE_SEED, decodePsdList } from '../domain/common-use';
 import { MSG } from '../types/messages';
 import {
   booleanOptionOf,
   exportConfigOf,
-  exportSubdirOf,
+  exportRelativeDirOf,
   linkObjectOf,
   optionPatchOf,
+  parseExportSubdir,
   type CommonUseOptions
 } from '../domain/common-use-options';
 import { applyListDrop, type DropPosition } from '../domain/reorder';
@@ -179,45 +181,37 @@ function optimizeOptions(): OptimizeOptions {
 }
 
 /**
- * 导出目录守卫（三个导出入口共用的**唯一一处**）。
+ * 导出落盘目录（用户 2026-11-04 定的语义，三个导出入口共用的**唯一一处**）：
  *
- * 只在 `path` 非空时校验：空串在官方语义里是「用默认目录」，不是失败。
- * 目录存在性走 `core/cep/node` 的 `fs`（`core/storage.exists` 只认库内相对路径）。
+ *   基目录 = `pathType` 1 桌面 / 其余当前文档所在目录（批量 PSD 则传每份文件所在的目录）
+ *   子目录 = 用户填的名字（可留空）+ PNG 档再加一层 `PNG/`；JPG 不分子目录
+ *   最终目录 = `<基目录>/<名字>/[PNG/]`
+ *
+ * **解析与创建都在 jsx 侧**（`mm_doc_exportPath`）：`pathType` 2 要用当前文档路径，
+ * 前端拿不到；前端再自己 `mkdir` 一次就是同一件事两处实现、两种失败表现。
+ *
+ * 用户填的名字在这里校验（`parseExportSubdir`）：带 `/` `\` `:` 直接拒绝，
+ * 不许拼出用户没指定的路径。文档没保存时 jsx 回 `unsaved`，
+ * `exportPathRaw` 折成官方那句（`VALIDATION`，消息行走灰字）。
  */
-function assertExportPath(): Result<void> {
-  const raw = exportConfig().path;
-  if (typeof raw !== 'string' || !raw.trim()) return ok(undefined);
+async function withExportSubdir(
+  config: Record<string, unknown>,
+  baseDir = ''
+): Promise<Result<Record<string, unknown>>> {
+  const subdir = parseExportSubdir(config.subdir);
+  if (subdir.status === 'error') return subdir;
 
-  /* 判不了目录就是判不了：把 `fs` 的失败原样上抛（`detail` 带 `node:fs:<原因>`），
-     不许当成「目录没问题」放过去 —— 那是把环境缺失伪装成校验通过。 */
-  const fs = nodeRequire<{ existsSync: (path: string) => boolean }>('fs');
-  if (fs.status === 'error') return fs;
-  if (fs.value.existsSync(raw)) return ok(undefined);
-  return fail('VALIDATION', MSG.common.badExportPath);
+  const resolved = await docExportPath(
+    Number(config.pathType ?? 2),
+    exportRelativeDirOf(subdir.value, config.ext),
+    baseDir
+  );
+  if (resolved.status === 'error') return resolved;
+
+  return ok({ ...config, path: resolved.value });
 }
 
-/**
- * 导出的落盘子目录（用户 2026-11-03 定）：PNG 进 `PNG/`，JPG 进 `out/`。
- *
- * 目录不存在就建（多级、幂等），建不出来原样上抛 `IO_ERROR` + `detail: mkdir:<原因>`。
- * `path` 为空时**原样返回**：官方语义里空串是「用默认目录」，我们不去猜它落在哪。
- */
-function withExportSubdir(config: Record<string, unknown>): Result<Record<string, unknown>> {
-  const base = typeof config.path === 'string' ? config.path.trim().replace(/[/\\]+$/, '') : '';
-  if (!base) return ok(config);
 
-  const dir = `${base}/${exportSubdirOf(config.ext)}`;
-
-  const fs = nodeRequire<{ mkdirSync: (path: string, options: { recursive: boolean }) => void }>('fs');
-  if (fs.status === 'error') return fs;
-  try {
-    fs.value.mkdirSync(dir, { recursive: true });
-  } catch (error) {
-    return failWithDetail('IO_ERROR', MSG.common.badExportSubdir, `mkdir:${String(error)}`);
-  }
-
-  return ok({ ...config, path: dir });
-}
 
 /** 嵌入图片：`bLink2` / `bDelete` 从设置取，`path` 恒空（官方不弹选图） */
 export function embedImage(): Promise<Result<void>> {
@@ -342,12 +336,9 @@ export function customBuildTransform(params: CustomTransformParams): Promise<Res
 
 /* ---------------- v2：导出（3） ---------------- */
 
-/** 导出当前图片：整块配置 + 目录守卫（官方 `getExportImage` 那一处判据） */
+/** 导出当前图片：整块配置 + 落盘目录解析（`withExportSubdir`） */
 export async function exportImage(): Promise<Result<void>> {
-  const checked = assertExportPath();
-  if (checked.status === 'error') return checked;
-
-  const config = withExportSubdir(exportConfig());
+  const config = await withExportSubdir(exportConfig());
   if (config.status === 'error') return config;
 
   loading.show(MSG.common.progressExport);
@@ -358,10 +349,7 @@ export async function exportImage(): Promise<Result<void>> {
 
 /** 批量导出图层：`level` 1 一级 / 2 二级，配置与单张导出同一块 */
 export async function exportLayers(level: 1 | 2): Promise<Result<void>> {
-  const checked = assertExportPath();
-  if (checked.status === 'error') return checked;
-
-  const config = withExportSubdir(exportConfig());
+  const config = await withExportSubdir(exportConfig());
   if (config.status === 'error') return config;
   return exportLayersJsx(level, config.value);
 }
@@ -388,19 +376,26 @@ export async function exportPsdFiles(files: readonly string[]): Promise<Result<v
   /*
    * 每份 PSD 的配置：当前 `cyExport` 的深拷贝 + 三处改写（官方 `:36974-36978`）。
    * 改的是副本，**不动用户的设置文件**——批量导出不该反写偏好。
+   *
+   * 基目录取**该文件所在的目录**（官方这里是 `path: ''` + `pathType: 2`，即每份落到它自己
+   * 所在的位置），再交给 `withExportSubdir` 拼「名字 / PNG」那一段。
    */
   const base = exportConfig();
-  const perFile = {
-    ...base,
-    path: '',
-    pathType: 2,
-    autoOpenFolder: false
-  };
 
   for (const [index, file] of files.entries()) {
     /* 官方文案是「正在导出...」（A-5：进度写「当前/总数」，官方写反了） */
     loading.show(`正在导出：${index + 1}/${files.length}`);
-    const result = await exportPsdImageJsx(file, perFile);
+
+    const config = await withExportSubdir(
+      { ...base, autoOpenFolder: false },
+      dirnameOf(file)
+    );
+    if (config.status === 'error') {
+      loading.hide();
+      return config;
+    }
+
+    const result = await exportPsdImageJsx(file, { ...config.value, pathType: 2 });
     loading.hide();
     if (result.status === 'error') return result;
   }

@@ -4,6 +4,7 @@ import { failWithDetail, ok, type Result } from '../../types/result';
 import {
   dispatchAck,
   envelopeMessage,
+  exportPathRaw,
   lenientVoid,
   parseDataEnvelope,
   parseErrEnvelope,
@@ -344,5 +345,32 @@ describe('parseFontFamily', () => {
       expect(result.status).toBe('error');
       if (result.status === 'error') expect(result.code).toBe('CORRUPT');
     }
+  });
+});
+
+describe('exportPathRaw', () => {
+  it('路径原样交出（含中文与空格）', () => {
+    expect(exportPathRaw('C:/Users/x/桌面/导出')).toEqual({ status: 'ok', value: 'C:/Users/x/桌面/导出' });
+  });
+
+  it('`unsaved` → VALIDATION + 官方那句（前提不满足，不是通道故障）', () => {
+    const result = exportPathRaw('unsaved');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('VALIDATION');
+      expect(result.reason).toBe(MSG.common.needSaveBeforeExport);
+    }
+  });
+
+  it('`no-doc` 仍走约定值表（PS_NO_DOC）', () => {
+    const result = exportPathRaw('no-doc');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('PS_NO_DOC');
+  });
+
+  it('空串 → CORRUPT：jsx 没按约定返回，不是「路径是空」', () => {
+    const result = exportPathRaw('   ');
+    expect(result.status).toBe('error');
+    if (result.status === 'error') expect(result.code).toBe('CORRUPT');
   });
 });

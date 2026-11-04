@@ -97,6 +97,8 @@ export const CORE_FUNCS = [
   /* OCR：导出画布 / 抹掉选区原文（建层走 `mm_text_createAll`，不另开函数） */
   'mm_ocr_exportImage',
   'mm_ocr_eraseOriginal',
+  /* 导出：解析基目录 + 建 PNG/out 子目录（`path` 为空时只有 PS 知道落哪） */
+  'mm_doc_exportPath',
   /* 矢量化：导出选中层 / 用路径点建形状层 */
   'mm_vec_exportLayer',
   'mm_vec_replaceWithPath',

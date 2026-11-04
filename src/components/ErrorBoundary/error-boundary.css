@@ -1,0 +1,24 @@
+/* 路由内容区的失败态：居中几句人话 + 一个重新加载按钮。
+   只吃 token（§7 规则 1 / 2），不写 px 与色值；文案元素用 span 不用 p ——
+   p 自带 UA margin，会把居中挤歪。 */
+
+.mm-error-boundary{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+  align-items: center;
+  justify-content: center;
+  padding: var(--mm-space-4);
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-sm);
+  line-height: var(--mm-line-16);
+  text-align: center;
+}
+
+/* 异常原文：比正文更暗一档，长串（含 URL / 模块名）要能折行，不许撑破面板 */
+.mm-error-boundary__reason{
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--mm-color-text-muted);
+  font-size: var(--mm-font-xs);
+}

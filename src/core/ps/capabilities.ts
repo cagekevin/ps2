@@ -31,8 +31,12 @@
  * `require` 是执行器的**第一步**：先判「当前图层对不对」，不对就终止，一条 jsx 都不发。
  * 判定走 `./layer` 的 `requireLayerKind`（唯一出口），这里只引用它，不写图层类型映射。
  *
- * 文字属性类能力**一律**带 `requireTextLayer`。真机上这批函数在非文字图层上不报错、返回
- * `undefined`、什么都不做（2026-10-28 日志 `raw:"undefined"`），不判就是「提示成功但图层没变」。
+ * 文字属性类能力（`zt_*` 里改文字本身的那些）**一律**带 `requireTextLayer`。真机上这批函数在非文字图层上
+ * 不报错、返回 `undefined`、什么都不做（2026-10-28 日志 `raw:"undefined"`），不判就是「提示成功但图层没变」。
+ *
+ * **例外：图层对齐那一批**（`zt_setBackrgoudAlign` / `zt_setHorizontalCenters` / `zt_verticalCenter` /
+ * `zt_setUpDownAlign`）。它们在 vendor 里就是 `Layer_align(...)`，与图层类型无关；
+ * 加文字前置 = 非文字图层上点它必失败（2026-11-04 用户实测）。判据看函数体，**不看 `zt_` 前缀**。
  */
 
 import { LONG_TIMEOUT, READ_TIMEOUT, WRITE_TIMEOUT } from '../cep/bridge';
@@ -52,6 +56,8 @@ import type { AddedTemplate } from './template';
 
 /** 「多选」类操作至少 2 个图层：位置对换 / 颜色互换 / 按间距分布都要成对才有意义 */
 const requireTwoLayers = () => requireSelection({ min: 2 });
+/** 分布类操作至少 3 个图层：与 vendor `Layer_getNumberOfCurrentLayer() < 3` 同义 */
+const requireThreeLayers = () => requireSelection({ min: 3 });
 /** 矢量化：只能作用于**恰好一个**图层（多选时不知道该转哪个） */
 const requireOneLayer = () => requireSelection({ exact: 1 }, MSG.vectorize.needOne);
 
@@ -83,6 +89,7 @@ function addedTemplateOf(data: unknown): AddedTemplate | null {
 }
 import {
   dispatchAck,
+  exportPathRaw,
   lenientVoid,
   parseDataEnvelope,
   parseFontFamily,
@@ -219,25 +226,41 @@ export const CAP = {
     require: requireTextLayer, parse: lenientVoid(MSG.coreOps.textAlign)
   },
 
+  /** 水平居中分布（`Layer_align(4)`）：**纯图层操作**，vendor 只判「选中 ≥3 个图层」 */
   setHorizontalCenters: {
     fn: 'zt_setHorizontalCenters', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.hCenterDistribute)
+    require: requireThreeLayers, parse: lenientVoid(MSG.coreOps.hCenterDistribute)
   },
 
+  /** 垂直平均分布（`Layer_align(5)`）：同上，≥3 个选中图层 */
   setVerticalCenter: {
     fn: 'zt_verticalCenter', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.vAvgDistribute)
+    require: requireThreeLayers, parse: lenientVoid(MSG.coreOps.vAvgDistribute)
   },
 
+  /**
+   * 顶 / 中 / 底对齐（`Layer_align(n + 6)`）：**纯图层操作**。
+   *
+   * **故意不加前置**：vendor 的条件是「选中 ≥2 个图层 **或** 有选区」，
+   * 而 `requireSelection` 只能表达「至少 N 个」—— 加 `min: 2` 会把「1 个图层 + 选区」
+   * 这个合法用法误拦。让 jsx 自己判：它返回 `{"err":1,"msg":"请选择2个以上图层后使用"}`，
+   * 走 `hostRejected` → `VALIDATION` + 宿主原话。
+   */
   setUpDownAlign: {
     fn: 'zt_setUpDownAlign', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.vAlign)
+    parse: lenientVoid(MSG.coreOps.vAlign)
   },
 
-  /** 与背景对齐：jsx 侧原版拼写照抄（`zt_setBackrgoudAlign`） */
+  /**
+   * 与背景对齐（`zt_setBackrgoudAlign`）：**纯图层操作，不许加文字前置**。
+   *
+   * vendor 实现是 `Selection_all()` + `Layer_align(1|3)`，多选时临时打组再拆 ——
+   * 与图层类型无关，智能对象 / 像素层 / 形状都成立。
+   * 原版调用点也没有文字判断（`app.v4.js:43104/43111` 直接发 jsx）。
+   */
   setBackgroundAlign: {
     fn: 'zt_setBackrgoudAlign', gate: 'vendor', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireTextLayer, parse: lenientVoid(MSG.coreOps.bgAlign)
+    parse: lenientVoid(MSG.coreOps.bgAlign)
   },
 
   /** 水平垂直居中：只服务第二入口，字体面板不放按钮 */
@@ -554,6 +577,18 @@ export const CAP = {
   customBuildTransform: {
     fn: 'cy_customBuildTransform', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
     label: '自定义变换', parse: dispatchAck
+  },
+
+  /**
+   * 导出落盘目录解析 + 逐级建目录（自写 jsx）。
+   *
+   * 为什么不让前端算：基目录按 `pathType` 取「桌面 / 当前文档目录」，
+   * 前端拿不到文档路径（vendor 里也没有返回它的函数）。
+   * 相对段（`名字` / `名字/PNG` / `PNG`）由 `domain` 拼好传进来。
+   */
+  docExportPath: {
+    fn: 'mm_doc_exportPath', gate: 'core', channel: 'direct', timeout: READ_TIMEOUT,
+    parse: exportPathRaw
   },
 
   /** 导出当前图片：整块 `cyExport`，导出比普通写慢，给 120s */

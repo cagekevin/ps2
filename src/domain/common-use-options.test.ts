@@ -3,7 +3,9 @@ import {
   COMMON_USE_SETTING_KEYS,
   booleanOptionOf,
   exportConfigOf,
-  exportSubdirOf,
+  exportFormatDirOf,
+  exportRelativeDirOf,
+  parseExportSubdir,
   isCommonUseSettingKey,
   linkObjectOf,
   missingOptionKeys,
@@ -150,12 +152,32 @@ describe('官方默认值（唯一出处）', () => {
     expect(quality('')).toBe(100);
   });
 
-  it('exportSubdirOf：PNG 进 PNG/，其余（含缺键、大小写）进 out/', () => {
-    expect(exportSubdirOf('PNG')).toBe('PNG');
-    expect(exportSubdirOf('png')).toBe('PNG');
-    expect(exportSubdirOf('JPG')).toBe('out');
-    expect(exportSubdirOf(undefined)).toBe('out');
-    expect(exportSubdirOf(42)).toBe('out');
+  it('exportFormatDirOf：只有 PNG 收进 PNG/，JPG 不分子目录', () => {
+    expect(exportFormatDirOf('PNG')).toBe('PNG');
+    expect(exportFormatDirOf('png')).toBe('PNG');
+    expect(exportFormatDirOf('JPG')).toBe('');
+    expect(exportFormatDirOf(undefined)).toBe('');
+    expect(exportFormatDirOf(42)).toBe('');
+  });
+
+  it('parseExportSubdir：只允许一段名字（分隔符拒绝），首尾斜杠剥掉', () => {
+    expect(parseExportSubdir('1200')).toEqual({ status: 'ok', value: '1200' });
+    expect(parseExportSubdir('  1200/ ')).toEqual({ status: 'ok', value: '1200' });
+    expect(parseExportSubdir('')).toEqual({ status: 'ok', value: '' });
+    expect(parseExportSubdir(undefined)).toEqual({ status: 'ok', value: '' });
+
+    for (const bad of ['a/b', 'C:/x', '..', '.', 'a\\b']) {
+      const result = parseExportSubdir(bad);
+      expect(result.status).toBe('error');
+      if (result.status === 'error') expect(result.code).toBe('VALIDATION');
+    }
+  });
+
+  it('exportRelativeDirOf：名字 + PNG 两层；JPG 或空名字只剩一层', () => {
+    expect(exportRelativeDirOf('1200', 'JPG')).toBe('1200');
+    expect(exportRelativeDirOf('1200', 'PNG')).toBe('1200/PNG');
+    expect(exportRelativeDirOf('', 'PNG')).toBe('PNG');
+    expect(exportRelativeDirOf('', 'JPG')).toBe('');
   });
 
   it('missingOptionKeys：缺键与「用户选了默认值」必须能分开', () => {

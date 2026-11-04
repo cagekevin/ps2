@@ -12,6 +12,7 @@
  *   批量文字      mm_text_readAll  mm_text_writeAll  mm_text_createAll（新建 / OCR 建层共用）
  *   OCR           mm_ocr_selectionRect  mm_ocr_exportImage  mm_ocr_eraseOriginal
  *   矢量化        mm_vec_exportLayer  mm_vec_replaceWithPath
+ *   导出          mm_doc_exportPath（解析基目录 + 逐级建子目录）
  *   诊断          mm_diag_vendor
  *
  * 【新增一条 PS 能力，3 处必须同改 —— 改了这里就要回头看另外两处】
@@ -1065,5 +1066,61 @@ function mm_diag_vendor() {
 		}
 
 		return JSON.stringify(out);
+	});
+}
+
+/* ---------------- 导出 ---------------- */
+
+/**
+ * 导出目录（含 `PNG/` / `out/` 子目录）的唯一解析处：返回**最终落盘目录**并把目录建好。
+ *
+ * 判据照官方 `cy_ExportImage`（`jsx/vendor.jsx:1971`）：
+ *   customPath 非空 → 用它（用户在导出抽屉里填的自定义目录）；
+ *   否则 pathType 1 → 桌面，其余 → 当前文档所在目录。
+ * 文档没保存（`activeDocument.path` 为空）→ 返回 `unsaved`：前端照官方那句报错，
+ * **不自己挑一个目录**（挑错会让文件落到用户想不到的地方）。
+ *
+ * 为什么在 jsx 里建目录而不是前端 `fs.mkdirSync`：`path` 为空时基目录只有 PS 知道，
+ * 两处各建一次 = 两种失败表现。
+ */
+function mm_doc_exportPath(pathType, relativeDir, baseDir) {
+	return mm_safe("mm_doc_exportPath", function () {
+		var fixedBase = String(baseDir == null ? "" : baseDir);
+		var base;
+		if (fixedBase) {
+			/* 只有批量导出 PSD 会传：每份落到**它自己**所在的目录，不需要当前文档 */
+			base = fixedBase;
+		} else if (String(pathType) === "1") {
+			/* 桌面也不需要文档 */
+			base = String(Folder.desktop.fsName);
+		} else {
+			/*
+			 * 必须用 `fsName`：`String(app.activeDocument.path)` 是**百分号编码**的
+			 * （真机实测网络盘中文目录返回 `//Mg-1/%E5%94%AF...`），拿它拼子目录虽然
+			 * ExtendScript 会兜住，但回给前端的就不是能直接看的路径了。
+			 *
+			 * 未保存的文档读 `path` 会**抛异常**（官方 `cy_ExportImage` 就是用 try/catch
+			 * 接这个再弹「请先保存PSD再导出」），所以这里也按同一个判据折成 `unsaved`。
+			 */
+			if (!app.documents.length) return "no-doc";
+			try {
+				base = String(app.activeDocument.path.fsName);
+			} catch (e) {
+				return "unsaved";
+			}
+			if (!base) return "unsaved";
+		}
+
+		/* 逐级建：`Folder.create()` 只建一级，`1200/PNG` 两级都得建 */
+		var parts = String(relativeDir == null ? "" : relativeDir).split("/");
+		var cursor = base;
+		for (var i = 0; i < parts.length; i += 1) {
+			if (!parts[i]) continue;
+			cursor = cursor + "/" + parts[i];
+			var folder = new Folder(cursor);
+			if (!folder.exists) folder.create();
+			if (!folder.exists) throw new Error("无法创建导出文件夹：" + cursor);
+		}
+		return cursor;
 	});
 }

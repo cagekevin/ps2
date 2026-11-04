@@ -34,7 +34,7 @@ import {
   openDirectory,
   setOption
 } from '../../../commands/common-use';
-import { chooseFolder, openFile } from '../../../core/dialog';
+import { openFile } from '../../../core/dialog';
 import { needsBatchConfirm } from '../../../domain/common-use';
 import { MSG } from '../../../types/messages';
 import { exportConfigOf, type ExportCompressKey } from '../../../domain/common-use-options';
@@ -83,7 +83,7 @@ export function ExportPanel() {
    */
   const fields = useMemo(
     () => ({
-      path: text(config.path),
+      subdir: text(config.subdir),
       name: text(config.name),
       quality: String(num(config.quality)),
       width: text(compress.width),
@@ -103,16 +103,6 @@ export function ExportPanel() {
 
   function writeCompress(key: ExportCompressKey, value: unknown): void {
     void run(() => setOption(`cyExport.compress.${key}`, value), { spin: false });
-  }
-
-  function pickFolder(): void {
-    const picked = chooseFolder('保存到');
-    if (!picked) {
-      toast.error(MSG.common.cancel);
-      return;
-    }
-    setField('path', picked);
-    write('path', picked);
   }
 
   function pickWatermark(): void {
@@ -195,35 +185,39 @@ export function ExportPanel() {
         )}
       </div>
 
-      {/* 保存到：label + [路径输入框 / 两个去向]（官方是两列，选项在输入框下一行） */}
+      {/* 保存到：label + [子目录名输入框 / 两个基目录]（2026-11-04 语义变更，见下注释） */}
       <div className="mm-common__form-row">
         <span className="mm-common__form-label">{'保存到'}</span>
         <div className="mm-u-col mm-common__form-body">
+          {/*
+            语义（用户 2026-11-04 定）：输入框填的是**子目录名**，不是绝对路径 ——
+            `1200` + 桌面 = `桌面/1200/`，PNG 档再进 `桌面/1200/PNG/`。
+            所以这里没有「选择目录」按钮：目录由基目录单选 + 名字拼出来，不再让用户选盘符。
+            旧键 `path`（绝对路径）不再读，值原样留在文件里。
+          */}
           <TextField
-            title={'选择自定义目录'}
-            placeholder={'自定义目录'}
-            value={draft.path}
-            onChange={(next) => setField('path', next)}
+            title={'导出子目录名（留空 = 直接放进基目录）'}
+            placeholder={'子目录名（可留空）'}
+            value={draft.subdir}
+            onChange={(next) => setField('subdir', next)}
             onSubmit={(value) => {
-              /* 官方 blur 时把 `\` 转 `/`：手输的 Windows 路径不转，jsx 那边拼目录会对不上 */
-              const next = value.trim().replace(BACKSLASH, '/');
-              setField('path', next);
-              write('path', next);
+              const next = value.trim();
+              setField('subdir', next);
+              write('subdir', next);
             }}
-            rightSlot={<IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择目录'} onClick={pickFolder} />}
           />
           <div className="mm-u-row">
             <RadioButton
               name="common-path-type"
               label={'桌面'}
-              title={'保存到桌面'}
+              title={'导出到桌面（PNG 会再进一层 PNG 文件夹）'}
               checked={num(config.pathType) === 1}
               onChange={() => write('pathType', 1)}
             />
             <RadioButton
               name="common-path-type"
               label={'文件所在目录'}
-              title={'保存到文件所在目录'}
+              title={'导出到当前文档所在目录（PNG 会再进一层 PNG 文件夹）'}
               checked={num(config.pathType) === 2}
               onChange={() => write('pathType', 2)}
             />

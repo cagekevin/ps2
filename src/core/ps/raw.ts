@@ -45,6 +45,25 @@ export function unwrapRaw(raw: string): Result<void> {
 }
 
 /**
+ * 路径类读能力（`mm_doc_exportPath`）：约定值先折失败，其余原样当路径。
+ *
+ * `unsaved` 是**前提不满足**（文档没保存过，没有「文件所在目录」），不是通道故障：
+ * 折 `VALIDATION` + 官方那句原话（`cy_ExportImage` 的 catch 分支就是这么弹的），
+ * 消息行走灰字。空串当 `CORRUPT`：那是 jsx 没按约定返回，不是「路径是空」。
+ */
+export function exportPathRaw(raw: string): Result<string> {
+  const guard = unwrapRaw(raw);
+  if (guard.status === 'error') return guard;
+
+  const text = raw.trim();
+  if (text === 'unsaved') {
+    return failWithDetail('VALIDATION', MSG.common.needSaveBeforeExport, `raw:${text}`);
+  }
+  if (!text) return failWithDetail('CORRUPT', MSG.badPayload, `raw:${raw}`);
+  return ok(text);
+}
+
+/**
  * 调度通道（`ps_onJsx`）的返回值：只可能是 `1`（走完，成败都是它）或 `undefined`（`f` 没写）。
  *
  * **它判不了成败**，别在这里加 `-1` 之类的失败分支 —— 那只会让下一个 AI 以为能判。

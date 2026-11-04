@@ -118,7 +118,7 @@ mm_style_applyShapeFill({"name":"未命名","color":{...}})     // ✗ 对象字
   + 工具切换 1（`Tool_set`，样式页快速吸色）
   + 文本属性（`src/core/ps/text.ts`，逐个列在 §11.3 表里，条数以那张表为准；`zt_getTypeUnits` 已取消、`zt_changeTextBranchMerge` 已移除、`zt_switchFontDirection` 已移除）
   + 常用页 25（`src/core/ps/common-use.ts` 的 26 条里 `cy_distributedByPitch` 与文本属性共用，已在上一行计过）。
-- `CORE_FUNCS` 是**自有 jsx** 的同一张账（`mm_*`），批量文字的 `mm_text_readAll` / `mm_text_writeAll` / `mm_text_createAll` 记在那里，不进 `VENDOR_FUNCS`。
+- `CORE_FUNCS` 是**自有 jsx** 的同一张账（`mm_*`），批量文字的 `mm_text_readAll` / `mm_text_writeAll` / `mm_text_createAll`、导出目录的 `mm_doc_exportPath` 都记在那里，不进 `VENDOR_FUNCS`。
 - 删掉任何 jsx 函数，必须同步改 `VENDOR_FUNCS` / core 探测列表，否则会出现「函数没了 → 能力永远不可用」的假故障（已发生过一次）。
 - **探测分两级，别再往「必需」里加**：`CORE_REQUIRED` 只有 `mm_layer_getState`、`VENDOR_REQUIRED` 只有 `ps_onJsx` + `Sys_setSystemEnvInfo`——缺了它们整门确实没意义。其余 60 多项缺了只记进 `PsCapability.missing`，由执行器按 `spec.fn` 报 `PS_UNREADY` + `detail: fn:<名字>`，**不会牵连其它页面**。以前「缺一个整门变红」的坑（`Tool_set` / `mm_diag_vendor` 那种）不会再出现。
 
