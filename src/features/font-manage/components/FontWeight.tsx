@@ -1,13 +1,17 @@
 /**
  * 字重选择：每个字重渲染成该字体自己的字形（英文 A / 中文 永），最多 7 个；
  * 第 8 个是数量 chip，点开是带勾选的下拉。
+ *
+ * 每个字形用**自己那一档**的 PostScript 名（`--mm-glyph-font`），所以一排看下去粗细不同；
+ * 全用家族名的话 7 个方块长得一模一样，等于没做预览。
  */
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Icon } from '../../../components/icons';
 import { Portal } from '../../../components/Portal';
 import { stopClickPropagation } from '../../../components/ui';
 import { isAsciiFamily } from '../../../domain/font-lang';
 import type { FontItem } from '../../../domain/font-item';
+import { fontFamilyValue } from '../../../domain/font-stack';
 import { useDismiss } from '../../../hooks/useDismiss';
 import { useFloatingPosition } from '../../../hooks/useFloatingPosition';
 
@@ -53,6 +57,7 @@ export function FontWeight({ font, current, onSelect }: Props) {
               key={`${ps}-${index}`}
               type="button"
               className={`mm-font__glyph${index === current ? ' mm-font__glyph--current' : ''}`}
+              style={{ '--mm-glyph-font': fontFamilyValue(ps, font.family) } as CSSProperties}
               onClick={(event) => {
                 event.stopPropagation();
                 pick(index);

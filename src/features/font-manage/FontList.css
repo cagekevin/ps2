@@ -80,15 +80,18 @@
   color: var(--mm-color-text-dim);
 }
 
+/* 无预览档的家族名用字体本身渲染（变量由列表项注入，见 `domain/font-stack`） */
 .mm-font__family--name-only{
+  font-family: var(--mm-preview-family, inherit);
   font-size: var(--mm-name-size);
   line-height: var(--mm-name-lh);
   color: var(--mm-color-text-name);
 }
 
-/* 预览四档：字号 / 行高与 tokens 一一对应 */
+/* 预览四档：字号 / 行高与 tokens 一一对应；字体栈同家族名一份（当前字重的 PostScript 名） */
 .mm-font__preview{
   overflow: hidden;
+  font-family: var(--mm-preview-family, inherit);
   color: var(--mm-color-text-preview);
   white-space: pre-wrap;
 }
@@ -181,7 +184,8 @@
 }
 
 /* 字重徽章：边长 `--mm-weight-glyph`(18)。**默认无框**（官方实拍是一排裸字母），
-   只有当前字重加框并转亮；框用控件亮线，不用蓝（官方是灰框，蓝留给真正的选中/开启） */
+   只有当前字重加框并转亮；框用控件亮线，不用蓝（官方是灰框，蓝留给真正的选中/开启）。
+   每个徽章的字形取自己那一档的 PostScript 名，变量由 `FontWeight` 逐个注入。 */
 .mm-font__glyph{
   display: flex;
   align-items: center;
@@ -190,6 +194,7 @@
   height: var(--mm-weight-glyph);
   border: var(--mm-border-w) solid transparent;
   border-radius: var(--mm-radius-sm);
+  font-family: var(--mm-glyph-font, inherit);
   color: var(--mm-color-text-dim);
   font-size: var(--mm-font-xs);
   cursor: pointer;

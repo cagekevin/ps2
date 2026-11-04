@@ -336,9 +336,12 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 - 判据：**删掉这行 JS，视觉会不会变？会 → 它属于本条，要进 css；只是把数据交给 css → 允许。**
 - 机器闸：`eslint.config.js` 的 `no-restricted-syntax` 两条（JSX `style` 里出现非 `--` 键、`element.style.xxx = `），命中即 error；豁免只给 `hooks/useLongPressDrag.ts` 与 `core/clipboard/index.ts` 两个功能模块，业务代码不许加 `eslint-disable`。
-- 现在只允许三种 JS → CSS 的通道，其余一律不许内联：
-  `--floating-x/y`（浮层坐标）、`--mm-select-panel-w`（面板宽 = 触发器宽）、`--mm-swatch`（运行时色值 / 渐变）。
-  这三样 CSS 都表达不了，所以只能由 JS 交变量、由 CSS 决定怎么用。
+- 现在只允许这几种 JS → CSS 的通道，其余一律不许内联：
+  `--floating-x/y`（浮层坐标）、`--mm-select-panel-w`（面板宽 = 触发器宽）、`--mm-swatch`（运行时色值 / 渐变）、
+  `--mm-preview-family` / `--mm-glyph-font`（字体栈：`domain/font-stack` 拼好的 `"PostScript名", "家族名"`，
+  家族名 / 预览文案 / 字重字形三处共用）、`--mm-icon-panel-order`（多面板同开时的排列顺序）。
+  这些 CSS 都表达不了，所以只能由 JS 交变量、由 CSS 决定怎么用。
+  **`font-family` 本身仍写在 css**（`FontList.css`），JS 只交「哪个字体」这个数据。
   **等宽按钮排的列数是常量**，直接写 `--mm-btn-grid-cols`，不经 JS（曾有一个 `--mm-action-columns` 由 JS 注入，已随 `.mm-btn-grid` 收口删除）。
 - 理由：内联样式特异性最高、改 `tokens.css` 不生效、DevTools 里要跑到第二处找 —— 视觉出问题时排查不到根因。
 - **本条是视觉重写期的临时护栏，不是永久规则**：视觉定稿后连同 eslint 那两条一起删。债号 `TD-13-1`（`node scripts/debt.mjs show TD-13-1`）。

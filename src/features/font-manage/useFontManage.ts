@@ -23,6 +23,7 @@ import {
   type FontListRead
 } from '../../commands/font';
 import { resolveFontFace, type FontItem } from '../../domain/font-item';
+import { fontFamilyValue } from '../../domain/font-stack';
 import {
   filterFonts,
   hasActiveFilter,
@@ -158,6 +159,19 @@ export function useFontManage() {
     [previewText]
   );
 
+  /**
+   * 预览字体栈：取**当前选中字重**的 PostScript 名，否则选了 Bold 预览仍显示常规体。
+   * 拼法只有 `domain/font-stack` 一份；这里只决定「用哪个字重」。
+   */
+  const previewFamilyOf = useCallback(
+    (font: FontItem) => {
+      const index = weightIndex[font.family] ?? 0;
+      const postScriptName = font.postScriptNames[index] ?? font.postScriptNames[0] ?? font.family;
+      return fontFamilyValue(postScriptName, font.family);
+    },
+    [weightIndex]
+  );
+
   /* 灰态与点击共用同一个判据：现在这个字重能不能应用 */
   const faceErrorOf = useCallback(
     (font: FontItem) => {
@@ -265,6 +279,7 @@ export function useFontManage() {
     activeFamily,
     currentWeight,
     sampleOf,
+    previewFamilyOf,
     faceErrorOf,
     previewMode,
     previewText,
