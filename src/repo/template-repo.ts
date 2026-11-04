@@ -2,7 +2,14 @@
  * 模板库仓储：索引读写 + 路径拼装 + 库内 README。
  *
  * 唯一写入口：`updateIndex`（内部走 `repo/json-file` 的读改写，`.bak` 与同文件排队由它保证）。
- * **本文件之外不许出现** `'template'` / `'PSD'` / `'.info'` 字面量 —— 路径只有下面三个函数能给。
+ * **本文件之外不许出现** `'template'` / `'PSD'` / `'.info'` 字面量 —— 路径只有本文件的函数能给，
+ * 且按**消费方**分两组，别混用（2026-11-04「编辑源文件」打不开就是混用导致的）：
+ *
+ *   - **相对数据根**（给 `core/storage` 读写、`<img src>`）：`templateThumbFile` / `templateThumbUrl`（`templateDir` 是私有的底座）
+ *   - **绝对路径**（给 jsx）：`templateLibraryAbsDir` / `templatePsdAbsDir` / `templateItemAbsDir` / `templateSourceAbs`
+ *
+ * 为什么必须分开：ExtendScript 的 `new File(相对路径)` 按 **PS 进程当前目录**（安装目录）解析，
+ * 落到 `C:\Program Files\Adobe\…\template\…` 必然不存在，宿主报「应为相对于现有文件/文件夹的参考」。
  *
  * 目录形状（vendor 的 `ps_mbAddPsd` 建条目目录，我们只写 `index.json` 与 `README.md`）：
  *
@@ -27,17 +34,18 @@ const TEMPLATE_README = `${TEMPLATE_DIR}/README.md`;
 
 const ROOT = 'data' as const;
 
-/** 条目目录：`template/PSD/<id>.info` */
-export function templateDir(id: string): string {
+/**
+ * 条目目录（**相对**数据根）。
+ *
+ * **不导出**：只有本文件的 `templateThumbFile` / `removeItemDir` 用得到，且它们要的就是相对路径。
+ * 导出它 = 给了 commands 一条「把相对目录递给 PS」的路（2026-11-04 的 bug 就是这么来的）；
+ * 要绝对目录只有 `templateItemAbsDir`。
+ */
+function templateDir(id: string): string {
   return `${TEMPLATE_DIR}/PSD/${id}.info`;
 }
 
-/** 条目源文件：`<id>.info/<file>.<ext>`（传 `file`，**不传 `name`**） */
-export function templateSource(id: string, file: string, ext: string): string {
-  return `${templateDir(id)}/${file}.${ext}`;
-}
-
-/** 条目缩略图：`<id>.info/<file>.png`（vendor 按源文件名生成） */
+/** 条目缩略图（**相对**数据根）：`<id>.info/<file>.png`（vendor 按源文件名生成） */
 export function templateThumbFile(id: string, file: string): string {
   return `${templateDir(id)}/${file}.png`;
 }
@@ -54,6 +62,20 @@ export function templateLibraryAbsDir(): string {
 /** 库的 PSD 根目录绝对路径：vendor `ps_mbAddPsd` 只要这一个参数，它在里面自己建 `<id>.info/` */
 export function templatePsdAbsDir(): string {
   return `${templateLibraryAbsDir()}/PSD`;
+}
+
+/** 条目目录**绝对路径**：`<库>/PSD/<id>.info`（`mb_amendPreview` 要的是这个，不是相对版） */
+export function templateItemAbsDir(id: string): string {
+  return `${templatePsdAbsDir()}/${id}.info`;
+}
+
+/**
+ * 条目源文件**绝对路径**（「编辑源文件」用）。
+ *
+ * 传 `file`，**不传 `name`**：磁盘上的文件名主干就是 `file`，显示名与路径无关。
+ */
+export function templateSourceAbs(id: string, file: string, ext: string): string {
+  return `${templateItemAbsDir(id)}/${file}.${ext}`;
 }
 
 /**

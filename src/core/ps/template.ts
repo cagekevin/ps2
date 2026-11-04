@@ -31,12 +31,16 @@ export interface AddedTemplate {
 /**
  * 应用模板的载荷：条目字段 + 原版要求的三个附加字段。
  *
- * `file` 而不是 `name`：vendor 拿它拼磁盘路径，**显示名与它无关**。
+ * **`name` 必须是磁盘文件名主干**（我们的 `item.file`），不是显示名：
+ * vendor `mb_useTemplate` 拿 `obj.name` 拼路径与新建文档名
+ * （`jsx/vendor.jsx:404` / `:402`），拼不到就 `_A("打开错误,找不到PSD!")`。
+ * 我们的索引把「磁盘主干 `file`」与「显示名 `name`」分开了，所以这里要把 `file` 填进 `name`。
  * `useTmeplatePadding` 的拼写是原版就错的（`Tmeplate`），照抄别改。
  */
 export interface TemplateUsePayload {
   id: string;
-  file: string;
+  /** vendor 的字段名，值是**磁盘文件名主干** */
+  name: string;
   ext: string;
   width: number;
   height: number;

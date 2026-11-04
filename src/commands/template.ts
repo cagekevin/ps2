@@ -24,10 +24,10 @@ import {
   ensureReadme,
   readIndex,
   removeItemDir,
-  templateDir,
+  templateItemAbsDir,
   templateLibraryAbsDir,
   templatePsdAbsDir,
-  templateSource,
+  templateSourceAbs,
   updateIndex
 } from '../repo/template-repo';
 import { MSG } from '../types/messages';
@@ -93,15 +93,22 @@ export async function placeTemplate(id: string): Promise<Result<void>> {
   const item = found.value;
   return applyTemplate({
     id: item.id,
-    file: item.file,
+    /* vendor 的 `name` = 磁盘文件名主干（不是显示名），见 `TemplateUsePayload` 的注释 */
+    name: item.file,
     ext: item.ext,
     width: item.width,
     height: item.height,
     path: templatePsdAbsDir(),
     /* 原版的「按模板尺寸补边」，我们没有这个设置项，固定空串 */
     useTmeplatePadding: '',
-    /* 1 = 当前有文档（`mb_useTemplate` 的三支分支里最常见那支） */
-    status: 1
+    /*
+     * 0 = 复制模板的**全部顶层图层**到当前文档（`mb_importPSDTemplateToDoc`，组保持组，
+     * 与 `docs/plan/15` §0.5.3 定的复制范围一致）。
+     * **不要写 1**：1 走 `Layer_importRelinkFile` 的置入（`Plc `），产物变成一个链接智能对象，
+     * 而且置入态下 PS 会把「对齐」判为不可用 —— vendor 随后自己调 `Layer_align`（`jsx/vendor.jsx:449`），
+     * 于是每次应用都弹「命令"对齐"当前不可用」。vendor 只读，只能在调用点选对分支。
+     */
+    status: 0
   });
 }
 
@@ -111,7 +118,8 @@ export function editSource(id: string): Promise<Result<void>> {
   if (found.status === 'error') return Promise.resolve(found);
 
   const item = found.value;
-  return openSource(templateSource(item.id, item.file, item.ext));
+  /* 绝对路径：PS 侧 `app.load(new File(path))` 不认相对路径（`repo/template-repo` 文件头有判据） */
+  return openSource(templateSourceAbs(item.id, item.file, item.ext));
 }
 
 /**
@@ -123,7 +131,8 @@ export function refreshThumb(id: string): Promise<Result<void>> {
   if (found.status === 'error') return Promise.resolve(found);
 
   const item = found.value;
-  return rebuildThumb(templateDir(item.id), item.file, item.ext);
+  /* 同上：`mb_amendPreview` 内部 `new File(path + '/' + name + '.' + ext)`，要绝对目录 */
+  return rebuildThumb(templateItemAbsDir(item.id), item.file, item.ext);
 }
 
 /** 删条目：**先写索引、再删目录**（反序会破图；文件没删掉只是孤儿目录） */

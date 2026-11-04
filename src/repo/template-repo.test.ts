@@ -4,15 +4,15 @@
  *   2. 索引坏了原样报 `CORRUPT`
  *   3. `updateIndex` 返回**写后的索引**（不靠「写完再读」）
  *   4. mutator 返回 `null` ⇒ 不写盘，返回当前索引
- * 另验路径只有那三个出口、README 幂等。
+ * 另验路径两组出口（storage 相对 / jsx 绝对）、README 幂等。
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ensureReadme,
   readIndex,
   removeItemDir,
-  templateDir,
-  templateSource,
+  templateItemAbsDir,
+  templateSourceAbs,
   templateThumbFile,
   updateIndex
 } from './template-repo';
@@ -26,7 +26,14 @@ const h = vi.hoisted(() => ({
 
 const OK = { status: 'ok' as const, value: undefined };
 
+/* 绝对路径的起点：真机是 `%APPDATA%`，这里给一个固定的 posix 形态，断言不看平台 */
+vi.mock('../core/cep/bridge', () => ({
+  getUserDataPath: () => 'C:/Users/test/AppData/Roaming'
+}));
+
 vi.mock('../core/storage', () => ({
+  /* 绝对路径要用 ROOTS.data 拼数据根，mock 里必须有（少了会 undefined.replace 崩） */
+  ROOTS: { data: '/Maomao', legacy: '/SheJiZhuLi', swatch: '/FengZiSeBan' },
   readTextResult: (name: string, root: string) => {
     const text = h.files.get(`${root}:${name}`);
     if (text === undefined) {
@@ -107,14 +114,27 @@ describe('updateIndex', () => {
   });
 });
 
-describe('路径只有三个出口', () => {
-  it('目录 / 源文件 / 缩略图', () => {
-    expect(templateDir('abc')).toBe('template/PSD/abc.info');
-    expect(templateSource('abc', '标题组', 'psd')).toBe('template/PSD/abc.info/标题组.psd');
+describe('路径分两组：storage 相对 / jsx 绝对', () => {
+  it('相对数据根：缩略图（给 storage 与 <img src>）', () => {
     expect(templateThumbFile('abc', '标题组')).toBe('template/PSD/abc.info/标题组.png');
   });
 
-  it('删条目 = 删整个 <id>.info 目录', () => {
+  it('绝对路径：条目目录与源文件（给 jsx，ExtendScript 不认相对路径）', () => {
+    expect(templateItemAbsDir('abc')).toBe('C:/Users/test/AppData/Roaming/Maomao/template/PSD/abc.info');
+    expect(templateSourceAbs('abc', '标题组', 'psd')).toBe(
+      'C:/Users/test/AppData/Roaming/Maomao/template/PSD/abc.info/标题组.psd'
+    );
+  });
+
+  it('源文件落在条目目录下（两处各拼一套就迟早漂）', () => {
+    expect(templateSourceAbs('abc', '标题组', 'psd').startsWith(`${templateItemAbsDir('abc')}/`)).toBe(true);
+  });
+
+  it('中文文件名不编码（jsx 侧 new File 直接吃中文）', () => {
+    expect(templateSourceAbs('abc', '标题组', 'psd')).not.toContain('%');
+  });
+
+  it('删条目 = 删整个 <id>.info 目录（storage 要相对路径）', () => {
     removeItemDir('abc');
     expect(h.dirsRemoved).toEqual([{ name: 'template/PSD/abc.info', root: 'data' }]);
   });
