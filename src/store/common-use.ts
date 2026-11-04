@@ -37,7 +37,7 @@ interface CommonUseState {
   /**
    * 两个来源各自的失败，`null` = 这一类读成功。
    *
-   * 存 `Result` 而不是一句字符串：失败提示要交给 `StateHint`，由**码**决定说什么、
+   * 存 `Result` 而不是一句字符串：失败提示要交给页面消息行（`MessageBar.failureMessage`），由**码**决定说什么、
    * 要不要给重试（`IO_ERROR` 才给）——存成字符串就只能自己拼文案，等于第二套提示。
    */
   /** 两个来源各自的失败臂（键 = 来源） */

@@ -81,7 +81,7 @@ export function useFontManage() {
     [loadResult]
   );
   const dropped = loadResult?.status === 'ok' ? loadResult.value.dropped : [];
-  /* 失败态单独给出去：`StateHint` 的类型要求「有 result 就是 Error」，不再收 `Result | null` */
+  /* 失败态单独给出去：把 ok 臂收窄掉，消费处（页面消息行）只判空不判 status */
   const loadError = loadResult?.status === 'error' ? loadResult : null;
 
   const runLoad = useCallback(async (force = false) => {

@@ -23,7 +23,7 @@
 | 提示 | `useToast()` | `alert()` |
 | 确认 | `useConfirm()` | `confirm()` |
 | 加载 | `useLoading()` | 各组件自己维护 loading 文案 |
-| 区域不可用 | `components/StateMask`（内部渲染 `StateHint`） | 页面自己写绝对定位 + 提示文案；也**不要**用「把内容换成一行提示」代替（会让下面的东西整体上移） |
+| 页面消息行 | `components/MessageBar`（页面状态话唯一出口：前提不满足 / 空态 = 灰、数据健康 = 黄、读取失败 = 红可重试） | 条件渲染一条占文档流的提示（出现即挤动下方内容，`TD-08-2` 判死）；页面自绘状态行；操作回执走消息行（那是 toast 的事） |
 | 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0；页面根壳声明为 `--mm-page-pad-x`）。**底色用 `__box::before` 左右铺**（`top/bottom:0` + `left/right: calc(-1 * bleed)` + `z-index:-1`，`__box` 自己要 `isolation: isolate`），**不要用负 margin**；`__box` 的上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）——那会把 `__box` 连内容一起拉宽 | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
@@ -33,7 +33,7 @@
 | 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，**没有 `variant`**：表面按所在表面走，见规则 15 / 19）；「左图标 + 右插槽 + Enter 提交」用 `components/TextField`（**宽度吃满容器，组件不提供宽度档位**；某处真要定宽就给那个页面的局部 css）。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」、给输入框加宽度档位 prop |
 | 多行输入 | `components/ui` 的 `Textarea`（**全仓唯一多行输入入口**）。表面与 `Input` 同一套（`--mm-input-bg` / `--mm-input-color`），**高度与 `resize` 不归它**：能多高、能不能拉由承载它的弹窗 / 页面局部 css 给 | 页面写裸 `<textarea>`、自己画边框与圆角、给控件加高度档位 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
-| 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；默认 `inset: 0 0 0 var(--mm-nav-w)` **只盖右侧正文区、不盖左侧菜单栏**；层级取 `--mm-z-modal`，**低于浮层档**（弹窗内的下拉 / 菜单是 Portal 到 body 的浮层，遮罩压上去它们就看不见）；区域不可用走 `components/StateMask`（strong 档），输入弹窗走 faint 档。**全屏变体** `.mm-modal-mask--fullscreen`（`inset:0`，盖住整个面板含菜单栏）：只给需要整屏覆盖的大弹窗（批量文字 / 添加动作）用，与 `.mm-modal--fullscreen` 配套 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
+| 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；默认 `inset: 0 0 0 var(--mm-nav-w)` **只盖右侧正文区、不盖左侧菜单栏**；层级取 `--mm-z-modal`，**低于浮层档**（弹窗内的下拉 / 菜单是 Portal 到 body 的浮层，遮罩压上去它们就看不见）；输入弹窗走 faint 档。**全屏变体** `.mm-modal-mask--fullscreen`（`inset:0`，盖住整个面板含菜单栏）：只给需要整屏覆盖的大弹窗（批量文字 / 添加动作）用，与 `.mm-modal--fullscreen` 配套 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
 | **横向排列** | `.mm-u-row` / `.mm-u-row--wrap`（`styles/global.css`）：`display:flex` + `align-items:center` + `justify-content:space-between`。**全仓横排只有这一种，一律两端铺满**。**行里有 3 个以上元素、其中几个要挨在一起时，先分组**（嵌一层 `.mm-u-row` + 该组的 `gap`）—— 平铺会让 `space-between` 把空隙**均分成 n-1 份**，本该贴住的「标签 + 控件」被推到行中间（2026-10-31 导出抽屉的「品质」就是这么飘的）。**换行且要挨着**（chip 排 / 色块排 / 格子排）用组合层 `.mm-u-tiles`（§6.2），不是本条。**但别把这条用到该均分的地方**：一排图标按钮本来就该**均分铺满**（一排 6 个就是 6 等分），给它加 `flex-start` 会挤成左边一坨、右边空一片 —— §6.2 的 `.mm-icon-row` 只补 `gap`，不加 `justify-content` | 在组件 CSS 里再写一遍这套三件套；用 `justify-content: flex-start` / `flex-end` 排**多个**元素（单元素居中不受限，如图标按钮、遮罩） |
 | 下拉 / 浮层壳 | `.mm-popover`（`styles/global.css`）：定位变量（`--floating-x/y`）+ 表面（浅色底 / 文字色 / 圆角 / 投影，**无描边**，见 §7 规则 16）全仓一处。`SelectBox` 面板、右键菜单、标签弹层、筛选面板、字重下拉都挂它，各自只写宽度 / 最大高 / 内边距；定位一律 `useFloatingPosition` + `Portal` | 自写 `position: fixed` + 边框 + 底色 + 阴影；用 `position: absolute` 定位弹层（会被滚动容器裁掉）；自己 `getBoundingClientRect` 算坐标 |
 
@@ -98,7 +98,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 | 标签片 | `.mm-chip`，选中态 `.mm-chip--on` | tag / chip：扁平的**可点小片**（筛选标签 / 最近使用 / 序列 / 动作项）。底与 hover 取**实心按钮同档**（`--mm-color-bg-raised` / `-hover`），与同排数值按钮同一层；选中态底再提亮一档（不改文字色、不反白）。不再按所在表面取输入位底（那在深色面板里是一块黑） | `ui.css` |
 | 纯色块 | `.mm-swatch` | **只有形与色**的方块（边长 `--mm-swatch-w/h`、小圆角、背景取调用点注入的 `--mm-swatch`、hover 描边不叠底）：吸色弹窗的「提取的颜色」、重命名页的图层颜色。**与样式页 `.mm-style__item--color` 的区别**：那个是**可编辑格子**，还带底 / 选中 / 编辑态，不是同一个东西 | `ui.css` |
 | 角标 | `.mm-badge`，语义档 `--count` | 贴在别的东西上的**小计数或标记**（筛选计数）。档位只在**有消费者**时才加（2026-10-31 删掉零消费者的 `--info` / `--warn` 两档） | `ui.css` |
-| 数据健康提示 | `.mm-notice`，语义档 `--warn` / `--error` | 「N 项无法识别」「分类筛选已禁用」这类**读到了但数据不全**的内联提示。档位只在**有消费者**时才加 | `ui.css` |
+| 页面消息行 | `components/MessageBar` | 每页底部**常驻**一行（行高锁死零位移）：本页全部状态话——前提不满足（`PS_NO_DOC` / `PS_WRONG_LAYER` 灰字）/ 空态（灰）/ 数据健康「读到了但数据不全」（黄）/ 读取失败（红 + 行内重试）。转换器 `failureMessage`（Result→消息）与合并器 `mergeMessages`（error>warn>info、「；」连接）都在同模块，页面不自己造 | `components/MessageBar` |
 | 弹窗壳 | `.mm-modal` + `__head` / `__title` / `__body` / `__actions` / `__grow`（后两个是 `.mm-u-row` 修饰符） | 所有居中弹窗（确认 / 输入 / 新建标签 / 添加动作 / 批量文字 / 图片取色），与 `mm-u-col` 同挂；全屏加载走 `.mm-modal-mask` + `Loading`，不挂 `.mm-modal`。**全屏变体** `.mm-modal--fullscreen`（占满正文区 85%×70%、overlay 浮层底 + 投影、亮线边框、溢出兜在弹窗层）：批量文字 / 添加动作共用，保证两者视觉与尺寸一致 | `ui.css` |
 
 **已知例外一处**：`InputDialog` 不挂 `.mm-modal` —— 它的位置是「30% 高 + 左偏 90」而不是屏幕居中（原版行为，
@@ -109,11 +109,11 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 
 1. **组合层不许带行为**：这一层只出 CSS 契约。chip 要不要能删、notice 要不要能关，是上面一层控件的事 ——
    有行为就建 TSX 组件并登记 `GOVERNANCE` §4.1，不许在组合层里塞 onClick。
-2. **`.mm-notice` 与 `StateHint` 是两回事，不许互相替代**：
-   `StateHint` 是「这块区域没内容 / 读失败了」（空态、失败态，占位整块），
-   `.mm-notice` 是「内容在，但数据不全」（一条黄条，挂在既有内容之上或之间）。
-   判据：**把提示拿掉，下面还剩不剩东西？** 剩 ⇒ `.mm-notice`；不剩 ⇒ `StateHint`。
-3. **命中判据就必须用**：上面 7 件都是 ≥2 处重复后收上来的（警告条三份、弹窗壳三份、chip 三份是实测）。
+2. **页面状态话只许走消息行**（2026-11-04 起，`TD-08-2` 收口）：
+   前提不满足 / 空态 / 数据健康（降级、部分丢弃）/ 读取失败，全部收敛到每页底部那条常驻消息行，
+   三档见上表。**条件渲染一条占文档流的提示已被判死**——出现即挤动下方内容；
+   操作回执归 toast，不进消息行（分工写在 `MessageBar/index.tsx` 文件头）。
+3. **命中判据就必须用**：上面 6 件都是 ≥2 处重复后收上来的（弹窗壳三份、chip 三份是实测）。
    页面里出现第 8 种自绘形状前，先问「能不能把这 7 件之一改一改」；不能才新建，新建必须同步本表与 `GOVERNANCE` §4.1。
    **反过来也成立**：建了却零消费者的一件要删（2026-10-31 删掉 `.mm-list-row` 与 `.mm-divider--strong` 就是这条）。
 
@@ -237,7 +237,7 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     | 选中 / 开启 | tab 选中、chip / tag `--on`、勾选框与单选框、下拉当前项的对号、置顶开、筛选开启 |
     | 焦点 / 进行中 | 输入框 focus 描边、就地编辑中、重命名中的格子、转圈的那一道 |
     | 主操作实底 | `--primary` 按钮、弹层主按钮 |
-    | 需要被看见的标记 / 动作文字 | 筛选计数徽标、`StateHint` 的重试、「清除标签 / 新建 / 高级」这类可点动作 |
+    | 需要被看见的标记 / 动作文字 | 筛选计数徽标、消息行的「重试 / 清除筛选」、「清除标签 / 新建 / 高级」这类可点动作 |
 
     禁止：**hover 变蓝**（hover 一律叠 `--mm-color-bg-hover`，或文字 / 图标转 `--mm-color-text-strong`）、
     **用蓝表示「展开 / 悬停」这类临时态**（展开靠底色凹下去 + 内容本身表达，图标不变色）、

@@ -25,7 +25,7 @@
  * 禁止：
  *   1. 在 `fail` / `failWithDetail` / `toast.*` 里**再写中文**；
  *   2. 为**每个字段**各造一句（「XX 项缺少 YY」）——统一用 `corrupt`，现场（字段路径 / 下标）进 `detail`；
- *   3. 消费者替生产者改口径：`StateHint` / `run` 只展示 `result.reason`，**不查表补字、不加前缀**；
+ *   3. 消费者替生产者改口径：消息行 / `run` 只展示 `result.reason`，**不查表补字、不加前缀**；
  *   4. 把 log 用的技术描述写进来——这里只放**用户能看到的**话。
  *
  * 判据的反面：一段中文的读者是写代码的人 ⇒ 断言（`throw`）；是排障的人 ⇒ log；都不是 ⇒ 不属于本表。
@@ -264,7 +264,7 @@ export const MSG = {
   },
 
   /**
-   * **错误码 → 用户话**的唯一映射：`core` 只产码（不产中文），消费方（`StateHint` / `useRunCommand`）
+   * **错误码 → 用户话**的唯一映射：`core` 只产码（不产中文），消费方（`MessageBar` / `useRunCommand`）
    * 在 `reason` 为空时用这里兜。
    *
    * 为什么需要它：`core` 不许 import `domain`（分层），所以 core 的失败臂只能带 `code` + 技术 `detail`；

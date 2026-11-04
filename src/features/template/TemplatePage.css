@@ -180,11 +180,10 @@
  */
 .mm-template__fab {
   position: fixed;
-  /* 原版 `.add-wrap`：right 20 / bottom 42 —— 都按「底栏 26 之上再留 16」算的。
-     本页**没有底栏**了（2026-10-31 删掉，那行只有「共 N 个内容」，没有信息量），
-     所以 bottom 直接贴到 16。 */
+  /* 底下现在是消息行（26 高，2026-11-04 全页统一）：FAB 浮在它上面，
+     距底 = 消息行 26 + 16 —— 正好回到原版 `.add-wrap` 的 bottom 42。 */
   right: var(--mm-space-4);
-  bottom: var(--mm-space-4);
+  bottom: calc(var(--mm-space-4) + var(--mm-control-h));
   z-index: var(--mm-z-nav);
   display: inline-flex;
   align-items: center;
@@ -237,7 +236,7 @@
 
 /*
  * 遮罩：**形状**由全局 `.mm-modal-mask` 给（fixed inset 0 + 居中），这里只补「压暗」。
- * 与 `StateMask` / `InputDialog` 同一写法 —— 全局那个不带上底色，压暗由使用处给
+ * 与 `InputDialog` 同一写法 —— 全局那个不带上底色，压暗由使用处给
  * （`Loading.css` 的文件头也这么写）。不另造第二个遮罩壳。
  */
 .mm-template__mask {

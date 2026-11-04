@@ -195,10 +195,9 @@
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 |
 | 命令执行 | `src/hooks/useRunCommand.ts` | 包 loading + 失败提示 + 原因留痕（code/detail 进日志，人话进 toast）；面板/页面不再各写一份 |
-| 空态提示 | `src/components/StateHint/index.tsx` | 空态 / 失败态 / IO 重试唯一入口；前提类码（`PS_NO_DOC` / `PS_WRONG_LAYER`）灰字，不标红 |
-| 区域遮罩 | `src/components/StateMask/index.tsx` | 内容照常渲染撑住高度，提示盖在上面（不换布局、不跳版）；文案与语气复用 `StateHint` |
+| 页面消息行 | `src/components/MessageBar/index.tsx` | 【唯一入口】每页底部常驻消息行：本页全部状态话（前提不满足 / 空态 / 数据健康 / 读取失败）的唯一出口，行高锁死零位移（`TD-08-2` 收口）；`failureMessage`（Result→消息，soft 码灰字不标红）与 `mergeMessages`（error>warn>info、「；」连接）都在同模块，禁止页面自己造转换。操作回执仍归 toast，页面状态话归这里 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
-| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-notice` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
+| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |

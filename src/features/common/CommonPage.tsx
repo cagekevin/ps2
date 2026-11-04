@@ -17,7 +17,7 @@ import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { FlipRow, ZoomRow } from '../../components/ZoomRow';
 import { ZOOM_LEVELS } from '../../components/ZoomRow/zoom-items';
 import { MSG } from '../../types/messages';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage, mergeMessages } from '../../components/MessageBar';
 import type { CommonUseTile } from '../../domain/common-use';
 import { AUTO_FILL_TILE_ID, TILE_COMMANDS } from './common-constants';
 import { CustomTransformPanel } from './components/CustomTransformPanel';
@@ -64,6 +64,27 @@ export default function CommonPage() {
   const page = useCommonPage();
   const visibleTiles = page.tiles.filter((tile) => tile.visible);
 
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：读取失败、丢弃的数据健康、
+   * 空网格都收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   */
+  const message = mergeMessages([
+    failureMessage(page.failures.tiles, page.reload),
+    failureMessage(page.failures.options, page.reload),
+    page.dropped.length
+      ? {
+          kind: 'warn' as const,
+          text: `${page.dropped.length} ${MSG.droppedSummary}`,
+          /* 数量 + 首条现场：只给数量等于替数据层说「已处理」 */
+          title: page.dropped
+            .slice(0, 3)
+            .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
+            .join('\n')
+        }
+      : null,
+    visibleTiles.length ? null : { kind: 'info' as const, text: MSG.emptyCommonGrid }
+  ]);
+
   return (
     <div className="mm-common">
       {/*
@@ -73,22 +94,6 @@ export default function CommonPage() {
        *   - 「重置常用功能排序」在**设置页**（官方 `:1991384`，同一区还有 14 项显隐）。
        */}
       <div className="mm-common__body">
-        {page.failures.tiles ? <StateHint result={page.failures.tiles} onRetry={page.reload} /> : null}
-        {page.failures.options ? (
-          <StateHint result={page.failures.options} onRetry={page.reload} />
-        ) : null}
-        {page.dropped.length ? (
-          <div
-            className="mm-notice mm-notice--warn"
-            title={page.dropped
-              .slice(0, 3)
-              .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
-              .join('\n')}
-          >
-            {page.dropped.length} {MSG.droppedSummary}
-          </div>
-        ) : null}
-
         {/* 缩放 / 变换**不折叠**：各自只有一两行，折叠标题比内容还占地方 */}
         {page.showZoom ? (
           <div className="mm-u-col mm-zoom">
@@ -169,10 +174,11 @@ export default function CommonPage() {
                 </IconPanelGroup>
               ))}
             </div>
-          ) : (
-            <StateHint empty={MSG.emptyCommonGrid} />
-          )}
+          ) : null}
       </div>
+
+      {/* 消息行常驻在页面底部：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
     </div>
   );
 }

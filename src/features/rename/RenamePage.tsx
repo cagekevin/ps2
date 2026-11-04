@@ -19,7 +19,7 @@ import { ContextMenu } from '../../components/ContextMenu';
 import { GroupHead } from '../../components/GroupHead';
 import { IconButton } from '../../components/IconButton';
 import { InputDialog } from '../../components/InputDialog';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage, mergeMessages, type MessageItem } from '../../components/MessageBar';
 import { TextField } from '../../components/TextField';
 import { Button } from '../../components/ui';
 import { MSG } from '../../types/messages';
@@ -38,6 +38,31 @@ const DIALOG_TITLE = {
 
 export default function RenamePage() {
   const page = useRenamePage();
+
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：读取失败、丢弃的数据健康、
+   * 预设空态都收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   * 组内空态带组名上下文——消息行不分位置，不带名字就不知道说的是哪个组。
+   */
+  const emptyGroups = page.preset.filter((group) => group.show && !group.list.length);
+  const message = mergeMessages([
+    failureMessage(page.failure, () => void page.reload()),
+    page.dropped.length
+      ? {
+          kind: 'warn' as const,
+          text: `${page.dropped.length} ${MSG.droppedSummary}`,
+          /* 数量 + 首条现场：只给数量等于替数据层说「已处理」 */
+          title: page.dropped
+            .slice(0, 3)
+            .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
+            .join('\n')
+        }
+      : null,
+    page.preset.length === 0 ? { kind: 'info' as const, text: '还没有重命名预设' } : null,
+    ...emptyGroups.map(
+      (group): MessageItem => ({ kind: 'info', text: `${group.name} 该组还没有预设` })
+    )
+  ]);
 
   return (
     <div className="mm-rename">
@@ -120,26 +145,9 @@ export default function RenamePage() {
           </div>
         )}
 
-        {page.failure ? (
-          /* 失败提示走唯一入口 `StateHint`：文案取生产者的 `reason`、`detail` 挂 title、
-             重试只在 `IO_ERROR` 出现（不是任何错都给重试 —— 把 bug 伪装成可重试更糟）。
-             原先这里是手写的 `<span>` + `<Button>重试</Button>`，与其它 19 处形态不一致。 */
-          <StateHint result={page.failure} onRetry={() => void page.reload()} />
-        ) : page.dropped.length ? (
-          <div className="mm-notice mm-notice--warn" title={page.dropped
-            .slice(0, 3)
-            .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
-            .join('\n')}>
-            {`${page.dropped.length} ${MSG.droppedSummary}`}
-          </div>
-        ) : null}
-
-        {/* 3. 分组列表：组头 + 预设项（同动作页：组头右侧加号 + 26 高按钮） */}
+        {/* 3. 分组列表：组头 + 预设项（同动作页：组头右侧加号 + 26 高按钮）；空态在底部消息行 */}
         <div className="mm-rename__list" ref={page.listRef}>
-          {page.preset.length === 0 ? (
-            <StateHint empty={'还没有重命名预设'} />
-          ) : (
-            page.preset.map((group, groupIndex) => (
+          {page.preset.map((group, groupIndex) => (
               <div key={`${group.name}-${groupIndex}`} className="mm-rename__group">
                 <GroupHead
                   title={group.name}
@@ -160,38 +168,33 @@ export default function RenamePage() {
                   }
                 />
 
-                {group.show ? (
-                  group.list.length ? (
-                    <div className="mm-u-tiles">
-                      {group.list.map((text, itemIndex) => (
-                        <Button
-                          key={`${text}-${itemIndex}`}
-                          title={text}
-                          data-preset-item=""
-                          data-group-index={groupIndex}
-                          data-item-index={itemIndex}
-                          onMouseDown={(event) =>
-                            page.handleItemMouseDown(event, groupIndex, itemIndex)
-                          }
-                          onClick={() => {
-                            if (page.consumeDragClick()) return;
-                            page.applyPreset(text);
-                          }}
-                          onContextMenu={(event) =>
-                            page.openItemMenu(event, groupIndex, itemIndex, text)
-                          }
-                        >
-                          {text}
-                        </Button>
-                      ))}
-                    </div>
-                  ) : (
-                    <StateHint empty={'该组还没有预设'} />
-                  )
+                {group.show && group.list.length ? (
+                  <div className="mm-u-tiles">
+                    {group.list.map((text, itemIndex) => (
+                      <Button
+                        key={`${text}-${itemIndex}`}
+                        title={text}
+                        data-preset-item=""
+                        data-group-index={groupIndex}
+                        data-item-index={itemIndex}
+                        onMouseDown={(event) =>
+                          page.handleItemMouseDown(event, groupIndex, itemIndex)
+                        }
+                        onClick={() => {
+                          if (page.consumeDragClick()) return;
+                          page.applyPreset(text);
+                        }}
+                        onContextMenu={(event) =>
+                          page.openItemMenu(event, groupIndex, itemIndex, text)
+                        }
+                      >
+                        {text}
+                      </Button>
+                    ))}
+                  </div>
                 ) : null}
               </div>
-            ))
-          )}
+            ))}
         </div>
 
         <div className="mm-divider" />
@@ -216,6 +219,9 @@ export default function RenamePage() {
           </div>
         ) : null}
       </div>
+
+      {/* 消息行常驻在滚动区与底栏之间：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
 
       <BottomBar>
         <BottomBarButton

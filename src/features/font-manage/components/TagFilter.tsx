@@ -15,7 +15,6 @@ import { TagChip } from './TagChip';
 
 interface Props {
   tags: FontTag[];
-  error: string;
   activeTag: string;
   onSelect: (tag: string) => void;
   /** 「全部」chip：清空标签筛选 */
@@ -24,14 +23,7 @@ interface Props {
   onCreate: () => void;
 }
 
-export function TagFilter({ tags, error, activeTag, onSelect, onClear, onContext, onCreate }: Props) {
-  /* 标签读不到时说一句，不让标签区静默变空 */
-  if (error) {
-    return (
-      <div className="mm-notice mm-notice--error">{error}（标签读取失败，字体列表不受影响）</div>
-    );
-  }
-
+export function TagFilter({ tags, activeTag, onSelect, onClear, onContext, onCreate }: Props) {
   return (
     <div className="mm-u-tiles">
       {/* 「全部」和标签是同一类东西（一个筛选值），所以是 chip；它不可改名/删除，故不挂右键 */}

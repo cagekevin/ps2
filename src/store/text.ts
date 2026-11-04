@@ -6,7 +6,7 @@
  * 图层没变却把面板改成新值，用户会以为已经生效。
  *
  * 失败存**整个 `Result`**（不是一句字符串）：码决定界面语气（前提不满足 vs 真失败），
- * 拼文案的事交给 `components/StateHint`，页面不再自己判断该标红还是该灰。
+ * 拼文案的事交给 `components/MessageBar`，页面不再自己判断该标红还是该灰。
  *
  * 不订阅 PS 选区事件：`features/font-panel` 在 `layer-watcher` 报告活动图层变了时调 `refresh()`
  * （进页面也算一次变化），切到非文字图层由 `core/ps/layer.requireTextLayer` 返回

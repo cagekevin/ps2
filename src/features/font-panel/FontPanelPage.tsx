@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { IconButton } from '../../components/IconButton';
 import { IconPanel, IconPanelGroup } from '../../components/IconPanel';
 import { InputDialog } from '../../components/InputDialog';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage } from '../../components/MessageBar';
 import { FlipRow, ZoomRow } from '../../components/ZoomRow';
 import { ZOOM_LEVELS } from '../../components/ZoomRow/zoom-items';
 import { DEFAULT_TEXT_INFO } from '../../domain/text-info';
@@ -54,6 +54,13 @@ export default function FontPanelPage() {
   /* 缩放两行共用同一个开合值（跨行也互斥），与顶部图标行的抽屉互不影响 */
   const [zoomOpen, setZoomOpen] = useState('');
 
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：文字属性读失败在这里说，
+   * `info` 仍保留上一次的值（面板不闪），所以**必须**显示失败，否则用户会把旧值当当前值。
+   * 重试直接再读一次（读路径不写盘）。
+   */
+  const message = failureMessage(page.textFailure, () => void page.refreshText());
+
   return (
     <div className="mm-font-panel">
       {/* 缩放 / 翻转：与常用页共用 `components/ZoomRow`（`TD-09-19`），放页面最顶部 */}
@@ -91,14 +98,6 @@ export default function FontPanelPage() {
           onAdd={page.onQuickAdd}
           onRemove={page.onQuickRemove}
         />
-      ) : null}
-
-      {/*
-        文字属性读失败：`info` 仍保留上一次的值（面板不闪），所以**必须**把失败显示出来，
-        否则用户会把旧值当当前值。重试直接再读一次（读路径不写盘）。
-      */}
-      {page.textFailure ? (
-        <StateHint result={page.textFailure} onRetry={() => void page.refreshText()} />
       ) : null}
 
       {/*
@@ -296,6 +295,9 @@ export default function FontPanelPage() {
           onClose={() => setBatchOpen(false)}
         />
       ) : null}
+
+      {/* 消息行常驻在根尾：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
     </div>
   );
 }

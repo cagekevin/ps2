@@ -46,7 +46,7 @@ export function normalizeExpandedGroups(raw: unknown): number[] {
  * 而且 `ok` 臂上能拿到 `.value` —— 值和「读到没有」混在一起（`TD-05-1`，同 `store/text` 的判据）。
  *
  * 三态怎么读（页面只用这三条）：
- *   `failures[k] !== null`            ⇒ 那次读失败，`StateHint` 直接展示它
+ *   `failures[k] !== null`            ⇒ 那次读失败，页面消息行直接展示它
  *   `libraries[k] !== null` 且无失败   ⇒ 读到了（空数组 = 读到但是空的）
  *   `libraries[k] === null` 且无失败   ⇒ 还没读过
  */

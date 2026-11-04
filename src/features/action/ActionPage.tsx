@@ -14,7 +14,7 @@ import { IconButton } from '../../components/IconButton';
 import { ContextMenu } from '../../components/ContextMenu';
 import { GroupHead } from '../../components/GroupHead';
 import { InputDialog } from '../../components/InputDialog';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage, mergeMessages } from '../../components/MessageBar';
 import { Button } from '../../components/ui';
 import { MSG } from '../../types/messages';
 import { ACTION_ICONS } from './action-constants';
@@ -32,30 +32,34 @@ const DIALOG_TITLE = {
 export default function ActionPage() {
   const page = useActionPage();
 
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：读取失败、丢弃的数据健康、
+   * 组空 / 全空态都收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   * 组内空态带组名上下文——消息行不分位置，不带名字就不知道说的是哪个组。
+   */
+  const emptyGroup = page.groups.find((group) => group.show && !group.list.length);
+  const message = mergeMessages([
+    failureMessage(page.failures.index, page.reload),
+    failureMessage(page.failures.library, page.reload),
+    page.dropped.length
+      ? {
+          kind: 'warn' as const,
+          text: `${page.dropped.length} ${MSG.droppedSummary}`,
+          /* 数量 + 首条现场：只给数量等于替数据层说「已处理」 */
+          title: page.dropped
+            .slice(0, 3)
+            .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
+            .join('\n')
+        }
+      : null,
+    emptyGroup ? { kind: 'info' as const, text: `${emptyGroup.groupName} 该动作组空空如也` } : null,
+    page.groups.length === 0 ? { kind: 'info' as const, text: '该动作组空空如也' } : null
+  ]);
+
   return (
     <div className="mm-action">
       {/* 没有页头：导航上已写着「动作管理」，标题行白占 40 高（与字体管理、常用功能一致） */}
       <div className="mm-action__body">
-        {page.failures.index ? (
-          <StateHint result={page.failures.index} onRetry={page.reload} />
-        ) : null}
-        {page.failures.library ? (
-          <StateHint result={page.failures.library} onRetry={page.reload} />
-        ) : null}
-        {page.dropped.length ? (
-          <div
-            className="mm-notice mm-notice--warn"
-            /* 数量 + 首条现场：只给数量等于替数据层说「已处理」 */
-            title={page.dropped
-              .slice(0, 3)
-              .map((item) => `${item.path} · ${item.reason}${item.detail ? ` · ${item.detail}` : ''}`)
-              .join('\n')}
-          >
-            {page.dropped.length} {MSG.droppedSummary}
-          </div>
-        ) : null}
-
-
         <div className="mm-action__list" ref={page.listRef}>
           {page.groups.map((group, groupIndex) => (
             <div key={`${group.groupName}-${groupIndex}`}>
@@ -77,48 +81,45 @@ export default function ActionPage() {
                 }
               />
 
-              {group.show ? (
-                group.list.length ? (
-                  <div className="mm-btn-grid mm-action__items">
-                    {group.list.map((item, itemIndex) => (
-                      <Button
-                        key={`${item.name}-${itemIndex}`}
-                        className="mm-action__item"
-                        title={item.alias ?? item.name}
-                        /* 拖拽落点靠这三个属性选节点（`[data-action-item]`），别改名 */
-                        data-action-item=""
-                        data-group-index={groupIndex}
-                        data-item-index={itemIndex}
-                        onMouseDown={(event) =>
-                          page.handleItemMouseDown(event, groupIndex, itemIndex)
+              {group.show && group.list.length ? (
+                <div className="mm-btn-grid mm-action__items">
+                  {group.list.map((item, itemIndex) => (
+                    <Button
+                      key={`${item.name}-${itemIndex}`}
+                      className="mm-action__item"
+                      title={item.alias ?? item.name}
+                      /* 拖拽落点靠这三个属性选节点（`[data-action-item]`），别改名 */
+                      data-action-item=""
+                      data-group-index={groupIndex}
+                      data-item-index={itemIndex}
+                      onMouseDown={(event) =>
+                        page.handleItemMouseDown(event, groupIndex, itemIndex)
+                      }
+                      onClick={(event) => {
+                        /* 拖完那次 click 吞掉，否则「拖一下就执行了动作」 */
+                        if (page.consumeDragClick()) return;
+                        if (event.ctrlKey) {
+                          page.notifyFreePanel();
+                          return;
                         }
-                        onClick={(event) => {
-                          /* 拖完那次 click 吞掉，否则「拖一下就执行了动作」 */
-                          if (page.consumeDragClick()) return;
-                          if (event.ctrlKey) {
-                            page.notifyFreePanel();
-                            return;
-                          }
-                          page.callAction(item);
-                        }}
-                        onContextMenu={(event) =>
-                          page.openItemMenu(event, groupIndex, itemIndex, item)
-                        }
-                      >
-                        {item.alias ?? item.name}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <StateHint empty={'该动作组空空如也'} />
-                )
+                        page.callAction(item);
+                      }}
+                      onContextMenu={(event) =>
+                        page.openItemMenu(event, groupIndex, itemIndex, item)
+                      }
+                    >
+                      {item.alias ?? item.name}
+                    </Button>
+                  ))}
+                </div>
               ) : null}
             </div>
           ))}
-
-          {page.groups.length === 0 ? <StateHint empty={'该动作组空空如也'} /> : null}
         </div>
       </div>
+
+      {/* 消息行常驻在滚动区与底栏之间：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
 
       <BottomBar>
         <BottomBarButton

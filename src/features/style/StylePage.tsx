@@ -38,7 +38,7 @@ import { StyleBottomBar } from './components/StyleBottomBar';
 import { ImgColorDialog } from './components/ImgColorDialog';
 import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage, mergeMessages } from '../../components/MessageBar';
 import { MSG } from '../../types/messages';
 import { ADD_TITLE, useStyleActions } from './useStyleActions';
 import './StylePage.css';
@@ -156,6 +156,19 @@ export default function StylePage() {
     runWithFeedback
   } = useStyleActions();
 
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：索引 / 库读取失败、空库
+   * 收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   */
+  const message = mergeMessages([
+    failureMessage(indexFailure, () => void load()),
+    failureMessage(failure, () => void load()),
+    /* 「读到但是空的」= 有值数组 + 无失败臂；「没读过」不显示空态 */
+    groups !== null && !failure && !groups.length && !newGroup
+      ? { kind: 'info' as const, text: '这个库是空的' }
+      : null
+  ]);
+
   return (
     <section
       className="mm-style"
@@ -168,9 +181,7 @@ export default function StylePage() {
         {loadingLibrary ? <span className="mm-style__loading">读取中…</span> : null}
       </div>
 
-      {indexFailure ? (
-        <StateHint result={indexFailure} onRetry={() => void load()} />
-      ) : (
+      {indexFailure ? null : (
         <>
           {/* 四等分 + 段间 1px 竖线（原版 .switch 结构） */}
           <div className="mm-tabs">
@@ -187,8 +198,6 @@ export default function StylePage() {
               </div>
             ))}
           </div>
-
-          {failure ? <StateHint result={failure} onRetry={() => void load()} /> : null}
 
           <div className="mm-style__list">
             {(groups ?? []).map((group: KuGroup, index: number) => {
@@ -307,11 +316,6 @@ export default function StylePage() {
               );
             })}
 
-            {/* 「读到但是空的」= 有值数组 + 无失败臂；「没读过」不显示空态 */}
-            {groups !== null && !failure && !groups.length && !newGroup ? (
-              <StateHint empty="这个库是空的" />
-            ) : null}
-
             {/* 空库时没有「某组之后」，直接渲染在列表里 */}
             {!groups?.length && newGroup ? (
               <NewGroupRow
@@ -322,6 +326,9 @@ export default function StylePage() {
           </div>
         </>
       )}
+
+      {/* 消息行常驻在滚动区与底栏之间：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
 
       {/* 悬停浮层：portal 到 body，位置走 useFloatingPosition（照 app 的 style-describe） */}
       {describeContent

@@ -4,7 +4,7 @@
  * 结构（对原版逐项对齐，见 `docs/plan/15` §2）：
  *   路径行 → 文件夹与条目（同一个网格）→ 底栏「共 N 个内容」+ 右下角常驻存入口
  *
- * 件全部是现成的：`StateHint` / `Spin` / `Button` / `IconButton` / `Portal` /
+ * 件全部是现成的：`MessageBar` / `Spin` / `Button` / `IconButton` / `Portal` /
  * `ContextMenu` / `InputDialog` / `useConfirm`。本页只写一个私有网格（等高列）。
  *
  * **拖拽是模板库私有的**：`useTemplateDrag` 只在 `useTemplatePage` 里用，
@@ -16,7 +16,7 @@ import { useConfirm } from '../../components/Confirm/useConfirm';
 import { Icon } from '../../components/icons';
 import { InputDialog } from '../../components/InputDialog';
 import { Spin } from '../../components/Spin';
-import { StateHint } from '../../components/StateHint';
+import { MessageBar, failureMessage, mergeMessages } from '../../components/MessageBar';
 import { Button } from '../../components/ui';
 import { templateThumbUrl } from '../../repo/template-repo';
 import { MSG } from '../../types/messages';
@@ -36,6 +36,17 @@ export default function TemplatePage() {
 
   const isEmpty = page.folders.length === 0 && page.items.length === 0;
   const emptyText = page.crumb.length === 0 ? MSG.template.emptyLibrary : MSG.template.emptyFolder;
+
+  /*
+   * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：读取失败、空库 / 空文件夹
+   * 收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   */
+  const message = mergeMessages([
+    failureMessage(page.failure, page.reload),
+    !page.loading && page.failure === null && isEmpty
+      ? { kind: 'info' as const, text: emptyText }
+      : null
+  ]);
 
   /* 条目右键：6 项，两级分组；「移动到…」直接平铺候选文件夹（库小，比再弹一层省一次点击） */
   const item = page.menu?.kind === 'item' ? page.items.find((entry) => entry.id === page.menu?.id) : undefined;
@@ -144,12 +155,6 @@ export default function TemplatePage() {
       >
         {page.loading ? <Spin tip="读取中" /> : null}
 
-        {!page.loading && page.failure !== null ? (
-          <StateHint result={page.failure} onRetry={page.reload} />
-        ) : null}
-
-        {!page.loading && page.failure === null && isEmpty ? <StateHint empty={emptyText} /> : null}
-
         {/*
           * 文件夹与条目在**同一个网格**里排（拆两个容器会变成两排各自算留白）。
           * 顺序：**条目在前、文件夹在后** —— 条目按 `createdAt` 倒序，所以刚存进来的那条
@@ -183,6 +188,9 @@ export default function TemplatePage() {
           </div>
         ) : null}
       </div>
+
+      {/* 消息行常驻在页面底部：行高锁死，出现 / 消失都不挤动上方内容 */}
+      <MessageBar message={message} />
 
       {/* 右下角常驻存入口（照原版：一个方块按钮，点一下就把当前图层存进当前文件夹） */}
       <button

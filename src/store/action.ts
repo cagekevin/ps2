@@ -2,7 +2,7 @@
  * 【范本】动作库的只读投影
  *
  * 只做两件事：读 `repo/action-repo` + 把 `columns` 从 `core/prefs` 读出来。
- * **不写文件**、不判断好坏——失败臂原样留在 `failures` 里，由页面用 `StateHint` 展示。
+ * **不写文件**、不判断好坏——失败臂原样留在 `failures` 里，由页面消息行展示。
  * `failures` 只存**失败臂**（`Failure`），`null` = 那个来源最近一次读没有失败；存整条 `Result` 会让
  * 「ok」与「没读过」同形（`TD-09-3`）。名字与单源的 `failure` 成对：单数一个、复数一张表。
  *

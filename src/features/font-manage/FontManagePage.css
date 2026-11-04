@@ -112,36 +112,3 @@
 /* chip 的表面（高度 / 圆角 / 底色 / 选中态）已经上收到组合层 `.mm-chip`，这里不再声明；
    `--active` 的 accent 底色也一并删掉 —— 选中态统一走 `.mm-chip--on` 的反白 */
 
-
-
-/* 「取消筛选」是可点动作，用 accent 文字（规则 12 第 4 类用法） */
-
-/* 蓝字动作的 hover 走 accent 的 hover 档（规则 12 允许该 token 只出现在 :hover 里） */
-
-.mm-font__warnings{
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  gap: var(--mm-space-1);
-}
-
-.mm-font__state{
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 空态里的「清除筛选」：可点动作用 accent 文字（规则 12 第 4 类用法）。
-   `__state` 是居中容器不带 gap，所以与上方提示之间由这里给一档。 */
-.mm-font__retry{
-  margin-top: var(--mm-space-2);
-  color: var(--mm-color-accent);
-  font-size: var(--mm-font-sm);
-  cursor: pointer;
-}
-
-.mm-font__retry:hover{
-  color: var(--mm-color-accent-hover);
-}

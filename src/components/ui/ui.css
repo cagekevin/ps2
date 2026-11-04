@@ -237,29 +237,6 @@
   font-size: var(--mm-font-xs);
 }
 
-/* 数据健康提示：「读到了但数据不全」（N 项无法识别 / 分类筛选已禁用）。
-   与 `StateHint` 的分工写在 `STYLE.md` §6.2 规则 2 —— 拿掉提示下面还剩东西 ⇒ 用这里。
-   底用既有的半透明语义层，文字用对应语义色，不新增第四个语义色。 */
-.mm-notice{
-  display: flex;
-  align-items: center;
-  gap: var(--mm-space-inline);
-  min-height: var(--mm-control-h);
-  padding: 0 var(--mm-space-2);
-  border-radius: var(--mm-radius-md);
-  font-size: var(--mm-font-sm);
-}
-
-.mm-notice--warn{
-  background: var(--mm-color-warn-a18);
-  color: var(--mm-color-warn);
-}
-
-.mm-notice--error{
-  background: var(--mm-color-danger-a16);
-  color: var(--mm-color-danger);
-}
-
 /* 弹窗壳：居中弹窗（确认 / 输入 / 新建标签）共用的形状 —— 此前 `Confirm` / `InputDialog` /
    `TagCreator` 各画一套，共 15 个类名零规则，现收到这里。
    宽取既有三档（`--mm-modal-*`），落在规则 4 的 200–360 之间。

@@ -1,0 +1,48 @@
+/*
+ * 页面消息行样式 —— 与 `MessageBar` 一一对应；全仓页面状态话唯一表面的形状。
+ *
+ * 常驻零位移是这里的根：行高锁死 control-h、始终占位（flex:0 0 固定高），
+ * 有话写字、没话留白，出现 / 消失不挤动上方内容。三档文字色由 `__msg` 的修饰符给，
+ * 无字时行底色与页面一致，视觉上就是一条分隔线。
+ */
+
+.mm-message-bar{
+  flex: 0 0 var(--mm-control-h);
+  height: var(--mm-control-h);
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-1);
+  padding: 0 var(--mm-space-2);
+  border-top: var(--mm-border-w) solid var(--mm-color-border);
+  background: var(--mm-color-bg-base);
+  font-size: var(--mm-font-sm);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* info 是默认档：不加修饰符（灰 faint）；warn / error 只换文字色 */
+.mm-message-bar__msg{
+  color: var(--mm-color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-message-bar__msg--warn{
+  color: var(--mm-color-warn);
+}
+
+.mm-message-bar__msg--error{
+  color: var(--mm-color-danger);
+}
+
+/* 行内可点动作（重试 / 清除筛选）：accent 文字（规则 12 第 4 类）。
+   必须写在 --error 之后：否则会继承上一行的红色。 */
+.mm-message-bar__action{
+  flex: 0 0 auto;
+  color: var(--mm-color-accent);
+  cursor: pointer;
+}
+
+.mm-message-bar__action:hover{
+  color: var(--mm-color-accent-hover);
+}
