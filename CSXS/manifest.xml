@@ -52,7 +52,16 @@
               <Width>300</Width>
             </MinSize>
           </Geometry>
-          <Icons />
+          <Icons>
+            <Icon Type="DarkNormal">./dist/icons/icon-dark.png</Icon>
+            <Icon Type="DarkRolledOver">./dist/icons/icon-dark-rollover.png</Icon>
+            <Icon Type="LightNormal">./dist/icons/icon-light.png</Icon>
+            <Icon Type="LightRolledOver">./dist/icons/icon-light-rollover.png</Icon>
+            <Icon Type="DarkNormal@2x">./dist/icons/icon-dark@2x.png</Icon>
+            <Icon Type="DarkRolledOver@2x">./dist/icons/icon-dark-rollover@2x.png</Icon>
+            <Icon Type="LightNormal@2x">./dist/icons/icon-light@2x.png</Icon>
+            <Icon Type="LightRolledOver@2x">./dist/icons/icon-light-rollover@2x.png</Icon>
+          </Icons>
         </UI>
       </DispatchInfo>
     </Extension>
