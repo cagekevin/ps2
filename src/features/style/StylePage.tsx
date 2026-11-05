@@ -395,16 +395,15 @@ export default function StylePage() {
       {indexFailure ? null : (
         <>
           {/* 四等分 + 段间 1px 竖线（原版 .switch 结构）；
-              Ctrl 点 tab = 把该库并进同一页显示（再点移出），普通点 = 独占 */}
+              Ctrl 点 tab = 把该库并进同一页显示（再点移出），普通点 = 独占。
+              tab 两态：灰 = 未显示、白 = 正在显示（active 与并选同为白字，见 global.css） */}
           <div className="mm-tabs">
             {KU_KINDS.map((kind, index) => (
               <div key={kind} className="mm-tabs__cell">
                 <button
                   type="button"
                   aria-pressed={kind === activeKind || extraKinds.includes(kind)}
-                  className={`mm-tabs__tab${kind === activeKind ? ' mm-tabs__tab--active' : ''}${
-                    kind !== activeKind && extraKinds.includes(kind) ? ' mm-style__tab--extra' : ''
-                  }`}
+                  className={`mm-tabs__tab${kind === activeKind || extraKinds.includes(kind) ? ' mm-tabs__tab--active' : ''}`}
                   onClick={(event) => {
                     if (event.ctrlKey || event.metaKey) toggleExtraKind(kind);
                     else setActiveKind(kind);

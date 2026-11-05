@@ -262,8 +262,9 @@ button{
   cursor: pointer;
 }
 
+/* 选中 = 白字（2026-11-05 用户定：tab 只有灰/白两态，不用蓝——蓝留给规则 12 的四类状态） */
 .mm-tabs__tab--active{
-  color: var(--mm-color-accent);
+  color: var(--mm-color-text-strong);
 }
 
 /* tab 是按钮，hover 叠底；选中与否只由文字色表达（§7 规则 12） */
