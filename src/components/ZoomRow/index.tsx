@@ -38,7 +38,9 @@ function ZoomPreset({ value, onClick }: { value: number; onClick: () => void }) 
   );
 }
 
-/** 一行缩放：「放大 / 缩小」下拉 + 4 个常用档位；点档位后收起抽屉 */
+/** 一行缩放：「放大 / 缩小」下拉 + 4 个常用档位；
+ *  抽屉里点档位只应用数值、**不收抽屉**（用户 2026-11-05 定：连点多个数值不许自动折叠），
+ *  要收起再点一次触发器（IconPanel 规则 1：关闭只认触发器） */
 export function ZoomRow({
   id,
   icon,
@@ -67,16 +69,13 @@ export function ZoomRow({
             <Chevron open={handlers['aria-expanded']} />
           </button>
         )}
-        panel={(close) => (
+        panel={() => (
           <div className="mm-btn-grid mm-zoom-all">
             {all.map((value) => (
               <ZoomPreset
                 key={value}
                 value={value}
-                onClick={() => {
-                  onPick(value);
-                  close();
-                }}
+                onClick={() => onPick(value)}
               />
             ))}
           </div>
