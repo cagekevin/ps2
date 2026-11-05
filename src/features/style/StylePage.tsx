@@ -51,6 +51,168 @@ interface DescribeTarget {
   el: HTMLElement;
 }
 
+/** 多选显示时库的排序：固定 tab 顺序，不跟点击顺序走 */
+const KIND_ORDER: Record<KuKind, number> = { color: 0, gradient: 1, font: 2, style: 3 };
+
+/**
+ * 一条库的分组列表（单选时只有一条，多选时命中几条连排几条）。
+ *
+ * 从页面主体抽出：kind 由父级给定——单选 = activeKind；多选时每条 section
+ * 用**自己库的 kind** 渲染格子、「+」与浮层，动作层（useStyleActions）照旧读 activeKind。
+ * 编辑态（editing）与新建分组占位（newGroup）仍归页面管：它们只落在当前库（activeKind）
+ * 那条 section 上，非当前库的 section 不渲染这两样。
+ */
+function StyleLibrarySection({
+  kind,
+  isCurrent,
+  expanded,
+  onToggleGroup,
+  onGroupMenu,
+  onGroupMouseDown,
+  onAddItem,
+  onApply,
+  onDescribe,
+  onItemMenu,
+  onItemMouseDown,
+  onRename,
+  onCancelRename,
+  pageEditing,
+  draggedRef,
+  /** 新建分组占位要插在第几组之后；-1 = 空库建组（原版约定）；null = 不渲染 */
+  newGroupAfterIndex,
+  onNewGroupCommit,
+  onNewGroupCancel
+}: {
+  kind: KuKind;
+  /** 是否 = activeKind：编辑态 / 新建分组占位 / 拖拽重排只落在当前库上 */
+  isCurrent: boolean;
+  expanded: Set<number>;
+  onToggleGroup: (index: number) => void;
+  onGroupMenu: (event: React.MouseEvent, groupIndex: number, name: string) => void;
+  onGroupMouseDown: (event: React.MouseEvent, groupIndex: number) => void;
+  onAddItem: (groupIndex: number) => void;
+  onApply: (groupIndex: number, itemIndex: number, name: string, event: React.MouseEvent) => void;
+  onDescribe: (kind: KuKind, groupIndex: number, itemIndex: number, show: boolean, el?: HTMLElement) => void;
+  onItemMenu: (event: React.MouseEvent, groupIndex: number, itemIndex: number, name: string) => void;
+  onItemMouseDown: (event: React.MouseEvent, groupIndex: number, itemIndex: number) => void;
+  onRename: (target: { type: 'group'; groupIndex: number } | { type: 'item'; groupIndex: number; itemIndex: number }, name: string) => void;
+  onCancelRename: () => void;
+  /** 页面的编辑态：只落当前库的 section（形状同 handleRename 的入参） */
+  pageEditing: { type: 'group'; groupIndex: number } | { type: 'item'; groupIndex: number; itemIndex: number } | null;
+  /** 页面的拖拽「刚拖完」标记：挡掉拖完那次误折叠 click */
+  draggedRef: React.MutableRefObject<boolean>;
+  /** 新建分组占位要插在第几组之后；-1 = 空库建组（原版约定）；null = 不渲染 */
+  newGroupAfterIndex: number | null;
+  onNewGroupCommit: (name: string, afterIndex: number) => void;
+  onNewGroupCancel: () => void;
+}) {
+  const groups = useStyleLibraryStore((state) => state.libraries[kind]);
+  const failure = useStyleLibraryStore((state) => state.failures[kind]);
+  /* 编辑态归页面管（只落当前库）；这里只是读出来对位置 */
+  const editing = isCurrent ? pageEditing : null;
+  return (
+    <>
+      {failure ? null : (groups ?? []).map((group: KuGroup, index: number) => {
+        const isOpen = expanded.has(index);
+        return (
+          <div
+            key={`${kind}-${group.name}-${index}`}
+            className="mm-style__group"
+          >
+            {editing?.type === 'group' && editing.groupIndex === index ? (
+              <GroupHead
+                title={group.name}
+                open={isOpen}
+                onToggle={() => undefined}
+                titleSlot={
+                  <InlineEdit
+                    value={group.name}
+                    onCommit={(next) => void onRename({ type: 'group', groupIndex: index }, next)}
+                    onCancel={onCancelRename}
+                  />
+                }
+              />
+            ) : (
+              <GroupHead
+                title={group.name}
+                open={isOpen}
+                onToggle={() => {
+                  /* 刚拖完的那次 click 不算折叠 */
+                  if (draggedRef.current) {
+                    draggedRef.current = false;
+                    return;
+                  }
+                  onToggleGroup(index);
+                }}
+                onMouseDown={(event) => onGroupMouseDown(event, index)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  onGroupMenu(event, index, group.name);
+                }}
+                /* 拖拽落点靠这两个属性选节点（`useStyleActions` 的 `[data-group-head]`），别改名 */
+                data={{ 'data-group-head': '', 'data-group-index': index }}
+              />
+            )}
+
+            {isOpen ? (
+              <div className="mm-u-tiles">
+                {group.items.map((item, itemIndex) => (
+                  <ItemView
+                    key={`${item.name}-${itemIndex}`}
+                    kind={kind}
+                    item={item}
+                    groupIndex={index}
+                    itemIndex={itemIndex}
+                    editing={
+                      editing?.type === 'item' &&
+                      editing.groupIndex === index &&
+                      editing.itemIndex === itemIndex
+                    }
+                    onApply={onApply}
+                    onDescribe={(show, el) => onDescribe(kind, index, itemIndex, show, el)}
+                    onContextMenu={onItemMenu}
+                    onMouseDown={onItemMouseDown}
+                    onRename={(next) =>
+                      void onRename({ type: 'item', groupIndex: index, itemIndex }, next)
+                    }
+                    onCancelRename={onCancelRename}
+                  />
+                ))}
+
+                {/* 组末尾的「+」：四库各一个（原版 .add-svg / .add / .img-add） */}
+                <button
+                  type="button"
+                  className={`mm-style__add mm-style__add--${kind}`}
+                  title={ADD_TITLE[kind]}
+                  onClick={() => onAddItem(index)}
+                >
+                  <Icon name="iconchuangjian" />
+                </button>
+              </div>
+            ) : null}
+
+            {/* 新建分组占位：插在这一组之后（只落当前库的 section） */}
+            {isCurrent && newGroupAfterIndex === index ? (
+              <NewGroupRow
+                onCommit={(name) => onNewGroupCommit(name, index)}
+                onCancel={onNewGroupCancel}
+              />
+            ) : null}
+          </div>
+        );
+      })}
+
+      {/* 空库时没有「某组之后」，直接渲染在列表里（-1 = 原版空库建组约定） */}
+      {isCurrent && newGroupAfterIndex === -1 ? (
+        <NewGroupRow
+          onCommit={(name) => onNewGroupCommit(name, -1)}
+          onCancel={onNewGroupCancel}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export default function StylePage() {
   const load = useStyleLibraryStore((state) => state.load);
   const loadingLibrary = useStyleLibraryStore((state) => state.loading);
@@ -60,7 +222,12 @@ export default function StylePage() {
   const activeIndex = useStyleLibraryStore((state) => state.activeIndex);
   const activeKind = useStyleLibraryStore((state) => state.activeKind);
   const setActiveKind = useStyleLibraryStore((state) => state.setActiveKind);
+  const toggleExtraKind = useStyleLibraryStore((state) => state.toggleExtraKind);
+  /* Ctrl 点 tab 并进来一起显示的库（顺序 = 点击顺序；显示顺序见 KIND_ORDER） */
+  const extraKinds = useStyleLibraryStore((state) => state.extraKinds);
   const libraries = useStyleLibraryStore((state) => state.libraries);
+  const failures = useStyleLibraryStore((state) => state.failures);
+  /* 单选时页面只渲染这一条库；多选时按 KIND_ORDER 把命中的库上下连排 */
   const groups = useStyleLibraryStore((state) => state.libraries[state.activeKind]);
   const failure = useStyleLibraryStore((state) => state.failures[state.activeKind]);
 
@@ -86,6 +253,16 @@ export default function StylePage() {
       detail: describeDetail(describe.kind, item)
     };
   }, [describe, libraries]);
+
+  /*
+   * 多选显示（2026-11-05 用户定）：Ctrl 点 tab 把该库并进同一页，只是显示方式——
+   * 每个 section 仍用自己库的 kind 渲染，动作层（useStyleActions）照旧读 activeKind，零改动。
+   * 单选 = 原样一条；多选 = 命中的库按 KIND_ORDER 上下连排。
+   */
+  const visibleKinds: KuKind[] = extraKinds.length
+    ? [...KU_KINDS].sort((a, b) => KIND_ORDER[a] - KIND_ORDER[b])
+        .filter((kind) => kind === activeKind || extraKinds.includes(kind))
+    : [activeKind];
 
   /* 图片取色：拖一张图进来，量化出 10 色，弹层里应用或入库 */
   const [extracted, setExtracted] = useState<string[] | null>(null);
@@ -156,14 +333,48 @@ export default function StylePage() {
     runWithFeedback
   } = useStyleActions();
 
+  /** 组头右键菜单（原主体内联，现由两条 section 共用） */
+  function openGroupMenu(event: React.MouseEvent, groupIndex: number, groupName: string) {
+    event.preventDefault();
+    setMenu({
+      type: 'group',
+      groupIndex,
+      groupName,
+      x: event.clientX,
+      y: event.clientY
+    });
+  }
+
+  /** 格子右键菜单（原主体内联，现由两条 section 共用） */
+  function openItemMenu(
+    event: React.MouseEvent,
+    groupIndex: number,
+    itemIndex: number,
+    name: string
+  ) {
+    event.preventDefault();
+    setMenu({
+      type: 'item',
+      groupIndex,
+      itemIndex,
+      name,
+      x: event.clientX,
+      y: event.clientY
+    });
+  }
+
   /*
    * 页面状态话全仓唯一出口 = 底部消息行（常驻零位移）：索引 / 库读取失败、空库
    * 收敛到这一行，优先级 error > warn > info（`mergeMessages`）。
+   * 多选显示时四条 section 的失败臂全部并进这一行（同一消息行的多来源合并）。
    */
+  const sectionFailure = visibleKinds
+    .map((kind) => failures[kind])
+    .find((item) => item !== null) ?? null;
   const message = mergeMessages([
     failureMessage(indexFailure, () => void load()),
-    failureMessage(failure, () => void load()),
-    /* 「读到但是空的」= 有值数组 + 无失败臂；「没读过」不显示空态 */
+    failureMessage(sectionFailure, () => void load()),
+    /* 「读到但是空的」= 有值数组 + 无失败臂；「没读过」不显示空态（只看当前库） */
     groups !== null && !failure && !groups.length && !newGroup
       ? { kind: 'info' as const, text: '这个库是空的' }
       : null
@@ -183,14 +394,21 @@ export default function StylePage() {
 
       {indexFailure ? null : (
         <>
-          {/* 四等分 + 段间 1px 竖线（原版 .switch 结构） */}
+          {/* 四等分 + 段间 1px 竖线（原版 .switch 结构）；
+              Ctrl 点 tab = 把该库并进同一页显示（再点移出），普通点 = 独占 */}
           <div className="mm-tabs">
             {KU_KINDS.map((kind, index) => (
               <div key={kind} className="mm-tabs__cell">
                 <button
                   type="button"
-                  className={`mm-tabs__tab${kind === activeKind ? ' mm-tabs__tab--active' : ''}`}
-                  onClick={() => setActiveKind(kind)}
+                  aria-pressed={kind === activeKind || extraKinds.includes(kind)}
+                  className={`mm-tabs__tab${kind === activeKind ? ' mm-tabs__tab--active' : ''}${
+                    kind !== activeKind && extraKinds.includes(kind) ? ' mm-style__tab--extra' : ''
+                  }`}
+                  onClick={(event) => {
+                    if (event.ctrlKey || event.metaKey) toggleExtraKind(kind);
+                    else setActiveKind(kind);
+                  }}
                 >
                   {KU_TAB_LABELS[index]}
                 </button>
@@ -200,129 +418,39 @@ export default function StylePage() {
           </div>
 
           <div className="mm-style__list">
-            {(groups ?? []).map((group: KuGroup, index: number) => {
-              const isOpen = expanded.has(index);
-              return (
-                <div
-                  key={`${group.name}-${index}`}
-                  className="mm-style__group"
-                >
-                  {editing?.type === 'group' && editing.groupIndex === index ? (
-                    <GroupHead
-                      title={group.name}
-                      open={isOpen}
-                      onToggle={() => undefined}
-                      titleSlot={
-                        <InlineEdit
-                          value={group.name}
-                          onCommit={(next) =>
-                            void handleRename({ type: 'group', groupIndex: index }, next)
-                          }
-                          onCancel={() => setEditing(null)}
-                        />
-                      }
-                    />
-                  ) : (
-                    <GroupHead
-                      title={group.name}
-                      open={isOpen}
-                      onToggle={() => {
-                        /* 刚拖完的那次 click 不算折叠 */
-                        if (draggedRef.current) {
-                          draggedRef.current = false;
-                          return;
-                        }
-                        toggleGroup(index);
-                      }}
-                      onMouseDown={(event) => handleGroupMouseDown(event, index)}
-                      onContextMenu={(event) => {
-                        event.preventDefault();
-                        setMenu({
-                          type: 'group',
-                          groupIndex: index,
-                          groupName: group.name,
-                          x: event.clientX,
-                          y: event.clientY
-                        });
-                      }}
-                      /* 拖拽落点靠这两个属性选节点（`useStyleActions` 的 `[data-group-head]`），别改名 */
-                      data={{ 'data-group-head': '', 'data-group-index': index }}
-                    />
-                  )}
-
-                  {isOpen ? (
-                    <div className="mm-u-tiles">
-                      {group.items.map((item, itemIndex) => (
-                        <ItemView
-                          key={`${item.name}-${itemIndex}`}
-                          kind={activeKind}
-                          item={item}
-                          groupIndex={index}
-                          itemIndex={itemIndex}
-                          editing={
-                            editing?.type === 'item' &&
-                            editing.groupIndex === index &&
-                            editing.itemIndex === itemIndex
-                          }
-                          onApply={(group_, item_, name, event) =>
-                            void handleApply(group_, item_, name, event)
-                          }
-                          onDescribe={(show, el) =>
-                            setDescribe(
-                              show && el
-                                ? { kind: activeKind, groupIndex: index, itemIndex, el }
-                                : null
-                            )
-                          }
-                          onContextMenu={(event, group_, item_, name) => {
-                            event.preventDefault();
-                            setMenu({
-                              type: 'item',
-                              groupIndex: group_,
-                              itemIndex: item_,
-                              name,
-                              x: event.clientX,
-                              y: event.clientY
-                            });
-                          }}
-                          onMouseDown={handleItemMouseDown}
-                          onRename={(next) =>
-                            void handleRename({ type: 'item', groupIndex: index, itemIndex }, next)
-                          }
-                          onCancelRename={() => setEditing(null)}
-                        />
-                      ))}
-
-                      {/* 组末尾的「+」：四库各一个（原版 .add-svg / .add / .img-add） */}
-                      <button
-                        type="button"
-                        className={`mm-style__add mm-style__add--${activeKind}`}
-                        title={ADD_TITLE[activeKind]}
-                        onClick={() => void handleAddItem(index)}
-                      >
-                        <Icon name="iconchuangjian" />
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {/* 新建分组占位：插在这一组之后 */}
-                  {newGroup?.afterIndex === index ? (
-                    <NewGroupRow
-                      onCommit={(name) => void handleCreateGroup(name, index)}
-                      onCancel={() => setNewGroup(null)}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-
-            {/* 空库时没有「某组之后」，直接渲染在列表里 */}
-            {!groups?.length && newGroup ? (
-              <NewGroupRow
-                onCommit={(name) => void handleCreateGroup(name, -1)}
-                onCancel={() => setNewGroup(null)}
+            {visibleKinds.map((viewKind) => (
+              <StyleLibrarySection
+                key={viewKind}
+                kind={viewKind}
+                isCurrent={viewKind === activeKind}
+                expanded={expanded}
+                onToggleGroup={toggleGroup}
+                onGroupMenu={openGroupMenu}
+                onGroupMouseDown={handleGroupMouseDown}
+                onAddItem={(groupIndex) => void handleAddItem(groupIndex)}
+                onApply={(groupIndex, itemIndex, name, event) =>
+                  void handleApply(groupIndex, itemIndex, name, event)
+                }
+                onDescribe={(describeKind, groupIndex, itemIndex, show, el) =>
+                  setDescribe(
+                    show && el
+                      ? { kind: describeKind, groupIndex, itemIndex, el }
+                      : null
+                  )
+                }
+                onItemMenu={openItemMenu}
+                onItemMouseDown={handleItemMouseDown}
+                onRename={(target, next) => void handleRename(target, next)}
+                onCancelRename={() => setEditing(null)}
+                pageEditing={editing}
+                draggedRef={draggedRef}
+                newGroupAfterIndex={viewKind === activeKind ? newGroup?.afterIndex ?? null : null}
+                onNewGroupCommit={(name, afterIndex) =>
+                  void handleCreateGroup(name, afterIndex)
+                }
+                onNewGroupCancel={() => setNewGroup(null)}
               />
-            ) : null}
+            ))}
           </div>
         </>
       )}
