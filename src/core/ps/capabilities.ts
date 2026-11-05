@@ -591,7 +591,12 @@ export const CAP = {
     parse: exportPathRaw
   },
 
-  /** 导出当前图片：整块 `cyExport`，导出比普通写慢，给 120s */
+  /**
+   * 导出当前图片：整块 `cyExport`。
+   *
+   * 超时用**读档 30s**（用户 2026-11-05 定，不为导出单独加档）：大图导出可能超过 30s，
+   * 那时会先报超时、而 PS 还在导 —— 已知取舍，真机频繁撞上再加档。
+   */
   exportImage: {
     fn: 'cy_ExportImage', gate: 'vendor', channel: 'dispatch', timeout: READ_TIMEOUT,
     label: '导出图片', parse: dispatchAck

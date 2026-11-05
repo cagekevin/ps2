@@ -1121,6 +1121,13 @@ function mm_doc_exportPath(pathType, relativeDir, baseDir) {
 			if (!folder.exists) folder.create();
 			if (!folder.exists) throw new Error("无法创建导出文件夹：" + cursor);
 		}
-		return cursor;
+		/*
+		 * **必须回正斜杠**：这个字符串会进 `cy_ExportImage` 的调度载荷，而 `ps_onJsx`
+		 * 对对象参数只做 `JSON.stringify` 再套单引号（`jsx/vendor.jsx:8790`），**不再转义反斜杠**。
+		 * 于是 `H:\05…` 里的 `\0` 在 `JSON.parse` 时是非法转义 → vendor 弹「转换对象失败」模态框
+		 * → `evalScript` 卡住 → 前端 30s 报超时（2026-11-05 真机踩到，导出其实一个文件都没出）。
+		 * 官方面板同样全程正斜杠（`path.psd` 与手输路径都转 `/`），这里照它的做法。
+		 */
+		return String(cursor).replace(/\\/g, "/");
 	});
 }

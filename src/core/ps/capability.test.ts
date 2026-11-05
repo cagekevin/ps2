@@ -231,6 +231,9 @@ describe('CAP', () => {
      *
      * 例外标记在能力上（`longTask: true`），**不在测试里维护名字清单**：
      * 两份真相迟早漂，而「标了就长、没标就 30s」这条判据一处就能验完。
+     *
+     * **导出也在这个 30s 里**（用户 2026-11-05 定）：大图导出可能超时，是已知取舍；
+     * 真要放宽就加档，别偷偷给某一行改超时。
      */
     const dispatches = Object.entries(CAP).filter(([, spec]) => spec.channel === 'dispatch');
 

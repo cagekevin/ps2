@@ -190,7 +190,7 @@
 | 缩放行样式 | `src/components/ZoomRow/zoom-row.css` | 缩放行 / 翻转行的公共样式（常用页与字体面板共用）：触发器定宽 `--mm-zoom-trigger-w`、行内档位等分、抽屉 5 列；抽屉宿主 `flex: 0 0 100%` 才能整宽推开 |
 | 勾选框 | `src/components/CheckBox/index.tsx` | 12×12 / 圆角 3 / 1px `--mm-color-border-control` / 右空 6；原生 input |
 | 单选框 | `src/components/RadioButton/index.tsx` | 12×12 / `50%` 正圆 / 同 `name` 才互斥 |
-| 输入框 | `src/components/TextField/index.tsx` | 左图标 / 右插槽 + Enter 提交；内部渲染 `ui.Input`；**不定宽**——外壳吃满容器（`flex: 1 1 auto`），要定宽给那个页面的局部 css（`STYLE.md` §6.1），组件不出宽度档位 |
+| 输入框 | `src/components/TextField/index.tsx` | 左图标 / 右插槽 + Enter 提交（**失焦提交可选**：传 `onBlur` 才有，不传保持「失焦不提交」——导出抽屉 6 个框都传，因为导出按钮在面板上、不经过抽屉）；内部渲染 `ui.Input`；**不定宽**——外壳吃满容器（`flex: 1 1 auto`），要定宽给那个页面的局部 css（`STYLE.md` §6.1），组件不出宽度档位 |
 | 确认弹窗 | `src/components/Confirm/index.tsx` | 删除类操作必须二次确认 |
 | 确认入口 | `src/components/Confirm/useConfirm.tsx` | `await confirm()`，页面唯一用法 |
 | 内联编辑 | `src/components/InlineEdit/index.tsx` | Enter 确认 / Esc 取消 / 失焦确认 |

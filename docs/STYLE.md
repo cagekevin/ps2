@@ -30,7 +30,7 @@
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |
 | 按钮 | `components/ui` 的 `Button`（**全仓唯一渲染入口**，支持 `ref`）。`variant` **闭合在类型里**，写错编译失败：<br>**不传 = 实心灰底**（`--mm-color-bg-raised`）—— 这是绝大多数：抽屉里的动作按钮、弹窗的取消/确定、数值档位、九宫格预设；<br>`ghost` = 透明无底 —— 只给**底栏图标按钮**与**行内小动作**（下拉项删除、「复制/清空」这类文字链）；<br>`primary` = 蓝底（一行里唯一的主操作）；<br>`danger` = 红字（不可逆动作的确认）。<br>判据：**原版截图里凡是成块的按钮都是灰底实心**，透明只出现在「它旁边已经有底」的场合 | 手写 `<button className="mm-btn …">`（那就是第二个入口，2026-10-31 已从 25 处收净）；页面写底色 / 圆角 / 字号；把本该实心的按钮挂成 `ghost`（会变成一段没有边界的文字） |
-| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，**没有 `variant`**：表面按所在表面走，见规则 15 / 19）；「左图标 + 右插槽 + Enter 提交」用 `components/TextField`（**宽度吃满容器，组件不提供宽度档位**；某处真要定宽就给那个页面的局部 css）。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」、给输入框加宽度档位 prop |
+| 输入框 | `components/ui` 的 `Input`（**全仓唯一渲染入口**，**没有 `variant`**：表面按所在表面走，见规则 15 / 19）；「左图标 + 右插槽 + Enter 提交」用 `components/TextField`（**宽度吃满容器，组件不提供宽度档位**；某处真要定宽就给那个页面的局部 css；**失焦提交可选**：传 `onBlur` 才有，不传就是「失焦不提交」）。表面（底色 / 描边 / 圆角 / 文字色 / 字号）只在 `ui.css` 的 `.mm-input, .mm-input-surface` 一处给；**底色按所在表面分档**（见 §7 规则 13），由表面声明 `--mm-input-bg`，控件只消费 | 页面写裸 `<input>`、自己画边框与圆角、给输入框传裸 `width`、覆盖 `background`、在调用点判断「该用哪档底色」、给输入框加宽度档位 prop |
 | 多行输入 | `components/ui` 的 `Textarea`（**全仓唯一多行输入入口**）。表面与 `Input` 同一套（`--mm-input-bg` / `--mm-input-color`），**高度与 `resize` 不归它**：能多高、能不能拉由承载它的弹窗 / 页面局部 css 给 | 页面写裸 `<textarea>`、自己画边框与圆角、给控件加高度档位 |
 | 输入位外壳 | 视觉上是输入位、但元素不是 input 的壳（下拉触发器、复合数字框外壳）挂 `mm-input-surface` | 在自己的 class 里再抄一份底色 / 描边 / 圆角 |
 | 遮罩 | `.mm-modal-mask`（`styles/global.css`）：居中弹窗、全屏加载、局部加载共用；默认 `inset: 0 0 0 var(--mm-nav-w)` **只盖右侧正文区、不盖左侧菜单栏**；层级取 `--mm-z-modal`，**低于浮层档**（弹窗内的下拉 / 菜单是 Portal 到 body 的浮层，遮罩压上去它们就看不见）；输入弹窗走 faint 档。**全屏变体** `.mm-modal-mask--fullscreen`（`inset:0`，盖住整个面板含菜单栏）：只给需要整屏覆盖的大弹窗（批量文字 / 添加动作）用，与 `.mm-modal--fullscreen` 配套 | 页面自绘 `position: fixed; inset: 0` + 半透明底；拿 `--mm-color-bg-hover`(hover 叠白) 或 `--mm-color-bg-base`(页面底色) 当遮罩 |
@@ -40,7 +40,7 @@
 Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 （`hooks/input-method-enter` 里的 `enterSubmit`，判据 + `preventDefault` + 执行三件事一处）。
 
-三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层外壳（左图标 / 右插槽 / Enter 提交）。
+三个输入件的关系：`TextField` **内部就渲染 `Input`**，只是多一层外壳（左图标 / 右插槽 / Enter 提交，外加**可选**的失焦提交）。
 字体面板、输入弹窗、层级编辑、标签输入、就地编辑**全部渲染 `Input`**，各自的 css 只覆盖
 宽度 / 间距 / 文字色 / 焦点描边——**底色与圆角不许覆盖**，它们只在一个地方给
 （`ui.css` 的 `.mm-input, .mm-input-surface`）。改输入框颜色 = 改 `tokens.css` 的 `--mm-color-bg-input` 一行。

@@ -4,8 +4,11 @@
  * 11 个 `cyExport` 字段 + `compress` 的 4 个子键，逐条照 `13-常用-V2` §1.1-E / §5.5。
  * 写设置一律 `setOption('cyExport.<字段>')` / `('cyExport.compress.<子键>')`，**面板不读写文件**。
  *
- * 两处与原版不同（都是已登记的偏离，别顺手改回去）：
- *   - **A-3**：品质框 Enter 提交（官方 blur）。不为一处 blur 给 `TextField` 加第五种提交时机。
+ * 与原版不同的一处（已登记的偏离，别顺手改回去）：
+ *   - **A-3 已收口（2026-11-05）**：原来只有 Enter 提交、失焦不提交（官方是 blur）。真机上
+ *     「填了目录名不按 Enter 就去点导出」时命令读到的是旧值 —— 因为导出按钮在面板上、
+ *     不经过这个抽屉。现在 `TextField` 多了**可选** `onBlur`，本抽屉 6 个文本框全部接上
+ *     「失焦即生效」（值没变不写盘），Enter 仍然有效。
  *   - 批量 PSD 的 `>30` 确认：页面先 `listPsdFiles()` 拿数量 → 超阈值才 `useConfirm` →
  *     再调 `exportPsdFiles(files)`。**阈值与判据只有一处**（`domain.needsBatchConfirm`），
  *     命令层不再重复判（那条分支不可达，已删）。
@@ -113,8 +116,32 @@ export function ExportPanel() {
       writeCompress('watermark', '');
       return;
     }
-    setField('watermark', picked);
-    writeCompress('watermark', picked);
+    /*
+     * 与手输那条同一个归一：`\` → `/`。水印路径也会进 `cy_ExportImage` 的**调度载荷**，
+     * 而 `ps_onJsx` 对对象参数只做 `JSON.stringify` 再套单引号、不再转义反斜杠 ——
+     * `C:\Users\…` 这种串会让 vendor 的 `JSON.parse` 抛「转换对象失败」并卡住通道。
+     */
+    const next = picked.replace(BACKSLASH, '/');
+    setField('watermark', next);
+    writeCompress('watermark', next);
+  }
+
+  /**
+   * 失焦即生效（官方 blur 语义）：值没变就不写盘 —— Enter 提交后再失焦不会重复写。
+   * `transform` 里做归一（去空白 / `\` → `/`），比较与写盘用同一份值，避免「看着一样却再写一次」。
+   *
+   * 为什么需要：导出按钮在面板上直接调命令、**不经过这个抽屉**，所以「填了目录名/名字
+   * 不按 Enter 就直接点导出」时，命令读到的还是旧值（2026-11-05 真机踩到：`subdir` 从没落盘）。
+   */
+  function commit(
+    key: keyof typeof fields,
+    transform: (value: string) => string,
+    save: (value: string) => void
+  ): void {
+    const next = transform(draft[key]);
+    if (next === fields[key]) return;
+    setField(key, next);
+    save(next);
   }
 
   function commitQuality(): void {
@@ -180,6 +207,7 @@ export function ExportPanel() {
               value={draft.quality}
               onChange={(next) => setField('quality', next)}
               onSubmit={commitQuality}
+              onBlur={commitQuality}
             />
           </div>
         )}
@@ -205,6 +233,7 @@ export function ExportPanel() {
               setField('subdir', next);
               write('subdir', next);
             }}
+            onBlur={() => commit('subdir', (value) => value.trim(), (value) => write('subdir', value))}
           />
           <div className="mm-u-row">
             <RadioButton
@@ -235,6 +264,7 @@ export function ExportPanel() {
             value={flag(config.layerName) ? layerName : draft.name}
             onChange={(next) => setField('name', next)}
             onSubmit={(value) => write('name', value.trim())}
+            onBlur={() => commit('name', (value) => value.trim(), (value) => write('name', value))}
           />
           <div className="mm-u-row">
             <CheckBox
@@ -289,12 +319,14 @@ export function ExportPanel() {
             value={draft.width}
             onChange={(next) => setField('width', next)}
             onSubmit={(value) => writeCompress('width', value.trim())}
+            onBlur={() => commit('width', (value) => value.trim(), (value) => writeCompress('width', value))}
           />
           <TextField
             title={'导出高度'}
             value={draft.height}
             onChange={(next) => setField('height', next)}
             onSubmit={(value) => writeCompress('height', value.trim())}
+            onBlur={() => commit('height', (value) => value.trim(), (value) => writeCompress('height', value))}
           />
         </div>
         <TextField
@@ -306,6 +338,13 @@ export function ExportPanel() {
             setField('watermark', next);
             writeCompress('watermark', next);
           }}
+          onBlur={() =>
+            commit(
+              'watermark',
+              (value) => value.trim().replace(BACKSLASH, '/'),
+              (value) => writeCompress('watermark', value)
+            )
+          }
           rightSlot={
             <IconButton name="iconwenjianjiaguanli" className="mm-icon-btn--inline" title={'选择水印文件'} onClick={pickWatermark} />
           }

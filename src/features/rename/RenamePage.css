@@ -24,6 +24,13 @@
      滚动由父级 `.mm-rename__body` 负责（与 Vue 版 `u-scroll` 在 body 上一致）。 */
 }
 
+/* 模式条铺满：`.mm-tabs` 默认 `flex: 0 0 auto`（样式页整行独占的用法），
+   这里与漏斗同排，让它吃掉漏斗以外的宽度，两格才等分铺满（样式页同款观感） */
+.mm-rename__tabs{
+  flex: 1;
+  min-width: 0;
+}
+
 /* 一组 = 组头 + 预设项，组内间距同样取组间 8（与动作页 `.mm-btn-grid` 在组内的取法一致） */
 .mm-rename__group{
   display: flex;

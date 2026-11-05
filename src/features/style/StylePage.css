@@ -62,6 +62,12 @@
   outline: var(--mm-border-w) solid var(--mm-color-border);
 }
 
+/* 样式图的 hover 描边**内缩 2px**（2026-11-05 用户指定）：描边贴满 32 格显得框比图大，
+   outline-offset 负值把线画进格子内缘；只对 --style 生效，四类描边语言不变、只调这一个值 */
+.mm-style__item--style:hover:not(.mm-style__item--editing){
+  outline-offset: calc(-1 * var(--mm-space-2));
+}
+
 .mm-style__item--color{
   width: var(--mm-swatch-w);
   height: var(--mm-swatch-h);
@@ -73,7 +79,9 @@
   border-radius: var(--mm-radius-md);
 }
 
-/* 字体卡片：两行内容整体**居中**（水平 + 垂直），不是贴左上角 */
+/* 字体卡片：两行内容整体**居中**（水平 + 垂直），不是贴左上角。
+   卡片带**灰底**（2026-11-05 用户指定）：文字卡片没有画面，无底时和页面融成一片看不出格子边界；
+   取按钮底 `--mm-color-bg-raised`（与 BottomBar/数值按钮同档灰） */
 .mm-style__item--font,
 .mm-style__item--editing{
   width: var(--mm-font-card-w);
@@ -83,13 +91,15 @@
   justify-content: center;
   border-radius: var(--mm-radius-md);
   text-align: center;
+  background: var(--mm-color-bg-raised);
 }
 
 .mm-style__item--editing{
   cursor: default;
 }
 
-/* 样式库：26×26 缩略图，圆角 4（与渐变、字体卡片同一档圆角） */
+/* 样式库：32×32 缩略图（2026-11-05 放大，8×32+7×4=284 最小宽整除排满），圆角 4（与渐变、字体卡片同一档圆角）。
+   不加底：缩略图本身铺满格子，垫底只会改变图外露出的边色 */
 .mm-style__item--style{
   width: var(--mm-style-thumb);
   height: var(--mm-style-thumb);

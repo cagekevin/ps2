@@ -67,10 +67,11 @@ export default function RenamePage() {
   return (
     <div className="mm-rename">
       <div className="mm-rename__body">
-        {/* 1. 模式条：与样式页四库导航同一份 `.mm-tabs`；右侧过滤用 `IconButton` */}
+        {/* 1. 模式条：与样式页四库导航同一份 `.mm-tabs`（等分铺满 + 段间竖线）；
+            过滤漏斗留在行尾，`.mm-rename__tabs` 让两格分掉漏斗以外的整行宽 */}
         <div className="mm-u-row">
-          <div className="mm-tabs" role="tablist" aria-label={'重命名图层'}>
-            {MODE_OPTIONS.map((option) => (
+          <div className="mm-tabs mm-rename__tabs" role="tablist" aria-label={'重命名图层'}>
+            {MODE_OPTIONS.map((option, index) => (
               <div key={option.value} className="mm-tabs__cell">
                 <button
                   type="button"
@@ -85,6 +86,7 @@ export default function RenamePage() {
                 >
                   {option.label}
                 </button>
+                {index !== MODE_OPTIONS.length - 1 ? <span className="mm-tabs__line" /> : null}
               </div>
             ))}
           </div>

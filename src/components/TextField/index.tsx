@@ -12,8 +12,12 @@
  * 由**那个页面的局部 css 给容器宽度**（`STYLE.md` §6.1 允许页面覆盖宽度），
  * 不许在本组件加档位 prop —— 档位会与容器宽度同时生效，一个概念两种写法。
  *
- * 提交时机：只在 Enter（原版 `@keyup.enter` → `inputSize`），**失焦不提交**；
+ * 提交时机：**默认只在 Enter**（原版 `@keyup.enter` → `inputSize`），失焦不提交；
  * 输入法选词时的 Enter 不算提交（判据在 `hooks/input-method-enter`）。
+ *
+ * `onBlur` 是**可选**的第四种时机：不传就保持「失焦不提交」的老行为（现有调用点全都不传）。
+ * 给它的场景是「用户填完直接去点别的按钮」——导出抽屉就是：填了目录名不按 Enter 就永远
+ * 不落盘，导出时读到的还是空值（2026-11-05 真机踩到）。
  */
 
 import type { ReactNode } from 'react';
@@ -28,6 +32,8 @@ interface Props {
   onChange: (value: string) => void;
   /** Enter 提交；不传则 Enter 不做任何事 */
   onSubmit?: (value: string) => void;
+  /** 失焦提交（可选）：不传就保持「失焦不提交」 */
+  onBlur?: (value: string) => void;
   /**
    * 必填：这批输入框都没有可见的文字标签（靠左侧图标表意），
    * 不传就等于把「这个框是干什么的」只留给眼睛；它同时当悬停提示与 `aria-label`
@@ -52,6 +58,7 @@ export function TextField({
   value,
   onChange,
   onSubmit,
+  onBlur,
   title,
   placeholder,
   icon,
@@ -75,6 +82,7 @@ export function TextField({
         disabled={disabled}
         aria-label={title}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur ? () => onBlur(value) : undefined}
         onKeyDown={enterSubmit(() => onSubmit?.(value))}
       />
       {rightSlot ? <span className="mm-text-field__right">{rightSlot}</span> : null}
