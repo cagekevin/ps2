@@ -117,14 +117,17 @@
   --mm-z-toast-top: 1200;
 
   /* ---------- 7. 各页专有尺寸（按角色保留，不并档） ---------- */
-  /* 样式页格子：四库各自的格子尺寸，原版逐个实测，不共用一套 */
-  --mm-swatch-w: 25px;
-  --mm-swatch-h: 25px;
-  --mm-gradient-w: 50px;
+  /* 样式页格子：四库各自的格子尺寸，不共用一套。
+     2026-11-05 按面板最小宽重算：内容宽 = manifest 最小 300 − 页边 8×2 = 284，
+     每类取「n 格 + (n−1)×4 间隙 = 284」的整除解，最小宽下换行正好排满不留空隙
+     （色块 9 / 渐变 6 / 字体卡 4 / 样式图 9；高度沿原版不动） */
+  --mm-swatch-w: 28px;
+  --mm-swatch-h: 28px;
+  --mm-gradient-w: 44px;
   --mm-gradient-h: 26px;
-  --mm-font-card-w: 70px;
+  --mm-font-card-w: 68px;
   --mm-font-card-h: 44px;
-  --mm-style-thumb: 26px;
+  --mm-style-thumb: 28px;
 
   /* 字体管理页 */
   /* 列表项的占位估算高度（content-visibility 用），随预览字号同步 */

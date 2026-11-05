@@ -246,8 +246,9 @@ export async function addFontFromLayer(
 /**
  * 把当前图层样式保存进分组（原版 `:51532-51560`）。
  *
- * `ys_AddStyle` 由 vendor 负责写 `kuStyle/<groupId>.psd` 和缩略图；
- * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后调用方重读。
+ * 分工（盘上对账证实 2026-11-05）：vendor `ys_AddStyle` 只写 `kuStyle/<groupId>.psd|png`
+ * 和缩略图，**不写库 JSON 条目**；条目（宿主原样返回的 `{name,id,layerId}`）由这里
+ * `addKuItem` 落库——两步缺一，界面就「提示成功但列表不出现」。
  */
 export async function addStyleFromLayer(
   warehouse: StyleWarehouse,
@@ -257,7 +258,10 @@ export async function addStyleFromLayer(
   const groupId = readKuGroupId(warehouse, kind, groupIndex);
   if (groupId.status === 'error') return groupId;
 
-  return saveLayerStyle(groupId.value);
+  const saved = await saveLayerStyle(groupId.value);
+  if (saved.status === 'error') return saved;
+
+  return addKuItem(warehouse, kind, groupIndex, saved.value);
 }
 
 /* ---------------- 色板（原版 :50348-50364 / :50260-50290） ---------------- */

@@ -29,7 +29,8 @@ import { failWithDetail, ok, type Result } from '../../types/result';
 import type { ColorPair } from '../../types/color';
 import { callCapability, callDirect } from './capability';
 import { CAP } from './capabilities';
-import { parseErrEnvelope } from './raw';
+import { isRecord } from '../../types/guards';
+import { envelopeMessage, parseJsxRaw } from './raw';
 
 /** 应用颜色要的完整色值：四个分量都必填 —— 缺一个，vendor 拿到残缺对象既不报错也不上色 */
 export interface AppColor {
@@ -103,10 +104,12 @@ export function getGradientInfo(): Promise<Result<unknown>> {
  * 发 `{ delArr: [], groupId, envDir: '/SheJiZhuLi' }`——`delArr` 是「删除样式后
  * 告诉 vendor 哪些该删」的临时清单，添加新样式不需要删东西，传空数组。
  *
- * vendor 自己负责把 PSD / 缩略图写进 `kuStyle/<groupId>.psd|png`；
- * 库文件是否由它更新未实测（app 同位置也是 UNVERIFIED），成功后前端重读一次。
+ * 返回宿主给的**新条目记录**（`{ name, id, layerId }`，与库 JSON 里条目同形）。
+ * vendor 只负责写 `kuStyle/<groupId>.psd|png` 与缩略图，**不写库 JSON 条目**——
+ * 盘上对账证实（2026-11-05）：`kuStyle/` 三个新 PNG 在，库 JSON 里没有对应项；
+ * 条目由调用方（`commands/style.ts` 的 `addStyleFromLayer`）用 `addKuItem` 落库。
  */
-export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
+export async function saveLayerStyle(groupId: string): Promise<Result<Record<string, unknown>>> {
   /* envDir 是原版写 PSD 时的目录名，与数据根同值——别在这里再写一份字面量 */
   const call = await callDirect(
     'ys_AddStyle',
@@ -115,13 +118,23 @@ export async function saveLayerStyle(groupId: string): Promise<Result<void>> {
   );
   if (call.status === 'error') return call;
 
-  const err = parseErrEnvelope(call.value);
-  if (err.status === 'error') return err;
-  if (err.value === 1) {
-    return failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `saveLayerStyle raw:${call.value}`);
+  const parsed = parseJsxRaw(call.value);
+  if (parsed.status === 'error') return parsed;
+
+  const err = isRecord(parsed.value) ? parsed.value.err : undefined;
+  if (err === 1) {
+    return failWithDetail(
+      'PS_ERROR',
+      envelopeMessage(parsed.value) || MSG.codeReason.PS_ERROR,
+      `saveLayerStyle raw:${call.value}`
+    );
   }
 
-  return ok(undefined);
+  const data = isRecord(parsed.value) ? parsed.value.data : undefined;
+  if (!isRecord(data)) {
+    return failWithDetail('PS_BAD_PAYLOAD', MSG.badPayload, `saveLayerStyle raw:${call.value}`);
+  }
+  return ok(data);
 }
 
 /** 应用渐变：原版传的是项里的 gradient 字段 */
