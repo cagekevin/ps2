@@ -6,6 +6,9 @@
  *
  * 颜色与渐变对都是本地 state（照原版 arrCol / arrGrads）：删一个色，含它的渐变对一起消失。
  * 落盘 / 应用通过回调交给页面。
+ *
+ * 壳与「添加动作」「批量文字」同走公共 fullscreen 弹窗壳（2026-11-05 从固定宽小卡迁入）；
+ * 内容超 70% 高时滚动区 `__body` 内滚，底部按钮留在壳上。
  */
 import { useState, type CSSProperties } from 'react';
 import { Button, stopClickPropagation } from '../../../components/ui';
@@ -64,64 +67,68 @@ export function ImgColorDialog({
   }
 
   return (
-    <div className="mm-modal-mask" onClick={onClose}>
+    <div className="mm-modal-mask mm-modal-mask--fullscreen" onClick={onClose}>
       <div
         ref={containerRef}
-        className="mm-u-col mm-modal mm-imgcolor"
+        className="mm-u-col mm-modal mm-modal--fullscreen mm-imgcolor"
         role="dialog"
         aria-modal="true"
         aria-label="提取的颜色"
         onClick={stopClickPropagation}
         onKeyDown={onKeyDown}
       >
-        <div className="mm-imgcolor__title">提取的颜色</div>
-        <div className="mm-u-tiles">
-          {hexes.map((hex, index) => (
-            <button
-              key={`${hex}-${index}`}
-              type="button"
-              className="mm-swatch"
-              style={{ '--mm-swatch': hex } as CSSProperties}
-              title="左键应用，右键删除"
-              onClick={() => onApplyColor(hex)}
-              onContextMenu={contextToRemove(() => removeColorAt(index))}
-            />
-          ))}
-        </div>
-        <div className="mm-u-tiles">
-          <Button variant="primary" className="mm-imgcolor__btn" onClick={() => onSaveColorGroup(hexes)}>
-            保存到颜色
-          </Button>
-          <Button className="mm-imgcolor__btn" onClick={() => onSaveSwatch(hexes)}>
-            保存到色板
-          </Button>
-        </div>
+        <div className="mm-modal__title">提取的颜色</div>
+        {/* 70% 高度装不下全部渐变条：滚动区照 add-action-dialog.css:22-31 的结构包住内容，
+            底部按钮留在壳上。 */}
+        <div className="mm-imgcolor__body">
+          <div className="mm-u-tiles">
+            {hexes.map((hex, index) => (
+              <button
+                key={`${hex}-${index}`}
+                type="button"
+                className="mm-swatch"
+                style={{ '--mm-swatch': hex } as CSSProperties}
+                title="左键应用，右键删除"
+                onClick={() => onApplyColor(hex)}
+                onContextMenu={contextToRemove(() => removeColorAt(index))}
+              />
+            ))}
+          </div>
+          <div className="mm-u-tiles">
+            <Button variant="primary" className="mm-imgcolor__btn" onClick={() => onSaveColorGroup(hexes)}>
+              保存到颜色
+            </Button>
+            <Button className="mm-imgcolor__btn" onClick={() => onSaveSwatch(hexes)}>
+              保存到色板
+            </Button>
+          </div>
 
-        <div className="mm-divider mm-imgcolor__hr" />
+          <div className="mm-divider mm-imgcolor__hr" />
 
-        <div className="mm-imgcolor__title">提取的渐变色</div>
-        <div className="mm-u-tiles">
-          {pairs.map(({ pair, css }) => (
-            <button
-              key={css}
-              type="button"
-              className="mm-imgcolor__grad"
-              style={{ '--mm-swatch': css } as CSSProperties}
-              title="左键应用，右键删除"
-              onClick={() => onApplyGradient(pair)}
-              onContextMenu={contextToRemove(() =>
-                removeGradientAt(pairs.findIndex((g) => g.css === css))
-              )}
-            />
-          ))}
+          <div className="mm-modal__title">提取的渐变色</div>
+          <div className="mm-u-tiles">
+            {pairs.map(({ pair, css }) => (
+              <button
+                key={css}
+                type="button"
+                className="mm-imgcolor__grad"
+                style={{ '--mm-swatch': css } as CSSProperties}
+                title="左键应用，右键删除"
+                onClick={() => onApplyGradient(pair)}
+                onContextMenu={contextToRemove(() =>
+                  removeGradientAt(pairs.findIndex((g) => g.css === css))
+                )}
+              />
+            ))}
+          </div>
+          <Button
+            variant="primary"
+            className="mm-imgcolor__btn mm-imgcolor__btn--wide"
+            onClick={() => onSaveGradientGroup(hexes)}
+          >
+            保存渐变
+          </Button>
         </div>
-        <Button
-          variant="primary"
-          className="mm-imgcolor__btn mm-imgcolor__btn--wide"
-          onClick={() => onSaveGradientGroup(hexes)}
-        >
-          保存渐变
-        </Button>
       </div>
     </div>
   );
