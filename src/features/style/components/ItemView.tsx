@@ -59,6 +59,7 @@ export function ItemView({
         type="button"
         className="mm-style__item mm-style__item--style"
         title={item.name}
+        data-kind={kind}
         data-group-index={groupIndex}
         data-item-index={itemIndex}
         onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
@@ -81,6 +82,7 @@ export function ItemView({
         type="button"
         className="mm-style__item mm-style__item--font"
         title={item.name}
+        data-kind={kind}
         data-group-index={groupIndex}
         data-item-index={itemIndex}
         onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}
@@ -118,6 +120,7 @@ export function ItemView({
       className={`mm-style__item mm-style__item--${kind === 'gradient' ? 'gradient' : 'color'}`}
       style={{ '--mm-swatch': background } as CSSProperties}
       title={item.name}
+      data-kind={kind}
       data-group-index={groupIndex}
       data-item-index={itemIndex}
       onClick={(event) => onApply(groupIndex, itemIndex, item.name, event)}

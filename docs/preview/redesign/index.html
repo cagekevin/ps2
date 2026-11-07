@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8" /><title>PS 原生风格 · 重设计稿</title>
+<style>
+  body{margin:0;padding:20px;background:#181818;color:#d4d4d4;font:12px/1.6 "Segoe UI","Microsoft YaHei UI",sans-serif}
+  h1{font-size:14px;font-weight:400;margin:0 0 6px}
+  .note{margin:0 0 18px;color:#9c9c9c;font-size:12px;max-width:900px;line-height:1.8}
+  .note code{color:#d4d4d4}
+  .row{display:flex;flex-wrap:wrap;gap:18px}
+  figure{margin:0}
+  figcaption{font-size:11px;color:#9c9c9c;margin-bottom:6px}
+  iframe{border:1px solid #333;background:#2b2b2b;display:block}
+</style></head>
+<body>
+<h1>PS 原生风格 · 重设计稿</h1>
+<p class="note">
+预览稿：不参与构建、不改 <code>src/</code>，只用来定视觉方向。与现行界面的差别：<br>
+① 直角 + <code>1px</code> 细线，去掉 4 / 6 圆角与实心灰按钮的浮起感；
+② 面板与内容区同一个底 <code>#2b2b2b</code>，只靠暗线分区，不叠第二层底；<br>
+③ 控件高 <code>22</code>、字号 <code>12/11</code>、图标 <code>16</code>，行距压紧；
+④ 输入位深一档 <code>#1e1e1e</code> 带亮线边，只有焦点才出现蓝；<br>
+⑤ 蓝 <code>#2680eb</code> 只给焦点 / 选中 / 主操作，hover 一律叠白；
+⑥ 下拉与浮层改深色 <code>#303030</code> + 亮线 + 投影，取消白底；<br>
+⑦ 标题栏带折叠三角，左工具栏收窄到 <code>32</code>，选中靠左侧蓝条。<br>
+图标为真 SVG，文案取真实组件。面板框按 <code>320×680</code> 示意，真实实现须宽度自适应（见 <code>docs/preview/README.md</code> 坑 1）。
+</p>
+<div class="row">
+  <figure><figcaption>控件对照</figcaption>
+    <iframe src="controls.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>字体面板</figcaption>
+    <iframe src="font.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>字体管理</figcaption>
+    <iframe src="manage.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>常用功能</figcaption>
+    <iframe src="common.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>样式面板</figcaption>
+    <iframe src="style.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>设置</figcaption>
+    <iframe src="set.html" width="380" height="700" loading="lazy"></iframe></figure>
+  <figure><figcaption>诊断</figcaption>
+    <iframe src="debug.html" width="380" height="700" loading="lazy"></iframe></figure>
+</div>
+</body></html>

@@ -40,7 +40,7 @@ import { ItemView } from './components/ItemView';
 import { NewGroupRow } from './components/NewGroupRow';
 import { MessageBar, failureMessage, mergeMessages } from '../../components/MessageBar';
 import { MSG } from '../../types/messages';
-import { ADD_TITLE, useStyleActions } from './useStyleActions';
+import { ADD_TITLE, useStyleActions, type RenameTarget } from './useStyleActions';
 import './StylePage.css';
 
 /** 悬停浮层的目标：定位锚点就是那个项元素 */
@@ -58,7 +58,8 @@ const KIND_ORDER: Record<KuKind, number> = { color: 0, gradient: 1, font: 2, sty
  * 一条库的分组列表（单选时只有一条，多选时命中几条连排几条）。
  *
  * 从页面主体抽出：kind 由父级给定——单选 = activeKind；多选时每条 section
- * 用**自己库的 kind** 渲染格子、「+」与浮层，动作层（useStyleActions）照旧读 activeKind。
+ * 用**自己库的 kind** 渲染格子、「+」与浮层；动作回调由父级按这个 kind 绑定
+ * （执行层不读全局 activeKind），重命名目标也由这里用自己的 kind 构造。
  * 编辑态（editing）与新建分组占位（newGroup）仍归页面管：它们只落在当前库（activeKind）
  * 那条 section 上，非当前库的 section 不渲染这两样。
  */
@@ -95,10 +96,10 @@ function StyleLibrarySection({
   onDescribe: (kind: KuKind, groupIndex: number, itemIndex: number, show: boolean, el?: HTMLElement) => void;
   onItemMenu: (event: React.MouseEvent, groupIndex: number, itemIndex: number, name: string) => void;
   onItemMouseDown: (event: React.MouseEvent, groupIndex: number, itemIndex: number) => void;
-  onRename: (target: { type: 'group'; groupIndex: number } | { type: 'item'; groupIndex: number; itemIndex: number }, name: string) => void;
+  onRename: (target: RenameTarget, name: string) => void;
   onCancelRename: () => void;
   /** 页面的编辑态：只落当前库的 section（形状同 handleRename 的入参） */
-  pageEditing: { type: 'group'; groupIndex: number } | { type: 'item'; groupIndex: number; itemIndex: number } | null;
+  pageEditing: RenameTarget | null;
   /** 页面的拖拽「刚拖完」标记：挡掉拖完那次误折叠 click */
   draggedRef: React.MutableRefObject<boolean>;
   /** 新建分组占位要插在第几组之后；-1 = 空库建组（原版约定）；null = 不渲染 */
@@ -127,7 +128,9 @@ function StyleLibrarySection({
                 titleSlot={
                   <InlineEdit
                     value={group.name}
-                    onCommit={(next) => void onRename({ type: 'group', groupIndex: index }, next)}
+                    onCommit={(next) =>
+                      void onRename({ type: 'group', kind, groupIndex: index }, next)
+                    }
                     onCancel={onCancelRename}
                   />
                 }
@@ -149,8 +152,8 @@ function StyleLibrarySection({
                   event.preventDefault();
                   onGroupMenu(event, index, group.name);
                 }}
-                /* 拖拽落点靠这两个属性选节点（`useStyleActions` 的 `[data-group-head]`），别改名 */
-                data={{ 'data-group-head': '', 'data-group-index': index }}
+                /* 拖拽落点靠这些属性选节点（`useStyleActions` 按 data-kind 过滤落点），别改名 */
+                data={{ 'data-group-head': '', 'data-group-index': index, 'data-kind': kind }}
               />
             )}
 
@@ -173,7 +176,7 @@ function StyleLibrarySection({
                     onContextMenu={onItemMenu}
                     onMouseDown={onItemMouseDown}
                     onRename={(next) =>
-                      void onRename({ type: 'item', groupIndex: index, itemIndex }, next)
+                      void onRename({ type: 'item', kind, groupIndex: index, itemIndex }, next)
                     }
                     onCancelRename={onCancelRename}
                   />
@@ -256,7 +259,9 @@ export default function StylePage() {
 
   /*
    * 多选显示（2026-11-05 用户定）：Ctrl 点 tab 把该库并进同一页，只是显示方式——
-   * 每个 section 仍用自己库的 kind 渲染，动作层（useStyleActions）照旧读 activeKind，零改动。
+   * 每个 section 仍用自己库的 kind 渲染；动作也由发起它的 section 用自己的 kind
+   * 带进执行层（map 处按 viewKind 绑定回调、菜单 / 重命名目标自带 kind），
+   * 执行层不读全局 activeKind。
    * 单选 = 原样一条；多选 = 命中的库按 KIND_ORDER 上下连排。
    */
   const visibleKinds: KuKind[] = extraKinds.length
@@ -333,11 +338,17 @@ export default function StylePage() {
     runWithFeedback
   } = useStyleActions();
 
-  /** 组头右键菜单（原主体内联，现由两条 section 共用） */
-  function openGroupMenu(event: React.MouseEvent, groupIndex: number, groupName: string) {
+  /** 组头右键菜单（原主体内联，现由多条 section 共用；kind = 发起菜单的库） */
+  function openGroupMenu(
+    event: React.MouseEvent,
+    kind: KuKind,
+    groupIndex: number,
+    groupName: string
+  ) {
     event.preventDefault();
     setMenu({
       type: 'group',
+      kind,
       groupIndex,
       groupName,
       x: event.clientX,
@@ -345,9 +356,10 @@ export default function StylePage() {
     });
   }
 
-  /** 格子右键菜单（原主体内联，现由两条 section 共用） */
+  /** 格子右键菜单（原主体内联，现由多条 section 共用；kind = 发起菜单的库） */
   function openItemMenu(
     event: React.MouseEvent,
+    kind: KuKind,
     groupIndex: number,
     itemIndex: number,
     name: string
@@ -355,6 +367,7 @@ export default function StylePage() {
     event.preventDefault();
     setMenu({
       type: 'item',
+      kind,
       groupIndex,
       itemIndex,
       name,
@@ -423,12 +436,17 @@ export default function StylePage() {
                 kind={viewKind}
                 isCurrent={viewKind === activeKind}
                 expanded={expanded}
-                onToggleGroup={toggleGroup}
-                onGroupMenu={openGroupMenu}
-                onGroupMouseDown={handleGroupMouseDown}
-                onAddItem={(groupIndex) => void handleAddItem(groupIndex)}
+                /* 回调全部按本条 section 自己的库（viewKind）绑定：动作归发起它的库管 */
+                onToggleGroup={(groupIndex) => toggleGroup(viewKind, groupIndex)}
+                onGroupMenu={(event, groupIndex, name) =>
+                  openGroupMenu(event, viewKind, groupIndex, name)
+                }
+                onGroupMouseDown={(event, groupIndex) =>
+                  handleGroupMouseDown(viewKind, event, groupIndex)
+                }
+                onAddItem={(groupIndex) => void handleAddItem(viewKind, groupIndex)}
                 onApply={(groupIndex, itemIndex, name, event) =>
-                  void handleApply(groupIndex, itemIndex, name, event)
+                  void handleApply(viewKind, groupIndex, itemIndex, name, event)
                 }
                 onDescribe={(describeKind, groupIndex, itemIndex, show, el) =>
                   setDescribe(
@@ -437,15 +455,19 @@ export default function StylePage() {
                       : null
                   )
                 }
-                onItemMenu={openItemMenu}
-                onItemMouseDown={handleItemMouseDown}
+                onItemMenu={(event, groupIndex, itemIndex, name) =>
+                  openItemMenu(event, viewKind, groupIndex, itemIndex, name)
+                }
+                onItemMouseDown={(event, groupIndex, itemIndex) =>
+                  handleItemMouseDown(viewKind, event, groupIndex, itemIndex)
+                }
                 onRename={(target, next) => void handleRename(target, next)}
                 onCancelRename={() => setEditing(null)}
                 pageEditing={editing}
                 draggedRef={draggedRef}
                 newGroupAfterIndex={viewKind === activeKind ? newGroup?.afterIndex ?? null : null}
                 onNewGroupCommit={(name, afterIndex) =>
-                  void handleCreateGroup(name, afterIndex)
+                  void handleCreateGroup(viewKind, name, afterIndex)
                 }
                 onNewGroupCancel={() => setNewGroup(null)}
               />

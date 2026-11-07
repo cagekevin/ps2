@@ -28,30 +28,33 @@ node tools/make-mockup.mjs
 start docs/preview/index.html
 ```
 
-## 二、重设计稿（一套值 + 真图标）
+## 二、重设计稿（PS 原生风格 · 一套值 + 真图标）
 
-用途：按一套设计系统重画，用来定方案。
+用途：按一套设计系统重画，用来定方案。当前稿是 PS 深色面板方向：直角细线、控件压紧、蓝只给焦点与选中、浮层不反白。
 
 ```bash
 node tools/gen-redesign.mjs
-# 产物：docs/preview/redesign/{font,manage,common,style,set,debug}.html + index.html
+# 产物：docs/preview/redesign/{controls,font,manage,common,style,set,debug}.html + index.html
 start docs/preview/redesign/index.html
 ```
 
+`controls.html` 是控件对照页（输入位三态 / 深色下拉 / 段选 / 勾选 / 按钮 / 消息行），看设计语言先看它。
 图标从 `src/components/icons/index.tsx` 解析真 SVG（93 个），文案取自真实组件与
 `font-panel-constants.ts`。**不许用占位方块**——占位稿会被直接判为「不保真」。
 
-设计系统写在 `tools/gen-redesign.mjs` 顶部的 `CSS` 常量里，改那里、重跑，六页同步变：
+设计系统写在 `tools/gen-redesign.mjs` 顶部的 `CSS` 常量里，改那里、重跑，七页同步变：
 
 | 维度 | 值 |
 |---|---|
 | 间距 | 4 / 8 / 12 / 16 |
-| 左右内边距 | 10（只写在容器上） |
-| 控件高 | 26（页头 40、底栏 28、行 22） |
-| 圆角 | 4 |
-| 字号 | 13 / 12 / 11 |
-| 表面 | 页面 `#2b2b2b` → 面板 `#363636` → 凹陷 `#222` → 按钮 `#4a4a4a` |
-| 线条 | 区块 `#333` / 列表行 `#2e2e2e` |
+| 左右内边距 | 8（只写在容器上） |
+| 控件高 | 22（标题栏 / 底栏 24、行 20） |
+| 圆角 | 0（直角） |
+| 字号 | 12 / 11 |
+| 表面 | 面板与内容同底 `#2b2b2b` → 标题栏 `#262626` → 通栏块 `#242424` → 输入位 `#1e1e1e` → 按钮 `#383838` |
+| 线条 | 暗线 `#1f1f1f`（分隔）/ 亮线 `#4a4a4a`（控件边） |
+| 蓝 | `#2680eb`，只给焦点 / 选中 / 主操作；hover 一律叠白 |
+| 浮层 | 深色 `#303030` + 亮线 + 投影，不反白 |
 
 ## 三、量宽度（别靠眼睛判断溢出）
 

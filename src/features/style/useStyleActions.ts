@@ -44,7 +44,7 @@ import {
   setExpandedGroups as setExpandedGroupsCommand,
   setGroupShowInLibrary
 } from '../../commands/style';
-import type { KuKind } from '../../domain/style-library';
+import type { KuKind, StyleWarehouse } from '../../domain/style-library';
 import { useLongPressDrag } from '../../hooks/useLongPressDrag';
 import { useStyleLibraryStore } from '../../store/style-library';
 import { ok, type Result } from '../../types/result';
@@ -52,15 +52,15 @@ import { ok, type Result } from '../../types/result';
 /** 默认展开前几组，避免上百组一次性渲染 */
 const DEFAULT_EXPANDED = 1;
 
-/** 右键菜单的目标 */
+/** 右键菜单的目标；kind = 发起动作的库（多选显示下每条 section 各有一个库） */
 export type MenuTarget =
-  | { type: 'group'; groupIndex: number; groupName: string; x: number; y: number }
-  | { type: 'item'; groupIndex: number; itemIndex: number; name: string; x: number; y: number };
+  | { type: 'group'; kind: KuKind; groupIndex: number; groupName: string; x: number; y: number }
+  | { type: 'item'; kind: KuKind; groupIndex: number; itemIndex: number; name: string; x: number; y: number };
 
-/** 正在重命名的目标 */
+/** 正在重命名的目标；kind 同 MenuTarget */
 export type RenameTarget =
-  | { type: 'group'; groupIndex: number }
-  | { type: 'item'; groupIndex: number; itemIndex: number };
+  | { type: 'group'; kind: KuKind; groupIndex: number }
+  | { type: 'item'; kind: KuKind; groupIndex: number; itemIndex: number };
 
 /**
  * 组末尾「+」的提示语，按库分派（页面的 title 也用它）。
@@ -76,6 +76,21 @@ export const ADD_TITLE: Record<KuKind, string> = {
   gradient: '添加渐变色，仅支持形状图层',
   font: '添加字体，支持多图层',
   style: '添加样式'
+};
+
+/**
+ * 组末尾「+」的命令分派表：四条 add 命令签名同形（warehouse, kind, groupIndex），
+ * 按库各占一行。新增类型由调用方给的 kind 决定（= 加号所在库），不读全局 activeKind
+ * ——多选显示时非当前库的「+」也只会操作自己的库。
+ */
+const ADD_BY_KIND: Record<
+  KuKind,
+  (warehouse: StyleWarehouse, kind: KuKind, groupIndex: number) => Promise<Result<void>>
+> = {
+  color: addForegroundColorToLibrary,
+  gradient: addGradientFromLayer,
+  font: addFontFromLayer,
+  style: addStyleFromLayer
 };
 
 export function useStyleActions() {
@@ -167,8 +182,12 @@ export function useStyleActions() {
    * 折叠 / 展开。
    * 原版普通点击折叠也写库（`show` 是库文件的真实字段），照此行为；
    * 写库失败不回滚本地状态——下次 load 会以文件为准。
+   *
+   * 写库落到发起动作的那个库（kind 由所在 section 给定）。
+   * 展开下标仍是全局一份（多选 section 共用同一组下标，切 tab 时重置）——
+   * 这里只保证写库不落错库，展开态的共用是显示层的既有约定。
    */
-  function toggleGroup(index: number) {
+  function toggleGroup(kind: KuKind, index: number) {
     const open = !expandedGroups.includes(index);
     void setExpandedGroupsCommand(
       open ? [...expandedGroups, index] : expandedGroups.filter((item) => item !== index)
@@ -176,33 +195,29 @@ export function useStyleActions() {
 
     const warehouse = currentWarehouse();
     if (!warehouse) return;
-    void setGroupShowInLibrary(warehouse, activeKind, index, open);
+    void setGroupShowInLibrary(warehouse, kind, index, open);
   }
 
   /**
-   * 组末尾「+」：把「当前 PS 状态」存进这一组，按库分派。
+   * 组末尾「+」：把「当前 PS 状态」存进这一组，按传入的 kind 分派（`ADD_BY_KIND`）。
+   *
+   * kind 由加号所在的 section 给定（StylePage 按 viewKind 绑定），不是全局活动 tab
+   * ——多选显示时每个库的「+」只操作自己那一类。
    *
    * - 颜色：读前景色
    * - 渐变：读当前图层的渐变定义
    * - 字体：读当前文字图层的字体属性
    * - 样式：让 vendor 把图层样式存成 `kuStyle/<groupId>.psd`，成功后重读
    */
-  async function handleAddItem(groupIndex: number) {
+  async function handleAddItem(kind: KuKind, groupIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => {
-      if (activeKind === 'color') {
-        return addForegroundColorToLibrary(warehouse, activeKind, groupIndex);
-      }
-      if (activeKind === 'gradient') {
-        return addGradientFromLayer(warehouse, activeKind, groupIndex);
-      }
-      if (activeKind === 'font') {
-        return addFontFromLayer(warehouse, activeKind, groupIndex);
-      }
-      return addStyleFromLayer(warehouse, activeKind, groupIndex);
-    }, activeKind === 'color' ? MSG.style.doneAddedForeground : MSG.style.doneAdded, false);
+    await runWithFeedback(
+      () => ADD_BY_KIND[kind](warehouse, kind, groupIndex),
+      kind === 'color' ? MSG.style.doneAddedForeground : MSG.style.doneAdded,
+      false
+    );
   }
 
   /** 底栏「添加×分组」：切到对应 tab 再弹输入（原版四个按钮各管一个库） */
@@ -211,21 +226,22 @@ export function useStyleActions() {
     setNewGroup({ afterIndex: (libraries[kind]?.length ?? 0) - 1 });
   }
 
-  /** 新建分组：afterIndex = -1 表示追加到末尾 */
-  async function handleCreateGroup(name: string, afterIndex: number) {
+  /** 新建分组：afterIndex = -1 表示追加到末尾；kind = 占位所在的库 */
+  async function handleCreateGroup(kind: KuKind, name: string, afterIndex: number) {
     setNewGroup(null);
 
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
     await runWithFeedback(
-      () => addGroupToLibrary(warehouse, activeKind, name, afterIndex === -1 ? undefined : afterIndex),
+      () => addGroupToLibrary(warehouse, kind, name, afterIndex === -1 ? undefined : afterIndex),
       MSG.style.doneGroupCreated,
       false
     );
   }
 
   async function handleApply(
+    kind: KuKind,
     groupIndex: number,
     itemIndex: number,
     name: string,
@@ -241,13 +257,13 @@ export function useStyleActions() {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    const raw = readKuItem(warehouse, activeKind, groupIndex, itemIndex);
+    const raw = readKuItem(warehouse, kind, groupIndex, itemIndex);
     if (raw.status === 'error') {
       reportFailure(raw);
       return;
     }
 
-    if (activeKind === 'color') {
+    if (kind === 'color') {
       /* 修饰键分流：ctrl 只改填充、shift 只改描边，都不按则按图层类型自动处理 */
       const task = event.ctrlKey || event.metaKey
         ? applyShapeFillToLayer
@@ -259,7 +275,7 @@ export function useStyleActions() {
       return;
     }
 
-    if (activeKind === 'gradient') {
+    if (kind === 'gradient') {
       /* 原版发的是项里的 gradient 字段，不是整个项 */
       const gradient = raw.value.gradient;
       if (!gradient) {
@@ -270,14 +286,14 @@ export function useStyleActions() {
       return;
     }
 
-    if (activeKind === 'font') {
+    if (kind === 'font') {
       /* 字体走直接调用通道，不走 ps_onJsx */
       await runWithToast(() => applyFontToLayer(raw.value), `已应用「${name}」`, false);
       return;
     }
 
     /* style：需要分组 id，jsx 用它定位样式资源 */
-    const groupId = readKuGroupId(warehouse, activeKind, groupIndex);
+    const groupId = readKuGroupId(warehouse, kind, groupIndex);
     if (groupId.status === 'error') {
       reportFailure(groupId);
       return;
@@ -304,21 +320,26 @@ export function useStyleActions() {
         {
           label: '重命名',
           onSelect: () =>
-            setEditing({ type: 'item', groupIndex: target.groupIndex, itemIndex: target.itemIndex })
+            setEditing({
+              type: 'item',
+              kind: target.kind,
+              groupIndex: target.groupIndex,
+              itemIndex: target.itemIndex
+            })
         }
       ];
-      if (activeKind !== 'color') return shared;
+      if (target.kind !== 'color') return shared;
 
       return [
         ...shared,
         { label: '', separator: true },
         {
           label: '发送到色板',
-          onSelect: () => void handleSendItemToSwatch(target.groupIndex, target.itemIndex)
+          onSelect: () => void handleSendItemToSwatch(target.kind, target.groupIndex, target.itemIndex)
         },
         {
           label: '追加到色板',
-          onSelect: () => void handleAppendItemToSwatch(target.groupIndex, target.itemIndex)
+          onSelect: () => void handleAppendItemToSwatch(target.kind, target.groupIndex, target.itemIndex)
         }
       ];
     }
@@ -329,69 +350,69 @@ export function useStyleActions() {
       { label: '删除', danger: true, onSelect: () => void handleDelete(target) },
       {
         label: '重命名',
-        onSelect: () => setEditing({ type: 'group', groupIndex: target.groupIndex })
+        onSelect: () => setEditing({ type: 'group', kind: target.kind, groupIndex: target.groupIndex })
       },
       { label: '', separator: true }
     ];
 
-    if (activeKind !== 'color') return head;
+    if (target.kind !== 'color') return head;
 
     return [
       ...head,
       {
         label: '发送到色板',
-        onSelect: () => void handleSendGroupToSwatch(target.groupIndex)
+        onSelect: () => void handleSendGroupToSwatch(target.kind, target.groupIndex)
       },
       {
         label: '追加到色板',
-        onSelect: () => void handleAppendGroupToSwatch(target.groupIndex)
+        onSelect: () => void handleAppendGroupToSwatch(target.kind, target.groupIndex)
       },
       { label: '', separator: true },
       {
         label: '快速吸色到组',
-        onSelect: () => void handlePickColorToGroup(target.groupIndex)
+        onSelect: () => void handlePickColorToGroup(target.kind, target.groupIndex)
       }
     ];
   }
 
   /** 发送到色板（单项）：整份替换 */
-  async function handleSendItemToSwatch(groupIndex: number, itemIndex: number) {
+  async function handleSendItemToSwatch(kind: KuKind, groupIndex: number, itemIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
     await runWithFeedback(
-      () => sendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
+      () => sendItemToSwatch(warehouse, kind, groupIndex, itemIndex),
       MSG.style.doneToSwatch,
       false
     );
   }
 
   /** 追加到色板（单项） */
-  async function handleAppendItemToSwatch(groupIndex: number, itemIndex: number) {
+  async function handleAppendItemToSwatch(kind: KuKind, groupIndex: number, itemIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
     await runWithFeedback(
-      () => appendItemToSwatch(warehouse, activeKind, groupIndex, itemIndex),
+      () => appendItemToSwatch(warehouse, kind, groupIndex, itemIndex),
       MSG.style.doneAppendSwatch,
       false
     );
   }
 
   /** 发送到色板（整组替换） */
-  async function handleSendGroupToSwatch(groupIndex: number) {
+  async function handleSendGroupToSwatch(kind: KuKind, groupIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => sendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneToSwatch, false);
+    await runWithFeedback(() => sendGroupToSwatch(warehouse, kind, groupIndex), MSG.style.doneToSwatch, false);
   }
 
   /** 追加到色板（整组逐项 push） */
-  async function handleAppendGroupToSwatch(groupIndex: number) {
+  async function handleAppendGroupToSwatch(kind: KuKind, groupIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => appendGroupToSwatch(warehouse, activeKind, groupIndex), MSG.style.doneAppendSwatch, false);
+    await runWithFeedback(() => appendGroupToSwatch(warehouse, kind, groupIndex), MSG.style.doneAppendSwatch, false);
   }
 
   /* ---------------- 导入 / 导出 ---------------- */
@@ -418,15 +439,15 @@ export function useStyleActions() {
     void runWithFeedback(() => exportKuCurrent(), MSG.style.doneExportCurrent);
   }
 
-  /** 快速吸色到组：切吸管等用户取色，取到的前景色写进这一组 */
-  async function handlePickColorToGroup(groupIndex: number) {
+  /** 快速吸色到组：切吸管等用户取色，取到的前景色写进这一组（kind 由菜单目标带过来） */
+  async function handlePickColorToGroup(kind: KuKind, groupIndex: number) {
     const warehouse = requireWarehouse();
     if (!warehouse) return;
 
-    await runWithFeedback(() => pickColorToGroup(warehouse, activeKind, groupIndex), MSG.style.donePickToGroup, false);
+    await runWithFeedback(() => pickColorToGroup(warehouse, kind, groupIndex), MSG.style.donePickToGroup, false);
   }
 
-  /** 删除分组或项：先确认，再写库 */
+  /** 删除分组或项：先确认，再写库（写的是目标所在的库） */
   async function handleDelete(target: MenuTarget) {
     const ok = await confirm({
       title:
@@ -441,14 +462,14 @@ export function useStyleActions() {
     await runWithFeedback(
       () =>
         target.type === 'group'
-          ? deleteKuGroup(warehouse, activeKind, target.groupIndex)
-          : deleteKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex),
+          ? deleteKuGroup(warehouse, target.kind, target.groupIndex)
+          : deleteKuItem(warehouse, target.kind, target.groupIndex, target.itemIndex),
       MSG.style.doneDelete,
       false
     );
   }
 
-  /** 重命名分组或项；写库成功后重读列表 */
+  /** 重命名分组或项；写库成功后重读列表（写的是目标所在的库） */
   async function handleRename(target: RenameTarget, name: string) {
     setEditing(null);
 
@@ -458,8 +479,8 @@ export function useStyleActions() {
     await runWithFeedback(
       () =>
         target.type === 'group'
-          ? renameKuGroup(warehouse, activeKind, target.groupIndex, name)
-          : renameKuItem(warehouse, activeKind, target.groupIndex, target.itemIndex, name),
+          ? renameKuGroup(warehouse, target.kind, target.groupIndex, name)
+          : renameKuItem(warehouse, target.kind, target.groupIndex, target.itemIndex, name),
       MSG.style.doneRename,
       false
     );
@@ -467,9 +488,11 @@ export function useStyleActions() {
 
   /**
    * 长按开始拖拽：项可跨组排序。
-   * 目标列表取整个 `.mm-style__list`，不是当前组容器——跨组拖拽靠这个。
+   * 目标列表取整个 `.mm-style__list`，不是当前组容器——跨组拖拽靠这个；
+   * 多选显示下这个列表含所有 section，落点按 `data-kind` 过滤成**发起拖拽的那个库**
+   * （跨库拖拽未定义，组下标在两个库之间也不可换算）。
    */
-  function handleItemMouseDown(event: MouseEvent, groupIndex: number, itemIndex: number) {
+  function handleItemMouseDown(kind: KuKind, event: MouseEvent, groupIndex: number, itemIndex: number) {
     const node = event.currentTarget as HTMLElement;
     const list = node.closest('.mm-style__list');
     if (!(list instanceof HTMLElement)) return;
@@ -478,7 +501,9 @@ export function useStyleActions() {
       event: event.nativeEvent,
       node,
       axis: 'x',
-      targets: () => Array.from(list.querySelectorAll<HTMLElement>('[data-item-index]')),
+      targets: () =>
+        Array.from(list.querySelectorAll<HTMLElement>('[data-item-index]'))
+          .filter((item) => item.dataset.kind === kind),
       onEnd: (result) => {
         draggedRef.current = result.dragged;
         if (!result.dragged || !result.target) return;
@@ -488,13 +513,14 @@ export function useStyleActions() {
         if (Number.isNaN(toGroup) || Number.isNaN(toIndex)) return;
         if (toGroup === groupIndex && toIndex === itemIndex) return;
 
-        void handleMoveItem(groupIndex, itemIndex, toGroup, toIndex, result.position);
+        void handleMoveItem(kind, groupIndex, itemIndex, toGroup, toIndex, result.position);
       }
     });
   }
 
-  /** 项拖拽落点写回库文件（可跨组） */
+  /** 项拖拽落点写回库文件（可跨组；库 = 发起拖拽的库） */
   async function handleMoveItem(
+    kind: KuKind,
     fromGroup: number,
     from: number,
     toGroup: number,
@@ -506,7 +532,7 @@ export function useStyleActions() {
 
     await runWithFeedback(
       () =>
-        moveKuItemTo(warehouse, activeKind, {
+        moveKuItemTo(warehouse, kind, {
           from: { group: fromGroup, index: from },
           to: { group: toGroup, index: to },
           position
@@ -516,8 +542,8 @@ export function useStyleActions() {
     );
   }
 
-  /** 长按分组标题：纵向排序 */
-  function handleGroupMouseDown(event: MouseEvent, groupIndex: number) {
+  /** 长按分组标题：纵向排序（落点按 data-kind 限制在同一库，同 handleItemMouseDown） */
+  function handleGroupMouseDown(kind: KuKind, event: MouseEvent, groupIndex: number) {
     const node = event.currentTarget as HTMLElement;
     const list = node.closest('.mm-style__list');
     if (!(list instanceof HTMLElement)) return;
@@ -526,7 +552,9 @@ export function useStyleActions() {
       event: event.nativeEvent,
       node,
       axis: 'y',
-      targets: () => Array.from(list.querySelectorAll<HTMLElement>('[data-group-head]')),
+      targets: () =>
+        Array.from(list.querySelectorAll<HTMLElement>('[data-group-head]'))
+          .filter((head) => head.dataset.kind === kind),
       onEnd: (result) => {
         /* 拖完那次 click 会折叠分组，挡掉 */
         draggedRef.current = result.dragged;
@@ -535,18 +563,18 @@ export function useStyleActions() {
         const toIndex = Number(result.target.dataset.groupIndex);
         if (Number.isNaN(toIndex) || toIndex === groupIndex) return;
 
-        void handleMoveGroup(groupIndex, toIndex, result.position);
+        void handleMoveGroup(kind, groupIndex, toIndex, result.position);
       }
     });
   }
 
-  /** 分组拖拽落点写回库文件 */
-  async function handleMoveGroup(from: number, to: number, position: 'before' | 'after') {
+  /** 分组拖拽落点写回库文件（库 = 发起拖拽的库） */
+  async function handleMoveGroup(kind: KuKind, from: number, to: number, position: 'before' | 'after') {
     const warehouse = currentWarehouse();
     if (!warehouse) return;
 
     await runWithFeedback(
-      () => moveGroupInLibrary(warehouse, activeKind, from, to, position),
+      () => moveGroupInLibrary(warehouse, kind, from, to, position),
       MSG.style.doneReorderGroup,
       false
     );

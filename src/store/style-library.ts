@@ -58,7 +58,8 @@ interface StyleLibraryState {
   activeKind: KuKind;
   /**
    * 多选显示的库（2026-11-05 用户定：Ctrl 点 tab 把该库并进同一页）。
-   * **只是显示方式**：非空时页面把命中的库上下连排；动作层照旧读 `activeKind`。
+   * **只是显示方式**：非空时页面把命中的库上下连排；动作由发起它的 section
+   * 用自己的 kind 带进执行层（页面按 viewKind 绑定回调），执行层不读本字段。
    * 约束：永远含 `activeKind`；普通点击单选时清空。
    */
   extraKinds: KuKind[];
