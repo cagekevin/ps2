@@ -13,3 +13,10 @@ tmp/
 tools/jsxbin/converter/*.exe
 tools/jsxbin/converter/bin/
 tools/jsxbin/converter/obj/
+
+# ub-mode 质量门禁工具产物（crapper/dryer/mutator 运行期生成，非源码，不入库）
+# .metrics/：crapper 的 crap.edn、dryer 的 dry.edn、mutator 的 mutate/<ns>.edn（本地快照，可重建）
+# target/：mutator 变异测试的 worker overlay（含硬链接/symlink，误提交会污染历史）
+.metrics/
+target/
+coverage/
