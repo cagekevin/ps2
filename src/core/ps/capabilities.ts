@@ -48,7 +48,7 @@ import type { CapabilitySpec } from './capability';
    进表会让 `layer` 反向依赖本文件（环）。详见 `layer.ts` 里那两个函数的注释。 */
 import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 /* 批量文字的私有解析器：单独一个文件，**不能**从 `./text-batch` 引 —— 那个文件 import 本文件的
-   `CAP`，反过来引就是运行时环（`check:cycles` 会红） */
+   `CAP`，反过来引就是运行时环（无自动闸，见 ADR-0007） */
 import { createReportRaw, layersRaw, writeReportRaw } from './text-batch-raw';
 
 /* type-only：`./template` 运行期 import 本文件的 `CAP`，这里只借类型，不产生运行时环 */

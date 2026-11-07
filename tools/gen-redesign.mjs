@@ -3,12 +3,14 @@
  *
  * 是什么：按一套深色面板设计系统重画六页界面 + 一页控件对照，输出静态 HTML 到 docs/preview/redesign/。
  * 唯一入口：改视觉只改本文件的 CSS 常量，重跑后所有页面同步变；打开方式见 docs/preview/README.md。
- * 谁在用：设计评审，浏览器直接打开 docs/preview/redesign/index.html。
- * 禁止：不改 src/、不进构建、不用占位方块代替图标（图标取自 src/components/icons/index.tsx 的真 SVG）。
+ * 谁在用：设计评审，浏览器直接打开 docs/preview/redesign/index.html；npm run check:preview 校验产物与生成器一致。
+ * 禁止：不改 src/、不进构建、不用占位方块代替图标（图标取自 src/components/icons/index.tsx 的真 SVG）；
+ *       不许手改产物 HTML（--check 会红，下次生成也会被覆盖）。
  *
- * 用法：node tools/gen-redesign.mjs
+ * 用法：node tools/gen-redesign.mjs          生成七页 + 索引
+ *       node tools/gen-redesign.mjs --check  只比对不写文件，不一致退出码 1
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 
 /* ---------- 真图标 ---------- */
 const iconSrc = readFileSync('src/components/icons/index.tsx', 'utf8');
@@ -640,7 +642,24 @@ const PAGES = [
   ['debug', '诊断', -1, PAGE_DEBUG]
 ];
 
-mkdirSync('docs/preview/redesign', { recursive: true });
+/* 产物出口只有这一处：生成与校验共用同一段模板，校验不另写一份实现。 */
+const OUT_DIR = 'docs/preview/redesign';
+const CHECK = process.argv.includes('--check');
+const drift = [];
+
+function emit(name, text) {
+  const expected = text.replace(/\r\n/g, '\n');
+  if (CHECK) {
+    const path = `${OUT_DIR}/${name}.html`;
+    /* Windows 检出会把 LF 转成 CRLF；只归一换行，不掩盖内容差异。 */
+    const actual = existsSync(path) ? readFileSync(path, 'utf8').replace(/\r\n/g, '\n') : null;
+    if (actual !== expected) drift.push(name);
+  } else {
+    writeFileSync(`${OUT_DIR}/${name}.html`, expected, 'utf8');
+  }
+}
+
+if (!CHECK) mkdirSync(OUT_DIR, { recursive: true });
 
 const html = (title, active, page) => `<!doctype html>
 <html lang="zh-CN">
@@ -654,7 +673,7 @@ ${page}
 </html>`;
 
 for (const [key, title, active, page] of PAGES) {
-  writeFileSync(`docs/preview/redesign/${key}.html`, html(title, active, page), 'utf8');
+  emit(key, html(title, active, page));
 }
 
 const frames = PAGES.map(
@@ -662,8 +681,8 @@ const frames = PAGES.map(
     <iframe src="${key}.html" width="380" height="700" loading="lazy"></iframe></figure>`
 ).join('\n');
 
-writeFileSync(
-  'docs/preview/redesign/index.html',
+emit(
+  'index',
   `<!doctype html>
 <html lang="zh-CN">
 <head><meta charset="utf-8" /><title>PS 原生风格 · 重设计稿</title>
@@ -693,8 +712,15 @@ writeFileSync(
 <div class="row">
 ${frames}
 </div>
-</body></html>`,
-  'utf8'
+</body></html>`
 );
+
+if (CHECK) {
+  if (drift.length) {
+    console.error(`预览稿与生成器不一致：${drift.join('、')}。改 tools/gen-redesign.mjs 后重跑，不要手改 HTML。`);
+    process.exit(1);
+  }
+  console.log(`预览稿一致性通过：${PAGES.length + 1} 个产物`);
+}
 
 console.log('pages:', PAGES.length, '| icons:', Object.keys(ICONS).length);
