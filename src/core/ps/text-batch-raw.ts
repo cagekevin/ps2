@@ -3,7 +3,7 @@
  *
  * 为什么单独一个文件（而不是塞进 `text-batch.ts`）：`capabilities.ts` 要用这三个函数做 `parse`，
  * 而 `text-batch.ts` 又要 import 能力表拿 `CAP.*` —— 放在一起就是 `capabilities → text-batch →
- * capabilities` 的运行时环（`npm run check:cycles` 会红）。本文件只依赖 `raw.ts` 与 `types`，
+ * capabilities` 的运行时环（无自动闸，见 ADR-0007）。本文件只依赖 `raw.ts` 与 `types`，
  * 两头都能安全引用。
  *
  * 为什么不进 `raw.ts`：这三个形状各只服务**一个**能力。放进公共清单，等于让每个加能力的人

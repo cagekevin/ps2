@@ -56,6 +56,13 @@ interface StyleLibraryState {
   warehouses: StyleWarehouse[];
   activeIndex: number;
   activeKind: KuKind;
+  /**
+   * 多选显示的库（2026-11-05 用户定：Ctrl 点 tab 把该库并进同一页）。
+   * **只是显示方式**：非空时页面把命中的库上下连排；动作由发起它的 section
+   * 用自己的 kind 带进执行层（页面按 viewKind 绑定回调），执行层不读本字段。
+   * 约束：永远含 `activeKind`；普通点击单选时清空。
+   */
+  extraKinds: KuKind[];
   libraries: Record<KuKind, KuGroup[] | null>;
   /** 四类库各自的失败臂；`null` = 那次读没失败 */
   failures: Record<KuKind, Failure | null>;
@@ -66,6 +73,8 @@ interface StyleLibraryState {
   /** 只改本地（命令 `setExpandedGroups` 负责落盘） */
   setExpandedGroups: (next: number[]) => void;
   setActiveKind: (kind: KuKind) => void;
+  /** Ctrl 点 tab：已在多选里则移出（至少留当前库），否则加入 */
+  toggleExtraKind: (kind: KuKind) => void;
   selectWarehouse: (index: number) => Promise<void>;
 }
 
@@ -92,6 +101,7 @@ export const useStyleLibraryStore = create<StyleLibraryState>()((set, get) => {
     warehouses: [],
     activeIndex: 0,
     activeKind: 'color',
+    extraKinds: [],
     libraries: emptyRecord<KuGroup[] | null>(null),
     failures: emptyRecord<Failure | null>(null),
     loading: false,
@@ -137,7 +147,22 @@ export const useStyleLibraryStore = create<StyleLibraryState>()((set, get) => {
     },
 
     setActiveKind(kind) {
-      set({ activeKind: kind });
+      set({ activeKind: kind, extraKinds: [] });
+    },
+
+    toggleExtraKind(kind) {
+      const { activeKind, extraKinds } = get();
+      /* 点的是当前库：视为「取消多选」，回到单选 */
+      if (kind === activeKind) {
+        set({ extraKinds: [] });
+        return;
+      }
+      /* 永远含当前库；重复点同一个已并入库 = 移出它 */
+      set({
+        extraKinds: extraKinds.includes(kind)
+          ? extraKinds.filter((item) => item !== kind)
+          : [...extraKinds, kind]
+      });
     },
 
     async selectWarehouse(index) {

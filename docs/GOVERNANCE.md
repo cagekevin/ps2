@@ -45,7 +45,7 @@
 1. 改 docs/CONVENTIONS.md（写清楚新规则）
 2. 改 core / types 实现
 3. 更新对应范本文件（带【范本】标记的）
-4. npm run check（typecheck + lint + stylelint + 范本自检 + 导航自检 + 单测，六道关）
+4. npm run check（以 `package.json` 的 `check` 链为准；自检项会增减，不在此列死步数）
 5. 在 `docs/CHANGELOG.md` 登记
 6. 才允许写业务代码
 ```

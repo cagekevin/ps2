@@ -432,7 +432,7 @@ layer.ts        → capabilities.ts（要 CAP.layerState 才能 callCapability�
 > 1. 「解析形状特殊」不是不进表的理由 —— 加一个域内具名解析器就解决（`layer.layerStateRaw` / `layer.selectionCountRaw` 就是，它们**不进 `raw.ts` 的公共清单**）。
 > 2. 「它在域内被别的函数消费」才是 —— 进表必然让那个域反向依赖表，**环是症状，职责错位才是病**。
 >
-> 环由 `npm run check:cycles` 硬卡（运行时环必须 0；仅类型环只报不拦，因为 `import type` 编译期擦除、类型互相引用是常态）。
+> 环没有自动闸（`tsc` 不查环；`dependency-cruiser` 实测从未命中，已卸载，`check:cycles` 已从 check 链移除，`ADR-0007`）：运行时环必须 0，靠评审把关，需要查环时临时跑 `npx madge --circular --extensions ts,tsx src`（用一次装一次，不常驻）；仅类型环不拦，因为 `import type` 编译期擦除、类型互相引用是常态。
 
 它们**都走 `callDirect`**（`capability.ts:181`），只封「门 → 函数存在性 → 调用」三步，解析自己写：
 
@@ -444,7 +444,7 @@ export async function callDirect(
 ): Promise<Result<string>>
 ```
 
-**为什么收这一段**：门 + `funcMissing` 这两步以前是各处手抄的，而且抄得不一样 —— 当时 4 处里有 3 处（`checkFontUsable` / `getLayerState` / `saveLayerStyle`）**漏了 `funcMissing`**，缺函数时报 `EvalScript error.`（`PS_ERROR`）而不是 `PS_UNREADY` + `detail: fn:xxx`，排查时会以为是脚本崩了。收进 `callDirect` 之后全部获得同一条失败语义；`getLayerState` 后来干脆进了表（§7.8 末尾）。
+**为什么收这一段**：门 + `funcMissing` 这两步以前是各处手抄的，而且抄得不一样 —— 当时 4 处里有 3 处（`checkFontUsable` / `getLayerState` / `saveLayerStyle`）**漏了 `funcMissing`**，缺函数时报 `EvalScript error.`（`PS_ERROR`）而不是 `PS_UNREADY` + `detail: fn:xxx`，排查时会以为是脚本崩了。收进 `callDirect` 之后全部获得同一条失败语义。
 
 **闸在 `npm run check:jsx`**（`tools/check-jsx-entry.mjs`）：扫 `src/core/ps/*.ts` 里所有**以字面量名字**调 `callJsx` / `callDirect` 的地方，名字必须在上面的白名单里；**白名单多一个少一个都红**（多了 = 闸比现实宽，等于失效）。
 
