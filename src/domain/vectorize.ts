@@ -23,6 +23,16 @@ function corner(x: number, y: number): VectorPoint {
   return { anchor: [x, y], left: [x, y], right: [x, y], smooth: false };
 }
 
+/**
+ * 两侧控制柄的共线容差，判据是叉积比（= 两侧切线的 sin 夹角）。
+ *
+ * 取 0.17（约 10°）：vtracer 的 spline 是**每段独立拟合**，同一锚点两侧切线差 1°–3° 是常态
+ * （实测 300px 圆的起点 1.5°、中段 1.0°）。原先取 1e-3（0.06°）等于要求两侧切线严格共线，
+ * vtracer 的输出永远达不到 —— 于是每个点都被标成角点，PS 重建路径时按角点处理控制柄，
+ * 圆就成了多边形（真机 2026-11-05）。真角点（矩形四角 90°）远在容差之外，不会被误判。
+ */
+const SMOOTH_SIN_TOLERANCE = 0.17;
+
 /** 控制柄是否共线（叉积足够小 + 两侧都有长度） */
 function isSmooth(point: VectorPoint): boolean {
   const [ax, ay] = point.anchor;
@@ -36,7 +46,7 @@ function isSmooth(point: VectorPoint): boolean {
 
   const cross = dxl * dyr - dyl * dxr;
   const len = Math.hypot(dxl, dyl) * Math.hypot(dxr, dyr);
-  return Math.abs(cross) / (len || 1) < 1e-3;
+  return Math.abs(cross) / (len || 1) < SMOOTH_SIN_TOLERANCE;
 }
 
 const NUMBER_RE = /[+-]?(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?/g;

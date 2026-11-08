@@ -949,12 +949,19 @@ function mm_vec_doReplace() {
 	 * 落一条现场到 jsx 日志：前端算出的点数与 PS 实际建成的点数必须一致，
 	 * 不一致就说明「传过去少了」或「PS 只建了一部分」—— 这两种的修法完全不同，
 	 * 没有这行就只能靠猜（真机 2026-11-02：前端解析出 1167 点，PS 里只有 86 点）。
+	 *
+	 * `p0/l/r/k` 是**读回来**的首点（不是 payload）：曲线在 PS 里走样时，
+	 * 只有这行能分清「控制柄没进去」和「进去了但 kind 被当成角点」。
 	 */
+	var built0 = pathItem.subPathItems[0];
+	var point0 = built0.pathPoints[0];
 	mm_log(
 		"mm_vec_replaceWithPath got subs=" + payload.subpaths.length +
 		" built=" + subPaths.length +
 		" added=" + pathItem.subPathItems.length +
-		" points=" + pathItem.subPathItems[0].pathPoints.length
+		" points=" + built0.pathPoints.length +
+		" p0=" + point0.anchor + " l=" + point0.leftDirection + " r=" + point0.rightDirection +
+		" k=" + point0.kind
 	);
 
 	/* 先建新层再填充：`fillPath` 填的是当前层，直接填在原层上再删就一起没了 */
