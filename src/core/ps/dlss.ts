@@ -1,9 +1,8 @@
 /**
- * DLSS 神经渲染的 PS 能力：导出选中层 / 结果导回。
+ * DLSS 神经渲染的 PS 能力：导出整个画幅的可见合成 / 结果导回。
  *
  * 通道：直调（`gate: 'core'` 只允许 `direct`）。
- * 「恰好 1 个图层」是**能力表的前置**（`CAP.dlssExport.require`），这里不重复判 ——
- * 多选时 jsx 的 `activeLayer` 只是其中一个，静默处理一个比报错更糟。
+ * **不判选中图层**：超分作用于整个画幅，选中哪个图层、图层空不空都与结果无关。
  */
 
 import type { DlssExport, DlssPlaced } from '../../types/dlss';
@@ -12,7 +11,7 @@ import { callCapability } from './capability';
 import { CAP } from './capabilities';
 
 /**
- * 导出选中图层为裁切 PNG（引擎输入）。
+ * 导出整个画幅的可见合成为 PNG（引擎输入）。
  *
  * `maxPixels` 必须由调用方给：上限在 `config`，jsx 读不到它。
  */

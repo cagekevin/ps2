@@ -121,8 +121,11 @@ export function runProcess(
       } catch {
         /* 已经退出：kill 失败不影响结论，超时这件事本身要报出去 */
       }
+      /* 先把没换行的尾巴收进 lines，再把它们随 detail 上抛：卡死前的输出是排障线索 */
       flushAll();
-      finish(failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, `timeout:${options.timeoutMs}`));
+      const received = lines.join('\n');
+      const detail = received ? `timeout:${options.timeoutMs}\n${received}` : `timeout:${options.timeoutMs}`;
+      finish(failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, detail));
     }, options.timeoutMs);
 
     child.on('error', (error) => {

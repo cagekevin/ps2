@@ -30,8 +30,8 @@ const RAW_FAILURES: Record<string, ErrorCode> = {
   'not-shape': 'PS_WRONG_LAYER',
   skipped: 'PS_SKIPPED',
   '-1': 'PS_REJECTED',
-  /* DLSS：空层是前提不满足（灰）；超 64MP 是硬上限拒绝；结果文件缺失是故障（红） */
-  'empty-layer': 'PS_WRONG_LAYER',
+  /* DLSS：画幅超 64MP 是硬上限拒绝；结果文件缺失是故障（红）。
+     没有「空层」判据了 —— 超分作用于整个画幅，选中哪一层都无关。 */
   'layer-too-big': 'PS_REJECTED',
   'result-missing': 'PS_ERROR'
 };

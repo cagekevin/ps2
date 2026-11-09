@@ -1,20 +1,20 @@
 /**
- * DLSS 命令：导出选中层 → 跑引擎 → 结果导回。
+ * DLSS 命令：导出整个画幅的可见合成 → 跑引擎 → 结果导回。
  *
- * 时序同原插件 `main.js processLayer`，同 `commands/vectorize.ts` 的「失败原图不动」铁律：
+ * 时序见 `docs/plan/23` §3.8，同 `commands/vectorize.ts` 的「失败原图不动」铁律：
  * 导出只读原图层，结果层是新增的，任一步失败都不碰原层。
  *
  * 三条硬规则同其它命令（`CONVENTIONS` §9）：不碰 DOM、不弹 toast、只返回 `Result<T>`。
  * 临时目录的建与删都在 `core/dlss/engine` —— 命令层不碰 `fs`。
  *
- * 「恰好 1 个图层」不在这一层判：那是能力表的前置（`CAP.dlssExport.require`）。
- * 图层名也不在这里取：导出载荷里有（`layerName`）。
+ * 超分作用于整个画幅：不需要「恰好 1 个图层」前置，也不需要图层名 ——
+ * 导出载荷里的 `layerName` 是文档名，用来做结果名的底。
  */
 
 import { DLSS_MAX_PIXELS } from '../config';
 import type { DlssEngineInfo, DlssParams, DlssPlaced } from '../types/dlss';
 import { MSG } from '../types/messages';
-import { failWithDetail, ok, type Result } from '../types/result';
+import { ok, type Result } from '../types/result';
 import { chooseFolder } from '../core/dialog';
 import { cleanupTemp, prepareTemp, probeEngine, resolveRuntime, runEngine } from '../core/dlss/engine';
 import { getPref, savePref } from '../core/prefs';
@@ -52,19 +52,24 @@ export function resolveEngine(): Result<DlssEnginePath> {
 
 /**
  * 跑一次引擎自检（`--probe-nr`），结果在 `core/dlss/engine` 里按目录缓存。
- *
- * probe 不过折成 `PS_UNREADY` + 「需要 NVIDIA RTX 显卡」——那是**跑不了**，不是路径问题。
  * `force` 给「环境自检」按钮用：换显卡 / 装 NGX / 改驱动之后要能重跑。
+ *
+ * **不换码**：`PS_UNREADY` 由 `probeEngine` 一次定死，这里只把码级通用句换成本域中文
+ * （`core` 不许写中文）。`code` / `detail` 原样，其它失败臂整个透传 —— `ADR-0003` 消费者只转发。
  */
 export async function verifyEngine(
   dir: string,
   force = false
 ): Promise<Result<DlssEngineInfo>> {
   const probed = await probeEngine(dir, force);
-  if (probed.status === 'error') {
-    return failWithDetail('PS_UNREADY', MSG.dlss.probeFailed, probed.detail);
-  }
-  return ok(probed.value);
+  if (probed.status === 'ok' || probed.code !== 'PS_UNREADY') return probed;
+
+  return {
+    status: 'error',
+    code: probed.code,
+    reason: MSG.dlss.probeFailed,
+    detail: probed.detail
+  };
 }
 
 /** 让用户选一次引擎目录并存进偏好；取消返回 `null`（不是失败） */
@@ -76,7 +81,7 @@ export async function chooseRuntime(): Promise<Result<{ dir: string } | null>> {
   return ok({ dir: picked });
 }
 
-/** 选中图层 → 引擎 → 结果层；结果名带参数 token，可事后读回 */
+/** 整个画幅 → 引擎 → 结果层 / 新文档；结果名带参数 token，可事后读回 */
 export async function runDlss(params: DlssParams, runtimeDir: string): Promise<Result<DlssPlaced>> {
   const temp = prepareTemp();
   if (temp.status === 'error') return temp;

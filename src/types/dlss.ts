@@ -49,12 +49,13 @@ export type DlssParams = DlssLook &
  * **不带 path**：路径是调用方传进去的，jsx 再返回一遍就是同一件事两个来源。
  */
 export interface DlssExport {
-  /** 图层在文档里的区域左上角 */
+  /** 导出区域左上角；整个画幅时恒为 0 */
   left: number;
   top: number;
+  /** 画幅尺寸 */
   width: number;
   height: number;
-  /** 原图层名（结果名以它为底，`dlssResultName` 会去掉旧后缀） */
+  /** 文档名（结果名以它为底，`dlssResultName` 会去掉旧后缀） */
   layerName: string;
 }
 

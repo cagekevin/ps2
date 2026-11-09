@@ -371,15 +371,14 @@ export const CAP = {
   /* ---------------- DLSS 神经渲染（自写 jsx，`core` 门只能直调） ---------------- */
 
   /**
-   * 导出选中图层为裁切 PNG（引擎输入）：`{ left, top, width, height, layerName }`。
+   * 导出整个画幅的可见合成为 PNG（引擎输入）：`{ left:0, top:0, width, height, layerName }`。
    *
-   * 空层回 `'empty-layer'`、超 `maxPixels` 回 `'layer-too-big'`，都走约定值表。
-   * **恰好 1 个图层**是前置：多选时 jsx 的 `activeLayer` 只是其中一个，
-   * 静默只处理一个比报错更糟（与矢量化同一个判据）。
+   * **不设选中前置**：超分作用于整个画幅，选中哪个图层、图层空不空都与结果无关。
+   * 超 `maxPixels` 回 `'layer-too-big'`（显存上限），走约定值表。
    */
   dlssExport: {
     fn: 'mm_dlss_exportLayer', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
-    require: requireOneLayer, parse: dlssExportRaw
+    parse: dlssExportRaw
   },
 
   /**

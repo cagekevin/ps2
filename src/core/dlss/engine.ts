@@ -141,7 +141,8 @@ export function probeEngine(
 
   const promise = probeUncached(runtimeDir).then((result) => {
     probeCache.set(runtimeDir, result);
-    probeInFlight = null;
+    /* 只清自己那次 flight：并发两个不同目录时，先完成的不能把后一次还在跑的抹掉 */
+    if (probeInFlight && probeInFlight.promise === promise) probeInFlight = null;
     return result;
   });
   probeInFlight = { dir: runtimeDir, promise };
@@ -161,9 +162,10 @@ async function probeUncached(runtimeDir: string): Promise<Result<DlssEngineInfo>
 
   const lines = run.value.lines;
   if (!/Neural Rendering RAN/i.test(lines.join('\n'))) {
+    /* 码在这里一次定死：消费者不许再换码（ADR-0003）。中文域文案由 commands/页面给 */
     return failWithDetail(
-      'IO_ERROR',
-      MSG.codeReason.IO_ERROR,
+      'PS_UNREADY',
+      MSG.codeReason.PS_UNREADY,
       `probe:no-ran\n${tail(lines, 12)}`
     );
   }
@@ -175,11 +177,12 @@ function buildArgs(input: { inPath: string; outDir: string; params: DlssParams }
   const { params } = input;
   const args = ['--nr-run', '--in', input.inPath, '--out', input.outDir];
 
-  if (params.w !== undefined && params.w > 0) args.push('--nr-width', String(Math.round(params.w)));
-  else args.push('--nr-scale', String(params.sc ?? 1));
+  /* 用 `sc !== undefined` 收窄判别联合，不用 `?? 1` 兜底：两个分支互斥且各自的值必有 */
+  if (params.sc !== undefined) args.push('--nr-scale', String(params.sc));
+  else args.push('--nr-width', String(Math.round(params.w)));
 
   args.push('--nr-style', String(params.st));
-  /* 模型档位只有内置那一套：原插件 `collectOptions` 就是硬编码 0，别和 `st`（风格）混 */
+  /* 模型档位只有内置那一套：契约见 `docs/plan/23` §3.4（固定传 0），别和 `st`（风格）混 */
   args.push('--nr-preset', '0');
   args.push('--nr-intensity', String(params.i));
   args.push('--nr-detail', String(params.d));
@@ -220,14 +223,15 @@ function findOutput(
 }
 
 /**
- * 跑一次引擎：成功时 `outPath` 是结果 PNG，`log` 是引擎输出（给页面显示最后一行）。
+ * 跑一次引擎：成功时 `outPath` 是结果 PNG。
  *
  * 退出码 ≠ 0 与「没产出结果」都是 `PS_ERROR`，尾部 12 行进 `detail`。
+ * **不回传 `log`**：页面 loading 用固定文案，没有消费者；要排障看失败臂的 detail。
  */
 export async function runEngine(
   runtimeDir: string,
   input: { inPath: string; outDir: string; params: DlssParams }
-): Promise<Result<{ outPath: string; log: string[] }>> {
+): Promise<Result<{ outPath: string }>> {
   const modules = nodeModules();
   if (modules.status === 'error') return modules;
 
@@ -266,7 +270,7 @@ export async function runEngine(
     );
   }
 
-  return ok({ outPath, log: lines });
+  return ok({ outPath });
 }
 
 /**

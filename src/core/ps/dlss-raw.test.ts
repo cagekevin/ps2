@@ -20,7 +20,6 @@ describe('dlssExportRaw', () => {
 
   it.each([
     ['no-doc', 'PS_NO_DOC'],
-    ['empty-layer', 'PS_WRONG_LAYER'],
     ['layer-too-big', 'PS_REJECTED'],
     ['result-missing', 'PS_ERROR']
   ])('约定值 %s 折成 %s', (raw, code) => {

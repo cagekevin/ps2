@@ -43,15 +43,18 @@ describe('runProcess', () => {
     expect(result.value.code).toBe(3);
   });
 
-  it('超时：kill 进程并落 TIMEOUT，detail 带毫秒数', async () => {
-    const result = await runProcess(NODE, ['-e', 'setTimeout(function () {}, 10000)'], {
-      timeoutMs: 200
-    });
+  it('超时：kill 进程并落 TIMEOUT，detail 带毫秒数与卡死前已收到的输出', async () => {
+    const result = await runProcess(
+      NODE,
+      ['-e', "console.log('before-timeout'); setTimeout(function () {}, 10000)"],
+      { timeoutMs: 200 }
+    );
 
     expect(result.status).toBe('error');
     if (result.status !== 'error') return;
     expect(result.code).toBe('TIMEOUT');
-    expect(result.detail).toBe('timeout:200');
+    expect(result.detail).toContain('timeout:200');
+    expect(result.detail).toContain('before-timeout');
   });
 
   it('exe 不存在：IO_ERROR，detail 带路径与原因', async () => {

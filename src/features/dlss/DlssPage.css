@@ -1,7 +1,7 @@
 /*
  * 超分页（`/dlss`）：小标题分组 + 底部动作区。
  *
- * 分组按决策顺序（当前对象 → 放大倍率 → 参数），**承载形式照设置页**：
+ * 分组按决策顺序（放大倍率 → 参数），**承载形式照设置页**：
  * 小标题 + 行，不带边框卡片。带边框卡片是全仓唯一一处，和兄弟页放一起会显得
  * 像贴上去的；改成小标题后，组别还在，视觉语言统一（2026-11-09 真机截图后调整）。
  *
@@ -48,29 +48,6 @@
 .mm-dlss__hint{
   color: var(--mm-color-text-faint);
   font-size: var(--mm-font-xs);
-}
-
-.mm-dlss__kv{
-  font-size: var(--mm-font-sm);
-}
-
-/* 标签固定、值可伸缩：`.mm-u-row` 是两端铺满，不给值一个上限长名字就会把标签挤掉 */
-.mm-dlss__kv > span:first-child{
-  flex: 0 0 auto;
-}
-
-/* 值也用次要色：照设置页 `.mm-settings__status`，别让读出来的信息比控件还亮。
-   截断走全仓统一范本（CSS ellipsis 按可用宽度，不按固定字数）：MessageBar / TemplatePage /
-   ActionPage 都是这一套；面板拉伸时也不用改魔数。全名挂 title 可查，不丢信息。 */
-.mm-dlss__kv-value{
-  flex: 1 1 auto;
-  max-width: 70%;
-  color: var(--mm-color-text-dim);
-  min-width: 0;
-  overflow: hidden;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 六个滑杆：同形态同语义，组内挨着放 */

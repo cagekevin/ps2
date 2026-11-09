@@ -12,7 +12,7 @@
  *   批量文字      mm_text_readAll  mm_text_writeAll  mm_text_createAll（新建 / OCR 建层共用）
  *   OCR           mm_ocr_selectionRect  mm_ocr_exportImage  mm_ocr_eraseOriginal
  *   矢量化        mm_vec_exportLayer  mm_vec_replaceWithPath
- *   DLSS          mm_dlss_exportLayer  mm_dlss_finishResult（导出选中层 / 结果导回）
+ *   DLSS          mm_dlss_exportLayer  mm_dlss_finishResult（整个画幅可见合成 / 结果导回）
  *   导出          mm_doc_exportPath（解析基目录 + 逐级建子目录）
  *   诊断          mm_diag_vendor
  *
@@ -1140,52 +1140,47 @@ function mm_doc_exportPath(pathType, relativeDir, baseDir) {
 	});
 }
 
-/* ---------------- DLSS：导出选中层 / 结果导回 ---------------- */
+/* ---------------- DLSS：导出整个画幅 / 结果导回 ---------------- */
 
 /**
- * 当前图层导出为裁切 PNG（引擎输入）。
+ * 把**整个画幅的可见合成**导出为 PNG（引擎输入）。
  *
- * → `{ left, top, width, height, layerName }`；`no-doc` / `empty-layer` / `layer-too-big` / `error:…`
+ * → `{ left, top, width, height, layerName }`，其中 left/top 恒 0、width/height 是画布尺寸、
+ * layerName 是文档名（整幅没有「单一图层」，结果名以文档名为底）。
  *
- * 区域 ≤0 是 `empty-layer`（空层 / 全透明时 `bounds` 直接抛）；`w*h > maxPixels` 是
- * `layer-too-big` —— 引擎按整帧分配显存，不拦会把机器拖死。
+ * 不读 `activeLayer`、不看 `bounds`：超分作用于整个画幅，选中哪个图层、图层是不是空的
+ * 都与结果无关。`doc.duplicate(name, true)` 是本仓现成范本（`mm_ocr_exportImage` 同款），
+ * 第二参数 mergeLayersOnly 只留合成图、隐藏层不参与 —— 就是用户眼睛看到的画面。
  *
- * **标尺必须先切 px**：标尺是百分比时 `as("px")` 不抛错而是给 NaN，`documents.add(NaN)` 直接失败。
- * 这里照 `mm_vec_exportLayer` 的写法「存 → 设 → finally 还原」，不引入原插件的 `inPixels` 高阶壳。
+ * `w*h > maxPixels` 回 `layer-too-big`：引擎按整帧分配显存，这个上限是真的，不是图层判据。
+ * 上限由前端传（config 是叶子模块，ExtendScript 读不到）。
  *
- * 临时文档同分辨率、8-bit：引擎要 8-bit PNG，且不希望被重采样。
+ * 临时文档同分辨率、8-bit RGB：引擎只吃 8-bit PNG；跨文档 duplicate 会自动转换位深/模式。
+ * 标尺先切 px：百分比标尺下 `as("px")` 给 NaN，`documents.add(NaN)` 直接失败。
  */
 function mm_dlss_exportLayer(pngPath, maxPixels) {
 	return mm_safe("mm_dlss_exportLayer", function () {
 		if (!app.documents.length) return "no-doc";
 
 		var doc = app.activeDocument;
-		var layer = doc.activeLayer;
 		var savedDialogs = app.displayDialogs;
 		var originalRuler = app.preferences.rulerUnits;
+		var merged = null;
 		var tmpDoc = null;
 
 		app.displayDialogs = DialogModes.NO;
 		app.preferences.rulerUnits = Units.PIXELS;
 		try {
-			var box;
-			try {
-				box = layer.bounds;
-			} catch (be) {
-				mm_log("mm_dlss_exportLayer bounds failed: " + be.message);
-				return "empty-layer";
-			}
+			var width = Math.round(Number(doc.width.as("px")));
+			var height = Math.round(Number(doc.height.as("px")));
 
-			var left = Math.round(mm_px(box[0]));
-			var top = Math.round(mm_px(box[1]));
-			var width = Math.round(mm_px(box[2])) - left;
-			var height = Math.round(mm_px(box[3])) - top;
-			if (!(width >= 1) || !(height >= 1)) return "empty-layer";
-
-			/* 上限由前端传：config 是叶子模块，ExtendScript 侧读不到；没传是调用方的 bug */
 			var limit = Number(maxPixels);
 			if (!(limit > 0)) throw new Error("maxPixels 未传");
 			if (width * height > limit) return "layer-too-big";
+
+			/* 副本上合并可见图层，原文档与它的图层、选区一律不动 */
+			merged = doc.duplicate("maomao_dlss_merged", true);
+			app.activeDocument = merged;
 
 			tmpDoc = app.documents.add(
 				new UnitValue(width, "px"),
@@ -1199,34 +1194,37 @@ function mm_dlss_exportLayer(pngPath, maxPixels) {
 			);
 			var blank = tmpDoc.activeLayer;
 
-			/* 跨文档 duplicate 只允许从最前面的文档复制，所以先把源文档置前 */
-			app.activeDocument = doc;
-			var dup = layer.duplicate(tmpDoc, ElementPlacement.PLACEATBEGINNING);
+			/* 跨文档 duplicate 只允许从最前面的文档复制 */
+			app.activeDocument = merged;
+			merged.activeLayer.duplicate(tmpDoc, ElementPlacement.PLACEATBEGINNING);
 			app.activeDocument = tmpDoc;
 			try {
 				blank.remove();
-			} catch (be2) { /* 透明底，留着也无害 */ }
-
-			if (left !== 0 || top !== 0) {
-				dup.translate(new UnitValue(-left, "px"), new UnitValue(-top, "px"));
-			}
+			} catch (be) { /* 透明底，留着也无害 */ }
 
 			var out = new File(pngPath);
 			if (out.exists) out.remove();
 			out.parent.create();
 			tmpDoc.saveAs(out, new PNGSaveOptions(), true);
 
-			var layerName = layer.name;
+			var baseName = doc.name;
 			tmpDoc.close(SaveOptions.DONOTSAVECHANGES);
 			tmpDoc = null;
+			merged.close(SaveOptions.DONOTSAVECHANGES);
+			merged = null;
 			app.activeDocument = doc;
 
-			return { left: left, top: top, width: width, height: height, layerName: layerName };
+			return { left: 0, top: 0, width: width, height: height, layerName: baseName };
 		} finally {
 			if (tmpDoc !== null) {
 				try {
 					tmpDoc.close(SaveOptions.DONOTSAVECHANGES);
 				} catch (ce) { }
+			}
+			if (merged !== null) {
+				try {
+					merged.close(SaveOptions.DONOTSAVECHANGES);
+				} catch (me) { }
 			}
 			try {
 				app.activeDocument = doc;
@@ -1240,7 +1238,7 @@ function mm_dlss_exportLayer(pngPath, maxPixels) {
 /**
  * 层名 / 文件名清洗：只替换 Windows 文件名非法字符。
  *
- * token 里本来就没有这些字符（`params.js` 只允许 `· [ ] , . - _`），所以清洗不会破坏 token；
+ * token 里本来就没有这些字符（字符集见 `docs/plan/23` §3.2），所以清洗不会破坏 token；
  * 它防的是用户自己起的名字。
  */
 function mm_dlss_safeName(text) {
@@ -1265,7 +1263,7 @@ function mm_dlss_safeName(text) {
  * 先改文件名再 `app.open`：`Document.name` 只读，不重命名新文档就叫 `in.png_nr.png`。
  *
  * **不包 `suspendHistory`**（撤销两步）：跨文档 open + duplicate 包进去是否可靠未验，
- * 原插件也不包。要改成一条历史是另一轮的事。
+ * `docs/plan/23` 裁定 5 已定不包。要改成一条历史是另一轮的事。
  */
 function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
 	return mm_safe("mm_dlss_finishResult", function () {

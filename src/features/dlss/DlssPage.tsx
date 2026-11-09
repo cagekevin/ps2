@@ -1,17 +1,16 @@
 /**
- * 超分页（`/dlss`）：选中图层 → DLSS 神经渲染 → 结果层。
+ * 超分页（`/dlss`）：整个画幅的可见合成 → DLSS 神经渲染 → 结果层 / 新文档。
  *
- * 【分组按决策顺序，不按控件形态】—— 学原作者的取舍：
- *   当前对象（我在处理什么）→ 放大倍率（结果多大 / 落到哪）→ 参数（怎么微调）。
- * 每张卡片自带它自己的说明，不放页尾脚注（原版就是把 1× 的说明贴在倍率下面）。
+ * **超分作用于整个画幅，与选中哪个图层无关**；页面不读图层状态。
  *
- * 【状态常驻】标题栏一直显示「就绪 / 自检中 / 未找到引擎」；
- * 只有真的跑不了（无 RTX）才整页不可用（用户裁定）。自检实测 4.4 秒，
+ * 【分组按决策顺序，不按控件形态】放大倍率（结果会怎样）→ 参数（怎么微调）；
+ * 说明紧贴它解释的控件，不放页尾脚注。
+ *
+ * 【状态常驻】底部信息行显示「就绪 / 自检中」+ 环境信息；
+ * 只有真的跑不了（无 RTX）才整页不可用。自检实测 4.4 秒，
  * 结果在 `core/dlss/engine` 按目录缓存，本会话第二次进页秒开。
  *
- * 【页面只调 commands + 一个类型化读函数】`getLayerState` 是 `core/ps` 的现成
- * `Result` 读能力（不是 `evalScript` / `callJsx`，不违反分层），为它再包一层命令就是空壳
- * （`ADR-0002`）；其余外部动作一律走 `commands/dlss`。
+ * 外部动作一律走 `commands/dlss`，不碰 `evalScript` / fs / prefs。
  */
 
 import { useEffect, useState } from 'react';
@@ -22,9 +21,7 @@ import { Button, Input } from '../../components/ui';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { chooseRuntime, resolveEngine, runDlss, verifyEngine } from '../../commands/dlss';
-import { getLayerState, type LayerState } from '../../core/ps/layer';
 import { DLSS_BUILTIN } from '../../domain/dlss-token';
-import { LAYER_KIND_LABEL } from '../../types/layer';
 import type { DlssEngineInfo, DlssLook, DlssParams, DlssSrPreset } from '../../types/dlss';
 import { MSG } from '../../types/messages';
 import './DlssPage.css';
@@ -58,7 +55,7 @@ const SCALES = [
 const SLIDERS = [
   { key: 'i', label: 'NR 强度', min: 0, max: 2 },
   { key: 'd', label: '细节保留', min: 0, max: 2 },
-  /* 色彩采用的上限是 1，不是 2（原插件 index.html:96）——六个滑杆里只有它不同 */
+  /* 色彩采用的上限是 1，不是 2（默认参数契约见 `docs/plan/23` §7）——六个滑杆里只有它不同 */
   { key: 'c', label: '色彩采用', min: 0, max: 1 },
   { key: 'ls', label: '局部结构', min: 0, max: 2 },
   { key: 'lt', label: '局部色调', min: 0, max: 2 },
@@ -81,7 +78,8 @@ type EngineState =
   | { kind: 'checking' }
   | { kind: 'ready'; dir: string; probing: boolean; info: DlssEngineInfo | null }
   | { kind: 'no-engine'; tried: string[] }
-  | { kind: 'failed'; detail: string };
+  /** reason 直接取生产者给的那一句：超时 / 无 Node / 无 RTX 各不相同，页面不再自己造句 */
+  | { kind: 'failed'; reason: string; detail: string };
 
 function toNumber(text: string): number {
   const value = Number(text);
@@ -107,10 +105,10 @@ function draftOf(look: DlssLook): Draft {
     sr: look.sr,
     am: look.am === 1,
     ui: look.ui === 1,
-    /* 初始倍率 1×（原插件 `data-scale="1" class="on"`）：第一次处理是原位新层，不另开文档 */
+    /* 初始倍率 1×：第一次处理是原位新层，不另开文档（默认参数见 `docs/plan/23` §7） */
     scale: '1',
     useWidth: false,
-    /* 勾上「指定宽度」即带出 1920（原插件 input 的 value="1920" disabled） */
+    /* 勾上「指定宽度」即带出 1920（同上） */
     width: '1920'
   };
 }
@@ -159,19 +157,7 @@ export default function DlssPage() {
   const [engine, setEngine] = useState<EngineState>({ kind: 'checking' });
   const [recheck, setRecheck] = useState(0);
   const [draft, setDraft] = useState<Draft>(() => draftOf(DLSS_BUILTIN.standard));
-  const [layer, setLayer] = useState<LayerState | null>(null);
   const [busy, setBusy] = useState(false);
-
-  /* 当前对象：只读一次，进页给用户确认「我要处理的是哪一层」 */
-  useEffect(() => {
-    let cancelled = false;
-    void getLayerState().then((result) => {
-      if (!cancelled && result.status === 'ok') setLayer(result.value);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,7 +165,7 @@ export default function DlssPage() {
     /* 同步找目录（毫秒级），不 spawn */
     const found = resolveEngine();
     if (found.status === 'error') {
-      setEngine({ kind: 'failed', detail: found.detail });
+      setEngine({ kind: 'failed', reason: found.reason, detail: found.detail });
       return;
     }
     if (found.value.state === 'no-engine') {
@@ -195,7 +181,7 @@ export default function DlssPage() {
       if (cancelled) return;
       setEngine(
         result.status === 'error'
-          ? { kind: 'failed', detail: result.detail }
+          ? { kind: 'failed', reason: result.reason, detail: result.detail }
           : { kind: 'ready', dir, probing: false, info: result.value }
       );
     });
@@ -226,11 +212,12 @@ export default function DlssPage() {
     setEngine({ kind: 'ready', dir, probing: true, info: engine.info });
     const result = await run(() => verifyEngine(dir, force), {
       spin: false,
-      quiet: ['PS_UNREADY']
+      /* 自检的失败一律由整页不可用态说一次，不弹 toast 说第二遍（ADR-0003） */
+      quiet: ['PS_UNREADY', 'IO_ERROR', 'TIMEOUT']
     });
     setEngine(
       result.status === 'error'
-        ? { kind: 'failed', detail: result.detail }
+        ? { kind: 'failed', reason: result.reason, detail: result.detail }
         : { kind: 'ready', dir, probing: false, info: result.value }
     );
   }
@@ -265,7 +252,11 @@ export default function DlssPage() {
       {blocked ? (
         <div className="mm-dlss__blocked">
           <div className="mm-dlss__blocked-title">
-            {engine.kind === 'no-engine' ? MSG.dlss.noEngine : MSG.dlss.probeFailed}
+            {engine.kind === 'no-engine'
+              ? MSG.dlss.noEngine
+              : engine.kind === 'failed'
+                ? engine.reason
+                : MSG.dlss.probeFailed}
           </div>
           {engine.kind === 'no-engine' ? (
             <div className="mm-dlss__hint" title={engine.tried.join(' | ')}>
@@ -289,24 +280,7 @@ export default function DlssPage() {
       ) : (
         <>
           <div className="mm-dlss__body">
-            {/* ① 我在处理什么 */}
-            <section className="mm-dlss__group">
-              <div className="mm-dlss__group-title">当前对象</div>
-              <div className="mm-u-row mm-dlss__kv">
-                <span>图层</span>
-                <span className="mm-dlss__kv-value" title={layer?.name ?? ''}>
-                  {layer?.name ?? '—'}
-                </span>
-              </div>
-              <div className="mm-u-row mm-dlss__kv">
-                <span>类型</span>
-                <span className="mm-dlss__kv-value">
-                  {layer ? LAYER_KIND_LABEL[layer.kind] : '—'}
-                </span>
-              </div>
-            </section>
-
-            {/* ② 结果多大 / 落到哪（说明紧贴它解释的控件） */}
+            {/* ① 结果多大 / 落到哪（说明紧贴它解释的控件） */}
             <section className="mm-dlss__group">
               <div className="mm-dlss__group-title">放大倍率</div>
               <div className="mm-btn-grid mm-dlss__scales">
@@ -341,7 +315,7 @@ export default function DlssPage() {
               <div className="mm-dlss__hint">1× 原位新层；放大档另开文档</div>
             </section>
 
-            {/* ③ 怎么微调 */}
+            {/* ② 怎么微调 */}
             <section className="mm-dlss__group">
               <div className="mm-dlss__group-title">参数</div>
               <div className="mm-dlss__sliders">
@@ -406,7 +380,7 @@ export default function DlssPage() {
               disabled={!canRun}
               onClick={() => void handleRun()}
             >
-              处理当前图层
+              处理画幅
             </Button>
             <div className="mm-btn-grid mm-dlss__actions">
               <Button

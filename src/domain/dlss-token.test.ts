@@ -3,7 +3,7 @@
  *
  * **不做「编码 → 解码」往返**：往返测试有个陷阱 —— 编解码两边一起写错时测试照样绿
  * （自己跟自己一致），而 token 是写进用户 PSD 的，错了是永久的。所以这里断言**精确字符串**，
- * 逐字对照原插件 `params.js` 的输出。
+ * 精确串的契约摘要见 `docs/plan/23` §3.2。
  */
 import { describe, expect, it } from 'vitest';
 import { DLSS_BUILTIN, dlssResultName, dlssTokenBody } from './dlss-token';

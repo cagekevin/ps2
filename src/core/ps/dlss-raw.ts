@@ -4,7 +4,7 @@
  * **单独一个文件**：能力表要 import 它，写进 `./dlss.ts` 就会形成
  * `capabilities ↔ dlss` 运行时环（与 `ocr-raw.ts` / `vectorize-raw.ts` 同一个理由）。
  *
- * 两条约定值（`'empty-layer'` / `'layer-too-big'` / `'result-missing'`）已登记在
+ * 两个约定值（`'layer-too-big'` / `'result-missing'`）已登记在
  * `raw.ts` 的 `RAW_FAILURES`，这里不自己比字符串。
  */
 

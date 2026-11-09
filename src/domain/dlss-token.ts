@@ -1,7 +1,7 @@
 /**
  * DLSS 参数 token：参数 → 图层名里那段机器可读文本的唯一编码处。
  *
- * **纯逻辑**（零 IO / 零 DOM / 零 PS），移植自原插件 `js/params.js`，语义逐字不变。
+ * **纯逻辑**（零 IO / 零 DOM / 零 PS）；编码契约摘要见 `docs/plan/23` §3.2，语义逐字不变。
  * 为什么必须能单测：token 会写进用户的 PSD 图层名，几个月后才读回来，
  * 解析 bug 是**永久性**的 —— 少读一个键，用户下次打开就少一档设置。
  *
@@ -12,14 +12,13 @@
  * `· [ ] , . - _`）：结果尺寸变大时同一串会变成新文档名，jsx 的 `mm_dlss_safeName`
  * 会把其余字符改写成 `_`，那样 token 就毁了 —— 所以本文件里**不许出现** `:` 或 `|`。
  *
- * 本轮**只做编码**。读回（`dlssTokenOf`）与预设比对（`dlssSameParams`）归阶段 2/3，
- * 现在写就是零消费者的代码。原插件的 `TOKEN_VER` / `PRESET_KEYS` 也不迁：前者只服务
- * `makeToken`（已内联），后者只服务 `sameParams`。
+ * **只做编码**：预设与「图层名读回参数」按用户裁定不做（`docs/plan/23` §7），
+ * 所以读回与预设比对都不实现 —— 现在写就是零消费者的代码。`TOKEN_VER` 已内联。
  */
 
 import type { DlssLook, DlssParams } from '../types/dlss';
 
-/** 内置档位（照抄原插件 `BUILTIN`，数值是面板原来的硬编码值；不含输出尺寸） */
+/** 内置档位（数值契约见 `docs/plan/23` §3.2；不含输出尺寸） */
 export type DlssPresetName = 'light' | 'standard' | 'max' | 'portrait' | 'cinema';
 
 export const DLSS_BUILTIN: Record<DlssPresetName, DlssLook> = {
@@ -46,7 +45,7 @@ function fmtNum(value: number): string {
   return text === '' || text === '-0' ? '0' : text;
 }
 
-/** 布尔 → 0/1（原插件同时接受 `true` / `1` / `'1'` / `'true'`） */
+/** 布尔 → 0/1（契约见 `docs/plan/23` §3.2：同时接受 `true` / `1` / `'1'` / `'true'`） */
 function flag(value: unknown): 0 | 1 {
   return value === true || value === 1 || value === '1' || value === 'true' ? 1 : 0;
 }
@@ -81,7 +80,7 @@ function baseName(name: string): string {
 /** 结果层名：`'<名> · DLSS NR 2x [NR5 …]'`；有宽度时写 `1024px` 而不是倍率 */
 export function dlssResultName(name: string, params: DlssParams): string {
   const base = baseName(name) || 'Layer';
-  const width = params.w;
-  const size = width !== undefined && width > 0 ? `${width}px` : `${fmtNum(params.sc ?? 0)}x`;
+  /* 用 `sc !== undefined` 收窄判别联合：两个分支的值都必有，不需要 `?? 0` 兜底算出 `0x` */
+  const size = params.sc !== undefined ? `${fmtNum(params.sc)}x` : `${fmtNum(params.w)}px`;
   return `${base} · DLSS NR ${size} [NR5 ${dlssTokenBody(params)}]`;
 }

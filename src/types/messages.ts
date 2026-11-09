@@ -514,7 +514,8 @@ export const MSG = {
     PS_NO_DOC: '没有打开的文档',
     PS_WRONG_LAYER: '当前图层不是形状图层',
     PS_SKIPPED: '自动填充已关闭，请先在 PS 里打开',
-    PS_REJECTED: 'PS 拒绝执行，请确认已选中图层',
+    /* 中性句：DLSS 的「画幅超 64MP」也折这个码，跟选中图层无关 */
+    PS_REJECTED: 'PS 拒绝执行',
     PS_UNREADY: 'PS 还没准备好，请稍后重试',
     PS_ERROR: 'PS 执行失败',
     PS_BAD_PAYLOAD: BAD_PAYLOAD,
