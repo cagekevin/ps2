@@ -102,3 +102,27 @@ export const VECTORIZE_TARGET_EDGE = 600;
 
 /** 放大上限：20px 的小图放大到 600 是 30 倍纯插值，只会更糊，不许无限放大 */
 export const VECTORIZE_MAX_UPSCALE = 8;
+
+/* ---------------- DLSS 神经渲染（外部引擎） ---------------- */
+
+/**
+ * 引擎可执行文件名。**runtime 目录本身不进仓库**：位置与备份见 `CONVENTIONS` §5.2
+ * 与 `docs/plan/23` §3.4（4 个文件，214MB，本机唯一一份）。
+ */
+export const DLSS_EXE = 'video2dlssnr.exe';
+
+/** 跑一张图的上限（原插件同值）：引擎按整帧分配显存，600s 还没回来基本是卡死 */
+export const DLSS_TIMEOUT_MS = 600_000;
+
+/** 自检上限：正常 1 秒内出结果，卡住要尽快告诉用户，不跟着 600s 一起等 */
+export const DLSS_PROBE_TIMEOUT_MS = 60_000;
+
+/**
+ * 单图层像素上限（64MP，原插件守卫值）。
+ *
+ * 由前端传给 jsx：`config` 是叶子模块，ExtendScript 侧读不到它。
+ */
+export const DLSS_MAX_PIXELS = 64 * 1024 * 1024;
+
+/** `%TEMP%` 下的临时目录名（不用原插件的 `dlss5ps`，避免两边互踩） */
+export const DLSS_TEMP_DIR = 'maomao-dlss';

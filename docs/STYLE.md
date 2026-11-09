@@ -26,6 +26,7 @@
 | 页面消息行 | `components/MessageBar`（页面状态话唯一出口：前提不满足 / 空态 = 灰、数据健康 = 黄、读取失败 = 红可重试） | 条件渲染一条占文档流的提示（出现即挤动下方内容，`TD-08-2` 判死）；页面自绘状态行；操作回执走消息行（那是 toast 的事） |
 | 图标 → 展开面板 | `<IconPanelGroup>` + `<IconPanel>`。抽屉表面（`#222` / 直角 / 通栏 / 12 内边距）只由 `icon-panel.css` 的 `__box` 给；左右通栏靠 `--mm-icon-panel-bleed`（值 = 承载行的左右 padding，由那一行声明，不声明即 0；页面根壳声明为 `--mm-page-pad-x`）。**底色用 `__box::before` 左右铺**（`top/bottom:0` + `left/right: calc(-1 * bleed)` + `z-index:-1`，`__box` 自己要 `isolation: isolate`），**不要用负 margin**；`__box` 的上下 padding 固定 `--mm-space-2`(8)、左右 0（组件给，页面不许覆写）——那会把 `__box` 连内容一起拉宽 | 页面自己写「谁开着 / 互斥 / 再点关闭」；点外部或 Esc 自动关；给 `__box` 覆写 padding / 底色 / 圆角；在承载组的那一行上加 padding（会缩抽屉，改用 `--mm-icon-panel-bleed`） |
 | 勾选框 | `components/CheckBox` | 裸写 `<input type="checkbox">`、自己画方框 |
+| 滑杆 | `components/Slider`（**全仓唯一渲染入口**；原生 `input[type=range]`，标签 / 右端数值 / 轨道比例由 `--mm-slider-pct` 注入，值域与已选段比例只在这里给） | 页面自绘 div 冒充滑杆、裸写 `<input type="range">`、在调用点覆盖轨道底色或圆点尺寸 |
 | 单选框 | `components/RadioButton` | 裸写 `<input type="radio">`、靠 state 假装互斥（原生靠 `name`） |
 | 页面标题 | **一律不加**（2026-10-30）：导航上已写着页名，页内再放一条标题就是白占一行；`PageHeader` 组件与 `--mm-header-h` 已随之一并删除 | 页面写 `<header>` / `__title` 标题条，或再造一个页头组件 |
 | 页面底栏 | `components/BottomBar`（`BottomBar` / `BottomBarButton` / `BottomBarDivider`） | 页面自绘 26 高底条、自己调按钮宽与 hover 描边 |

@@ -103,6 +103,8 @@ import {
 } from './raw';
 import { ocrExportRaw } from './ocr-raw';
 import { replaceReportRaw, vecExportRaw } from './vectorize-raw';
+/* DLSS 的私有解析器：同样单独文件，理由见 `dlss-raw.ts` 文件头 */
+import { dlssExportRaw, dlssPlacedRaw } from './dlss-raw';
 
 /** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
 export const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
@@ -364,6 +366,29 @@ export const CAP = {
   vecReplace: {
     fn: 'mm_vec_replaceWithPath', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
     require: requireOneLayer, parse: replaceReportRaw
+  },
+
+  /* ---------------- DLSS 神经渲染（自写 jsx，`core` 门只能直调） ---------------- */
+
+  /**
+   * 导出选中图层为裁切 PNG（引擎输入）：`{ left, top, width, height, layerName }`。
+   *
+   * 空层回 `'empty-layer'`、超 `maxPixels` 回 `'layer-too-big'`，都走约定值表。
+   * **恰好 1 个图层**是前置：多选时 jsx 的 `activeLayer` 只是其中一个，
+   * 静默只处理一个比报错更糟（与矢量化同一个判据）。
+   */
+  dlssExport: {
+    fn: 'mm_dlss_exportLayer', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    require: requireOneLayer, parse: dlssExportRaw
+  },
+
+  /**
+   * 结果 PNG 导回：尺寸与区域一致 → 原文档新层；放大档 → 另开文档（形状区分，不是失败）。
+   * 不设前置：没打开文档时 jsx 回 `'no-doc'`（同 `ocrErase` 的判法）。
+   */
+  dlssFinish: {
+    fn: 'mm_dlss_finishResult', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: dlssPlacedRaw
   },
 
   /* ---------------- 常用页（§11.4：通道按原版调用点分，不按前缀猜） ---------------- */

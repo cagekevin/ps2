@@ -29,7 +29,11 @@ const RAW_FAILURES: Record<string, ErrorCode> = {
   'need-one': 'PS_REJECTED',
   'not-shape': 'PS_WRONG_LAYER',
   skipped: 'PS_SKIPPED',
-  '-1': 'PS_REJECTED'
+  '-1': 'PS_REJECTED',
+  /* DLSS：空层是前提不满足（灰）；超 64MP 是硬上限拒绝；结果文件缺失是故障（红） */
+  'empty-layer': 'PS_WRONG_LAYER',
+  'layer-too-big': 'PS_REJECTED',
+  'result-missing': 'PS_ERROR'
 };
 
 /**

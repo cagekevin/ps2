@@ -15,7 +15,7 @@
  * 没有设计定稿前不摆空分组。
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckBox } from '../../components/CheckBox';
 import { useConfirm } from '../../components/Confirm/useConfirm';
@@ -24,6 +24,7 @@ import { Button, Input } from '../../components/ui';
 import { useReportFailure, useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { download, upload } from '../../commands/cloud';
+import { chooseRuntime, resolveEngine } from '../../commands/dlss';
 import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
 import { getCredentialsText, setCredentialsText } from '../../commands/credentials';
@@ -60,6 +61,31 @@ export default function SettingsPage() {
    */
   const [credText, setCredText] = useState('');
   const reportFailure = useReportFailure();
+
+  /*
+   * DLSS 引擎目录：全局一次配置，所以放设置页；`/dlss` 不可用态只留一个
+   * 「指定引擎路径」快捷出口。两处共用 `chooseRuntime` / `resolveEngine`，实现只有一份。
+   */
+  const [dlssPath, setDlssPath] = useState('');
+  const [dlssFound, setDlssFound] = useState('未找到引擎');
+  const readDlss = useCallback(() => {
+    const found = resolveEngine();
+    if (found.status === 'error') {
+      setDlssFound('读取失败');
+      return;
+    }
+    setDlssPath(found.value.savedPath);
+    setDlssFound(found.value.state === 'ready' ? found.value.dir : '未找到引擎');
+  }, []);
+
+  useEffect(() => {
+    readDlss();
+  }, [readDlss]);
+
+  async function chooseDlss(): Promise<void> {
+    const picked = await run(() => chooseRuntime(), { spin: false });
+    if (picked.status === 'ok' && picked.value) readDlss();
+  }
 
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -271,6 +297,25 @@ export default function SettingsPage() {
             从云端下载
           </Button>
         </div>
+
+        {/* DLSS 引擎：外部大资产（214MB，不进仓库）的位置配置，约定见 CONVENTIONS §5.2 */}
+        <div className="mm-settings__section">DLSS 引擎</div>
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">手动指定</span>
+          <Input
+            className="mm-u-grow"
+            value={dlssPath}
+            placeholder="留空则自动探测"
+            readOnly
+          />
+        </div>
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">当前命中</span>
+          <span className="mm-settings__status" title={dlssFound}>
+            {dlssFound}
+          </span>
+        </div>
+        <Button onClick={() => void chooseDlss()}>选择引擎目录</Button>
 
         {/* 诊断：原来在面板头部占一整行（应用名 + 版本 + 诊断），现在收进设置页 ——
             它是排查入口，不是每天要点的东西（2026-10-31） */}

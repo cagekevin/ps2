@@ -84,6 +84,8 @@
 | 设计 Token | `src/styles/tokens.css` | 全仓唯一允许写原始色值与 px 的文件；色阶按亮度单调、语义角色唯一、间距六档、控件高度一档、字号三档；蓝的用法见 `docs/STYLE.md` §7 规则 12 |
 | 公共布局原语 | `src/styles/global.css` | 全仓**横排唯一入口** `.mm-u-row` / `.mm-u-row--wrap`（`display:flex` + `align-items:center` + `justify-content:space-between`，一律两端铺满，没有左对齐 / 右对齐变体）；**组合层·布局**（`STYLE.md` §6.2）也在这里：`.mm-divider` / `.mm-icon-row` / `.mm-btn-grid` / `.mm-tabs`（文字 tab 条，`--start` 为按内容宽靠左档）/ `.mm-u-tiles`（贴左换行排，与 `.mm-u-row--wrap` 的两端铺满分方向），除 `.mm-u-tiles` 与 `.mm-tabs` 外都不带 `justify-content`（行类必须与 `.mm-u-row` 同挂）；浮层壳 `.mm-popover`、遮罩 `.mm-modal-mask`、勾选 / 单选根、页面根容器也在这里；页面壳与 `.mm-font__list` / `.mm-style__list` 的 `scrollbar-gutter: stable`（`docs/STYLE.md` §7 规则 18）也只在这里给 |
 | CEP 通道 | `src/core/cep/bridge.ts` | 唯一 PS 交互入口 |
+| 子进程 | `src/core/cep/process.ts` | 【范本】全仓唯一的 `child_process` 出口：`runProcess(exe, args, { cwd, timeoutMs })` 返回 `Result<{ code, lines }>`（两路输出合并、行缓冲、超时 kill、本模块不记日志）；`core/<域>/engine.ts` 只拼参数与判输出，不自己 spawn |
+| 滑杆 | `src/components/Slider/index.tsx` | 【范本】全仓唯一连续数值控件：原生 `input[type=range]` + 标签 / 右端两位小数 / 轨道比例由 `--mm-slider-pct` 注入；数字框给不了「值在范围内的相对位置」，别在页面自绘 div |
 | Node 模块 | `src/core/cep/node.ts` | 唯一 require 出口，文件读写靠它。**返回 `Result<T>`**（`detail` = `node:<模块名>:<异常>`），不返回 `null`：`catch {} → null` 会把「没有 Node 环境」与「按路径加载的包初始化失败」抹成同一件事，上层只能报一句「引擎没加载成功」（真机 2026-11-02 矢量化踩过） |
 | 剪贴板 | `src/core/clipboard/index.ts` | 唯一复制入口，自动降级 |
 | 日志 | `src/core/logger/index.ts` | 内部脱敏 + 相同消息折叠 + 清空入口（诊断页） |

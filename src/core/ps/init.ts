@@ -102,6 +102,9 @@ export const CORE_FUNCS = [
   /* 矢量化：导出选中层 / 用路径点建形状层 */
   'mm_vec_exportLayer',
   'mm_vec_replaceWithPath',
+  /* DLSS：导出选中层 / 结果导回（缺了只影响 `/dlss` 页，不进 `CORE_REQUIRED`） */
+  'mm_dlss_exportLayer',
+  'mm_dlss_finishResult',
   /* 诊断：官方能力探测 */
   'mm_diag_vendor'
 ] as const;

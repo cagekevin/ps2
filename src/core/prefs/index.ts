@@ -36,6 +36,11 @@ export type PrefKey =
    * 形状校验在 `domain/cloud.decodeLedger`，坏值按「没同步过」处理。
    */
   | 'cloud.ledger'
+  /**
+   * DLSS 引擎目录（用户手动指定的那份）。
+   * 空 = 走自动探测（`core/dlss/engine.resolveRuntime` 的 3 条候选）。
+   */
+  | 'dlss.runtime'
 
 const FILE = 'prefs.json';
 

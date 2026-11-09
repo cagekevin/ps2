@@ -205,7 +205,7 @@ rg "#[0-9a-fA-F]{6}|\d+px" src --glob '!src/styles/tokens.css'
 src/
 ├─ config.ts      **唯一可调参数表**：服务地址、体积与超时、OCR 排版系数、默认名字。叶子模块（不 import 任何东西）
 ├─ core/          技术横切：零业务、零 UI
-│  ├─ cep/        PS 通道
+│  ├─ cep/        PS 通道（`node.ts` = Node 模块出口，`process.ts` = 子进程出口）
 │  ├─ http/       请求与 endpoint
 │  ├─ auth/       token
 │  ├─ storage/    本地文件（双根：Maomao / SheJiZhuLi）
@@ -218,6 +218,7 @@ src/
 │  ├─ credentials/ 凭证（OCR / 翻译两节，`credentials.json`，**不进 git**）
 │  ├─ ocr/        云 OCR（百度）：`blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
 │  ├─ vectorize/  位图转 SVG 的 wasm 引擎（`vtracer`，从 `public/vendor/` 按扩展路径 require）
+│  ├─ dlss/       外部神经渲染引擎域：运行时探测 / 参数拼装 / 输出定位 / 临时产物
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
@@ -733,6 +734,15 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 ```
 
 官方资源目录：缩略图 `kuStyle/<id>.png`、渐变图 `Gradient/<file>`（大写 G）。
+
+### 5.2 外部大资产（模型 / 引擎运行时）
+
+进不了 git 的大文件（DLSS runtime 214MB、抠图模型 176MB）放 `%APPDATA%\Maomao\assets\<域>\`，
+**不进 `public/`、不进 `dist/`、不进 git**。不能放 `public/` 的理由只有一条：Vite 会拷进 `dist/`、
+`deploy.mjs` 再拷进扩展目录 —— 每次部署复制一遍，卸载扩展就没了。
+
+面板只读（`existsSync` + 把绝对路径交给引擎），放置与下载由用户或 `tools/*.mjs` 完成。
+每个域自己找目录，不抽公共模块。
 
 ## 6. UI 横切（7 项）
 

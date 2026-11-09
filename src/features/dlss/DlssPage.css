@@ -1,0 +1,159 @@
+/*
+ * 超分页（`/dlss`）：小标题分组 + 底部动作区。
+ *
+ * 分组按决策顺序（当前对象 → 放大倍率 → 参数），**承载形式照设置页**：
+ * 小标题 + 行，不带边框卡片。带边框卡片是全仓唯一一处，和兄弟页放一起会显得
+ * 像贴上去的；改成小标题后，组别还在，视觉语言统一（2026-11-09 真机截图后调整）。
+ *
+ * 组内 8、组间 12，都由容器 gap 给，页面不写 margin。
+ * **动作区紧跟内容，不贴底**：原版能贴底是因为它还有一张预设卡片把高度撑满；
+ * 我们按用户裁定砍掉预设后，再硬贴底就必然在「最后一组 ↔ 分隔线」之间挤出一大块洞。
+ * 改成不伸展后，内容 + 动作区是连续的一块，留白全部落到面板最下方（面板没填满的正常表现）。
+ * 内容超高时靠 min-height:0 + overlay 滚动；不用 space-between 均分，那个在溢出时会裁掉顶部。
+ *
+ * 页面根 `.mm-dlss` 的撑满 / 页边在 `global.css` 的页面根容器组里。
+ * **不设页头、不用 `text-strong`**：`STYLE` §6 明令页面标题一律不加（导航上已写着页名）；
+ * 兄弟页正文一律 `--mm-color-text` / `text-dim`，最亮的白只留给极少数强调，本页一处都不用。
+ * 状态「就绪 / 自检中」并进底部信息行常驻，不另起一行。
+ * 本页不新造控件皮肤：滑杆 / 下拉 / 勾选 / 输入 / 按钮全走公共件。
+ */
+
+/* ── 参数区：可滚，小标题分组 ─────────────────────────────── */
+
+.mm-dlss__body{
+  display: flex;
+  /* `0 1 auto`：不主动伸展（伸展 = 那块洞）；超高时仍可收缩并滚动 */
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: var(--mm-space-3);
+  min-height: 0;
+  overflow-y: overlay;
+}
+
+.mm-dlss__group{
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+  min-width: 0;
+}
+
+/* 组标题：与设置页 `.mm-settings__section` 同口径（11 号、次要色） */
+.mm-dlss__group-title{
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+}
+
+/* 每组自带的说明：紧贴它解释的控件，不放页尾 */
+.mm-dlss__hint{
+  color: var(--mm-color-text-faint);
+  font-size: var(--mm-font-xs);
+}
+
+.mm-dlss__kv{
+  font-size: var(--mm-font-sm);
+}
+
+/* 标签固定、值可伸缩：`.mm-u-row` 是两端铺满，不给值一个上限长名字就会把标签挤掉 */
+.mm-dlss__kv > span:first-child{
+  flex: 0 0 auto;
+}
+
+/* 值也用次要色：照设置页 `.mm-settings__status`，别让读出来的信息比控件还亮。
+   截断走全仓统一范本（CSS ellipsis 按可用宽度，不按固定字数）：MessageBar / TemplatePage /
+   ActionPage 都是这一套；面板拉伸时也不用改魔数。全名挂 title 可查，不丢信息。 */
+.mm-dlss__kv-value{
+  flex: 1 1 auto;
+  max-width: 70%;
+  color: var(--mm-color-text-dim);
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 六个滑杆：同形态同语义，组内挨着放 */
+.mm-dlss__sliders{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+}
+
+/* 横排两端铺满走公共 `.mm-u-row`，这里只给同行并列间距 */
+.mm-dlss__row{
+  gap: var(--mm-space-inline);
+}
+
+.mm-dlss__row-label{
+  flex: 0 0 auto;
+  font-size: var(--mm-font-sm);
+}
+
+.mm-dlss__select{
+  width: 62%;
+}
+
+.mm-dlss__width-input{
+  width: 40%;
+}
+
+/* 两个勾选框挨着：`.mm-u-row` 会把它们推到左右两端，这里要贴左 */
+.mm-dlss__inline{
+  display: flex;
+  gap: var(--mm-space-3);
+}
+
+/* 五档倍率：`.mm-btn-grid` 只注入列数；五档文字都是单行，不再允许换行 */
+.mm-dlss__scales{
+  --mm-btn-grid-cols: 5;
+}
+
+/* ── 固定区：信息行 + 主操作 + 两个诊断动作 ─────────────────── */
+
+.mm-dlss__footer{
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  /* 信息行 + 两排按钮同属一个动作区 = 组内，取贴合档 4（不是组间 8） */
+  gap: var(--mm-space-1);
+}
+
+.mm-dlss__info{
+  color: var(--mm-color-text-dim);
+  font-size: var(--mm-font-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-dlss__run{
+  width: 100%;
+}
+
+.mm-dlss__actions{
+  --mm-btn-grid-cols: 2;
+}
+
+/* ── 不可用态：整页替换（不叠遮罩，遮罩不拦焦点）────────────── */
+
+.mm-dlss__blocked{
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-4) 0;
+  text-align: center;
+}
+
+.mm-dlss__blocked-title{
+  color: var(--mm-color-text);
+}
+
+.mm-dlss__blocked-detail{
+  color: var(--mm-color-text-faint);
+  font-size: var(--mm-font-xs);
+  word-break: break-all;
+}

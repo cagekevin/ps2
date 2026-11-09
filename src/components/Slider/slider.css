@@ -1,0 +1,72 @@
+/*
+ * 滑杆（`/dlss` 的六个连续参数，也是全仓唯一范本）。
+ * 只写这一个控件的表面；底色 / 描边 / 圆角 / 字号一律取 token。
+ */
+
+.mm-slider{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+  min-width: 0;
+}
+
+/* 横排（标签左、数值右）走公共 `.mm-u-row`，这里不再写三件套 */
+.mm-slider__head{
+  font-size: var(--mm-font-sm);
+}
+
+.mm-slider__label{
+  color: var(--mm-color-text);
+}
+
+/* 等宽数字：值变化时右端不左右抖。
+   正文色即可 —— 兄弟页的数值都不用最亮的白（设置页 2026-10-31 已纠正过同一问题） */
+.mm-slider__value{
+  color: var(--mm-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 轨道：已选段用 accent、未选段用亮线，比例由 `--mm-slider-pct` 注入。
+ * 高度取边框宽 token（细线），thumb 取小图标档（12）——都不写 px。
+ */
+.mm-slider__input{
+  width: 100%;
+  height: var(--mm-border-w);
+  appearance: none;
+  border: 0;
+  border-radius: var(--mm-radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--mm-color-accent) 0 var(--mm-slider-pct, 0%),
+    var(--mm-color-border-control) var(--mm-slider-pct, 0%) 100%
+  );
+  cursor: pointer;
+}
+
+.mm-slider__input::-webkit-slider-thumb{
+  width: var(--mm-icon-xs);
+  height: var(--mm-icon-xs);
+  appearance: none;
+  border: 0;
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-color-accent);
+}
+
+.mm-slider__input::-moz-range-thumb{
+  width: var(--mm-icon-xs);
+  height: var(--mm-icon-xs);
+  border: 0;
+  border-radius: var(--mm-radius-pill);
+  background: var(--mm-color-accent);
+}
+
+.mm-slider__input:focus-visible{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+  outline-offset: var(--mm-space-tight);
+}
+
+.mm-slider__input:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}

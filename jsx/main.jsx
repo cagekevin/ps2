@@ -12,6 +12,7 @@
  *   批量文字      mm_text_readAll  mm_text_writeAll  mm_text_createAll（新建 / OCR 建层共用）
  *   OCR           mm_ocr_selectionRect  mm_ocr_exportImage  mm_ocr_eraseOriginal
  *   矢量化        mm_vec_exportLayer  mm_vec_replaceWithPath
+ *   DLSS          mm_dlss_exportLayer  mm_dlss_finishResult（导出选中层 / 结果导回）
  *   导出          mm_doc_exportPath（解析基目录 + 逐级建子目录）
  *   诊断          mm_diag_vendor
  *
@@ -1136,5 +1137,229 @@ function mm_doc_exportPath(pathType, relativeDir, baseDir) {
 		 * 官方面板同样全程正斜杠（`path.psd` 与手输路径都转 `/`），这里照它的做法。
 		 */
 		return String(cursor).replace(/\\/g, "/");
+	});
+}
+
+/* ---------------- DLSS：导出选中层 / 结果导回 ---------------- */
+
+/**
+ * 当前图层导出为裁切 PNG（引擎输入）。
+ *
+ * → `{ left, top, width, height, layerName }`；`no-doc` / `empty-layer` / `layer-too-big` / `error:…`
+ *
+ * 区域 ≤0 是 `empty-layer`（空层 / 全透明时 `bounds` 直接抛）；`w*h > maxPixels` 是
+ * `layer-too-big` —— 引擎按整帧分配显存，不拦会把机器拖死。
+ *
+ * **标尺必须先切 px**：标尺是百分比时 `as("px")` 不抛错而是给 NaN，`documents.add(NaN)` 直接失败。
+ * 这里照 `mm_vec_exportLayer` 的写法「存 → 设 → finally 还原」，不引入原插件的 `inPixels` 高阶壳。
+ *
+ * 临时文档同分辨率、8-bit：引擎要 8-bit PNG，且不希望被重采样。
+ */
+function mm_dlss_exportLayer(pngPath, maxPixels) {
+	return mm_safe("mm_dlss_exportLayer", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		var layer = doc.activeLayer;
+		var savedDialogs = app.displayDialogs;
+		var originalRuler = app.preferences.rulerUnits;
+		var tmpDoc = null;
+
+		app.displayDialogs = DialogModes.NO;
+		app.preferences.rulerUnits = Units.PIXELS;
+		try {
+			var box;
+			try {
+				box = layer.bounds;
+			} catch (be) {
+				mm_log("mm_dlss_exportLayer bounds failed: " + be.message);
+				return "empty-layer";
+			}
+
+			var left = Math.round(mm_px(box[0]));
+			var top = Math.round(mm_px(box[1]));
+			var width = Math.round(mm_px(box[2])) - left;
+			var height = Math.round(mm_px(box[3])) - top;
+			if (!(width >= 1) || !(height >= 1)) return "empty-layer";
+
+			/* 上限由前端传：config 是叶子模块，ExtendScript 侧读不到；没传是调用方的 bug */
+			var limit = Number(maxPixels);
+			if (!(limit > 0)) throw new Error("maxPixels 未传");
+			if (width * height > limit) return "layer-too-big";
+
+			tmpDoc = app.documents.add(
+				new UnitValue(width, "px"),
+				new UnitValue(height, "px"),
+				Number(doc.resolution),
+				"maomao_dlss_tmp",
+				NewDocumentMode.RGB,
+				DocumentFill.TRANSPARENT,
+				1,
+				BitsPerChannelType.EIGHT
+			);
+			var blank = tmpDoc.activeLayer;
+
+			/* 跨文档 duplicate 只允许从最前面的文档复制，所以先把源文档置前 */
+			app.activeDocument = doc;
+			var dup = layer.duplicate(tmpDoc, ElementPlacement.PLACEATBEGINNING);
+			app.activeDocument = tmpDoc;
+			try {
+				blank.remove();
+			} catch (be2) { /* 透明底，留着也无害 */ }
+
+			if (left !== 0 || top !== 0) {
+				dup.translate(new UnitValue(-left, "px"), new UnitValue(-top, "px"));
+			}
+
+			var out = new File(pngPath);
+			if (out.exists) out.remove();
+			out.parent.create();
+			tmpDoc.saveAs(out, new PNGSaveOptions(), true);
+
+			var layerName = layer.name;
+			tmpDoc.close(SaveOptions.DONOTSAVECHANGES);
+			tmpDoc = null;
+			app.activeDocument = doc;
+
+			return { left: left, top: top, width: width, height: height, layerName: layerName };
+		} finally {
+			if (tmpDoc !== null) {
+				try {
+					tmpDoc.close(SaveOptions.DONOTSAVECHANGES);
+				} catch (ce) { }
+			}
+			try {
+				app.activeDocument = doc;
+			} catch (ae) { /* 源文档被关了：没有可还原的 */ }
+			app.preferences.rulerUnits = originalRuler;
+			app.displayDialogs = savedDialogs;
+		}
+	});
+}
+
+/**
+ * 层名 / 文件名清洗：只替换 Windows 文件名非法字符。
+ *
+ * token 里本来就没有这些字符（`params.js` 只允许 `· [ ] , . - _`），所以清洗不会破坏 token；
+ * 它防的是用户自己起的名字。
+ */
+function mm_dlss_safeName(text) {
+	var source = String(text === null || text === undefined ? "" : text);
+	var bad = "\\/:*?\"<>|";
+	var out = "";
+	for (var i = 0; i < source.length; i += 1) {
+		out += bad.indexOf(source.charAt(i)) >= 0 ? "_" : source.charAt(i);
+	}
+	return out;
+}
+
+/**
+ * 结果 PNG 导回：尺寸 == 导出区域 → 原文档新层并对齐（`layer`）；
+ * 放大档 → 结果文档留在桌面不关（`document`）。
+ *
+ * → `{ mode, name, left?, top?, width, height }`；`no-doc` / `result-missing` / `error:…`
+ *
+ * `result-missing` 回约定值而不是抛：抛会被 `mm_safe` 折成 `error:result-missing @line n`，
+ * 前端把英文原话当 reason 显示；约定值走 `RAW_FAILURES` 折 `PS_ERROR`，reason 才是中文。
+ *
+ * 先改文件名再 `app.open`：`Document.name` 只读，不重命名新文档就叫 `in.png_nr.png`。
+ *
+ * **不包 `suspendHistory`**（撤销两步）：跨文档 open + duplicate 包进去是否可靠未验，
+ * 原插件也不包。要改成一条历史是另一轮的事。
+ */
+function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
+	return mm_safe("mm_dlss_finishResult", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		var savedDialogs = app.displayDialogs;
+		var originalRuler = app.preferences.rulerUnits;
+		var resDoc = null;
+
+		app.displayDialogs = DialogModes.NO;
+		try {
+			var source = new File(pngPath);
+			if (!source.exists) return "result-missing";
+
+			var safe = mm_dlss_safeName(outName);
+			var wanted = safe + ".png";
+			if (source.name !== wanted) {
+				var renamed = new File(source.parent.fsName + "/" + wanted);
+				if (renamed.exists) renamed.remove();
+				if (source.rename(wanted)) source = renamed;
+			}
+
+			resDoc = app.open(source);
+
+			app.preferences.rulerUnits = Units.PIXELS;
+			var resultWidth = Math.round(Number(resDoc.width.as("px")));
+			var resultHeight = Math.round(Number(resDoc.height.as("px")));
+			app.preferences.rulerUnits = originalRuler;
+
+			var sameSize =
+				resultWidth === Math.round(Number(regionW)) &&
+				resultHeight === Math.round(Number(regionH));
+
+			if (!sameSize) {
+				app.activeDocument = resDoc;
+				var asDocument = {
+					mode: "document",
+					name: resDoc.name,
+					width: resultWidth,
+					height: resultHeight
+				};
+				/* 故意留着不关：放大后的结果放回原画布会撑破 bounds */
+				resDoc = null;
+				app.displayDialogs = savedDialogs;
+				return asDocument;
+			}
+
+			var placed = resDoc.activeLayer.duplicate(doc, ElementPlacement.PLACEATBEGINNING);
+			resDoc.close(SaveOptions.DONOTSAVECHANGES);
+			resDoc = null;
+
+			try {
+				placed.name = safe;
+			} catch (ne) {
+				/* 写名失败不影响结果，但必须留痕：否则「名字没变」永远查不出为什么 */
+				mm_log("mm_dlss_finishResult rename failed: " + ne.message);
+			}
+
+			app.activeDocument = doc;
+
+			/* 自校正对齐：PS 把层丢在哪都行，按 bounds 差挪到区域左上角（1x 时像素精确） */
+			app.preferences.rulerUnits = Units.PIXELS;
+			var before = placed.bounds;
+			var dx = Math.round(Number(left)) - Math.round(mm_px(before[0]));
+			var dy = Math.round(Number(top)) - Math.round(mm_px(before[1]));
+			if (dx !== 0 || dy !== 0) {
+				placed.translate(new UnitValue(dx, "px"), new UnitValue(dy, "px"));
+			}
+			var after = placed.bounds;
+			var placedLeft = Math.round(mm_px(after[0]));
+			var placedTop = Math.round(mm_px(after[1]));
+			var placedWidth = Math.round(mm_px(after[2])) - placedLeft;
+			var placedHeight = Math.round(mm_px(after[3])) - placedTop;
+			app.preferences.rulerUnits = originalRuler;
+
+			app.displayDialogs = savedDialogs;
+			return {
+				mode: "layer",
+				name: placed.name,
+				left: placedLeft,
+				top: placedTop,
+				width: placedWidth,
+				height: placedHeight
+			};
+		} catch (e) {
+			app.preferences.rulerUnits = originalRuler;
+			app.displayDialogs = savedDialogs;
+			if (resDoc !== null) {
+				try {
+					resDoc.close(SaveOptions.DONOTSAVECHANGES);
+				} catch (ce) { }
+			}
+			throw e;
+		}
 	});
 }

@@ -153,6 +153,7 @@ button{
    通栏元素（底栏）自己用负 margin 抵消页边，不要让壳为个别元素开例外 */
 .mm-action,
 .mm-common,
+.mm-dlss,
 .mm-font,
 .mm-font-panel,
 .mm-home,

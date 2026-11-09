@@ -24,6 +24,8 @@ const WHITELIST = [
   'icon-nav_yangshiku',
   'icon-nav_dongzuoku',
   'icon-nav_chongmingmingtuceng',
+  /* 导航：超分（DLSS）。原图是 3:2 横幅，已在 sprite 里缩成 1024 方形导航格 */
+  'icon-nav_dlss',
   'icon-nav_piliangtaoban',
   /* 字体面板「批量文字」入口：与 `icon-nav_piliangtaoban` 同形，但 viewBox 收成图形包围盒，
      放在工具图标排里才不会小一号（nav 那个留白是按导航格留的） */
