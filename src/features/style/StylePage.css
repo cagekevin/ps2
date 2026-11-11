@@ -145,6 +145,9 @@
 .mm-style__font-sample{
   width: 100%;
   overflow: hidden;
+  /* 字体栈由格子注入（`--mm-preview-family`，拼法只走 `domain/font-stack`）：
+     样例文案不用该字体渲染就不是预览，与字体管理页同一个判据 */
+  font-family: var(--mm-preview-family, inherit);
   font-size: var(--mm-font-sm);
   text-align: center;
   white-space: nowrap;
@@ -154,6 +157,7 @@
 .mm-style__font-family{
   width: 100%;
   overflow: hidden;
+  font-family: var(--mm-preview-family, inherit);
   font-size: var(--mm-font-sm);
   white-space: nowrap;
   text-overflow: ellipsis;

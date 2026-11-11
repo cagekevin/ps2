@@ -27,9 +27,12 @@
 }
 
 /* hover 压暗一档（不变蓝，规则 12）。实心按钮的 hover 走 raised 的 hover 档而不是叠白：
-   叠白盖在灰底上会发白，把按钮洗淡。 */
+   叠白盖在灰底上会发白，把按钮洗淡。
+   浮层里改消费 `--mm-hover-bg`（规则 19：表面声明、控件消费）—— 页面表面的深灰 hover
+   落在白底浮层上是一块深色块，所以 `.mm-popover` 另给一档；页面 / 抽屉表面不声明，
+   走兜底，行为不变。 */
 .mm-btn:hover:not(:disabled){
-  background: var(--mm-color-bg-raised-hover);
+  background: var(--mm-hover-bg, var(--mm-color-bg-raised-hover));
 }
 
 /* 幽灵按钮：无底、无边界，只有 hover 才叠一档。
@@ -39,8 +42,10 @@
   background: none;
 }
 
+/* 浮层里的行内小动作（如下拉项右侧删除）落在这里：同样只消费 `--mm-hover-bg`，
+   否则页面表面的深灰 hover 落在白底浮层上是一块深色块（规则 19）。 */
 .mm-btn--ghost:hover:not(:disabled){
-  background: var(--mm-color-bg-hover);
+  background: var(--mm-hover-bg, var(--mm-color-bg-hover));
 }
 
 /* 主操作实底：**一行里唯一**要「被看见」的那个动作（规则 12「主操作实底」一档）。

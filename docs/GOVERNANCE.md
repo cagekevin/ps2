@@ -200,7 +200,7 @@
 | 页面消息行 | `src/components/MessageBar/index.tsx` | 【唯一入口】每页底部常驻消息行：本页全部状态话（前提不满足 / 空态 / 数据健康 / 读取失败）的唯一出口，行高锁死零位移（`TD-08-2` 收口）；`failureMessage`（Result→消息，soft 码灰字不标红）与 `mergeMessages`（error>warn>info、「；」连接）都在同模块，禁止页面自己造转换。操作回执仍归 toast，页面状态话归这里 |
 | 页面错误边界 | `src/components/ErrorBoundary/index.tsx` | 【唯一入口】路由内容区唯一的失败态：`React.lazy` 的 chunk 取不到（部署先删后拷、旧 hash 文件没了）或页面渲染抛错时，显示一句人话 + 异常原文 + 「重新加载」（`window.location.reload()`，唯一自愈动作 —— 旧 chunk 已被删，重试 `import()` 无意义）。只包内容区、导航在边界外，所以出错时还能切页；`router` 用 `key={pathname}` 换页即重建，失败后点导航立刻恢复 |
 | 导航样式 | `src/app/nav-bar.css` | 对齐原版 40×40 参数 |
-| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 三档闭合在类型里：`primary` / `numeric` / 不传）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
+| 组件样式 | `src/components/ui/ui.css` | 基础控件形状（Button / Input / Field）；`Button` 是按钮唯一入口（支持 `ref`，`variant` 闭合在类型里：`ghost` / `primary` / `danger`，不传 = 默认实心灰底；各档语义见 `STYLE.md` §6「按钮」行）+ **组合层·控件表面**（`STYLE.md` §6.2）：`.mm-chip` / `.mm-swatch`（纯色块，只含形与色）/ `.mm-badge` / `.mm-modal`（含全屏变体 `--fullscreen`，批量文字 / 添加动作共用），都只出 CSS 契约、不带行为 |
 | 页面 | `src/features/home/HomePage.tsx` | feature 唯一结构 + 调试页（诊断 / 执行代码 / 日志） |
 | 样式 | `src/features/home/HomePage.css` | 只用 Token |
 | 样式页 | `src/features/style/StylePage.tsx` | 骨架与 JSX 分层，动作在 hook |

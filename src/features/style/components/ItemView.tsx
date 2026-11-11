@@ -8,6 +8,7 @@
 import type { CSSProperties, MouseEvent } from 'react';
 import { InlineEdit } from '../../../components/InlineEdit';
 import { userAssetUrl } from '../../../core/paths';
+import { fontFamilyValue } from '../../../domain/font-stack';
 import { type KuItem, type KuKind } from '../../../domain/style-library';
 
 interface Props {
@@ -77,10 +78,16 @@ export function ItemView({
 
   if (kind === 'font') {
     const preview = item.fontPreview;
+    /* 字体栈只在这里算一次（家族名与样例文案共用）：拼法归 `domain/font-stack`，
+       字体名进不了 css，只能由 JS 交变量（STYLE §14.1 白名单） */
+    const familyStyle = preview
+      ? ({ '--mm-preview-family': fontFamilyValue(preview.scriptFamily, preview.family) } as CSSProperties)
+      : undefined;
     return (
       <button
         type="button"
         className="mm-style__item mm-style__item--font"
+        style={familyStyle}
         title={item.name}
         data-kind={kind}
         data-group-index={groupIndex}

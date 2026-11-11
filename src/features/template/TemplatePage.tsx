@@ -2,7 +2,7 @@
  * 模板库页（`/template`）
  *
  * 结构（对原版逐项对齐，见 `docs/plan/15` §2）：
- *   路径行 → 文件夹与条目（同一个网格）→ 底栏「共 N 个内容」+ 右下角常驻存入口
+ *   路径行 → 文件夹与条目（同一个网格）→ 右下角常驻存入口
  *
  * 件全部是现成的：`MessageBar` / `Spin` / `Button` / `IconButton` / `Portal` /
  * `ContextMenu` / `InputDialog` / `useConfirm`。本页只写一个私有网格（等高列）。

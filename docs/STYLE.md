@@ -312,8 +312,11 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
     | `--mm-hover-bg` | `--mm-color-bg-hover` | `--mm-color-hover-popover` |
 
     `.mm-popover` 是这三个变量的唯一声明处；`.mm-input` / `.mm-input-surface` / `.mm-chip` /
-    菜单项 / 下拉项只消费。禁止：在浮层里给某个控件单独写 hover 底或输入位底；
+    `.mm-btn` / 菜单项 / 下拉项只消费。禁止：在浮层里给某个控件单独写 hover 底或输入位底；
     给 chip / input 再造一个「浅色版」变体类（这是本条要防的那种漂移）。
+    （`.mm-btn` 2026-11-11 补进来：下拉项右侧的删除钮是 `variant="ghost"` 的 `Button`，
+    落在 `.mm-popover` 里；不消费这条时 hover 取页面表面的深灰（`--mm-color-bg-hover`），
+    在白底浮层上是一块深色块。）
     判据一句话：**把控件挪进浮层，它的凹陷与 hover 还看得见吗？** 看不见 ⇒ 走这三个变量。
 
 ---
