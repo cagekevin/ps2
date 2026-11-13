@@ -206,7 +206,7 @@ String(layer.kind)  →  "LayerKind.SOLIDFILL" / "LayerKind.TEXT" / ...
 
 `core/ps/style.ts` 的 `applyStyleColor` → `ps_onJsx('{"f":"ys_useStyleColor","arr":[色值],"n":"智能填充颜色"}')`。
 
-**单选、多选是同一个调用**：遍历所有选中图层在 vendor（`jsx/vendor.jsx`，加密 jsxbin）内部完成。官方 `app.v4.js:17894-17900` 也只发一项交给它；「色板工具本地版」（工作区外，真机验证过）走的就是这条路。
+**单选、多选是同一个调用**：遍历所有选中图层在 vendor（`jsx/vendor.jsx`，仓里是解码源码；上游 jsxbin 只作对照）内部完成。官方 `app.v4.js:17894-17900` 也只发一项交给它；「色板工具本地版」（工作区外，真机验证过）走的就是这条路。
 
 **不能照抄色板面板的明文 jsx**（`%APPDATA%\fz.FengZi3Hao\jsx\main.jsx`）：它
 `iTuCengGeShu = sb_DL_HuoQuDangQianTuCengShu(); if (iTuCengGeShu == 1)` 才上色（`main.jsx:32-33`），
@@ -290,8 +290,9 @@ vendor 未加载时颜色应用不可用（`PS_UNREADY` + `detail: fn:ys_useStyl
 
 ### 10.4 vendor 可以整份复制到别的面板里直接用（2026-10-28 真机通过）
 
-`jsx/vendor.jsx`（= `com.local.psz.panel.v5/lib/all.decrypted.js`，MD5 `c6ca05a0…`）**读不了但能执行**：
-头部是 `@JSXBIN@ES@2.0@…`，明文 grep `ys_` 前缀函数名命中 0；把它 `$.evalFile` 进任意面板后，
+`jsx/vendor.jsx` 与 `com.local.psz.panel.v5/lib/all.decrypted.js` 是**同一份官方脚本**：上游是 338,105 字节
+jsxbin（MD5 `c6ca05a0…`），仓里存的是 2026-11-03 解码后的 282,839 字节可读源码（MD5 `0189C076…`）。
+把它 `$.evalFile` 进任意面板后，
 `typeof ps_onJsx` = `function`，`Sys_setSystemEnvInfo` 返回 `{"err":0,"data":true}`，
 `ps_onJsx('{"f":"ys_useStyleColor","arr":[…],"n":"智能填充颜色"}')` 返回 `1` 且**所有选中图层都上色**。
 

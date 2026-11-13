@@ -14,12 +14,20 @@
 │  ├─ core.js             状态 / 持久化 / PS 通道 / 官方 vendor 加载与调度
 │  └─ app.js              渲染 / 交互 / 动作
 ├─ jsx\main.jsx           面板自己用到的 PS 能力（取色、形状工具）
+├─ jsx\vendor.jsx         官方 vendor（上色的真正实现，多图层遍历在它内部）
 ├─ docs\上色逻辑.md       上色逻辑的完整理解（官方做法 / PS 侧事实 / 验证判据）
 └─ img\                   图标（1~7 与 1a~7a）
 ```
 
-> `jsx\vendor.jsx`（官方 vendor 的 jsxbin 原件）已移到 `docs/参考/vendor.jsxbin`。
-> 本目录是**另一个项目的冻结快照**；本仓现行形态是解码源码 `jsx/vendor.jsx`，来历与补丁见其 `vendor.README.md`。
+> `jsx\vendor.jsx` 必须是**文件**（`$.evalFile` 加载，函数落在全局作用域）；缺了它面板只能提示
+> 「官方上色能力未就绪（vendor 未加载）」，且**只在点色块时才提示**，平时看不出异常 —— 所以装机必查。
+>
+> 本目录是**自包含装机包**（快照），vendor 随包提供：与主仓 `jsx/vendor.jsx`、猫猫工具
+> `com.maomao.design\jsx\vendor.jsx` 同一份（解码源码，MD5 `0189C07621C5AFFE18C2E558A4C16091`）。
+>
+> **vendor 是冻结资产，永不更新**：不要手改、不要为它做同步/升级流程。上游已停更，功能与 PS 行为
+> 绑定，改一次就要在全机重新验证一遍；除非出现「官方智能填充在某个 PS 版本上真的跑不动」，
+> 否则这份文件到项目结束都不动。来历见主仓 `jsx/vendor.README.md`，上游 jsxbin 原件在 `docs/参考/vendor.jsxbin`。
 
 ## 数据流
 
@@ -39,19 +47,32 @@
 
 ## 安装
 
-复制整个目录到：
+本目录是**自包含装机包**：整目录拷过去就能跑，不依赖主仓、不依赖其他插件。
 
-```
-%APPDATA%\Adobe\CEP\extensions\com.local.psz.seban\
-```
-
-重启 Photoshop，菜单：`窗口 → 扩展功能 → 稿定-PS设计助理-色板工具(本地)`
+1. 复制整个目录到：
+   ```
+   %APPDATA%\Adobe\CEP\extensions\com.local.psz.seban\
+   ```
+2. 装机必带清单（**少一件，上色就废**）：
+   | 文件 | 判据 |
+   |---|---|
+   | `js\core.js`、`js\app.js` | 面板本体 |
+   | `jsx\main.jsx` | 取色 / 形状工具 |
+   | `jsx\vendor.jsx` | 官方上色实现，**约 282,839 字节** |
+3. 核对 vendor 是否在（拷贝后跑一次，能对上哈希才算完整）：
+   ```powershell
+   Get-FileHash "$env:APPDATA\Adobe\CEP\extensions\com.local.psz.seban\jsx\vendor.jsx" -Algorithm MD5
+   ```
+   期望 `0189C07621C5AFFE18C2E558A4C16091`。缺失或哈希不符 → 从主仓 `jsx/vendor.jsx` 整份重拷。
+4. 重启 Photoshop，菜单：`窗口 → 扩展功能 → 稿定-PS设计助理-色板工具(本地)`
 
 需要 `PlayerDebugMode=1`（未签名扩展）。检查：
 
 ```powershell
 Get-ItemProperty HKCU:\Software\Adobe\CSXS.11 | Select PlayerDebugMode
 ```
+
+换电脑：搬**本目录**（装机包）+ `%APPDATA%\FengZiSeBan\`（自定义色板与最近使用）+ 重设 `PlayerDebugMode`。插件内部路径全部由 `SystemPath.EXTENSION` / `SystemPath.USER_DATA` 运行时算出，没有写死的盘符。
 
 ## 功能
 

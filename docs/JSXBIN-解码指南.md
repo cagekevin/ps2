@@ -201,6 +201,9 @@ fs.writeFileSync(dst, buf);
 | 瓣公宇宙管理器 `pages\a-c6tf*.jsx` | 3.5KB | ✅ 2.6KB（layer_remove_bg） |
 | 瓣公宇宙管理器 `pages\t-ygrew*.jsx` | 3.8KB | ✅ 3KB（doesIdExists） |
 
+> 表中「大小」是**解码前**的输入大小。后两行那两处路径现在放的已是解码产物（282,839 字节，
+> MD5 `0189C076…`）；唯一保留的 jsxbin 原件在 `docs/参考/vendor.jsxbin`（338,105 字节）。
+
 > **补丁不打全，产物就是废的**：只删 Beautifier（§3.1）能解出「看起来像代码」的东西，但会丢括号、
 > 丢无初值的 `var`、把转义实体化 —— 轻则语法过不了（`$.evalFile` 抛错、整扇 vendor 门关闭），
 > 重则能加载但**静默算错**。§3.5~3.7 三条必须一起打，打完的产物可以直接用，不需要手工修。

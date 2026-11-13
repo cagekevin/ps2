@@ -10,6 +10,7 @@
 | 上游原件 | `@JSXBIN@ES@2.0@…`，338,105 字节（`com.local.psz.panel.v5\lib\all.decrypted.js`，MD5 `c6ca05a0…`） |
 | 解码产物 | 282,089 字节，430 个顶层 `function` 声明 |
 | 入库形态 | 解码产物 + 12 行文件头，282,839 字节，UTF-8 **带 BOM**、CRLF |
+| 本文件 MD5 | `0189C07621C5AFFE18C2E558A4C16091`（`com.maomao.design\jsx\vendor.jsx`、色板装机包那份都是这一个哈希；对不上就是拷贝不全或被改过） |
 | 解码时间 | 2026-11-03 |
 
 上游 jsxbin 原件在 git 历史里（`git show 5930f0f:jsx/vendor.jsx`），回滚就是取回那一版覆盖本文件。
