@@ -6,8 +6,9 @@
  * 【分组按决策顺序，不按控件形态】放大倍率（结果会怎样）→ 参数（怎么微调）；
  * 说明紧贴它解释的控件，不放页尾脚注。
  *
- * 【状态常驻】底部信息行显示「就绪 / 自检中」+ 环境信息；
- * 只有真的跑不了（无 RTX）才整页不可用。自检实测 4.4 秒，
+ * 【状态常驻】底部信息行显示「就绪 / 自检中 / 驱动过旧」+ 环境信息；
+ * 只有真的跑不了（无 RTX）才整页不可用；驱动低于引擎要求只禁用「处理画幅」并写明要升级到哪一版。
+ * 自检实测 4.4 秒，
  * 结果在 `core/dlss/engine` 按目录缓存，本会话第二次进页秒开。
  *
  * 外部动作一律走 `commands/dlss`，不碰 `evalScript` / fs / prefs。
@@ -21,6 +22,7 @@ import { Button, Input } from '../../components/ui';
 import { useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { chooseRuntime, resolveEngine, runDlss, verifyEngine } from '../../commands/dlss';
+import { driverShortfall } from '../../domain/dlss-driver';
 import { DLSS_BUILTIN } from '../../domain/dlss-token';
 import type { DlssEngineInfo, DlssLook, DlssParams, DlssSrPreset } from '../../types/dlss';
 import { MSG } from '../../types/messages';
@@ -139,12 +141,18 @@ function buildParams(draft: Draft): DlssParams {
  * 底部信息行：状态 + 环境信息合成一行。
  *
  * 本页**不设页头**（`STYLE` §6：导航上已写着页名，页内再加标题是白占一行），
- * 所以「就绪 / 自检中」也常驻在这一行，而不是另起一条标题栏。
+ * 所以「就绪 / 自检中 / 驱动过旧」也常驻在这一行，而不是另起一条标题栏。
+ *
+ * 状态词不能只写「就绪」：自检只证明引擎能加载，**证明不了驱动够新**（`domain/dlss-driver`）。
  */
-function footerInfo(engine: EngineState): string {
+function footerInfo(engine: EngineState, shortfall: string | null): string {
   if (engine.kind !== 'ready') return MSG.dlss.checking;
 
-  const state = engine.probing ? MSG.dlss.checking : '就绪';
+  const state = engine.probing
+    ? MSG.dlss.checking
+    : shortfall
+      ? `驱动过旧（需 ${shortfall}+）`
+      : '就绪';
   const info = engine.info;
   const env = info ? `${info.gpu} · 驱动 ${info.driver} · 引擎 ${info.version}` : null;
   return env ? `${state} · ${env}` : state;
@@ -242,10 +250,14 @@ export default function DlssPage() {
 
   const blocked = engine.kind === 'no-engine' || engine.kind === 'failed';
 
+  /* 自检通过 ≠ 能跑：驱动低于引擎要求时引擎进程会直接退出，提前算出来当按钮的禁用依据 */
+  const shortfall =
+    engine.kind === 'ready' && engine.info ? driverShortfall(engine.info) : null;
+
   const width = toNumber(draft.width);
   const widthInvalid = draft.useWidth && width < 1;
   const canRun =
-    engine.kind === 'ready' && !engine.probing && !busy && !widthInvalid;
+    engine.kind === 'ready' && !engine.probing && !busy && !widthInvalid && !shortfall;
 
   return (
     <div className="mm-dlss">
@@ -372,12 +384,19 @@ export default function DlssPage() {
 
           <div className="mm-divider" />
 
+          {shortfall && engine.kind === 'ready' && engine.info ? (
+            <div className="mm-dlss__hint">
+              驱动 {engine.info.driver} 低于引擎 {engine.info.version} 要求的 {shortfall}：现在处理必定失败（引擎直接退出），请先升级显卡驱动。
+            </div>
+          ) : null}
+
           <div className="mm-dlss__footer">
-            <div className="mm-dlss__info">{footerInfo(engine)}</div>
+            <div className="mm-dlss__info">{footerInfo(engine, shortfall)}</div>
             <Button
               variant="primary"
               className="mm-dlss__run"
               disabled={!canRun}
+              title={shortfall ? `驱动需 ${shortfall} 以上` : undefined}
               onClick={() => void handleRun()}
             >
               处理画幅
