@@ -14,6 +14,7 @@ const CommonPage = lazy(() => import('../features/common/CommonPage'));
 const ActionPage = lazy(() => import('../features/action/ActionPage'));
 const RenamePage = lazy(() => import('../features/rename/RenamePage'));
 const DlssPage = lazy(() => import('../features/dlss/DlssPage'));
+const GradientPage = lazy(() => import('../features/gradient/GradientPage'));
 const FontManagePage = lazy(() => import('../features/font-manage/FontManagePage'));
 const FontPanelPage = lazy(() => import('../features/font-panel/FontPanelPage'));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
@@ -39,6 +40,7 @@ export function AppRoutes() {
           <Route path="/action" element={<ActionPage />} />
           <Route path="/rename" element={<RenamePage />} />
           <Route path="/dlss" element={<DlssPage />} />
+          <Route path="/gradient" element={<GradientPage />} />
           <Route path="/font" element={<FontPanelPage />} />
           <Route path="/font-manage" element={<FontManagePage />} />
           <Route path="/set" element={<SettingsPage />} />

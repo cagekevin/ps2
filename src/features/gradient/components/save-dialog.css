@@ -1,0 +1,36 @@
+/*
+ * 保存浮层内部：预览条与两个字段行。
+ *
+ * 弹窗壳与动作行由 `.mm-modal` / `.mm-modal__actions` 给（`ui.css`），
+ * 这里只补「弹窗里这条预览条有多高」与「标签在上、控件在下」的两列结构。
+ */
+
+.mm-gradient__save-preview{
+  height: var(--mm-gradient-save-h);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-swatch);
+  box-shadow: inset 0 0 0 1px var(--mm-color-border-control);
+}
+
+/* 字段组内间距 8（组间档）：弹窗壳给的是「段落」12，那是标题 / 正文 / 动作行之间用的，
+   同一份表单里的行不该用 12 */
+.mm-gradient__form{
+  gap: var(--mm-space-2);
+}
+
+/* 字段行：照 `features/common/components/panel.css` 的 `.mm-common__form-row` 先例 ——
+   定宽 label 左列 + 内容右列，两列之间 4。**不要**改成「标签在上、控件在下」：
+   那是本仓第二套表单形状（导出抽屉是唯一先例，形状跟它走） */
+.mm-gradient__field{
+  display: grid;
+  grid-template-columns: var(--mm-form-label-w) minmax(0, 1fr);
+  gap: var(--mm-space-inline);
+  align-items: start;
+}
+
+/* 标签与内容首行（26 高的输入位）垂直对齐；颜色跟正文一致，不压暗 */
+.mm-gradient__field-label{
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text);
+  line-height: var(--mm-control-h);
+}

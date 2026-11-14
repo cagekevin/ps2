@@ -176,6 +176,16 @@
   --mm-preview-card-bottom: 26px;
   --mm-weight-menu-min-w: 120px;
 
+  /* 渐变面板（plan 24）：预览条与浮层预览条的高度。
+     预览条 84 ≈ 三个控件高，够看清两个色标之间的过渡，又不至于把色环挤小。
+     色环不设高度 token：它由宽度决定（正方形），见 color-wheel.css 的 aspect-ratio */
+  --mm-gradient-preview-h: 84px;
+  --mm-gradient-save-h: 40px;
+  /* 明度条：条宽 18（窄于图标档，不抢色环宽度）、手柄 26×8（比条宽出一截好抓） */
+  --mm-gradient-bar-w: 18px;
+  --mm-gradient-thumb-w: 26px;
+  --mm-gradient-thumb-h: 8px;
+
   /* 常用页：格子圆角与行距都并回全站档位（原版是 10 / 15，与任何一页都不一样） */
   --mm-common-tile: 50px;
   --mm-common-tile-icon: 32px;

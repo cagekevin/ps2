@@ -103,6 +103,17 @@
   color: var(--mm-input-color, var(--mm-color-text));
 }
 
+/* 数字输入框统一去掉原生上下箭头。
+   它是一块鼠标专用的窄命中区，在 26 高的控件里挤成一道杂点，且与本仓其它数值框
+   （字号 / 间距 / 品质那些走 `inputMode` 的纯输入位）外形不一致。
+   去掉的只是**箭头**：`type="number"` 自带的键盘 ↑ / ↓ 仍然可用。
+   只在这一处给 —— 页面不许各写一份 `::-webkit-*-spin-button`（那就是第二个表面入口）。 */
+.mm-input[type='number']::-webkit-outer-spin-button,
+.mm-input[type='number']::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .mm-input::placeholder{
   color: var(--mm-color-text-faint);
 }

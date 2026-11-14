@@ -39,6 +39,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'action', name: '动作管理', path: '/action', icon: 'icon-nav_dongzuoku', shortcut: 'w', implemented: true },
   { key: 'rename', name: '重命名图层', path: '/rename', icon: 'icon-nav_chongmingmingtuceng', shortcut: 'e', implemented: true },
   { key: 'dlss', name: '超分', path: '/dlss', icon: 'icon-nav_dlss', shortcut: 'd', implemented: true },
+  { key: 'gradient', name: '渐变', path: '/gradient', icon: 'icon-nav_jianbian', shortcut: 'g', implemented: true },
   { key: 'set', name: '设置', path: '/set', icon: 'iconyonghushezhi', implemented: true, bottom: true }
 ];
 

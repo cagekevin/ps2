@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>渐变面板 · 交互原型 v4</title>
+<!--
+  渐变面板交互稿 v4：预览 → 色轮（三个过渡方式就是环下那行字）→ 精度 → 动作。
+  单文件、自包含、双击即可打开；不参与构建、不被导航引用、不改 src/。
+  落地时：颜色 / 间距 / 尺寸全部回到 src/styles/tokens.css；本稿视觉以面板最小宽 300px 为唯一基准。色环用 canvas 画，
+  拖点改色的换算走 domain（LCH 的 h/C 由角度与半径决定，L 保持该端点的值）。
+  算法本稿只实现 LCH(D50) 短/长 + sRGB 直插 + 色域收色，正式实现按 color-core.js 口径逐点对齐。
+-->
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:#121418;color:var(--mm-color-text);font:12px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.btn:focus-visible,.mode:focus-visible,.sheet__close:focus-visible,.stage__group button:focus-visible{outline:1px solid var(--mm-color-accent);outline-offset:1px}
+
+/* 以下值抄自 src/styles/tokens.css，只为让本稿独立可跑；
+   落地时删掉这一段，直接用变量名（本稿其余部分只引用变量，不写值）。 */
+:root{
+  --mm-color-bg-base:#363636;
+  --mm-color-bg-input:#2c2c2c;
+  --mm-color-bg-drawer:#222222;
+  --mm-color-bg-hover:#3d3d3d;
+  --mm-color-bg-raised:#535353;
+  --mm-color-bg-raised-hover:#575757;
+  --mm-color-bg-overlay:rgba(64,64,64,.96);
+  --mm-color-bg-nav:#535353;
+  --mm-color-border:#2e2e2e;
+  --mm-color-border-control:#4b4b4b;
+  --mm-color-text:#c3c3c3;
+  --mm-color-text-strong:#f5f5f5;
+  --mm-color-text-dim:#9a9a9a;
+  --mm-color-text-faint:#8e8e8e;
+  --mm-color-text-inverse:#ffffff;
+  --mm-color-accent:#006fff;
+  --mm-color-accent-hover:#2a86ff;
+  --mm-color-danger:#f14c4c;
+  --mm-radius-sm:2px;--mm-radius-md:4px;--mm-radius-lg:6px;
+  --mm-control-h:26px;
+  --mm-font-xs:11px;--mm-font-sm:12px;--mm-font-md:13px;
+  --mm-space-tight:2px;--mm-space-inline:4px;--mm-space-1:4px;--mm-space-2:8px;--mm-space-3:12px;--mm-page-pad-x:8px;
+  --mm-nav-w:40px;--mm-icon-btn-size:26px;
+}
+/* 角色别名：三档表面只用仓库现成 token，不新增档位 */
+:root{
+  --nav:var(--mm-nav-w);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+/* ---------- 原型舞台（不属于产品界面） ---------- */
+.stage{min-height:100vh;padding:24px 20px 40px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.stage__bar{width:100%;max-width:1080px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--mm-color-bg-base);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-lg);padding:10px 14px}
+.stage__brand{font-size:var(--mm-font-md);font-weight:600;white-space:nowrap;color:var(--mm-color-text-strong)}
+.stage__group{display:flex;align-items:center;gap:var(--mm-space-1);color:var(--mm-color-text-dim);font-size:var(--mm-font-xs);white-space:nowrap}
+.stage__group>b{color:var(--mm-color-text);font-weight:500;margin-right:2px}
+.stage__group button{border:1px solid var(--mm-color-border-control);background:transparent;color:var(--mm-color-text-dim);border-radius:var(--mm-radius-md);padding:5px 10px;font-size:var(--mm-font-xs)}
+.stage__group button:hover{background:var(--mm-color-bg-hover);color:var(--mm-color-text)}
+.stage__group button.on{background:var(--mm-color-accent);border-color:var(--mm-color-accent);color:var(--mm-color-text-inverse)}
+
+/* ---------- 面板 ---------- */
+.panel-wrap{display:flex;justify-content:center;width:100%}
+.panel{position:relative;display:flex;width:300px;height:580px;background:var(--mm-color-bg-base);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-lg);overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.panel__nav{flex:0 0 var(--nav);width:var(--nav);background:var(--mm-color-bg-nav);display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:2px}
+.panel__nav i{width:var(--mm-icon-btn-size);height:var(--mm-icon-btn-size);border-radius:var(--mm-radius-md);display:flex;align-items:center;justify-content:center;color:#cfcfcf;font-style:normal;font-size:var(--mm-font-md)}
+.panel__nav i.on{background:var(--mm-color-bg-drawer);color:var(--mm-color-text-inverse);box-shadow:inset 0 0 0 1px var(--mm-color-border-control)}
+.panel__nav .sp{flex:1 1 auto}
+.panel__body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:var(--mm-space-2);padding:var(--mm-space-2);overflow-y:auto}
+
+/* 卡片：比面板底深一档（仓库现成的「输入位」档） */
+.card{background:var(--mm-color-bg-input);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-lg)}
+
+/* 结果：预览条 + 两端色值 + 色标刻度 */
+.card--preview{flex:0 0 auto;padding:var(--mm-space-2)}
+.preview{position:relative;height:84px;border-radius:var(--mm-radius-md);overflow:hidden;cursor:crosshair;touch-action:none;box-shadow:inset 0 0 0 1px var(--mm-color-border-control)}
+.preview__ticks{position:absolute;left:0;right:0;bottom:0;height:var(--mm-space-inline);background-image:linear-gradient(90deg,rgba(255,255,255,.5) 0 1px,transparent 1px);background-repeat:repeat-x;opacity:.6;pointer-events:none}
+.preview__cursor{position:absolute;top:0;bottom:0;width:1px;background:var(--mm-color-text-inverse);box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:none;display:none}
+.preview__cursor::before,.preview__cursor::after{content:"";position:absolute;left:50%;width:7px;height:7px;border-radius:var(--mm-radius-sm);background:var(--mm-color-text-inverse);transform:translateX(-50%)}
+.preview__cursor::before{top:-1px}
+.preview__cursor::after{bottom:-1px}
+.preview__read{position:absolute;top:var(--mm-space-2);transform:translateX(-50%);display:none;align-items:center;gap:var(--mm-space-inline);background:var(--mm-color-bg-overlay);border:1px solid var(--mm-color-border-control);border-radius:var(--mm-radius-md);padding:3px 8px 3px 4px;font:600 var(--mm-font-xs)/1 var(--mono);color:var(--mm-color-text-strong);white-space:nowrap;pointer-events:none}
+.preview__read::before{content:"";width:12px;height:12px;border-radius:var(--mm-radius-sm);background:var(--pick,var(--mm-color-text-inverse));box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.preview__meta{display:flex;align-items:center;gap:var(--mm-space-2);padding:var(--mm-space-2) 0 0}
+.stop{display:flex;align-items:center;gap:var(--mm-space-inline);min-width:0;flex:0 0 auto}
+.stop__dot{width:12px;height:12px;border-radius:var(--mm-radius-sm);flex:0 0 auto;box-shadow:inset 0 0 0 1px var(--mm-color-border-control)}
+.stop__no{font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);font-weight:600}
+.stop__hex{font:600 var(--mm-font-xs)/1 var(--mono);color:var(--mm-color-text)}
+.preview__link{flex:1 1 auto;height:1px;background:var(--mm-color-border)}
+
+/* 工作面：色轮卡片 */
+.card--wheel{flex:0 0 auto;display:flex;align-items:stretch;justify-content:center;gap:var(--mm-space-2);padding:var(--mm-space-2)}
+/* 轮子：宽度说了算，高度由 aspect-ratio 跟着走 ⇒ 卡片高度 = 轮高 + 内边距，
+   不再出现「卡片被拉高、圆在中居、上下各留一块」的空当 */
+.wheel{display:block;flex:1 1 auto;min-width:0;aspect-ratio:1;border-radius:50%;touch-action:none;cursor:crosshair}
+
+/* 竖向明度条（PS 拾色器右侧那根）：拖它改**当前端点**的亮度，
+   条上的渐变色就是这根条对应的那个色相 / 浓度的明度阶梯，所见即所得 */
+.lightness{
+  position:relative;flex:0 0 auto;width:18px;align-self:stretch;
+  border-radius:var(--mm-radius-md);overflow:hidden;touch-action:none;cursor:ns-resize;
+  box-shadow:inset 0 0 0 1px var(--mm-color-border-control)
+}
+.lightness__thumb{
+  position:absolute;left:50%;transform:translate(-50%,50%);width:26px;height:8px;border-radius:var(--mm-radius-md);
+  background:transparent;border:2px solid var(--mm-color-text-strong);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.35);pointer-events:none
+}
+/* 「现在改的是谁」由环上那个点的高亮圈表示，条上不再叠编号小字（18 宽装不下，糊成一团） */
+
+/* 设置：段选 + 精度 */
+.card--settings{flex:0 0 auto;padding:var(--mm-space-2)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--mm-space-tight);background:var(--mm-color-bg-drawer);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-lg);padding:var(--mm-space-tight);overflow:hidden}
+.mode{height:var(--mm-control-h);border:0;border-radius:var(--mm-radius-md);background:transparent;color:var(--mm-color-text-dim);font-size:var(--mm-font-sm);font-weight:500;white-space:nowrap}
+.mode:hover{background:var(--mm-color-bg-hover);color:var(--mm-color-text)}
+.mode.on{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);font-weight:600}
+.mode.on:hover{background:var(--mm-color-accent-hover)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:var(--mm-space-2);padding-top:var(--mm-space-2);border-top:1px solid var(--mm-color-border)}
+.row>label{font-size:var(--mm-font-sm);color:var(--mm-color-text-dim);font-weight:500}
+.row__ctrl{display:flex;align-items:center;gap:var(--mm-space-inline)}
+.num{width:46px;height:var(--mm-control-h);background:var(--mm-color-bg-drawer);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-md);text-align:center;font:600 var(--mm-font-sm)/1 var(--mono);color:var(--mm-color-text);outline:none;font-variant-numeric:tabular-nums}
+.num:hover{border-color:var(--mm-color-border-control)}
+.num:focus{border-color:var(--mm-color-accent);outline:1px solid var(--mm-color-accent)}
+.num::-webkit-outer-spin-button,.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.range{font:500 var(--mm-font-xs)/1 var(--mono);color:var(--mm-color-text-faint)}
+
+/* 提交 */
+.foot{flex:0 0 auto;display:flex;flex-direction:column;gap:var(--mm-space-2)}
+.actions{display:grid;grid-template-columns:1.35fr 1fr;gap:var(--mm-space-2)}
+.btn{height:var(--mm-control-h);border-radius:var(--mm-radius-md);border:1px solid transparent;background:var(--mm-color-bg-raised);color:var(--mm-color-text);font-size:var(--mm-font-sm);font-weight:500;padding:0 var(--mm-space-2);display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.btn:hover{background:var(--mm-color-bg-raised-hover)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn--primary{background:var(--mm-color-accent);color:var(--mm-color-text-inverse);font-weight:600}
+.btn--primary:hover{background:var(--mm-color-accent-hover)}
+.btn--ghost{background:transparent;color:var(--mm-color-text-dim)}
+.btn--ghost:hover{background:var(--mm-color-bg-hover);color:var(--mm-color-text-strong)}
+.status{display:flex;align-items:center;gap:var(--mm-space-inline);font-size:var(--mm-font-xs);color:var(--mm-color-text-faint);min-height:16px;font-variant-numeric:tabular-nums}
+.status::before{content:"";width:6px;height:6px;border-radius:var(--mm-radius-sm);background:var(--mm-color-text-faint);flex:0 0 auto}
+.status.bad{color:var(--mm-color-danger)}
+.status.bad::before{background:var(--mm-color-danger)}
+
+/* 保存浮层 */
+.mask{position:absolute;inset:0;background:rgba(20,20,20,.62);display:flex;align-items:center;justify-content:center;padding:var(--mm-space-3);z-index:8}
+.sheet{width:100%;background:var(--mm-color-bg-overlay);border:1px solid var(--mm-color-border-control);border-radius:var(--mm-radius-lg);box-shadow:0 20px 50px rgba(0,0,0,.55);padding:var(--mm-space-3);display:flex;flex-direction:column;gap:var(--mm-space-2)}
+.sheet__head{display:flex;align-items:center;justify-content:space-between}
+.sheet h3{margin:0;font-size:var(--mm-font-md);font-weight:600;color:var(--mm-color-text-strong)}
+.sheet__close{width:24px;height:24px;border:0;border-radius:var(--mm-radius-md);background:transparent;color:var(--mm-color-text-dim);font-size:var(--mm-font-md);line-height:1;display:flex;align-items:center;justify-content:center}
+.sheet__close:hover{background:var(--mm-color-bg-hover);color:var(--mm-color-text-strong)}
+.sheet__prev{height:40px;border-radius:var(--mm-radius-md);box-shadow:inset 0 0 0 1px var(--mm-color-border-control)}
+.field{display:flex;flex-direction:column;gap:var(--mm-space-1)}
+.field label{font-size:var(--mm-font-xs);color:var(--mm-color-text-dim)}
+.field input,.field select{height:var(--mm-control-h);background:var(--mm-color-bg-drawer);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-md);padding:0 6px;font-size:var(--mm-font-sm);outline:none;color:var(--mm-color-text)}
+.field input:focus,.field select:focus{border-color:var(--mm-color-accent);outline:1px solid var(--mm-color-accent)}
+.sheet__actions{display:flex;gap:var(--mm-space-2);justify-content:flex-end}
+
+/* toast */
+.toast{position:absolute;left:50%;bottom:66px;transform:translateX(-50%);background:var(--mm-color-bg-overlay);border:1px solid var(--mm-color-border-control);border-radius:var(--mm-radius-md);padding:5px 10px;font-size:var(--mm-font-xs);color:var(--mm-color-text-strong);white-space:nowrap;z-index:9;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+
+/* ---------- 说明 ---------- */
+.notes{max-width:1080px;width:100%;background:var(--mm-color-bg-base);border:1px solid var(--mm-color-border);border-radius:var(--mm-radius-lg);padding:16px 18px;color:var(--mm-color-text-dim);font-size:var(--mm-font-sm);line-height:1.8}
+.notes h2{color:var(--mm-color-text-strong);font-size:var(--mm-font-md);margin:0 0 6px}
+.notes ul{margin:4px 0;padding-left:18px}
+.notes code{color:var(--mm-color-text);background:var(--mm-color-bg-drawer);padding:1px 4px;border-radius:var(--mm-radius-sm);font-family:var(--mono)}
+.notes b{color:var(--mm-color-text)}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage__bar">
+    <span class="stage__brand">渐变面板 · v4</span>
+    <div class="stage__group"><b>面板宽</b>
+      <button data-width="300" class="on">300</button><button data-width="340">340</button><button data-width="400">400</button>
+    </div>
+    <div class="stage__group"><b>场景</b>
+      <button data-scene="ok" class="on">正常</button><button data-scene="none">没选图层</button><button data-scene="save">保存浮层</button>
+    </div>
+  </div>
+
+  <div class="panel-wrap">
+    <div class="panel" id="panel">
+      <nav class="panel__nav">
+        <i title="模板库">▤</i><i title="常用功能">⌘</i><i title="字体面板">A</i>
+        <i title="样式面板">◨</i><i title="动作管理">▶</i><i title="重命名">✎</i>
+        <i class="on" title="渐变">◐</i>
+        <span class="sp"></span><i title="设置">⚙</i>
+      </nav>
+      <div class="panel__body">
+        <section class="card card--preview">
+          <div class="preview" id="preview">
+            <span class="preview__ticks" id="preview-ticks"></span>
+            <span class="preview__cursor" id="preview-cursor"></span>
+            <span class="preview__read" id="preview-read"></span>
+          </div>
+          <div class="preview__meta">
+            <span class="stop"><i class="stop__dot" id="stop-a-dot"></i><b class="stop__no">01</b><code class="stop__hex" id="stop-a-hex"></code></span>
+            <span class="preview__link"></span>
+            <span class="stop"><i class="stop__dot" id="stop-b-dot"></i><b class="stop__no">02</b><code class="stop__hex" id="stop-b-hex"></code></span>
+          </div>
+        </section>
+
+        <section class="card card--wheel">
+          <canvas class="wheel" id="wheel" aria-label="渐变色轮：拖动 01 / 02 改色"></canvas>
+          <div class="lightness" id="lightness" role="slider" aria-label="当前端点的明度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58">
+            <span class="lightness__thumb" id="lightness-thumb"></span>
+          </div>
+        </section>
+
+        <section class="card card--settings">
+          <div class="modes" id="modes">
+            <button class="mode" data-route="direct">直接过渡</button>
+            <button class="mode on" data-route="short">短路线</button>
+            <button class="mode" data-route="long">长路线</button>
+          </div>
+          <div class="row">
+            <label for="precision">色标精度</label>
+            <span class="row__ctrl">
+              <input class="num" id="precision" type="number" min="4" max="32" step="1" value="8" aria-label="色标数量，含两端" />
+              <span class="range">4–32</span>
+            </span>
+          </div>
+        </section>
+
+        <div class="foot">
+          <div class="actions">
+            <button class="btn btn--primary" id="apply">应用到图层</button>
+            <button class="btn btn--ghost" id="save">保存到样式</button>
+          </div>
+          <div class="status" id="status"></div>
+        </div>
+      </div>
+
+      <div class="mask" id="save-mask" hidden>
+        <div class="sheet">
+          <div class="sheet__head">
+            <h3>保存到样式</h3>
+            <button class="sheet__close" id="sheet-close" aria-label="关闭">×</button>
+          </div>
+          <div class="sheet__prev" id="sheet-prev"></div>
+          <div class="field"><label for="sheet-name">名称</label><input id="sheet-name" value="未命名渐变" /></div>
+          <div class="field"><label for="sheet-group">存入分组</label>
+            <select id="sheet-group"><option>最近使用</option><option>默认分组</option><option>新建分组…</option></select>
+          </div>
+          <div class="sheet__actions">
+            <button class="btn btn--ghost" id="save-cancel">取消</button>
+            <button class="btn btn--primary" id="save-confirm">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>v4</h2>
+    <ul>
+      <li>去掉所有小字注释：路线说明、拖动提示、「含两端」、分组说明都不在界面上。</li>
+      <li>视觉以面板最小宽 300px 为唯一基准；结果 / 工作面 / 设置 / 提交分成四层卡片，色轮收进工作面。</li>
+      <li>表面三档全部用仓库 token：面板 <code>--mm-color-bg-base</code> → 卡片 <code>--mm-color-bg-input</code> → 凹槽/输入位 <code>--mm-color-bg-drawer</code>；主色、按钮、圆角（2/4/6）、字号（11/12/13）、控件高 26 也全部换回仓库值。</li>
+      <li>三个过渡方式改成整条分段控件；预览条下给出两端色值与按精度生成的色标刻度，悬停取色显示色块 + HEX。</li>
+      <li>预览按「色标精度」渲染（精度 4 是几段直线，32 贴合色环曲线），上限 32，下限 4。</li>
+      <li>间距归到仓库六档：页边与区块间 8、组内 4、同行并列 4、凹槽内衬 2；左/右边界已对齐（预览卡、色轮卡、设置卡、按钮行、状态行同一条线）。</li>
+      <li>颜色只由环上 01 / 02 决定；角度 / 形状 / 反转不开放（普通图层被 vendor 写死 0°，<code>vendor.jsx:6079</code>）。</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 色彩换算：sRGB ↔ LCH(D50) ================= */
+  const D50 = { x: 0.96422, y: 1, z: 0.82521 };
+  const M_RGB_XYZ = [0.4124564, 0.3575761, 0.1804375, 0.2126729, 0.7151522, 0.0721750, 0.0193339, 0.1191920, 0.9503041];
+  const M_D65_D50 = [1.0478112, 0.0228866, -0.0501270, 0.0295424, 0.9904844, -0.0170491, -0.0092345, 0.0150436, 0.7521316];
+  const M_D50_D65 = [0.9555766, -0.0230393, 0.0631636, -0.0282895, 1.0099416, 0.0210077, 0.0122982, -0.0204830, 1.3299098];
+
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const mod360 = (v) => ((v % 360) + 360) % 360;
+  const mul = (m, v) => [
+    m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+    m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+    m[6] * v[0] + m[7] * v[1] + m[8] * v[2]
+  ];
+  const decode = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const encode = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+
+  function hexToRgb(hex) {
+    const t = String(hex).replace('#', '');
+    return [0, 2, 4].map((i) => parseInt(t.slice(i, i + 2), 16));
+  }
+  function rgbToHex(rgb) {
+    return '#' + rgb.map((v) => Math.round(clamp01(v / 255) * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
+  function rgbToLch(rgb) {
+    const lin = rgb.map((v) => decode(v / 255));
+    const d50 = mul(M_D65_D50, mul(M_RGB_XYZ, lin));
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : (t * 24389 / 27 + 16) / 116);
+    const fx = f(d50[0] / D50.x), fy = f(d50[1] / D50.y), fz = f(d50[2] / D50.z);
+    const L = 116 * fy - 16, a = 500 * (fx - fy), b = 200 * (fy - fz);
+    return { L, C: Math.sqrt(a * a + b * b), h: mod360(Math.atan2(b, a) * 180 / Math.PI) };
+  }
+
+  function lchToRgbRaw(lch) {
+    const hRad = lch.h * Math.PI / 180;
+    const a = Math.cos(hRad) * lch.C, b = Math.sin(hRad) * lch.C;
+    const fy = (lch.L + 16) / 116, fx = fy + a / 500, fz = fy - b / 200;
+    const inv = (t) => (t * t * t > 216 / 24389 ? t * t * t : (116 * t - 16) * 27 / 24389);
+    const xyz = mul(M_D50_D65, [inv(fx) * D50.x, inv(fy) * D50.y, inv(fz) * D50.z]);
+    const lin = [
+      3.2404542 * xyz[0] - 1.5371385 * xyz[1] - 0.4985314 * xyz[2],
+      -0.9692660 * xyz[0] + 1.8760108 * xyz[1] + 0.0415560 * xyz[2],
+      0.0556434 * xyz[0] - 0.2040259 * xyz[1] + 1.0572252 * xyz[2]
+    ];
+    return lin.map((v) => encode(clamp01(v)) * 255);
+  }
+
+  const inGamut = (rgb) => rgb.every((v) => v >= -0.6 && v <= 255.6);
+
+  /* 出界就降浓度（保 L 与 h）；网站用 Culori 的 local-MINDE，本稿同向简化 */
+  function gamutMapLch(lch) {
+    if (inGamut(lchToRgbRaw(lch))) return lchToRgbRaw(lch).map((v) => clamp01(v / 255) * 255);
+    let low = 0, high = Math.max(0, lch.C);
+    for (let i = 0; i < 16; i += 1) {
+      const mid = (low + high) / 2;
+      if (inGamut(lchToRgbRaw({ L: lch.L, C: mid, h: lch.h }))) low = mid; else high = mid;
+    }
+    return lchToRgbRaw({ L: lch.L, C: low, h: lch.h }).map((v) => clamp01(v / 255) * 255);
+  }
+
+  /* ================= 状态 ================= */
+  const state = {
+    a: '#9383CA',
+    b: '#F6E9BF',
+    route: 'short',
+    precision: 8,
+    /* 明度条控制哪个端点；默认 01（拖环上哪个点就切到哪个） */
+    active: 0,
+    scene: 'ok',
+    saved: false
+  };
+  const ROUTES = { direct: '直接过渡', short: '短路线', long: '长路线' };
+  const SLICE_L = 70;
+  /* 圆外底色跟 .card--wheel 一致，否则边缘会混出一圈中性灰 */
+  const WHEEL_BASE = [44, 44, 44];
+
+  /* 色环量程：网站固定 140，粉彩色会全挤在圆心、拖不准；
+     这里按当前两端色的最大浓度动态取值，只影响画环，不影响插值。 */
+  let wheelDomain = 90;
+  function updateDomain() {
+    const a = rgbToLch(hexToRgb(state.a)).C;
+    const b = rgbToLch(hexToRgb(state.b)).C;
+    wheelDomain = Math.max(70, Math.ceil((Math.max(a, b) * 1.35) / 5) * 5);
+  }
+
+  /** LCH → #RRGGBB（出界按 §13.2 收色）。本稿的色轮与明度条都用它，等价于真模块的 `lchToHex` */
+  function lchToHex(l, c, h) {
+    return rgbToHex(gamutMapLch({ L: l, C: Math.max(0, c), h }));
+  }
+
+  /* ================= 采样 ================= */
+  function sampleAt(route, t) {
+    if (route === 'direct') {
+      const a = hexToRgb(state.a), b = hexToRgb(state.b);
+      return rgbToHex([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+    }
+    const A = rgbToLch(hexToRgb(state.a));
+    const B = rgbToLch(hexToRgb(state.b));
+    let dh = mod360(B.h - A.h);
+    if (dh > 180 || (dh === 180 && B.h - A.h < 0)) dh -= 360;
+    if (route === 'long') dh = dh > 0 ? dh - 360 : dh + 360;
+    return rgbToHex(gamutMapLch({
+      L: A.L + (B.L - A.L) * t,
+      C: Math.max(0, A.C + (B.C - A.C) * t),
+      h: A.h + dh * t
+    }));
+  }
+
+  function rampCss(route, n) {
+    const parts = [];
+    for (let i = 0; i < n; i += 1) {
+      const t = i / (n - 1);
+      parts.push(sampleAt(route, t) + ' ' + (t * 100).toFixed(2) + '%');
+    }
+    return 'linear-gradient(90deg,' + parts.join(',') + ')';
+  }
+
+  /* ================= 色环绘制 ================= */
+  const bgCache = new Map();
+  const hueLimitCache = new Map();
+
+  function getHueLimits(domain) {
+    if (hueLimitCache.has(domain)) return hueLimitCache.get(domain);
+    const limits = new Float32Array(361);
+    for (let hue = 0; hue <= 360; hue += 1) {
+      const at = (c) => inGamut(lchToRgbRaw({ L: SLICE_L, C: c, h: hue }));
+      if (at(domain)) { limits[hue] = domain; continue; }
+      let low = 0, high = domain;
+      for (let i = 0; i < 12; i += 1) {
+        const mid = (low + high) / 2;
+        if (at(mid)) low = mid; else high = mid;
+      }
+      limits[hue] = low;
+    }
+    hueLimitCache.set(domain, limits);
+    return limits;
+  }
+
+  function wheelBackground(size, dpr, domain) {
+    const key = size + '|' + dpr + '|' + domain;
+    if (bgCache.has(key)) return bgCache.get(key);
+    const px = Math.round(size * dpr);
+    const canvas = document.createElement('canvas');
+    canvas.width = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    const image = ctx.createImageData(px, px);
+    const data = image.data;
+    const center = px / 2;
+    const radius = px / 2 - 1;
+    const limits = getHueLimits(domain);
+    for (let y = 0; y < px; y += 1) {
+      for (let x = 0; x < px; x += 1) {
+        const offset = (y * px + x) * 4;
+        const dx = x + 0.5 - center;
+        const dy = center - y - 0.5;
+        const amount = Math.hypot(dx, dy) / radius;
+        let r = WHEEL_BASE[0], g = WHEEL_BASE[1], b = WHEEL_BASE[2];
+        if (amount <= 1) {
+          const hue = mod360(Math.atan2(dy, dx) * 180 / Math.PI);
+          const requested = amount * domain;
+          const lower = Math.floor(hue), frac = hue - lower;
+          const limit = limits[lower] * (1 - frac) + limits[Math.min(360, lower + 1)] * frac;
+          const knee = limit * 0.72;
+          const shoulder = Math.max(1e-6, limit - knee);
+          const c = requested <= knee ? requested : knee + shoulder * (1 - Math.exp(-(requested - knee) / shoulder));
+          const rgb = lchToRgbRaw({ L: SLICE_L, C: c, h: hue });
+          const cover = clamp01((1 - amount) * radius + 0.5) * 0.92;
+          r = rgb[0] * cover + WHEEL_BASE[0] * (1 - cover);
+          g = rgb[1] * cover + WHEEL_BASE[1] * (1 - cover);
+          b = rgb[2] * cover + WHEEL_BASE[2] * (1 - cover);
+        }
+        data[offset] = r; data[offset + 1] = g; data[offset + 2] = b; data[offset + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+    bgCache.set(key, canvas);
+    return canvas;
+  }
+
+  function project(lch, center, radius) {
+    const amount = clamp01((Number.isFinite(lch.C) ? lch.C : 0) / wheelDomain);
+    if (!Number.isFinite(lch.h) || amount < 1e-6) return { x: center.x, y: center.y };
+    const angle = lch.h * Math.PI / 180;
+    return { x: center.x + Math.cos(angle) * amount * radius, y: center.y - Math.sin(angle) * amount * radius };
+  }
+
+  const wheel = document.getElementById('wheel');
+  let geo = null;
+
+  function drawWheel() {
+    const dpr = window.devicePixelRatio || 1;
+
+    /* 尺寸全交给 CSS（aspect-ratio 正方形 + 竖条 stretch），这里只量结果 */
+    const rect = wheel.getBoundingClientRect();
+    const size = Math.max(40, Math.round(rect.width));
+    const px = Math.round(size * dpr);
+    if (wheel.width !== px) { wheel.width = px; wheel.height = px; }
+    const ctx = wheel.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, px, px);
+    ctx.drawImage(wheelBackground(size, dpr, wheelDomain), 0, 0);
+
+    const center = { x: px / 2, y: px / 2 };
+    const radius = px / 2 - 1;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.09)';
+    ctx.lineWidth = dpr;
+    [0.5, 1].forEach((f) => {
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, radius * f, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.setLineDash([2 * dpr, 4 * dpr]);
+    ctx.beginPath();
+    ctx.moveTo(center.x - radius, center.y); ctx.lineTo(center.x + radius, center.y);
+    ctx.moveTo(center.x, center.y - radius); ctx.lineTo(center.x, center.y + radius);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    /* 路径：按实际插值采样后投影 */
+    const count = 65;
+    const path = [];
+    for (let i = 0; i < count; i += 1) {
+      path.push(project(rgbToLch(hexToRgb(sampleAt(state.route, i / (count - 1)))), center, radius));
+    }
+    ctx.save();
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    [[5 * dpr, 'rgba(15,16,20,.65)'], [2.2 * dpr, '#ffffff']].forEach(([width, color]) => {
+      ctx.beginPath();
+      path.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+    });
+    const mid = path[Math.floor(path.length * 0.55)];
+    const before = path[Math.floor(path.length * 0.55) - 2];
+    const after = path[Math.floor(path.length * 0.55) + 2];
+    if (mid && before && after) {
+      const dir = Math.atan2(after.y - before.y, after.x - before.x);
+      if (Math.hypot(after.x - before.x, after.y - before.y) > 2 * dpr) {
+        ctx.beginPath();
+        ctx.moveTo(mid.x + Math.cos(dir) * 5 * dpr, mid.y + Math.sin(dir) * 5 * dpr);
+        ctx.lineTo(mid.x - Math.cos(dir) * 3.5 * dpr + Math.sin(dir) * 4 * dpr, mid.y - Math.sin(dir) * 3.5 * dpr - Math.cos(dir) * 4 * dpr);
+        ctx.lineTo(mid.x - Math.cos(dir) * 3.5 * dpr - Math.sin(dir) * 4 * dpr, mid.y - Math.sin(dir) * 3.5 * dpr + Math.cos(dir) * 4 * dpr);
+        ctx.closePath();
+        ctx.fillStyle = '#fff'; ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    const points = [state.a, state.b].map((hex, index) => {
+      const lch = rgbToLch(hexToRgb(hex));
+      const p = project(lch, center, radius);
+      return { x: p.x, y: p.y, hex, index, lch };
+    });
+    geo = { center, radius, points, dpr, size };
+
+    points.forEach((p) => {
+      /* 受明度条控制的端点：外面加一圈，让「竖条现在改的是谁」一眼可见 */
+      if (p.index === state.active) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 10 * dpr, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,.16)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.85)';
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5.5 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = p.hex; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.8 * dpr; ctx.stroke();
+      const angle = Number.isFinite(p.lch.h) ? p.lch.h * Math.PI / 180 : p.index * 2.4;
+      const lx = Math.min(px - 11 * dpr, Math.max(11 * dpr, p.x + Math.cos(angle) * 14 * dpr));
+      const ly = Math.min(px - 11 * dpr, Math.max(11 * dpr, p.y - Math.sin(angle) * 14 * dpr));
+      ctx.font = '700 ' + Math.round(9 * dpr) + 'px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#121419'; ctx.lineWidth = 3 * dpr; ctx.strokeText('0' + (p.index + 1), lx, ly);
+      ctx.fillStyle = '#fff'; ctx.fillText('0' + (p.index + 1), lx, ly);
+    });
+  }
+
+  /* ================= 渲染 ================= */
+  const $ = (id) => document.getElementById(id);
+
+  function render() {
+    updateDomain();
+    drawWheel();
+
+    document.querySelectorAll('[data-route]').forEach((btn) => {
+      btn.classList.toggle('on', btn.dataset.route === state.route);
+    });
+
+    renderLightness();
+
+    /* 预览按实际色标数渲染：PS 只在色标之间做直线插值 */
+    $('preview').style.background = rampCss(state.route, state.precision);
+    $('sheet-prev').style.background = rampCss(state.route, state.precision);
+    $('preview-ticks').style.backgroundSize = (100 / (state.precision - 1)) + '% 100%';
+    $('stop-a-dot').style.background = state.a;
+    $('stop-a-hex').textContent = state.a;
+    $('stop-b-dot').style.background = state.b;
+    $('stop-b-hex').textContent = state.b;
+    $('apply').disabled = state.scene === 'none';
+
+    const st = $('status');
+    if (state.scene === 'none') {
+      st.className = 'status bad';
+      st.textContent = '没有选中图层';
+    } else if (state.saved) {
+      st.className = 'status';
+      st.textContent = '已保存 · ' + ROUTES[state.route];
+    } else {
+      st.className = 'status';
+      st.textContent = ROUTES[state.route] + ' · ' + state.precision + ' 个色标';
+    }
+  }
+
+  /* ================= toast / 复制 ================= */
+  let toastTimer = null;
+  function toast(text) {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = text;
+    $('panel').appendChild(el);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), 1500);
+  }
+
+  function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* file:// 下可能被拒，退回选区复制 */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ================= 色轮交互 ================= */
+  function localPoint(ev) {
+    const rect = wheel.getBoundingClientRect();
+    if (!geo) return null;
+    const scale = (geo.center.x * 2) / rect.width;
+    return { x: (ev.clientX - rect.left) * scale, y: (ev.clientY - rect.top) * scale };
+  }
+
+  function hitDot(point) {
+    if (!geo || !point) return null;
+    let best = null, bestDist = Infinity;
+    geo.points.forEach((p) => {
+      const d = Math.hypot(p.x - point.x, p.y - point.y);
+      if (d < bestDist) { bestDist = d; best = p; }
+    });
+    return bestDist <= 18 * geo.dpr ? best : null;
+  }
+
+  function nearestIndex(point) {
+    if (!geo) return 0;
+    const d0 = Math.hypot(geo.points[0].x - point.x, geo.points[0].y - point.y);
+    const d1 = Math.hypot(geo.points[1].x - point.x, geo.points[1].y - point.y);
+    return d0 <= d1 ? 0 : 1;
+  }
+
+  function colorAt(point, index) {
+    if (!geo || !point) return null;
+    const dx = point.x - geo.center.x;
+    const dy = geo.center.y - point.y;
+    const amount = clamp01(Math.hypot(dx, dy) / geo.radius);
+    const original = rgbToLch(hexToRgb(index === 0 ? state.a : state.b));
+    const hue = amount < 1e-6 ? (Number.isFinite(original.h) ? original.h : 0) : mod360(Math.atan2(dy, dx) * 180 / Math.PI);
+    return rgbToHex(gamutMapLch({ L: original.L, C: amount * wheelDomain, h: hue }));
+  }
+
+  /* ================= 竖向明度条 =================
+     只改**当前端点**的 L，色相与浓度不动：深色是从亮度降下来的，不是把颜色变灰。
+     条上的渐变本身就是那个色相 / 浓度的明度阶梯，拖到哪就得到看见的那个色。 */
+  const lightness = $('lightness');
+  const lightnessThumb = $('lightness-thumb');
+
+  function activeHex() {
+    return state.active === 0 ? state.a : state.b;
+  }
+
+  function setActiveHex(hex) {
+    if (state.active === 0) state.a = hex;
+    else state.b = hex;
+  }
+
+  function renderLightness() {
+    const { L, C, h } = rgbToLch(hexToRgb(activeHex()));
+    /* 明度阶梯：从 L=0 到 L=100 取 21 档，色相与浓度保持当前端点的不变 */
+    const steps = [];
+    for (let i = 0; i <= 20; i += 1) {
+      const l = (i / 20) * 100;
+      steps.push(lchToHex(l, C, h) + ' ' + (i / 20) * 100 + '%');
+    }
+    lightness.style.background = 'linear-gradient(to top,' + steps.join(',') + ')';
+    lightnessThumb.style.bottom = Math.max(0, Math.min(100, L)) + '%';
+    lightness.setAttribute('aria-valuenow', String(Math.round(L)));
+    lightness.title = '明度 ' + Math.round(L) + '（拖它改 0' + (state.active + 1) + '）';
+  }
+
+  function lightnessFromEvent(ev) {
+    const rect = lightness.getBoundingClientRect();
+    /* 上 = 亮（L=100）、下 = 暗（L=0） */
+    return Math.max(0, Math.min(1, 1 - (ev.clientY - rect.top) / rect.height)) * 100;
+  }
+
+  let lightnessDrag = false;
+  function applyLightness(ev) {
+    const { C, h } = rgbToLch(hexToRgb(activeHex()));
+    setActiveHex(lchToHex(lightnessFromEvent(ev), C, h));
+    state.saved = false;
+    render();
+  }
+
+  lightness.addEventListener('pointerdown', (ev) => {
+    lightnessDrag = true;
+    lightness.setPointerCapture(ev.pointerId);
+    applyLightness(ev);
+  });
+  lightness.addEventListener('pointermove', (ev) => {
+    if (!lightnessDrag) return;
+    applyLightness(ev);
+  });
+  lightness.addEventListener('pointerup', () => { lightnessDrag = false; });
+  lightness.addEventListener('pointercancel', () => { lightnessDrag = false; });
+
+  /* 点 = 选中 / 取色，拖 = 改色。
+     按下就立刻上色的话，「点一下 02 想选中它」会把它挪到点击位置（差一格色就变了）；
+     所以抓到点时先只切 active，真动了才上色；点空白处本来就是「取色」，按下即生效。 */
+  let drag = null;
+  function applyColorAt(point, index) {
+    const hex = colorAt(point, index);
+    if (!hex) return;
+    if (index === 0) state.a = hex; else state.b = hex;
+    render();
+  }
+
+  wheel.addEventListener('pointerdown', (ev) => {
+    const point = localPoint(ev);
+    if (!point) return;
+    const dot = hitDot(point);
+    drag = { index: dot ? dot.index : nearestIndex(point), start: point, moved: false };
+    state.active = drag.index;
+    wheel.setPointerCapture(ev.pointerId);
+    state.saved = false;
+    if (!dot) applyColorAt(point, drag.index);
+    else render();
+  });
+  wheel.addEventListener('pointermove', (ev) => {
+    if (!drag) return;
+    const point = localPoint(ev);
+    if (!drag.moved) {
+      /* 阈值按画布像素算：dpr=2 时 3px ≈ 屏幕上的 1.5px，够容忍手抖 */
+      if (Math.hypot(point.x - drag.start.x, point.y - drag.start.y) < 3 * (geo ? geo.dpr : 1)) return;
+      drag.moved = true;
+    }
+    applyColorAt(point, drag.index);
+  });
+  wheel.addEventListener('pointerup', () => { drag = null; });
+  wheel.addEventListener('pointercancel', () => { drag = null; });
+
+  /* ================= 预览条：悬停读色 / 点击复制 ================= */
+  const preview = $('preview');
+  function previewT(ev) {
+    const rect = preview.getBoundingClientRect();
+    return clamp01((ev.clientX - rect.left) / rect.width);
+  }
+  function showRead(t) {
+    const hex = sampleAt(state.route, t);
+    const cursor = $('preview-cursor'), read = $('preview-read');
+    cursor.style.display = 'block';
+    cursor.style.left = (t * 100) + '%';
+    read.style.display = 'flex';
+    read.textContent = hex;
+    read.style.setProperty('--pick', hex);
+    read.style.left = Math.min(80, Math.max(20, t * 100)) + '%';
+    return hex;
+  }
+  preview.addEventListener('pointermove', (ev) => showRead(previewT(ev)));
+  preview.addEventListener('pointerleave', () => {
+    $('preview-cursor').style.display = 'none';
+    $('preview-read').style.display = 'none';
+  });
+  preview.addEventListener('click', (ev) => {
+    const hex = showRead(previewT(ev));
+    copyText(hex);
+    toast('已复制 ' + hex);
+  });
+
+  /* ================= 过渡方式 / 精度 / 动作 ================= */
+  document.querySelectorAll('[data-route]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.route = btn.dataset.route;
+      state.saved = false;
+      render();
+    });
+  });
+
+  const precision = $('precision');
+  function commitPrecision() {
+    const raw = Number(precision.value);
+    const value = Number.isFinite(raw) ? Math.min(32, Math.max(4, Math.round(raw))) : 8;
+    precision.value = String(value);
+    state.precision = value;
+    state.saved = false;
+    render();
+  }
+  precision.addEventListener('change', commitPrecision);
+  precision.addEventListener('blur', commitPrecision);
+  precision.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { commitPrecision(); precision.blur(); } });
+
+  $('apply').addEventListener('click', () => {
+    if (state.scene === 'none') { toast('没有选中图层'); return; }
+    toast('已应用到图层 · ' + ROUTES[state.route]);
+    state.saved = false;
+    render();
+  });
+
+  function openSheet(open) {
+    $('save-mask').hidden = !open;
+    if (open) {
+      $('sheet-name').value = '未命名渐变';
+      $('sheet-name').focus();
+      $('sheet-name').select();
+      render();
+    }
+  }
+  $('save').addEventListener('click', () => openSheet(true));
+  $('save-cancel').addEventListener('click', () => openSheet(false));
+  $('sheet-close').addEventListener('click', () => openSheet(false));
+  $('save-mask').addEventListener('click', (ev) => { if (ev.target === $('save-mask')) openSheet(false); });
+  $('save-confirm').addEventListener('click', () => {
+    state.saved = true;
+    openSheet(false);
+    render();
+    toast('已保存');
+  });
+
+  /* ================= 舞台 ================= */
+  document.querySelectorAll('[data-width]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-width]').forEach((b) => b.classList.toggle('on', b === btn));
+      $('panel').style.width = btn.dataset.width + 'px';
+      requestAnimationFrame(render);
+    });
+  });
+  document.querySelectorAll('[data-scene]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-scene]').forEach((b) => b.classList.toggle('on', b === btn));
+      state.scene = btn.dataset.scene;
+      openSheet(state.scene === 'save');
+      render();
+    });
+  });
+
+  window.addEventListener('resize', () => requestAnimationFrame(render));
+  render();
+})();
+</script>
+</body>
+</html>

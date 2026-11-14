@@ -346,7 +346,8 @@ Enter 提交不要各写一遍判据：`onKeyDown={enterSubmit(() => commit())}`
 - 现在只允许这几种 JS → CSS 的通道，其余一律不许内联：
   `--floating-x/y`（浮层坐标）、`--mm-select-panel-w`（面板宽 = 触发器宽）、`--mm-swatch`（运行时色值 / 渐变）、
   `--mm-preview-family` / `--mm-glyph-font`（字体栈：`domain/font-stack` 拼好的 `"PostScript名", "家族名"`，
-  家族名 / 预览文案 / 字重字形三处共用）、`--mm-icon-panel-order`（多面板同开时的排列顺序）。
+  家族名 / 预览文案 / 字重字形三处共用）、`--mm-icon-panel-order`（多面板同开时的排列顺序）、
+  `--mm-lightness-pct`（渐变面板明度条的手柄位置：0–100 由指针算出来，css 拿不到这个数）。
   这些 CSS 都表达不了，所以只能由 JS 交变量、由 CSS 决定怎么用。
   **`font-family` 本身仍写在 css**（`FontList.css`），JS 只交「哪个字体」这个数据。
   **等宽按钮排的列数是常量**，直接写 `--mm-btn-grid-cols`，不经 JS（曾有一个 `--mm-action-columns` 由 JS 注入，已随 `.mm-btn-grid` 收口删除）。

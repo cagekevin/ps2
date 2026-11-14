@@ -1,0 +1,42 @@
+/*
+ * 明度条：竖条本体 + 手柄。
+ *
+ * 圆角取 `--mm-radius-md`(4)：这一档是「轻微圆角」的常态档，条宽 18 上看得出来、不至于变成药丸
+ * （2 太小几乎看不出，999 太软）。
+ * 手柄位置用 `--mm-lightness-pct` 注入 —— 那是 STYLE §14.1 白名单里的运行时值通道，
+ * 页面不许在这里改成内联 `bottom`。
+ */
+
+.mm-gradient__lightness{
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--mm-gradient-bar-w);
+  /* 与色轮等高：由承载行 `align-items: stretch` 决定，不写死高度 */
+  align-self: stretch;
+  border-radius: var(--mm-radius-md);
+  overflow: hidden;
+  background: var(--mm-swatch);
+  box-shadow: inset 0 0 0 1px var(--mm-color-border-control);
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+.mm-gradient__lightness:focus-visible{
+  outline: 1px solid var(--mm-color-accent);
+  outline-offset: 1px;
+}
+
+/* 手柄：横向小条，位置由 `--mm-lightness-pct` 给（0 = 底、100 = 顶） */
+.mm-gradient__lightness-thumb{
+  position: absolute;
+  left: 50%;
+  bottom: var(--mm-lightness-pct, 50%);
+  transform: translate(-50%, 50%);
+  width: var(--mm-gradient-thumb-w);
+  height: var(--mm-gradient-thumb-h);
+  border-radius: var(--mm-radius-md);
+  border: 2px solid var(--mm-color-text-strong);
+  /* 只用线色定边界：组件 css 不许写 rgba（规则 2），深色描边取亮线档 */
+  box-shadow: 0 0 0 1px var(--mm-color-border-control);
+  pointer-events: none;
+}

@@ -229,6 +229,40 @@ export async function addGradientFromLayer(
 }
 
 /**
+ * 读 PS 前景色，只回 `#RRGGBB`（渐变面板要一个起始色初值）。
+ *
+ * 与 `addForegroundColorToLibrary` 的区别：那个直接入库、不关心色值形状；
+ * 这个把 `{ color: { hex } }` 里那一个字段取出来并校验 —— 页面拿到的是**可信的色值**，
+ * 不用自己判 `isRecord`（判空是生产者的事，`CONVENTIONS` §4.4）。
+ */
+export async function readForegroundHex(): Promise<Result<string>> {
+  const color = await getForegroundColor();
+  if (color.status === 'error') return color;
+
+  const value = color.value.color;
+  const hex = isRecord(value) ? value.hex : undefined;
+  if (typeof hex !== 'string' || !/^[0-9a-fA-F]{6}$/.test(hex)) {
+    return failWithDetail('PS_BAD_PAYLOAD', MSG.gradient.badForeground, `foreground:${JSON.stringify(color.value)}`);
+  }
+  return ok(`#${hex.toUpperCase()}`);
+}
+
+/**
+ * 把一条**已经算好**的渐变存进渐变库的某个分组末尾（渐变面板「保存到样式」）。
+ *
+ * 与 `addGradientFromLayer` 的分工：那边读**当前图层**的渐变再入库，这边收**现成载荷**。
+ * 库种类写死 `gradient`：调用方只可能是渐变面板，多一个 `kind` 参数就多一处能传错的地方
+ * （把渐变存进颜色库不会报错，只会在颜色库里出现一个没有色值的项）。
+ */
+export function addGradientToGroup(
+  warehouse: StyleWarehouse,
+  groupIndex: number,
+  item: GradientLibraryItem
+): Promise<Result<void>> {
+  return addKuItem(warehouse, 'gradient', groupIndex, item);
+}
+
+/**
  * 把当前文字图层的字体属性存进分组（原版 `addFont` `:51243-51264`）。
  * `{ fonts: [...] }` 整份原样入库，不补键、不改写。
  */

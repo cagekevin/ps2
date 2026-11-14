@@ -1,0 +1,29 @@
+/*
+ * 色环组件样式：容器只负责给尺寸，画布撑满容器（圆形由 JS 按短边居中绘制）。
+ *
+ * 为什么画布用 `width/height: 100%` 而不是方形容器：CEP 12 的 Chromium 103 没有
+ * `min(宽, 高)` 的 CSS 写法，方形容器在窄面板里会溢出、在宽面板里会留白；
+ * 让画布跟着容器走、圆由 JS 按短边画，两种面板宽都不会错。
+ *
+ * 尺寸与间距全部取 token，本文件不写 px 字面量（`STYLE` 规则 1）。
+ */
+
+/* 正方形：宽度由 flex 分配，高度由 `aspect-ratio` 跟着走。
+   **不能用 `width:100%`**：同一行还有明度条，占满整行会把条挤出行外（条高会塌成 0）。 */
+.mm-gradient__wheel{
+  aspect-ratio: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mm-gradient__wheel-canvas{
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 画布像素是正方形（按短边 × dpr 分配），元素盒子却是矩形：
+     `object-fit: contain` 让它按原始比例居中缩放，圆才不会被拉成椭圆。
+     JS 侧的指针换算按同一套「居中正方形」算，两边必须是同一个判据。 */
+  object-fit: contain;
+  touch-action: none;
+  cursor: crosshair;
+}

@@ -119,15 +119,22 @@ function channelTolerance(tolerance: number): number {
   return abs > 255 ? abs - 256 : abs
 }
 
+/**
+ * 三通道差都在容忍度内算「相近」。
+ *
+ * 解析走 `hexToRgb`（本文件唯一入口）：两个入参都来自本文件的 `toHex`，恒为 6 位 `#rrggbb`，
+ * 认不出说明上游坏了 —— 与 `createGradientItem` 同一个兜底（给黑，不给 NaN：
+ * Nan 会让比较恒为 false，聚类会静默拆成两组，比给黑更难查）。
+ */
 function isSimilarHex(a: string, b: string, tolerance: number): boolean {
   const limit = channelTolerance(tolerance)
-  const ar = parseInt(a.slice(1, 3), 16)
-  const ag = parseInt(a.slice(3, 5), 16)
-  const ab = parseInt(a.slice(5, 7), 16)
-  const br = parseInt(b.slice(1, 3), 16)
-  const bg = parseInt(b.slice(3, 5), 16)
-  const bb = parseInt(b.slice(5, 7), 16)
-  return Math.abs(ar - br) <= limit && Math.abs(ag - bg) <= limit && Math.abs(ab - bb) <= limit
+  const first = hexToRgb(a) ?? { r: 0, g: 0, b: 0 }
+  const second = hexToRgb(b) ?? { r: 0, g: 0, b: 0 }
+  return (
+    Math.abs(first.r - second.r) <= limit &&
+    Math.abs(first.g - second.g) <= limit &&
+    Math.abs(first.b - second.b) <= limit
+  )
 }
 
 /**
@@ -354,9 +361,23 @@ export function hexToCmyk(hex: string): { c: number; m: number; y: number; k: nu
   return rgb ? rgbToCmyk(rgb) : null;
 }
 
+/*
+ * PS 的渐变类型与色标类型都是 4 字符 charID，前端拿到的是它的数值形式：
+ * 1282306592 = `Lnr `（线性）、1433629267 = `UsrS`（用户色标）、
+ * 1097754476 = `Angl `、1148022372 = `Dmnd` —— 后两个只有读回时会遇到。
+ *
+ * **必须是数字**：`ys_getGradientInfo` 用 `getEnumerationValue` 读回来的就是数字，
+ * 构造侧写成字符串会让库里同一种东西出现两种类型；而形状图层那条路会把 `type`
+ * 原样交给 `putEnumerated`（形状图层 `jsx/vendor.jsx:8541`、色标 `:8568`），字符串不是 charID。
+ * 普通图层那条路（`Style_setGradient`）忽略 `type`，所以写错了在普通图层上不会有症状。
+ */
+export const GRADIENT_TYPE_LINEAR = 1282306592;
+export const GRADIENT_STOP_USER = 1433629267;
+
 /** 原版 `createGradientItem` 里的色标形状（`app.v4.js:52771-52785`） */
 export interface GradientColorStop {
-  type: '1433629267';
+  /** charID `UsrS` 的数值形式：`putEnumerated` 收的是 charID，读回也是数字，两端必须同型 */
+  type: typeof GRADIENT_STOP_USER;
   location: number;
   midpoint: number;
   color: {
@@ -374,7 +395,8 @@ export interface GradientColorStop {
 /** 渐变库项的 `gradient` 载荷（渐变应用已验证的形状） */
 export interface GradientPayload {
   angle: number;
-  type: string;
+  /** charID `Lnr ` 的数值形式；见 `GRADIENT_TYPE_LINEAR` */
+  type: typeof GRADIENT_TYPE_LINEAR;
   reverse: boolean;
   align: boolean;
   gradient: {
@@ -393,23 +415,30 @@ export interface GradientLibraryItem {
 }
 
 /**
- * 由一个 HEX 颜色对构造渐变库项（原版 `createGradientItem` `:52746-52796`）。
+ * 由一串 HEX 色标构造渐变库项（原版 `createGradientItem` `:52746-52796`）。
  *
- * 参数是 `['#aabbcc', '#ddeeff']` 形式（弹层里每条渐变 = 两色）。
- * type `1282306592` = 线性、`1433629267` = 颜色色标，照抄原版魔数。
+ * **这是「颜色序列 → PS 渐变载荷」的唯一入口**：两色渐变（弹层里每条 = 两色）与
+ * 渐变面板算出来的 N 色标（`domain/gradient.sampleStops`）都走它。位置换算
+ * （等距 → PS 的 0–4096 刻度）只在这里做一次，别处不许再换。
+ *
+ * 色标从 2 到 32 都合法；`2` 就是一条直连（PS 只在色标之间做直线插值，所以
+ * 少于 2 个色标构造不出渐变，直接抛错而不是给一个看起来正常的载荷）。
  */
-export function createGradientItem(name: string, pair: [string, string]): GradientLibraryItem {
-  const hexes = pair.map((hex) => hex.replace('#', ''));
+export function createGradientItem(name: string, colors: readonly string[]): GradientLibraryItem {
+  if (colors.length < 2) throw new RangeError(`渐变至少需要两个色标，收到 ${colors.length} 个`);
+
+  const hexes = colors.map((hex) => hex.replace('#', ''));
   const smoothness = 4096;
   const step = smoothness / (hexes.length - 1);
 
-  const colors: GradientColorStop[] = hexes.map((hex, index) => {
+  const stops: GradientColorStop[] = hexes.map((hex, index) => {
     /* 色值来自本文件提取的调色板，认不出说明上游坏了：给黑，不给 NaN（NaN 会让 vendor 拿到坏色值） */
     const rgb = hexToRgb(hex) ?? { r: 0, g: 0, b: 0 };
     const cmyk = rgbToCmyk(rgb);
     return {
-      type: '1433629267',
-      location: index * step,
+      type: GRADIENT_STOP_USER,
+      /* 位置必须是整数刻度：PS 的 `putInteger("Lctn")` 收整数，小数会被截断成意料外的位置 */
+      location: Math.round(index * step),
       midpoint: 50,
       color: {
         red: rgb.r,
@@ -424,20 +453,20 @@ export function createGradientItem(name: string, pair: [string, string]): Gradie
     };
   });
 
-  const transparency = hexes.map((_, index) => ({
-    opacity: 100,
-    location: index * step,
-    midpoint: 50
-  }));
+  /* 透明度只有两端两档：色标数量与透明度无关，N 个色标不需要 N 个透明度停靠点 */
+  const transparency = [
+    { opacity: 100, location: 0, midpoint: 50 },
+    { opacity: 100, location: smoothness, midpoint: 50 }
+  ];
 
   return {
     name,
     gradient: {
       angle: 180,
-      type: '1282306592',
+      type: GRADIENT_TYPE_LINEAR,
       reverse: true,
       align: true,
-      gradient: { name: '未命名', smoothness, colors, transparency }
+      gradient: { name: '未命名', smoothness, colors: stops, transparency }
     }
   };
 }

@@ -455,6 +455,20 @@ export const MSG = {
    * 只收**已经用上**的句子：不可用态两条、进页自检一条、执行中一条、两条回执。
    * 按钮 label（重新检测 / 指定引擎路径）与副行说明属界面文字，就地写在页面。
    */
+  /** 渐变面板（`features/gradient`）：状态话与保存浮层的按钮/POST 文案 */
+  gradient: {
+    noLayer: '没有选中图层',
+    /* 「发出去」而不是「成功」：ys_useGradient 走调度通道，返回值恒为 1，失败只在 PS 侧弹窗（TD-01-32） */
+    applied: '已应用到图层',
+    saved: '已存进样式 · 渐变库',
+    saveTitle: '保存到样式',
+    nameLabel: '名称',
+    groupLabel: '分组',
+    defaultName: '未命名渐变',
+    noGroup: '渐变库还没有分组，先在样式页新建一个',
+    badForeground: '读不到 PS 前景色'
+  },
+
   dlss: {
     /** 进页自检中（约 1 秒） */
     checking: '正在检测引擎…',

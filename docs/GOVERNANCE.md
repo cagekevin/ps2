@@ -173,6 +173,7 @@
 | 禁右键菜单 | `src/hooks/useNoContextMenu.ts` | 全项目唯一 `contextmenu` 监听；只 `preventDefault`、不 `stopPropagation`（自己的 `ContextMenu` 仍能打开）；只在 `app/layout` 挂一次 |
 | 浮层关闭 | `src/hooks/useDismiss.ts` | 全项目唯一 mousedown/keydown 监听 |
 | 浮层定位 | `src/hooks/useFloatingPosition.ts` | 唯一锚点矩形入口（`update` 返回锚点矩形，对齐宽度也用它） |
+| 尺寸观测 | `src/hooks/useElementSize.ts` | 【范本】全仓唯一的 `ResizeObserver`：返回元素**内容盒**尺寸（首帧即给值、亚像素抖动不重渲、卸载 disconnect）。canvas 类组件按它分配像素缓冲，不自己再挂一个 observer、也不用 `addEventListener('resize')`（那样就成第四个全局监听入口，`CONVENTIONS` §4.8） |
 | 焦点陷阱 | `src/hooks/useFocusTrap.ts` | 仅模态弹窗：Tab 循环 + 关闭还原焦点 |
 | 受控草稿 | `src/hooks/useDraft.ts` | 输入框本地值：外部值变了才回填，渲染期收敛 |
 | 定位算法 | `src/hooks/floating-position.ts` | 纯函数，翻转与夹取 |

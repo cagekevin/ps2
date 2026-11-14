@@ -1,0 +1,146 @@
+/*
+ * 渐变面板（`/gradient`）：预览卡 → 色环卡 → 设置卡 → 动作行 → 状态行。
+ *
+ * 面板宽 300–360（`STYLE` 规则 4），所有尺寸取 token。三张卡的左右边界与页边对齐，
+ * 由页面壳的 `--mm-page-pad-x` 给（`global.css` 的页面根容器组），本文件不再写横向 padding。
+ *
+ * 为什么卡片三档用「面板底 → 输入位 → 抽屉」：这是仓库现成的三级凹陷
+ * （`--mm-color-bg-base` 54 / `-input` 44 / `-drawer` 34，每档差 10），不新增表面档位。
+ */
+
+.mm-gradient{
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--mm-space-2);
+  padding-top: var(--mm-space-2);
+  padding-bottom: var(--mm-space-1);
+  min-height: 0;
+  /* 面板压得很矮时（用户可随意拖）按内容滚动，而不是把色环压扁：
+     色环是正方形，压扁就没法拖准 */
+  overflow-y: overlay;
+}
+
+/* ── 卡片 ─────────────────────────────────────────────── */
+
+/* 卡片是**凹陷层**（`--mm-color-bg-drawer`，比页面底深一档），不是「再深一点的输入位」。
+   选这一档的理由不是好看，是「卡片里的控件要能按规则 15 各就各位」：
+   - 卡片声明 `--mm-input-bg` 为抽屉表面的输入位档，数字框才是「比所在表面深一档」；
+   - 段选轨道与导出抽屉里的 JPG/PNG 是同一个组合（抽屉 + `--mm-color-bg-input` 轨道），
+     不需要为这一页改公共件的表面。 */
+.mm-gradient__card{
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-2);
+  padding: var(--mm-space-2);
+  background: var(--mm-color-bg-drawer);
+  border: 1px solid var(--mm-color-border);
+  border-radius: var(--mm-radius-lg);
+  --mm-input-bg: var(--mm-color-bg-input-drawer);
+}
+
+/* 色环卡按内容高（= 正方形边长），不伸展：伸展出来的空白会变成卡片内的一块大洞，
+   多余的留白统一落到面板最下方（与超分页同一条判据）。
+   里面是「圆 + 明度条」一行：条靠 `align-items: stretch` 与圆等高，不写死高度。 */
+.mm-gradient__card--wheel{
+  flex: 0 0 auto;
+  /* 基础卡片是竖排（标签在上、内容在下），这里要横排：圆在左、条在右。
+     少了 `row` 就是竖排里 stretch —— 条会被压成 0 高（真踩过） */
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+}
+
+/* ── 预览 ─────────────────────────────────────────────── */
+
+.mm-gradient__preview{
+  position: relative;
+  height: var(--mm-gradient-preview-h);
+  border-radius: var(--mm-radius-md);
+  background: var(--mm-swatch);
+  box-shadow: inset 0 0 0 1px var(--mm-color-border-control);
+  cursor: crosshair;
+}
+
+/* 取色读数：跟着鼠标不如钉在条上，读数本来就要对照位置看 */
+.mm-gradient__reading{
+  position: absolute;
+  top: var(--mm-space-1);
+  left: var(--mm-space-1);
+  padding: var(--mm-space-tight) var(--mm-space-1);
+  border-radius: var(--mm-radius-sm);
+  background: var(--mm-color-bg-overlay);
+  border: 1px solid var(--mm-color-border-control);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--mm-font-xs);
+  color: var(--mm-color-text-strong);
+  pointer-events: none;
+}
+
+.mm-gradient__ends{
+  gap: var(--mm-space-2);
+}
+
+.mm-gradient__end{
+  display: flex;
+  align-items: center;
+  gap: var(--mm-space-inline);
+  min-width: 0;
+}
+
+.mm-gradient__dot{
+  width: var(--mm-check-size);
+  height: var(--mm-check-size);
+  flex: 0 0 auto;
+  border-radius: var(--mm-radius-sm);
+  background: var(--mm-swatch);
+  box-shadow: inset 0 0 0 1px var(--mm-color-border-control);
+}
+
+.mm-gradient__end-no{
+  font-size: var(--mm-font-xs);
+  font-weight: 600;
+  color: var(--mm-color-text-faint);
+}
+
+.mm-gradient__hex{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--mm-font-xs);
+  font-weight: 600;
+  color: var(--mm-color-text);
+}
+
+/* ── 设置行 ───────────────────────────────────────────── */
+
+/* 三档过渡方式铺满整条：`Segment` 的定宽（100，按两块各 50 调过）装不下三个四字标签，
+   会挤成两行。页面只覆盖宽度，不改段选的表面（`STYLE` §6.1 允许覆盖的就是宽度 / 间距）。 */
+.mm-gradient .mm-segment{
+  width: 100%;
+}
+
+/* 精度数字框定宽：控件默认吃满容器（`flex: 1 1 auto`），不放宽度档位；
+   这个页面要的是「标签 + 一个窄框」，宽度归页面给（`STYLE` §6 输入框行的判据）。 */
+.mm-gradient__row .mm-input{
+  flex: 0 0 auto;
+  width: var(--mm-quality-w);
+  text-align: center;
+}
+
+.mm-gradient__row{
+  gap: var(--mm-space-2);
+  padding-top: var(--mm-space-2);
+  border-top: 1px solid var(--mm-color-border);
+}
+
+.mm-gradient__label{
+  font-size: var(--mm-font-sm);
+  color: var(--mm-color-text-dim);
+}
+
+/* ── 动作行 ───────────────────────────────────────────── */
+
+.mm-gradient__actions{
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: var(--mm-space-2);
+}
