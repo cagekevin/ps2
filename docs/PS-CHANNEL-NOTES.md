@@ -622,6 +622,12 @@ base64 解出来是 **UTF-8 JSON**，必须用 Node `Buffer`（`atob` 直接转�
 | 图层类型显示 `unknown` | `%TEMP%\maomao-jsx.log` 里 `layer.kind` 原值 | 枚举名没覆盖 |
 | 样式库整片空 | 日志 `readText 失败` / `warehouses` 数量 | 路径或 Node fs 问题 |
 | 缩略图全破 | `userAssetUrl` 生成的实际 URL | `file:///` 或 `SheJiZhuLi` |
+| 导出后所有调用连续 30s 超时 | PS 会话的 `app.displayDialogs`（COM 直接读） | 非 `NO` 时 vendor 导出的模态框占住主线程；重启 PS |
+
+**「全线超时」先不要怀疑代码回归**（2026-11-16 踩过）：现象是 `maomao.log` 里 `cy_BatchExportLayer` 卡满 30s 报 `TIMEOUT`，紧跟着 `mm_layer_getState` 连续三次也超时，之后恢复正常；当时往回退三个提交都一样。真因是 PS 会话的 `app.displayDialogs` 停在 `ERROR`，vendor 的 `Doc_exportForWeb`（`vendor.jsx:6360`，`exportDocument(..., SAVEFORWEB, ...)`）在这种状态下弹「存储为 Web 所用格式」框，框开着 PS 主线程就不再执行脚本。
+
+判据有三条：① 超时链第一条一定是导出类函数（`cy_BatchExportLayer` / `cy_ExportImage`），不是随机能力；② 后续调用一起超时、且**不是** `funcMissing`；③ 重启 PS 即恢复。
+`displayDialogs` 不是本仓设的——`vendor.jsx` 里 0 处，`main.jsx` 那 5 处都是「存 → `NO` → `finally` 恢复」；它由 PS 里跑过的其他脚本留在会话里。曾按「vendor 导出缺兜底」登记为 `TD-01-36`，已销账：缺防御不算本仓违规（`ADR-0001` 第 4 项同一口径）。
 
 ---
 
