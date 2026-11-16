@@ -93,8 +93,12 @@ export function useCommonPage() {
    *
    * 页面只把「从哪个下标拖到哪个下标、落点在前后」交给命令，**落点算法与写盘都在命令层**
    * （复用 `domain/reorder`），这里不自己算一遍——两处算就会有两套边界判断。
+   *
+   * `from < 0` 直接不拖：那是本仓自加的格子（`LOCAL_TILES` 的 `index: -1`），
+   * 用户文件里没有它，写回去只会让相邻项错位。
    */
   function startDrag(event: MouseEvent<HTMLButtonElement>, from: number): void {
+    if (from < 0) return;
     const node = event.currentTarget;
     const grid = gridRef.current;
     if (!grid) return;
@@ -107,7 +111,8 @@ export function useCommonPage() {
       onEnd: (result) => {
         if (!result.dragged || !result.target) return;
         const to = Number(result.target.dataset.index);
-        if (!Number.isInteger(to) || to === from) return;
+        /* `to < 0` 同理：落到本地格子上没有意义（它不在文件里，换不了位置） */
+        if (!Number.isInteger(to) || to < 0 || to === from) return;
         /* 格子重排是纯文件写盘，秒级内，不弹遮罩 */
         void run(() => reorder(from, to, result.position), { spin: false });
       }

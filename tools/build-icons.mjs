@@ -122,6 +122,8 @@ const WHITELIST = [
   'iconyuansutihuan',
   'iconweizhiduihuan',
   'icontucengyansehuhuan',
+  /* 常用页本地项：智能抠图（不在官方 14 项种子里，由 store 在 toTiles 之后拼接，见 plan 21 §4 ⑦） */
+  'iconzhinengkoutu',
   /* 常用页缩放区的两个触发器：放大镜 + / 放大镜 −，必须是同一套。
      原版缩小用的是 `iconsuoxiao`（一条横杠），与放大镜不成对，已换成成对的 `iconshousuo` */
   'iconfangda',

@@ -5,18 +5,19 @@
  * 导出只读原图层，结果层是新增的，任一步失败都不碰原层。
  *
  * 三条硬规则同其它命令（`CONVENTIONS` §9）：不碰 DOM、不弹 toast、只返回 `Result<T>`。
- * 临时目录的建与删都在 `core/dlss/engine` —— 命令层不碰 `fs`。
+ * 临时目录的建与删都在 `core/temp` —— 命令层不碰 `fs`。
  *
  * 超分作用于整个画幅：不需要「恰好 1 个图层」前置，也不需要图层名 ——
  * 导出载荷里的 `layerName` 是文档名，用来做结果名的底。
  */
 
-import { DLSS_MAX_PIXELS } from '../config';
+import { DLSS_MAX_PIXELS, DLSS_TEMP_DIR } from '../config';
 import type { DlssEngineInfo, DlssParams, DlssPlaced } from '../types/dlss';
 import { MSG } from '../types/messages';
 import { ok, type Result } from '../types/result';
 import { chooseFolder } from '../core/dialog';
-import { cleanupTemp, prepareTemp, probeEngine, resolveRuntime, runEngine } from '../core/dlss/engine';
+import { cleanupTemp, prepareTemp } from '../core/temp';
+import { probeEngine, resolveRuntime, runEngine } from '../core/dlss/engine';
 import { getPref, savePref } from '../core/prefs';
 import { exportLayer, finishResult } from '../core/ps/dlss';
 import { dlssResultName } from '../domain/dlss-token';
@@ -83,7 +84,7 @@ export async function chooseRuntime(): Promise<Result<{ dir: string } | null>> {
 
 /** 整个画幅 → 引擎 → 结果层 / 新文档；结果名带参数 token，可事后读回 */
 export async function runDlss(params: DlssParams, runtimeDir: string): Promise<Result<DlssPlaced>> {
-  const temp = prepareTemp();
+  const temp = prepareTemp(DLSS_TEMP_DIR);
   if (temp.status === 'error') return temp;
 
   const { dir, inPath } = temp.value;

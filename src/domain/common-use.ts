@@ -222,6 +222,40 @@ export const COMMON_USE_SEED: readonly CommonUseItem[] = [
   }
 ];
 
+/**
+ * 本仓自己加的功能格（**不在**官方 `sj_commonFunction.json` 里）。
+ *
+ * 单独一段而不是塞进 `COMMON_USE_SEED`：种子是「官方 14 项」的逐字对照表，
+ * 混进本地项之后，改文案、对账官方版本时就分不清哪几项是官方的。
+ *
+ * `index: -1` = 「用户文件里没有我」：拖拽排序必须跳过它（`useCommonPage.startDrag`
+ * 判 `from < 0`）—— 文件里没有的项没法写回，重排它只会让相邻项错位。
+ */
+export const LOCAL_TILES: readonly CommonUseTile[] = [
+  {
+    id: 'local_cut',
+    index: -1,
+    name: '智能抠图',
+    title: '把当前图层抠成透明图层（结果盖在原层上方，原层不动）',
+    icon: { rest: 'iconzhinengkoutu', filled: null },
+    isMore: false,
+    ismark: false,
+    visible: true,
+    moreId: '',
+    comName: null
+  }
+];
+
+/**
+ * 文件项 + 本地项 = 上屏的完整列表。
+ *
+ * 拼接规则只写在这里：`toTiles` 只管「文件里有什么」（它的 `index` 是文件真实下标，
+ * 拖拽落点靠它），本地项由本函数追加。两处各自拼一次就会出现「有的地方有抠图、有的地方没有」。
+ */
+export function appendLocalTiles(tiles: CommonUseTile[]): CommonUseTile[] {
+  return [...tiles, ...LOCAL_TILES];
+}
+
 /** 图标 id 在文件里带前导 `#`（`#iconqianrutupian`），sprite 组件不收 */
 function stripHash(value: string): string {
   return value.startsWith('#') ? value.slice(1) : value;

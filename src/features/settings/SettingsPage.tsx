@@ -25,6 +25,7 @@ import { useReportFailure, useRunCommand } from '../../hooks/useRunCommand';
 import { useToast } from '../../hooks/useToast';
 import { download, upload } from '../../commands/cloud';
 import { chooseRuntime, resolveEngine } from '../../commands/dlss';
+import { chooseModel, resolveCutModel } from '../../commands/cut';
 import { resetAll, setOption, setShow } from '../../commands/common-use';
 import { saveSettings } from '../../commands/font-set';
 import { getCredentialsText, setCredentialsText } from '../../commands/credentials';
@@ -85,6 +86,32 @@ export default function SettingsPage() {
   async function chooseDlss(): Promise<void> {
     const picked = await run(() => chooseRuntime(), { spin: false });
     if (picked.status === 'ok' && picked.value) readDlss();
+  }
+
+  /*
+   * 抠图模型：与 DLSS 引擎同一条规则（`CONVENTIONS` §5.2 两条候选），所以形状照抄上面那段。
+   * 这里是**唯一**的模型位置配置入口 —— 常用页那个格子只执行，不弹选择框
+   * （40×40 的格子里塞路径选择就是第二种控件形状）。
+   */
+  const [cutPath, setCutPath] = useState('');
+  const [cutFound, setCutFound] = useState('未找到模型');
+  const readCut = useCallback(() => {
+    const found = resolveCutModel();
+    if (found.status === 'error') {
+      setCutFound('读取失败');
+      return;
+    }
+    setCutPath(found.value.savedPath);
+    setCutFound(found.value.state === 'ready' ? found.value.path : '未找到模型');
+  }, []);
+
+  useEffect(() => {
+    readCut();
+  }, [readCut]);
+
+  async function chooseCutModel(): Promise<void> {
+    const picked = await run(() => chooseModel(), { spin: false });
+    if (picked.status === 'ok' && picked.value) readCut();
   }
 
   const navigate = useNavigate();
@@ -316,6 +343,25 @@ export default function SettingsPage() {
           </span>
         </div>
         <Button onClick={() => void chooseDlss()}>选择引擎目录</Button>
+
+        {/* 抠图模型：同属外部大资产（176MB，不进仓库），规则与上面那段完全相同（CONVENTIONS §5.2） */}
+        <div className="mm-settings__section">抠图模型</div>
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">手动指定</span>
+          <Input
+            className="mm-u-grow"
+            value={cutPath}
+            placeholder="留空则用默认位置"
+            readOnly
+          />
+        </div>
+        <div className="mm-u-row mm-settings__row">
+          <span className="mm-settings__label">当前命中</span>
+          <span className="mm-settings__status" title={cutFound}>
+            {cutFound}
+          </span>
+        </div>
+        <Button onClick={() => void chooseCutModel()}>选择模型文件</Button>
 
         {/* 诊断：原来在面板头部占一整行（应用名 + 版本 + 诊断），现在收进设置页 ——
             它是排查入口，不是每天要点的东西（2026-10-31） */}

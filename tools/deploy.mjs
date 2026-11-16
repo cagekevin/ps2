@@ -56,7 +56,9 @@ const required = [
   'jsx/main.jsx',
   /* 矢量化的 wasm 运行时（`public/vendor/` 由 Vite 原样拷进 dist）：缺了功能直接不可用 */
   'dist/vendor/vtracer/index.js',
-  'dist/vendor/vtracer/pkg/vtracer_wasm_bg.wasm'
+  'dist/vendor/vtracer/pkg/vtracer_wasm_bg.wasm',
+  /* 抠图的推理脚本：缺了「智能抠图」会报 IO_ERROR，不崩但用不了 */
+  'dist/vendor/cut/cut.py'
 ];
 const missing = required.filter((file) => !existsSync(join(target, file)));
 if (missing.length) {

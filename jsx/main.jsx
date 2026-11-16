@@ -12,6 +12,8 @@
  *   批量文字      mm_text_readAll  mm_text_writeAll  mm_text_createAll（新建 / OCR 建层共用）
  *   OCR           mm_ocr_selectionRect  mm_ocr_exportImage  mm_ocr_eraseOriginal
  *   矢量化        mm_vec_exportLayer  mm_vec_replaceWithPath
+ *   抠图          mm_cut_exportLayer（当前层 → 透明 PNG，原尺寸；结果放回走 mm_placePngIntoDoc）
+ *   结果导回      mm_placePngIntoDoc（PNG → 当前文档新层 + 按 left/top 对齐；DLSS / 抠图共用）
  *   DLSS          mm_dlss_exportLayer  mm_dlss_finishResult（整个画幅可见合成 / 结果导回）
  *   导出          mm_doc_exportPath（解析基目录 + 逐级建子目录）
  *   诊断          mm_diag_vendor
@@ -1252,21 +1254,117 @@ function mm_dlss_safeName(text) {
 }
 
 /**
- * 结果 PNG 导回：尺寸 == 导出区域 → 原文档新层并对齐（`layer`）；
- * 放大档 → 结果文档留在桌面不关（`document`）。
+ * 当前图层导出为**透明** PNG（原尺寸，不铺白底、不放大）→ `{ path, exportWidth, exportHeight, bounds }`。
  *
- * → `{ mode, name, left?, top?, width, height }`；`no-doc` / `result-missing` / `error:…`
+ * **与 `mm_vec_exportLayer` 不合并**（三个导出各有用处，见文件头对照）：
+ * 那个铺白底是因为 vtracer 把透明当黑，还要放大长边；抠图的输入必须是原始 alpha，
+ * 放大反而让边缘模型多猜一圈像素，抠出来的边缘会更糊。
  *
- * `result-missing` 回约定值而不是抛：抛会被 `mm_safe` 折成 `error:result-missing @line n`，
- * 前端把英文原话当 reason 显示；约定值走 `RAW_FAILURES` 折 `PS_ERROR`，reason 才是中文。
+ * 路径由 Node 侧 `core/temp.prepareTemp` 给，jsx 不自己拼 `Folder.temp`
+ * （`CONVENTIONS` §5.1：临时目录只有 `core/temp` 一个出口）。
  *
- * 先改文件名再 `app.open`：`Document.name` 只读，不重命名新文档就叫 `in.png_nr.png`。
- *
- * **不包 `suspendHistory`**（撤销两步）：跨文档 open + duplicate 包进去是否可靠未验，
- * `docs/plan/23` 裁定 5 已定不包。要改成一条历史是另一轮的事。
+ * 建临时文档的三条坑与 `mm_dlss_exportLayer` 相同：标尺先切 px（百分比标尺下
+ * `as("px")` 给 NaN）、跨文档 `duplicate` 只允许从最前面的文档复制、8-bit RGB
+ * （引擎只吃 8-bit）。`DocumentFill.TRANSPARENT` 是本函数与矢量化唯一的关键差别。
  */
-function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
-	return mm_safe("mm_dlss_finishResult", function () {
+function mm_cut_exportLayer(pngPath) {
+	return mm_safe("mm_cut_exportLayer", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var doc = app.activeDocument;
+		var target = doc.activeLayer;
+		var originalRuler = app.preferences.rulerUnits;
+		var originalDialogs = app.displayDialogs;
+		var temp = null;
+
+		app.preferences.rulerUnits = Units.PIXELS;
+		app.displayDialogs = DialogModes.NO;
+
+		try {
+			var box;
+			try {
+				box = target.bounds;
+			} catch (boundsError) {
+				/* 空图层 / 全透明：没有可抠的像素，原因要落日志（只回「跳过」会查不到是哪一层） */
+				mm_log("mm_cut_exportLayer bounds failed: " + boundsError.message);
+				return "skipped";
+			}
+
+			var left = mm_px(box[0]);
+			var top = mm_px(box[1]);
+			var w = mm_px(box[2]) - left;
+			var h = mm_px(box[3]) - top;
+			if (!(w >= 1) || !(h >= 1)) return "skipped";
+
+			/*
+			 * 位深必须跟随源文档：写死 8-bit 时，源文档是 16/32-bit 的话，
+			 * 下面 target.duplicate(temp, ...) 跨位深复制会让 PS 弹「用户取消了操作」（真机 2026-11-16）。
+			 */
+			temp = app.documents.add(
+				w, h, doc.resolution, "maomao_cut_tmp",
+				NewDocumentMode.RGB, DocumentFill.TRANSPARENT,
+				1, doc.bitsPerChannel
+			);
+			var blank = temp.activeLayer;
+
+			/* 跨文档 duplicate 只允许从「最前面的文档」复制，源文档必须先置前 */
+			app.activeDocument = doc;
+			var copy = target.duplicate(temp, ElementPlacement.PLACEATBEGINNING);
+			app.activeDocument = temp;
+
+			/* 平移到原点：临时文档只有图层那么大，不平移会被裁掉一部分 */
+			copy.translate(-left, -top);
+
+			/* 透明底那张空层留着会让存图多一层无意义的历史，能删就删（删不掉也无害） */
+			try {
+				blank.remove();
+			} catch (be) { }
+
+			var out = new File(pngPath);
+			if (out.exists) out.remove();
+			out.parent.create();
+			/*
+			 * **不 flatten**：flatten 会把透明底填成白色，抠图输入就废了。
+			 * 存 PNG 时 PS 用的是「文档的合成结果」，所以不 flatten 也能存成带 alpha 的图。
+			 */
+			temp.saveAs(out, new PNGSaveOptions(), true, Extension.LOWERCASE);
+
+			return {
+				path: out.fsName,
+				exportWidth: temp.width.as("px"),
+				exportHeight: temp.height.as("px"),
+				bounds: { left: left, top: top, width: w, height: h }
+			};
+		} finally {
+			if (temp) temp.close(SaveOptions.DONOTSAVECHANGES);
+			app.activeDocument = doc;
+			app.preferences.rulerUnits = originalRuler;
+			app.displayDialogs = originalDialogs;
+		}
+	});
+}
+
+/**
+ * 把一张 PNG 作为新图层放进当前文档，并按 left/top 对齐（原层不动，新层在最上）。
+ *
+ * → `{ mode:"layer", name, left, top, width, height }`（已放进当前文档）；
+ * 传了 `regionW` / `regionH` 且结果尺寸不等 → `{ mode:"document", name, width, height }`，
+ * **那个文档故意不关**（放大后的结果放回原画布会撑破 bounds）；
+ * 另有 `no-doc` / `result-missing` / `error:…`。
+ *
+ * **同一件事只有这一处**：DLSS 结果导回（`mm_dlss_finishResult`）与抠图（`core/ps/cut.placePng`）
+ * 都调它，不许各自再写一份。要改「怎么放、怎么对齐」只改这里。
+ *
+ * 对齐靠 bounds 自校正：PS 把层丢在哪都行，按差值 `translate`（1x 时像素精确）。
+ *
+ * **对齐的是「PNG 画布的左上角」，不是内容框**：抠图结果四周有透明留边（实测 682x682
+ * 画布里内容框只有 549x352、缩进 (70,167)），按内容框对齐会把整张图推偏留边那么多。
+ * 所以先量画布内内容偏移 `frameOffsetX/Y`，再让内容框落到 `left + frameOffsetX` ——
+ * 等价于画布左上角落在原层 bounds 左上角。DLSS 结果满画布不透明，两个偏移恒为 0。
+ * 文件改名不归本函数：`Document.name` 只读，DLSS 那边先改名再调这里。
+ */
+function mm_placePngIntoDoc(pngPath, left, top, name, regionW, regionH) {
+	return mm_safe("mm_placePngIntoDoc", function () {
 		if (!app.documents.length) return "no-doc";
 
 		var doc = app.activeDocument;
@@ -1279,26 +1377,28 @@ function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
 			var source = new File(pngPath);
 			if (!source.exists) return "result-missing";
 
-			var safe = mm_dlss_safeName(outName);
-			var wanted = safe + ".png";
-			if (source.name !== wanted) {
-				var renamed = new File(source.parent.fsName + "/" + wanted);
-				if (renamed.exists) renamed.remove();
-				if (source.rename(wanted)) source = renamed;
-			}
-
 			resDoc = app.open(source);
 
 			app.preferences.rulerUnits = Units.PIXELS;
 			var resultWidth = Math.round(Number(resDoc.width.as("px")));
 			var resultHeight = Math.round(Number(resDoc.height.as("px")));
+			/* 画布内内容偏移：抠图结果四周有透明留边，内容框缩进画布内几十像素 */
+			var frameOffsetX = 0;
+			var frameOffsetY = 0;
+			try {
+				var contentBounds = resDoc.activeLayer.bounds;
+				frameOffsetX = Math.round(mm_px(contentBounds[0]));
+				frameOffsetY = Math.round(mm_px(contentBounds[1]));
+			} catch (contentError) {
+				/* 量不到就退化为 0（满画布不透明图本来就是 0），不能因此让整次放置失败 */
+				mm_log("mm_placePngIntoDoc content bounds failed: " + contentError.message);
+			}
 			app.preferences.rulerUnits = originalRuler;
 
-			var sameSize =
-				resultWidth === Math.round(Number(regionW)) &&
-				resultHeight === Math.round(Number(regionH));
-
-			if (!sameSize) {
+			var checkSize = regionW !== null && regionW !== undefined &&
+				regionH !== null && regionH !== undefined;
+			if (checkSize &&
+				(resultWidth !== Math.round(Number(regionW)) || resultHeight !== Math.round(Number(regionH)))) {
 				app.activeDocument = resDoc;
 				var asDocument = {
 					mode: "document",
@@ -1316,20 +1416,23 @@ function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
 			resDoc.close(SaveOptions.DONOTSAVECHANGES);
 			resDoc = null;
 
-			try {
-				placed.name = safe;
-			} catch (ne) {
-				/* 写名失败不影响结果，但必须留痕：否则「名字没变」永远查不出为什么 */
-				mm_log("mm_dlss_finishResult rename failed: " + ne.message);
+			/* name 传空 = 沿用 PNG 自己的名字（抠图不命名结果层，DLSS 传 token） */
+			if (name !== null && name !== undefined && String(name) !== "") {
+				try {
+					placed.name = String(name);
+				} catch (ne) {
+					/* 写名失败不影响结果，但必须留痕：否则「名字没变」永远查不出为什么 */
+					mm_log("mm_placePngIntoDoc rename failed: " + ne.message);
+				}
 			}
 
 			app.activeDocument = doc;
 
-			/* 自校正对齐：PS 把层丢在哪都行，按 bounds 差挪到区域左上角（1x 时像素精确） */
 			app.preferences.rulerUnits = Units.PIXELS;
 			var before = placed.bounds;
-			var dx = Math.round(Number(left)) - Math.round(mm_px(before[0]));
-			var dy = Math.round(Number(top)) - Math.round(mm_px(before[1]));
+			/* 让画布左上角落到 left/top：内容框再缩进 frameOffset，正好抵消留边 */
+			var dx = Math.round(Number(left)) + frameOffsetX - Math.round(mm_px(before[0]));
+			var dy = Math.round(Number(top)) + frameOffsetY - Math.round(mm_px(before[1]));
 			if (dx !== 0 || dy !== 0) {
 				placed.translate(new UnitValue(dx, "px"), new UnitValue(dy, "px"));
 			}
@@ -1359,5 +1462,40 @@ function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
 			}
 			throw e;
 		}
+	});
+}
+
+/**
+ * 结果 PNG 导回：尺寸 == 导出区域 → 原文档新层并对齐（`layer`）；
+ * 放大档 → 结果文档留在桌面不关（`document`）。
+ *
+ * → `{ mode, name, left?, top?, width, height }`；`no-doc` / `result-missing` / `error:…`
+ *
+ * `result-missing` 回约定值而不是抛：抛会被 `mm_safe` 折成 `error:result-missing @line n`，
+ * 前端把英文原话当 reason 显示；约定值走 `RAW_FAILURES` 折 `PS_ERROR`，reason 才是中文。
+ *
+ * 先改文件名再 `app.open`：`Document.name` 只读，不重命名新文档就叫 `in.png_nr.png`。
+ * 放置与对齐本身在 `mm_placePngIntoDoc`（抠图也调它），
+ * 本函数只留 DLSS 自己的两件事：文件名清洗、尺寸不等时另开文档。
+ *
+ * **不包 `suspendHistory`**（撤销两步）：跨文档 open + duplicate 包进去是否可靠未验，
+ * `docs/plan/23` 裁定 5 已定不包。要改成一条历史是另一轮的事。
+ */
+function mm_dlss_finishResult(pngPath, left, top, regionW, regionH, outName) {
+	return mm_safe("mm_dlss_finishResult", function () {
+		if (!app.documents.length) return "no-doc";
+
+		var source = new File(pngPath);
+		if (!source.exists) return "result-missing";
+
+		var safe = mm_dlss_safeName(outName);
+		var wanted = safe + ".png";
+		if (source.name !== wanted) {
+			var renamed = new File(source.parent.fsName + "/" + wanted);
+			if (renamed.exists) renamed.remove();
+			if (source.rename(wanted)) source = renamed;
+		}
+
+		return mm_placePngIntoDoc(source.fsName, left, top, safe, regionW, regionH);
 	});
 }

@@ -124,5 +124,22 @@ export const DLSS_PROBE_TIMEOUT_MS = 60_000;
  */
 export const DLSS_MAX_PIXELS = 64 * 1024 * 1024;
 
-/** `%TEMP%` 下的临时目录名（不用原插件的 `dlss5ps`，避免两边互踩） */
+/** `%TEMP%` 下的临时子目录名（不用原插件的 `dlss5ps`，避免两边互踩）；`core/temp.prepareTemp` 的 `domain` */
 export const DLSS_TEMP_DIR = 'maomao-dlss';
+
+/** 抠图临时子目录名（`core/temp.prepareTemp` 的 `domain`） */
+export const CUT_TEMP_DIR = 'maomao-cut';
+
+/**
+ * 跑抠图脚本的 Python 解释器。
+ *
+ * Windows 上 `python` 可能是应用商店的别名（点开跳商店），装了 py launcher 的机器
+ * 用 `'py'` 才通。改这里一处，不散在脚本里（`plan 21` §8 风险 2）。
+ */
+export const CUT_PYTHON = 'python';
+
+/** 跑一张图的上限：模型 168MB 冷加载 + 1024 推理，正常 2–3 秒，120 秒是「卡死」的判据 */
+export const CUT_TIMEOUT_MS = 120_000;
+
+/** 模型文件名：兜底候选用它拼绝对路径，`tools/fetch-model.mjs` 也写这个名字 */
+export const CUT_MODEL_NAME = 'model.onnx';

@@ -38,9 +38,14 @@ export type PrefKey =
   | 'cloud.ledger'
   /**
    * DLSS 引擎目录（用户手动指定的那份）。
-   * 空 = 走自动探测（`core/dlss/engine.resolveRuntime` 的 3 条候选）。
+   * 空 = 走自动探测（`core/dlss/engine.resolveRuntime` 的第 2 条候选）。
    */
   | 'dlss.runtime'
+  /**
+   * 抠图模型文件（用户手动指定的那份 `.onnx`）。
+   * 空 = 走自动探测（`core/cut/engine.resolveModel` 的第 2 条候选）。
+   */
+  | 'cut.model'
 
 const FILE = 'prefs.json';
 

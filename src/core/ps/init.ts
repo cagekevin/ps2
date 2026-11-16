@@ -105,6 +105,9 @@ export const CORE_FUNCS = [
   /* DLSS：导出选中层 / 结果导回（缺了只影响 `/dlss` 页，不进 `CORE_REQUIRED`） */
   'mm_dlss_exportLayer',
   'mm_dlss_finishResult',
+  /* 抠图：导出当前层 / 结果放回（缺了只影响抠图） */
+  'mm_cut_exportLayer',
+  'mm_placePngIntoDoc',
   /* 诊断：官方能力探测 */
   'mm_diag_vendor'
 ] as const;

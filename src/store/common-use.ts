@@ -11,7 +11,7 @@
 
 import { create } from 'zustand';
 import { log } from '../core/logger';
-import { toTiles, type CommonUseTile } from '../domain/common-use';
+import { appendLocalTiles, toTiles, type CommonUseTile } from '../domain/common-use';
 import {
   missingOptionKeys,
   pickCommonUseOptions,
@@ -56,7 +56,7 @@ interface CommonUseState {
 
 export const useCommonUseStore = create<CommonUseState>()((set, get) => ({
   /* 首屏按官方种子渲染，避免「文件还没读到就先白一下」 */
-  tiles: toTiles(null),
+  tiles: appendLocalTiles(toTiles(null)),
   dropped: [],
   options: pickCommonUseOptions({}),
   missingOptions: [],
@@ -71,7 +71,8 @@ export const useCommonUseStore = create<CommonUseState>()((set, get) => ({
     const missing = options.status === 'ok' ? missingOptionKeys(options.value) : previous.missingOptions;
 
     set({
-      tiles: file.status === 'ok' ? toTiles(file.value.records) : previous.tiles,
+      tiles:
+        file.status === 'ok' ? appendLocalTiles(toTiles(file.value.records)) : previous.tiles,
       dropped: file.status === 'ok' ? file.value.dropped : [],
       options: options.status === 'ok' ? options.value : previous.options,
       missingOptions: missing,

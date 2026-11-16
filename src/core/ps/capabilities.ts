@@ -46,7 +46,7 @@ import type { CapabilitySpec } from './capability';
 /* `require*` 是本域的前置判断，给别的能力当 `spec.require` 用。
    `layer` 自己的两个查询（图层状态 / 选中数）**不进表** —— 它们是域内基础设施，
    进表会让 `layer` 反向依赖本文件（环）。详见 `layer.ts` 里那两个函数的注释。 */
-import { requireSelection, requireShapeLayer, requireTextLayer } from './layer';
+import { requireLayerKind, requireSelection, requireShapeLayer, requireTextLayer } from './layer';
 /* 批量文字的私有解析器：单独一个文件，**不能**从 `./text-batch` 引 —— 那个文件 import 本文件的
    `CAP`，反过来引就是运行时环（无自动闸，见 ADR-0007） */
 import { createReportRaw, layersRaw, writeReportRaw } from './text-batch-raw';
@@ -60,6 +60,13 @@ const requireTwoLayers = () => requireSelection({ min: 2 });
 const requireThreeLayers = () => requireSelection({ min: 3 });
 /** 矢量化：只能作用于**恰好一个**图层（多选时不知道该转哪个） */
 const requireOneLayer = () => requireSelection({ exact: 1 }, MSG.vectorize.needOne);
+/**
+ * 抠图：只能作用于像素图层。
+ *
+ * 组 / 智能对象 / 文字层导出的都是合成结果，抠完放回去会变成「一张带白底的图盖住原层」——
+ * 那比直接报错更难查（`plan 21` §6）。不自动栅格化：那是改用户的图。
+ */
+const requirePixelLayer = () => requireLayerKind(['normal'], '像素图层');
 
 /** 字体信息载荷：必须是对象且 `fonts` 非空，否则算读失败（没有字体项的信息没有意义） */
 function fontsOf(data: unknown): Record<string, unknown> | null {
@@ -105,6 +112,8 @@ import { ocrExportRaw } from './ocr-raw';
 import { replaceReportRaw, vecExportRaw } from './vectorize-raw';
 /* DLSS 的私有解析器：同样单独文件，理由见 `dlss-raw.ts` 文件头 */
 import { dlssExportRaw, dlssPlacedRaw } from './dlss-raw';
+/* 抠图的私有解析器：导出载荷一份；结果导回共用 `dlssPlacedRaw`（同一形状不许两个校验） */
+import { cutExportRaw } from './cut-raw';
 
 /** `err === 1` 且宿主没给 `msg` 时的兜底文案（宿主一般会给，如「请选择文字图层」） */
 export const FONT_UNAVAILABLE = '字体不可用（系统里可能没装这个字体）';
@@ -387,6 +396,33 @@ export const CAP = {
    */
   dlssFinish: {
     fn: 'mm_dlss_finishResult', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    parse: dlssPlacedRaw
+  },
+
+  /* ---------------- 一键抠图（自写 jsx，`core` 门只能直调） ---------------- */
+
+  /**
+   * 当前图层导出为**透明** PNG（引擎输入）：`{ path, exportWidth, exportHeight, bounds }`。
+   *
+   * 前置要求像素图层：组 / 智能对象 / 文字层导出的是合成结果，抠出来放回去会变成
+   * 「一张带白底的图盖在原层上」—— 那比报错更难查，所以拦在这里（`plan 21` §6）。
+   * 形状与 `vecExport` 逐字段相同，解析器却各自一份：两者 `path` 的语义不同
+   * （这里是原尺寸透明图，那里是放大后的白底图），共用一个函数就得再加参数。
+   */
+  cutExport: {
+    fn: 'mm_cut_exportLayer', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
+    require: requirePixelLayer, parse: cutExportRaw
+  },
+
+  /**
+   * 结果 PNG 放回当前文档：新图层 + 按 `left` / `top` 对齐（原层不动）。
+   *
+   * 与 `dlssFinish` 是同一个 jsx 函数、同一个解析器 —— 放置与对齐只有一份实现，
+   * 两条业务各调各的（`plan 21` §9「结果贴回文档」）。
+   * 不设前置：没打开文档时 jsx 回 `'no-doc'`。
+   */
+  placePngIntoDoc: {
+    fn: 'mm_placePngIntoDoc', gate: 'core', channel: 'direct', timeout: WRITE_TIMEOUT,
     parse: dlssPlacedRaw
   },
 

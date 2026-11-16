@@ -14,6 +14,7 @@
     "test": "vitest run",
     "deploy": "npm run build && node tools/deploy.mjs",
     "probe:ps": "node tools/probe-ps.mjs",
+    "fetch:model": "node tools/fetch-model.mjs",
     "check:templates": "node tools/check-templates.mjs",
     "check:nav": "node tools/check-nav.mjs",
     "check": "npm run typecheck && npm run lint && npm run lint:css && npm run check:templates && npm run check:nav && npm run check:jsx && npm run test && node scripts/post-check.mjs",

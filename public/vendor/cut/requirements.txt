@@ -1,0 +1,8 @@
+# 一键抠图的 Python 依赖（`docs/plan/21` 裁定 2：只装 onnxruntime，不装 torch）
+#
+# 装法：python -m pip install -r requirements.txt
+# 版本不写死上限：onnxruntime 的 CPU provider 在 1.16 之后接口稳定，
+# 写死反而会在新版 Python 上装不上。出问题时先看 pip 的解析结果。
+onnxruntime>=1.16
+pillow>=10.0
+numpy>=1.24

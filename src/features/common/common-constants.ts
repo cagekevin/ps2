@@ -16,12 +16,14 @@ import {
   optimizeDoc,
   swapWireframeFill
 } from '../../commands/common-use';
+import { cutCurrentLayer } from '../../commands/cut';
 import type { Result } from '../../types/result';
 
 /**
  * 已接线的格子：`id` → **左键执行**的命令。
  *
- * 表里 10 项：v1 的 5 项 + v2 的 5 项（嵌入图片 / 嵌入多图片 / 导入多图片 / 优化文档 / 导出图片）。
+ * 表里 11 项：v1 的 5 项 + v2 的 5 项（嵌入图片 / 嵌入多图片 / 导入多图片 / 优化文档 / 导出图片）
+ * + 本仓自己加的「智能抠图」（`local_cut`，不在官方文件里，见 `domain/common-use` 的 `LOCAL_TILES`）。
  * 其中 4 项（嵌入图片 / 导入多图片 / 优化文档 / 导出图片）**左键执行、右键展开面板**——
  * 官方 `clickFunction` 按名字分派，只有「自定义变换 / 参考线 / 按间距」左键才是展开
  * （`13-常用-V2` §1.6）。
@@ -41,7 +43,9 @@ export const TILE_COMMANDS: Record<string, () => Promise<Result<void>>> = {
   div_img_cya9: exportImage,
   div_img_cya12: exchangeLayerColor,
   div_img_cya14: layerReplace,
-  div_img_cya15: locationTrade
+  div_img_cya15: locationTrade,
+  /* 本仓自加：跑一次 Python 模型，2–3 秒，**不进** `INSTANT_TILE_IDS`（要弹遮罩） */
+  local_cut: cutCurrentLayer
 };
 
 /**

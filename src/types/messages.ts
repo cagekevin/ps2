@@ -484,6 +484,21 @@ export const MSG = {
     doneDocument: '已在新文档打开'
   },
 
+  /**
+   * 一键抠图（`features/common` 的本地按钮 + 设置页模型分区）。
+   *
+   * 只收**已经用上**的句子：失败三条（模型 / Python / 依赖）。
+   * 「选择模型文件」这类按钮 label 属界面文字，就地写在页面。
+   */
+  cut: {
+    /** 两条候选都没有模型文件：提示去设置页选一次，或跑 `npm run fetch:model` */
+    noModel: '没找到抠图模型，请到设置页选一次，或跑 npm run fetch:model',
+    /** 进程起不来（`runProcess` 只在 spawn 抛错时给 `IO_ERROR` + `spawn:` 前缀）：`config.CUT_PYTHON` 指的 python 不存在 */
+    noPython: '找不到 python，请在 config.ts 改 CUT_PYTHON',
+    /** 脚本 stderr 里有 ModuleNotFoundError：没按 requirements.txt 装依赖 */
+    missingDeps: 'Python 依赖没装，按 requirements.txt 安装'
+  },
+
   /** 凭证（OCR + 翻译，同一份 `credentials.json`） */
   credentials: {
     /** 粘贴的整段文本认不出（不是 JSON、或既没有 ocr 也没有 translate 节） */

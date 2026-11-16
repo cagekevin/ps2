@@ -218,7 +218,9 @@ src/
 │  ├─ credentials/ 凭证（OCR / 翻译两节，`credentials.json`，**不进 git**）
 │  ├─ ocr/        云 OCR（百度）：`blocks`（字号与段落合并公式）/ `baidu`（token + `general` + 错误码）
 │  ├─ vectorize/  位图转 SVG 的 wasm 引擎（`vtracer`，从 `public/vendor/` 按扩展路径 require）
-│  ├─ dlss/       外部神经渲染引擎域：运行时探测 / 参数拼装 / 输出定位 / 临时产物
+│  ├─ dlss/       外部神经渲染引擎域：运行时探测 / 参数拼装 / 输出定位
+│  ├─ cut/        抠图域：模型探测（两条候选）/ spawn Python 推理脚本
+│  ├─ temp/       临时目录（唯一出口 `prepareTemp(domain)` / `cleanupTemp(dir)`）
 │  ├─ ps/         PS 原子能力（init/capability/capabilities/layer/style/font/text/common-use/rename/env/diag/raw）
 │  ├─ env/        版本、设备、环境
 │  ├─ serial/     按 key 串行（读改写队列）
@@ -245,6 +247,10 @@ src/
 `public/vendor/vtracer/` 是位图转 SVG 的 wasm 包（692 KB，其中 wasm 653 KB），运行时用
 `nodeRequire('<扩展目录>/dist/vendor/vtracer/index.js')` 加载。
 **为什么不放 `src/`**：会被 Vite 打包，破坏 wasm-bindgen 的 `require('fs')` / `__dirname`。
+
+`public/vendor/cut/` 是抠图的 Python 推理脚本（`cut.py` + `requirements.txt`，随 dist 部署，运行时按扩展路径
+`spawn`）。**为什么也不放 `src/`**：它不是 JS，Vite 无从打包；放 `public/` 才能原样出现在 `dist/vendor/cut/`。
+模型不进 `public/`（176MB），位置见 §5.2。
 
 ### 依赖方向（只允许向下；**静态方向只写这一份**）
 
@@ -718,6 +724,7 @@ Get-ChildItem src/features -Recurse -Include *.ts,*.tsx |
 | PS 能力 | `core/ps/*` | 直接 `callJsx` |
 | 路径 / 资源 URL | `core/paths`（`userAssetUrl` / `userSubPath`） | 手拼 `file://`、反斜杠、自己接 `SheJiZhuLi` |
 | 日志 | `log.info/warn/error`（内部已脱敏） | 传 token 前自己处理 |
+| 临时目录 | `core/temp`（`prepareTemp(domain)` / `cleanupTemp(dir)`） | 自己 `os.tmpdir()` 拼路径、自己 `rmSync` |
 | 部署 | `npm run deploy`（内置清理与校验） | 手工复制文件 |
 
 原则：唯一入口要比自己写更省事，靠便利性收敛，不靠禁止。
@@ -737,12 +744,23 @@ userAssetUrl('kuStyle', item.thumb)                    // ✓
 
 ### 5.2 外部大资产（模型 / 引擎运行时）
 
-进不了 git 的大文件（DLSS runtime 214MB、抠图模型 176MB）放 `%APPDATA%\Maomao\assets\<域>\`，
-**不进 `public/`、不进 `dist/`、不进 git**。不能放 `public/` 的理由只有一条：Vite 会拷进 `dist/`、
-`deploy.mjs` 再拷进扩展目录 —— 每次部署复制一遍，卸载扩展就没了。
+进不了 git 的大文件（DLSS runtime 214MB、抠图模型 176MB）**不进 `public/`、不进 `dist/`、不进 git**。
+不能放 `public/` 的理由只有一条：Vite 会拷进 `dist/`、`deploy.mjs` 再拷进扩展目录 —— 每次部署复制一遍，
+卸载扩展就没了。
 
-面板只读（`existsSync` + 把绝对路径交给引擎），放置与下载由用户或 `tools/*.mjs` 完成。
-每个域自己找目录，不抽公共模块。
+**找资产只有一条路：两条候选，顺序固定。**
+
+1. **用户指定路径** —— prefs 键 `<域>.<资产>`（`dlss.runtime`、`cut.model`），值是绝对路径字符串，
+   空字符串 = 没指定（不是 `null`，也不是缺键）。用户在设置页点「选择…」写入，写入只走 `core/prefs`。
+2. **默认位置** —— `%APPDATA%\Maomao\assets\<域>\<资产文件>`，由 `tools/*.mjs` 或用户手工放置。
+
+第 1 条命中即用，不命中再查第 2 条；两条都没有 → 报错必须列出试过的**每一条绝对路径**
+（`ADR-0008`：失败与没有不许同形，别只说「没找到」）。**不许再加第三条候选**（如「扩展同级目录」），
+也不许为某个域写死单一位置 —— 那会让同一能力在仓里出现两个样本（§0.5）。
+
+**面板只读**：`existsSync` 判断 + 把绝对路径交给引擎。面板永不复制、永不搬动、永不下载到扩展目录；
+放置与下载由用户或 `tools/*.mjs` 完成。**找资产的函数每个域自己写**（现成样本：`core/dlss/engine.resolveRuntime`），
+不抽公共「找资产」模块 —— 这条只约束大资产定位，与临时目录无关。
 
 ## 6. UI 横切（7 项）
 
