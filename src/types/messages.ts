@@ -369,7 +369,8 @@ export const MSG = {
     /** 52003/54001/58000：未授权、签名错、IP 非法 —— 都是 appid/key 那一套不对 */
     translateUnauthorized: '翻译接口未授权，请检查 appid / key',
     /** 54004/58002：余额不足或额度用完（内置那对官方 key 已欠费，换自己的） */
-    translateQuota: '翻译接口额度用完或余额不足，请在 config.ts 换用自己的 appid / key',
+    /* 凭证只在 `credentials.json`（设置页整段粘贴），`config.ts` 里没有任何 key */
+    translateQuota: '翻译接口额度用完或余额不足，请在「设置」页的凭证里换成自己的 appid / key',
     /** 54000/58001：必填参数缺失或语言方向不支持 */
     translateParams: '翻译参数不对（语言方向可能不支持）',
     missingPostScript: '缺少 PostScript 名，无法换字体',
