@@ -130,12 +130,16 @@ export function probeEngine(
   }
   if (probeInFlight && probeInFlight.dir === runtimeDir) return probeInFlight.promise;
 
-  const promise = probeUncached(runtimeDir).then((result) => {
-    probeCache.set(runtimeDir, result);
-    /* 只清自己那次 flight：并发两个不同目录时，先完成的不能把后一次还在跑的抹掉 */
-    if (probeInFlight && probeInFlight.promise === promise) probeInFlight = null;
-    return result;
-  });
+  const promise = probeUncached(runtimeDir)
+    .then((result) => {
+      probeCache.set(runtimeDir, result);
+      return result;
+    })
+    .finally(() => {
+      /* 只清自己那次 flight：并发两个不同目录时，先完成的不能把后一次还在跑的抹掉。
+         放 finally 而不是 then：探测**抛异常**时也要清，否则该目录之后永久拿到同一个 rejected promise */
+      if (probeInFlight && probeInFlight.promise === promise) probeInFlight = null;
+    });
   probeInFlight = { dir: runtimeDir, promise };
   return promise;
 }

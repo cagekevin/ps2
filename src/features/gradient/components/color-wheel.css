@@ -9,14 +9,20 @@
  */
 
 /* 正方形：宽度由 flex 分配，高度由 `aspect-ratio` 跟着走。
-   **不能用 `width:100%`**：同一行还有明度条，占满整行会把条挤出行外（条高会塌成 0）。 */
+   **不能用 `width:100%`**：同一行还有明度条，占满整行会把条挤出行外（条高会塌成 0）。
+   `position: relative` 给两层画布做定位基准（画布绝对定位，不参与撑高）。 */
 .mm-gradient__wheel{
+  position: relative;
   aspect-ratio: 1;
   flex: 1 1 auto;
   min-width: 0;
 }
 
+/* 两层叠放：底层环面（只随尺寸重画）+ 上层覆盖物（随颜色重画）。
+   两层必须同一套几何，所以都撑满容器、都 `object-fit: contain`。 */
 .mm-gradient__wheel-canvas{
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -25,5 +31,9 @@
      JS 侧的指针换算按同一套「居中正方形」算，两边必须是同一个判据。 */
   object-fit: contain;
   touch-action: none;
+}
+
+/* 指针事件只在上层：底层是纯背景 */
+.mm-gradient__wheel-canvas--overlay{
   cursor: crosshair;
 }

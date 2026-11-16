@@ -81,11 +81,34 @@
   gap: var(--mm-space-2);
 }
 
+/* 01 / 02 是取色触发器，不是按钮：无底无描边（挂按钮表面会在预览卡上多出两个色块），
+   只保留「色块 + 编号 + 色值」这一行本身。点它 = 选中该端点 + 弹出拾色器。 */
 .mm-gradient__end{
   display: flex;
   align-items: center;
   gap: var(--mm-space-inline);
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* hover 只提亮色值，不叠底（规则 8：色块 hover 不能盖住颜色） */
+.mm-gradient__end:hover .mm-gradient__hex{
+  color: var(--mm-color-text-strong);
+}
+
+/* 当前受控端点：明度条改的就是它，用 accent 圈出色块（规则 12「选中」） */
+.mm-gradient__end--active .mm-gradient__dot{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
+  outline-offset: var(--mm-space-tight);
+}
+
+.mm-gradient__end:focus-visible{
+  outline: var(--mm-border-w) solid var(--mm-color-accent);
 }
 
 .mm-gradient__dot{

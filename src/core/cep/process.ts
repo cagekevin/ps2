@@ -21,6 +21,8 @@ import { nodeRequire } from './node';
 interface ReadableStream {
   on(event: 'data', listener: (chunk: { toString(encoding: string): string }) => void): void;
   on(event: 'end', listener: () => void): void;
+  /** 超时后摘掉流监听：`kill` 不一定真成功，别让进程继续往 `lines` 里堆 */
+  removeAllListeners(): void;
 }
 
 interface ChildProcessHandle {
@@ -126,6 +128,9 @@ export function runProcess(
       const received = lines.join('\n');
       const detail = received ? `timeout:${options.timeoutMs}\n${received}` : `timeout:${options.timeoutMs}`;
       finish(failWithDetail('TIMEOUT', MSG.codeReason.TIMEOUT, detail));
+      /* kill 不一定真成功：摘掉流监听，否则进程继续输出会一直往 lines 里堆（已 settle，无人消费） */
+      child.stdout.removeAllListeners();
+      child.stderr.removeAllListeners();
     }, options.timeoutMs);
 
     child.on('error', (error) => {

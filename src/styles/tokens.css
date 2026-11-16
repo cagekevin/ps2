@@ -131,8 +131,14 @@
   --mm-font-card-h: 44px;
   --mm-style-thumb: 32px;
 
+  /* 渐变面板拾色器：方块 200×160 够拖得准，竖色相条 18 是「能捏住」的下限（14 太细）。
+     第三方组件把宽高写在内联 style 上，只能由 css `!important` 覆盖，值仍只在这里给。 */
+  --mm-picker-sat-w: 200px;
+  --mm-picker-sat-h: 160px;
+  --mm-picker-hue-w: 18px;
+
   /* 字体管理页 */
-  /* 列表项的占位估算高度（content-visibility 用），随预览字号同步 */
+  /* 列表项字体名的尺寸，随预览字号同步 */
   /* 预览字号是「给用户看的字」，不是 UI 字号，不并入三档 */
   --mm-name-size: 16px;
   --mm-name-lh: 22px;

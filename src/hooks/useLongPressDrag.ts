@@ -13,7 +13,7 @@
  * 这里明确返回 `dragged: false`，调用方按普通点击处理，不写盘。
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { DropPosition } from '../domain/reorder';
 
 /** 长按时长 */
@@ -94,6 +94,10 @@ function insertBefore(node: Node, target: HTMLElement): void {
 export function useLongPressDrag() {
   /** 当前这一轮的收尾函数；null = 没在拖 */
   const abortRef = useRef<(() => void) | null>(null);
+
+  /* 拖拽途中组件被卸载（切页）：必须 abort —— 否则 document 上的 mouseup / mousemove
+     与两个定时器会留到下一次 mouseup 才清，期间还握着已卸载节点的引用 */
+  useEffect(() => () => abortRef.current?.(), []);
 
   const cancel = useCallback(() => {
     abortRef.current?.();

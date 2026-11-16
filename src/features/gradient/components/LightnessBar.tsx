@@ -11,7 +11,7 @@
  * 只吃 `offsetY` 换算，不读锚点矩形（`CONVENTIONS` §4.8）。
  */
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { lchOf, lchToHex } from '../../../domain/gradient';
 import './lightness-bar.css';
@@ -27,17 +27,21 @@ interface Props {
 const RAMP_STEPS = 20;
 
 export function LightnessBar({ hex, onChange }: Props) {
-  const barRef = useRef<HTMLDivElement | null>(null);
   const draggingRef = useRef(false);
   const { l, c, h } = lchOf(hex);
 
-  /* 条上的色阶 = 这个色相/浓度下的明度阶梯（下暗上亮）。`--mm-swatch` 是 STYLE §14.1 的运行时值通道 */
-  const ramp = `linear-gradient(to top, ${Array.from({ length: RAMP_STEPS + 1 })
-    .map((_, index) => {
-      const at = index / RAMP_STEPS;
-      return `${lchToHex(at * 100, c, h)} ${(at * 100).toFixed(0)}%`;
-    })
-    .join(', ')})`;
+  /* 条上的色阶 = 这个色相/浓度下的明度阶梯（下暗上亮）。`--mm-swatch` 是 STYLE §14.1 的运行时值通道。
+     只依赖 c / h：拖明度时 hex 每帧都变但 c、h 不变，21 次色域换算不该跟着重跑。 */
+  const ramp = useMemo(
+    () =>
+      `linear-gradient(to top, ${Array.from({ length: RAMP_STEPS + 1 })
+        .map((_, index) => {
+          const at = index / RAMP_STEPS;
+          return `${lchToHex(at * 100, c, h)} ${(at * 100).toFixed(0)}%`;
+        })
+        .join(', ')})`,
+    [c, h]
+  );
 
   /** 只换亮度：L 交出去，h/C 沿用当前值（新建色域的收敛交给 `lchToHex` 的 §13.2 收色） */
   function commit(nextL: number): void {
@@ -54,7 +58,6 @@ export function LightnessBar({ hex, onChange }: Props) {
 
   return (
     <div
-      ref={barRef}
       className="mm-gradient__lightness"
       style={
         {

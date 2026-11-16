@@ -228,6 +228,11 @@ export const VENDOR_FUNCS = [
 export const VENDOR_REQUIRED: readonly string[] = ['ps_onJsx', 'Sys_setSystemEnvInfo'];
 
 let pending: Promise<PsCapability> | null = null;
+/** 上一次「两门都关」的探测结果：冷却期内直接返回它，不重复探测 */
+let lastFailure: PsCapability | null = null;
+let retryAfter = 0;
+/** 探测失败后的重试冷却：PS 可能比面板晚启动，一次失败不该钉死整场 */
+const RETRY_COOLDOWN_MS = 5000;
 
 /**
  * 探「清单里哪些函数不存在」。
@@ -321,8 +326,23 @@ async function load(): Promise<PsCapability> {
 }
 
 export function ensurePsReady(): Promise<PsCapability> {
-  if (!pending) pending = load();
-  return pending;
+  if (pending) return pending;
+  /* 冷却期内返回上次的失败结果：不重复探测（否则每次调用都重试，等于死循环），也不假装成功 */
+  if (lastFailure && Date.now() < retryAfter) return Promise.resolve(lastFailure);
+
+  const task = load().then((capability) => {
+    if (!capability.core && !capability.vendor) {
+      /* 两门都关 = 这次探测等于失败：不缓存 promise，冷却后允许重试（PS 晚启动时能自愈） */
+      pending = null;
+      lastFailure = capability;
+      retryAfter = Date.now() + RETRY_COOLDOWN_MS;
+    } else {
+      lastFailure = null;
+    }
+    return capability;
+  });
+  pending = task;
+  return task;
 }
 
 /** 需要自有能力（图层/形状/文档）的调用方用这个 */

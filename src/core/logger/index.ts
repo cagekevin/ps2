@@ -42,11 +42,25 @@ interface NodePath {
   join(...parts: string[]): string;
 }
 
+/* 三个 Node 模块与日志路径都在进程内不变：缓存一次，别每条日志都 require 三遍 */
+let fileSystem: NodeFs | null = null;
+let logFilePath: string | null | undefined;
+
+function fileSystemOf(): NodeFs | null {
+  if (fileSystem) return fileSystem;
+  const result = nodeRequire<NodeFs>('fs');
+  if (result.status === 'error') return null;
+  fileSystem = result.value;
+  return fileSystem;
+}
+
 function logPath(): string | null {
+  if (logFilePath !== undefined) return logFilePath;
   const os = nodeRequire<NodeOs>('os');
   const path = nodeRequire<NodePath>('path');
   if (os.status === 'error' || path.status === 'error') return null;
-  return path.value.join(os.value.tmpdir(), LOG_FILE);
+  logFilePath = path.value.join(os.value.tmpdir(), LOG_FILE);
+  return logFilePath;
 }
 
 function maskText(text: string): string {
@@ -84,11 +98,11 @@ function toText(value: unknown): string {
 }
 
 function appendToFile(line: string): void {
-  const fs = nodeRequire<NodeFs>('fs');
+  const fs = fileSystemOf();
   const file = logPath();
-  if (fs.status === 'error' || !file) return;
+  if (!fs || !file) return;
   try {
-    fs.value.appendFileSync(file, `${line}\n`);
+    fs.appendFileSync(file, `${line}\n`);
   } catch {
     /* 日志失败不影响业务 */
   }
@@ -147,11 +161,11 @@ export const log = {
 
 /** 读取日志全文，供诊断页显示 */
 export function readLogText(): string {
-  const fs = nodeRequire<NodeFs>('fs');
+  const fs = fileSystemOf();
   const file = logPath();
-  if (fs.status === 'error' || !file) return '';
+  if (!fs || !file) return '';
   try {
-    return fs.value.readFileSync(file, 'utf8');
+    return fs.readFileSync(file, 'utf8');
   } catch {
     return '';
   }
@@ -165,12 +179,12 @@ export function readLogText(): string {
  * 文件不存在时写一个空文件，等同成功（用户要的结果就是没有日志）。
  */
 export function clearLogText(): Result<void> {
-  const fs = nodeRequire<NodeFs>('fs');
+  const fs = fileSystemOf();
   const file = logPath();
-  if (fs.status === 'error') return fs;
+  if (!fs) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'log:fs:unavailable');
   if (!file) return failWithDetail('IO_ERROR', MSG.codeReason.IO_ERROR, 'log:path:empty');
   try {
-    fs.value.writeFileSync(file, '', 'utf8');
+    fs.writeFileSync(file, '', 'utf8');
     /* 折叠窗口也要一起清：否则清空后 3 秒内复现同一个问题，第一行会被当成「重复」吞掉 */
     recent.clear();
     return ok(undefined);

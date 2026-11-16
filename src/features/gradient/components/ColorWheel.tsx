@@ -4,6 +4,10 @@
  * 分工：绘制与几何全在 `../wheel`（canvas 相关，不进 React）；本文件只做三件事——
  * 观测自己的盒子尺寸、把指针换算到画布坐标、把拖动结果交回调用方。
  *
+ * **画成两层叠放的 canvas**：底层环面（`paintDisc`）只在尺寸变化时重画，
+ * 上层覆盖物（`paintOverlay`）随颜色重画。指针事件只挂在上层 ——
+ * 环面是逐像素 LCH→sRGB，混进颜色依赖里就会变成每帧重算一遍（2026-11-16 卡顿事故）。
+ *
  * **点 = 选中，拖 = 改色**：抓到端点按下时先不上色，指针真移动超过阈值才改。
  * 否则「点一下 02 想把它选成明度条的受控对象」会顺手把它的颜色挪到点击位置，
  * 差一格色就变了 —— 这是 mockup 阶段真踩到的坑。
@@ -17,10 +21,10 @@
  * 键盘用户走明度条与精度控件即可，canvas 只挂 `role="img"` + 说明。
  */
 
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useElementSize } from '../../../hooks/useElementSize';
-import { grabDot, paintWheel, pickColor, type WheelGeometry, type WheelModel } from '../wheel';
+import { grabDot, paintDisc, paintOverlay, pickColor, type WheelGeometry, type WheelModel } from '../wheel';
 import './color-wheel.css';
 
 interface Props {
@@ -38,17 +42,26 @@ const DOT_GRAB_RADIUS = 12;
 
 export function ColorWheel({ model, onChange, onActiveChange }: Props) {
   const [hostRef, size] = useElementSize<HTMLDivElement>();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const discRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLCanvasElement | null>(null);
   const geometryRef = useRef<WheelGeometry | null>(null);
   const dragRef = useRef<{ index: 0 | 1; start: { x: number; y: number }; moved: boolean } | null>(null);
 
   const { first, second, route, active } = model;
 
-  /* 任一项变了都要重画：盒子被拖宽、端点改色、过渡方式切换、受控端点换人 */
-  useEffect(() => {
-    const canvas = canvasRef.current;
+  /* 底层：只随尺寸重画 */
+  useLayoutEffect(() => {
+    const canvas = discRef.current;
     if (!canvas || size.width === 0 || size.height === 0) return;
-    geometryRef.current = paintWheel(canvas, size.width, size.height, { first, second, route, active });
+    paintDisc(canvas, size.width, size.height);
+  }, [size.width, size.height]);
+
+  /* 上层：颜色 / 路线 / 受控端点任一变化都要重画。用 `useLayoutEffect` 而不是 `useEffect`：
+     拖动时每帧都要在浏览器绘制前把点画到位，放到 `useEffect` 会让点比指针慢一帧（手感发飘）。 */
+  useLayoutEffect(() => {
+    const canvas = overlayRef.current;
+    if (!canvas || size.width === 0 || size.height === 0) return;
+    geometryRef.current = paintOverlay(canvas, size.width, size.height, { first, second, route, active });
   }, [size.width, size.height, first, second, route, active]);
 
   /**
@@ -81,9 +94,10 @@ export function ColorWheel({ model, onChange, onActiveChange }: Props) {
 
   return (
     <div className="mm-gradient__wheel" ref={hostRef}>
+      <canvas className="mm-gradient__wheel-canvas" ref={discRef} aria-hidden="true" />
       <canvas
-        className="mm-gradient__wheel-canvas"
-        ref={canvasRef}
+        className="mm-gradient__wheel-canvas mm-gradient__wheel-canvas--overlay"
+        ref={overlayRef}
         role="img"
         aria-label="渐变色环：拖动 01 与 02 两个圆点改色，点在空白处取色"
         onPointerDown={(event) => {

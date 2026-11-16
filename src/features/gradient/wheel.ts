@@ -3,24 +3,31 @@
  *
  * 为什么单独一个文件：canvas 绘制是「一屏像素」的事，塞进组件会把事件处理淹掉；
  * 反过来，它又依赖 `domain/gradient` 的换算，放 `domain` 会违反「domain 零 IO」
- * （`getContext` 是平台原语）。所以放在 feature 内、组件之外：**组件只负责绑定。
+ * （`getContext` 是平台原语）。所以放在 feature 内、组件之外：**组件只负责绑定**。
+ *
+ * **画成两层**（`ColorWheel` 里两个叠放的 canvas）：
+ * - 底层 `paintDisc`：环面。逐像素 LCH→sRGB 是这条链上最贵的一步，
+ *   **只在画布尺寸变化时调用一次**；
+ * - 上层 `paintOverlay`：参考圈、十字、过渡路径、两个端点。颜色一变就要重画，
+ *   但只画线，成本是常数。
+ * 不分层时每次拖动都要连环面一起重画，量程一旦跟着端点变就会卡死（2026-11-16 踩过）。
  *
  * 唯一的换算口径在 `domain/gradient`：环上看到的颜色、拖点取到的颜色、最后烘焙进 PS 的色标，
  * 三者都走 `lchOf` / `lchToHex` / `sampleStops`，这里不做任何色彩数学。
  *
  * 两个几何口径写死在这里、别处不许再算：
  * 1. **环切片亮度** `SLICE_L = 70`：与参照引擎一致，把 L 抽出去，环只表达色相与浓度。
- * 2. **环的量程** `wheelDomain`：端点浓度最大值的 1.35 倍（下限 70）。
- *    参照引擎固定 140，低饱和端点会全挤在圆心附近、拖不准；量程只影响**画环**，
- *    不影响插值，所以调它不会让烘焙结果变样。
+ * 2. **环的量程** `DISC_DOMAIN = 140`：**常量，与参照引擎一致**。
+ *    曾经按端点浓度浮动（端点落在环中段、拖得更准），但那样环面缓存会随端点浓度每次变化失效。
+ *    量程只影响「画环 + 拖点换算」，不影响插值与烘焙结果，所以固定值不改变输出。
  */
 
 import { lchOf, lchToHex, sampleStops, type GradientRoute } from '../../domain/gradient';
 
 /** 环切片的亮度：LCH 的 L，与参照引擎同一档，环只表达色相（角度）与浓度（半径） */
 const SLICE_L = 70;
-/** 量程下限：低于它会把低饱和端点压到圆心 */
-const MIN_DOMAIN = 70;
+/** 环的量程（常量）：半径 100% 处对应 LCH 浓度 140，与参照引擎一致 */
+const DISC_DOMAIN = 140;
 /** 路径采样点：够看出弧线形状，又不至于每次重绘几千个点 */
 const PATH_SAMPLES = 65;
 
@@ -48,10 +55,32 @@ export interface WheelModel {
   active: 0 | 1;
 }
 
-/** 环的量程：跟着端点浓度走，端点才落在环的中段而不是圆心（只在本文件用，不导出） */
-function wheelDomain(model: WheelModel): number {
-  const peak = Math.max(lchOf(model.first).c, lchOf(model.second).c);
-  return Math.max(MIN_DOMAIN, Math.ceil((peak * 1.35) / 5) * 5);
+interface CanvasGeometry {
+  pixels: number;
+  dpr: number;
+  center: WheelPoint;
+  radius: number;
+}
+
+/** 两层画布必须用同一套几何：算错一层，端点就落在环外 */
+function canvasGeometry(width: number, height: number): CanvasGeometry {
+  const dpr = window.devicePixelRatio || 1;
+  const diameter = Math.max(40, Math.floor(Math.min(width, height)));
+  const pixels = Math.round(diameter * dpr);
+  return { pixels, dpr, center: { x: pixels / 2, y: pixels / 2 }, radius: pixels / 2 - 1 };
+}
+
+/** 按几何分配像素缓冲并清空；尺寸没变时不动缓冲（重设 `width` 会连内容一起清掉） */
+function prepare(canvas: HTMLCanvasElement, pixels: number): CanvasRenderingContext2D {
+  if (canvas.width !== pixels || canvas.height !== pixels) {
+    canvas.width = pixels;
+    canvas.height = pixels;
+  }
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('浏览器无法创建色环画布');
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, pixels, pixels);
+  return context;
 }
 
 function project(hex: string, center: WheelPoint, radius: number, domain: number): WheelPoint {
@@ -62,40 +91,44 @@ function project(hex: string, center: WheelPoint, radius: number, domain: number
   return { x: center.x + Math.cos(radians) * amount * radius, y: center.y - Math.sin(radians) * amount * radius };
 }
 
-/* 环面按「画布像素尺寸 + 量程」缓存：拖点时只重画路径与点，环面直接贴图。
-   不缓存的话每帧要算几万像素的 LCH→sRGB，拖动会卡。 */
-const discCache = new Map<string, HTMLCanvasElement>();
-const DISC_CACHE_LIMIT = 6;
+/* 环面按像素尺寸缓存**离屏副本**：页面切走会卸载 canvas，重建后尺寸与内容都没变，
+   命中缓存直接贴图。不缓存则每次进页都要重算几万像素的 LCH→sRGB
+   （dpr=2 时约 144 万次换算），用户看到的是「环面先空白一会儿才出现」。
+   不能缓存 canvas 自己 —— 那个随组件销毁。上限 3 档：面板 200–360 只会有少数几个尺寸。 */
+const discCache = new Map<number, HTMLCanvasElement>();
+const DISC_CACHE_LIMIT = 3;
 
-function paintDisc(pixelSize: number, domain: number): HTMLCanvasElement {
-  const key = `${pixelSize}|${domain}`;
-  const cached = discCache.get(key);
-  if (cached) return cached;
+/**
+ * 底层：环面。**只在画布尺寸变化时调用**。
+ *
+ * 半径方向 = 浓度（0 在圆心、`DISC_DOMAIN` 在外缘），角度 = 色相；
+ * 外缘一像素做透明羽化，靠 alpha 收边，不画成硬切的黑圈。
+ */
+export function paintDisc(canvas: HTMLCanvasElement, width: number, height: number): void {
+  const { pixels, center, radius } = canvasGeometry(width, height);
+  const context = prepare(canvas, pixels);
 
-  const disc = document.createElement('canvas');
-  disc.width = pixelSize;
-  disc.height = pixelSize;
-  const context = disc.getContext('2d');
-  if (!context) throw new Error('浏览器无法创建色环画布');
+  const cached = discCache.get(pixels);
+  if (cached) {
+    context.drawImage(cached, 0, 0);
+    return;
+  }
 
-  const center = pixelSize / 2;
-  const radius = center - 1;
-  const image = context.createImageData(pixelSize, pixelSize);
+  const image = context.createImageData(pixels, pixels);
   const data = image.data;
 
-  for (let y = 0; y < pixelSize; y += 1) {
-    for (let x = 0; x < pixelSize; x += 1) {
-      const offset = (y * pixelSize + x) * 4;
-      const dx = x + 0.5 - center;
-      const dy = center - y - 0.5;
+  for (let y = 0; y < pixels; y += 1) {
+    for (let x = 0; x < pixels; x += 1) {
+      const offset = (y * pixels + x) * 4;
+      const dx = x + 0.5 - center.x;
+      const dy = center.y - y - 0.5;
       const amount = Math.hypot(dx, dy) / radius;
       if (amount > 1) continue;
 
       const hue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
-      const hex = lchToHex(SLICE_L, Math.min(1, amount) * domain, hue);
+      const hex = lchToHex(SLICE_L, Math.min(1, amount) * DISC_DOMAIN, hue);
       const [r, g, b] = [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
 
-      /* 外缘一像素做透明羽化，靠 alpha 收边；不画成硬切的黑圈 */
       const coverage = Math.max(0, Math.min(1, (1 - amount) * radius + 0.5));
       data[offset] = r as number;
       data[offset + 1] = g as number;
@@ -105,38 +138,34 @@ function paintDisc(pixelSize: number, domain: number): HTMLCanvasElement {
   }
 
   context.putImageData(image, 0, 0);
-  discCache.set(key, disc);
+
+  /* 存一份离屏副本：下次挂载（或换回同一尺寸）直接贴图，不再逐像素算 */
+  const copy = document.createElement('canvas');
+  copy.width = pixels;
+  copy.height = pixels;
+  copy.getContext('2d')?.drawImage(canvas, 0, 0);
+  discCache.set(pixels, copy);
   if (discCache.size > DISC_CACHE_LIMIT) {
     const oldest = discCache.keys().next();
     if (!oldest.done) discCache.delete(oldest.value);
   }
-  return disc;
 }
 
 /**
- * 重画整个色环，返回这次绘制的几何（拖点与命中都用它）。
+ * 上层：参考圈 / 十字 / 过渡路径 / 两个端点，返回这次绘制的几何（拖点与命中都用它）。
  *
  * 画布像素缓冲按 `css 短边 × dpr` 分配，圆形永远居中：canvas 元素本身是矩形，
  * 由 CSS 撑满卡片，所以「短边」才是圆的有效直径。
  */
-export function paintWheel(canvas: HTMLCanvasElement, width: number, height: number, model: WheelModel): WheelGeometry {
-  const dpr = window.devicePixelRatio || 1;
-  const diameter = Math.max(40, Math.floor(Math.min(width, height)));
-  const pixels = Math.round(diameter * dpr);
-  if (canvas.width !== pixels || canvas.height !== pixels) {
-    canvas.width = pixels;
-    canvas.height = pixels;
-  }
-
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('浏览器无法创建色环画布');
-  const domain = wheelDomain(model);
-  const center = { x: pixels / 2, y: pixels / 2 };
-  const radius = pixels / 2 - 1;
-
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, pixels, pixels);
-  context.drawImage(paintDisc(pixels, domain), 0, 0);
+export function paintOverlay(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  model: WheelModel
+): WheelGeometry {
+  const { pixels, dpr, center, radius } = canvasGeometry(width, height);
+  const context = prepare(canvas, pixels);
+  const domain = DISC_DOMAIN;
 
   /* 参考圈与十字：只用来读「浓度 / 色相」的方位，不参与取色 */
   context.save();

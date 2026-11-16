@@ -29,6 +29,7 @@ import { addGradientToGroup, applyGradientToLayer, readForegroundHex } from '../
 import { createGradientItem } from '../../domain/image-color';
 import { partnerOf, sampleStops, type GradientRoute } from '../../domain/gradient';
 import { MSG } from '../../types/messages';
+import { ColorPickerDialog } from './components/ColorPickerDialog';
 import { ColorWheel } from './components/ColorWheel';
 import { LightnessBar } from './components/LightnessBar';
 import { SaveDialog } from './components/SaveDialog';
@@ -67,6 +68,8 @@ export default function GradientPage() {
   const [countDraft, setCountDraft] = useState(String(DEFAULT_STOPS));
   /* 明度条控制哪个端点：拖环上哪个点就切到哪个 */
   const [active, setActive] = useState<0 | 1>(0);
+  /* 取色弹窗在改哪个端点：null = 关着。与 active 同源，点哪个色块就同时选中它 */
+  const [picking, setPicking] = useState<0 | 1 | null>(null);
   const [reading, setReading] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -124,6 +127,12 @@ export default function GradientPage() {
     canSave ? null : { kind: 'info', text: MSG.gradient.noGroup }
   ]);
 
+  /** 点色块：既把它设为受控端点（明度条改的就是它），又打开取色弹窗 —— 两个动作同源，不会一个选 01 一个改 02 */
+  function openPicker(index: 0 | 1): void {
+    setActive(index);
+    setPicking(index);
+  }
+
   /** 提交精度：夹到 4–32 并回写草稿；认不出的输入还原成当前值，不留一个空框 */
   function commitCount(): void {
     const next = Number(countDraft);
@@ -171,16 +180,26 @@ export default function GradientPage() {
           {reading ? <span className="mm-gradient__reading">{reading}</span> : null}
         </div>
         <div className="mm-u-row mm-gradient__ends">
-          <span className="mm-gradient__end">
+          <button
+            type="button"
+            className={`mm-gradient__end${active === 0 ? ' mm-gradient__end--active' : ''}`}
+            title="点击取色"
+            onClick={() => openPicker(0)}
+          >
             <i className="mm-gradient__dot" style={{ '--mm-swatch': first } as CSSProperties} />
             <b className="mm-gradient__end-no">01</b>
             <code className="mm-gradient__hex">{first}</code>
-          </span>
-          <span className="mm-gradient__end">
+          </button>
+          <button
+            type="button"
+            className={`mm-gradient__end${active === 1 ? ' mm-gradient__end--active' : ''}`}
+            title="点击取色"
+            onClick={() => openPicker(1)}
+          >
             <i className="mm-gradient__dot" style={{ '--mm-swatch': second } as CSSProperties} />
             <b className="mm-gradient__end-no">02</b>
             <code className="mm-gradient__hex">{second}</code>
-          </span>
+          </button>
         </div>
       </section>
 
@@ -238,6 +257,18 @@ export default function GradientPage() {
 
       {saving ? (
         <SaveDialog preview={preview} groups={groups} onSave={save} onClose={() => setSaving(false)} />
+      ) : null}
+
+      {picking !== null ? (
+        <ColorPickerDialog
+          label={picking === 0 ? '起始色' : '结束色'}
+          hex={picking === 0 ? first : second}
+          onChange={(hex) => {
+            if (picking === 0) setFirst(hex);
+            else setSecond(hex);
+          }}
+          onClose={() => setPicking(null)}
+        />
       ) : null}
     </div>
   );

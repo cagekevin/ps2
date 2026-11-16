@@ -134,7 +134,11 @@ export function LayerWatcher() {
           return;
         }
         unsubscribes.push(result.value);
-      });
+      })
+        .catch((error: unknown) => {
+          /* 订阅本身抛异常（不是返回失败）：快路径没接上，轮询兜底继续跑，但必须留痕 */
+          log.warn('PS 事件订阅抛异常，仅轮询兜底', { name, detail: String(error) });
+        });
     }
 
     return () => {

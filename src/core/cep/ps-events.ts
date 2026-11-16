@@ -252,10 +252,10 @@ const listeners = new Map<HostEventName, Set<Listener>>();
 const registeredIds = new Set<string>();
 let callbackInstalled = false;
 
-function ensureCallback(): void {
-  if (callbackInstalled) return;
+function ensureCallback(): boolean {
+  if (callbackInstalled) return true;
 
-  onPhotoshopCallback((payload) => {
+  const installed = onPhotoshopCallback((payload) => {
     const eventId = String(payload.eventID ?? '');
     for (const [name, spec] of Object.entries(SPECS) as [HostEventName, HostEventSpec][]) {
       if (!spec.ids.includes(eventId)) continue;
@@ -264,7 +264,13 @@ function ensureCallback(): void {
     }
   });
 
+  /* 挂不上就**不许置标记**：否则之后每次订阅都以为回调在，实际一条也收不到，且没有任何日志 */
+  if (!installed) {
+    log.warn('PS 事件回调挂不上（非 CEP 环境或扩展 ID 缺失），订阅将收不到事件', {});
+    return false;
+  }
   callbackInstalled = true;
+  return true;
 }
 
 /**
@@ -296,20 +302,27 @@ function registerPhotoshopEvent(typeId: string): boolean {
   const id = getExtensionId();
   if (!bridge?.dispatchEvent || !id) return false;
 
-  bridge.dispatchEvent({
-    type: REGISTER_EVENT,
-    scope: 'APPLICATION',
-    appId: undefined,
-    extensionId: id,
-    data: typeId
-  });
+  try {
+    bridge.dispatchEvent({
+      type: REGISTER_EVENT,
+      scope: 'APPLICATION',
+      appId: undefined,
+      extensionId: id,
+      data: typeId
+    });
+  } catch (error) {
+    /* 宿主拒绝时会**抛异常**而不是返回 false：在这里折成 false，调用方的回滚逻辑才跑得到 */
+    log.error('PS 事件注册抛异常', { typeId, detail: String(error) });
+    return false;
+  }
   return true;
 }
 
-function onPhotoshopCallback(handler: (payload: PhotoshopEventPayload) => void): () => void {
+/** 挂全局回调，返回**是否真的挂上**：非 CEP 环境或扩展 ID 缺失时挂不上，调用方必须知道 */
+function onPhotoshopCallback(handler: (payload: PhotoshopEventPayload) => void): boolean {
   const bridge = getBridge();
   const id = getExtensionId();
-  if (!bridge?.addEventListener || !id) return () => {};
+  if (!bridge?.addEventListener || !id) return false;
 
   const type = `${CALLBACK_PREFIX}${id}`;
   const listener = (event: unknown) => {
@@ -324,7 +337,7 @@ function onPhotoshopCallback(handler: (payload: PhotoshopEventPayload) => void):
 
   bridge.addEventListener(type, listener);
   /* 全局单例回调，永不注销；分发走自家的 listeners 表，表里删了就不再投递 */
-  return () => {};
+  return true;
 }
 
 /**
@@ -350,9 +363,14 @@ export async function subscribeHostEvent(
   const bridge = getBridge();
   const id = getExtensionId();
   if (!bridge || !id) {
-    /* 浏览器 dev / 单测：订阅不成立，调用方必须知情（否则只剩轮询，且无任何标记） */
-    log.warn('非 CEP 环境，无法订阅 PS 事件', { name });
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'subscribe:no-cep');
+    /* 浏览器 dev / 单测：订阅不成立，调用方必须知情（否则只剩轮询，且无任何标记）。
+       **两种原因要分开**：桥没有 ≠ 有桥但拿不到扩展 ID，混成一句会让排障时认错方向 */
+    log.warn('无法订阅 PS 事件：CEP 桥或扩展 ID 缺失', { name, hasBridge: !!bridge, hasId: !!id });
+    return failWithDetail(
+      'PS_UNREADY',
+      MSG.codeReason.PS_UNREADY,
+      bridge ? 'subscribe:no-id' : 'subscribe:no-cep'
+    );
   }
 
   let set = listeners.get(name);
@@ -376,7 +394,12 @@ export async function subscribeHostEvent(
     registeredIds.add(eventId);
   }
 
-  if (!callbackInstalled) ensureCallback();
+  /* 回调挂不上 = 订阅不成立：回滚 listener 并报 PS_UNREADY，别让调用方以为在收事件 */
+  if (!ensureCallback()) {
+    set.delete(listener);
+    if (set.size === 0) listeners.delete(name);
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `subscribe:no-callback:${name}`);
+  }
 
   log.info('PS 事件注册完成', { name, ids: spec.ids });
 
@@ -454,20 +477,26 @@ export async function startHostEventWait(
     return ok(undefined);
   };
 
-  const main = await listen(name, (payload) => {
-    if (match(payload)) end({ kind: 'hit', name, payload });
-  });
-  if (main.status === 'error') {
-    release();
-    return main;
-  }
-
-  for (const cancelName of options.cancelOn ?? []) {
-    const sub = await listen(cancelName, () => end({ kind: 'cancelled', by: cancelName }));
-    if (sub.status === 'error') {
+  try {
+    const main = await listen(name, (payload) => {
+      if (match(payload)) end({ kind: 'hit', name, payload });
+    });
+    if (main.status === 'error') {
       release();
-      return sub;
+      return main;
     }
+
+    for (const cancelName of options.cancelOn ?? []) {
+      const sub = await listen(cancelName, () => end({ kind: 'cancelled', by: cancelName }));
+      if (sub.status === 'error') {
+        release();
+        return sub;
+      }
+    }
+  } catch (error) {
+    /* 订阅抛异常（不是返回失败）：已挂的语义必须退订、定时器必须清，再原样报失败并带原文 */
+    release();
+    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `subscribe-throw:${String(error)}`);
   }
 
   timer = setTimeout(() => end({ kind: 'timeout' }), options.timeoutMs);

@@ -1,0 +1,29 @@
+/* 取色弹窗：壳是公共 `.mm-modal`（`ui.css` 给宽度 / 底色 / 圆角 / 段间距），
+   本文件只写两件事：弹窗宽度收成「刚好包住方块 + 竖条」，以及第三方取色件的尺寸。
+
+   为什么第三方尺寸必须用 `!important`：`@uiw` 把宽高写在自己的内联 style 上
+   （`Saturation` 200×200、`Hue` 高 16），内联优先级高于任何选择器。
+   值仍只取 token（`--mm-picker-*`），规则 1「不许 px 字面量」不放宽。 */
+
+.mm-gradient__picker{
+  /* 200 + 18 + 组内间距 4 + 左右内边距 12×2 —— 弹窗不留白边，方块与竖条才贴得住 */
+  width: calc(var(--mm-picker-sat-w) + var(--mm-picker-hue-w) + var(--mm-space-1) + var(--mm-space-3) * 2);
+  min-width: 0;
+}
+
+.mm-gradient__picker-row{
+  flex-wrap: nowrap;
+}
+
+.mm-gradient__picker .w-color-saturation{
+  width: var(--mm-picker-sat-w) !important;
+  height: var(--mm-picker-sat-h) !important;
+  border-radius: var(--mm-radius-sm) !important;
+}
+
+/* 竖色相条：顶部 0°、底部 360°，与 PS 拾色器同向（`direction="vertical"` 由组件自己处理取值轴） */
+.mm-gradient__picker .w-color-hue{
+  width: var(--mm-picker-hue-w) !important;
+  height: var(--mm-picker-sat-h) !important;
+  border-radius: var(--mm-radius-sm) !important;
+}

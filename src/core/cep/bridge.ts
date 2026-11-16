@@ -102,6 +102,8 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
     } catch (error) {
       log.error('evalScript 抛异常', { error, script: script.slice(0, 60) });
       settled = true;
+      /* 同步抛异常时定时器还在：不清掉会挂到超时那一刻，期间一直持有 script 字符串 */
+      window.clearTimeout(timer);
       resolve(failWithDetail('PS_ERROR', MSG.codeReason.PS_ERROR, `evalScript:${script.slice(0, 60)}`));
     }
   });
@@ -219,12 +221,33 @@ export function toLocalPath(uri: string): string {
   return path;
 }
 
+/** 扩展目录的进程内缓存：与 `userData` 同一条 IPC，同一次会话里也不会变 */
+let cachedExtensionPath: string | null = null;
+
 export function getExtensionPath(): string {
-  return toLocalPath(window.__adobe_cep__?.getSystemPath('extension') ?? '');
+  if (cachedExtensionPath !== null) return cachedExtensionPath;
+  const path = toLocalPath(window.__adobe_cep__?.getSystemPath('extension') ?? '');
+  if (path) cachedExtensionPath = path;
+  return path;
 }
 
+/** 用户数据根的进程内缓存：路径在面板生命周期里不会变，问一次就够 */
+let cachedUserDataPath: string | null = null;
+
+/**
+ * 用户数据根（`.../Roaming`）。
+ *
+ * **必须缓存**：`getSystemPath` 是同步 IPC，每次调用都要等宿主。
+ * 渐变页一次 `load()` 读 5 个文件、模板页与 DLSS 页探测多条候选路径，
+ * 不缓存时一次进页就是 5+ 次 IPC，用户体感 1–2 秒（2026-11-16 实测）。
+ *
+ * 空串不缓存：CEP 未就绪时问到的空值不能永久钉死，否则整场都读不到文件。
+ */
 export function getUserDataPath(): string {
-  return toLocalPath(window.__adobe_cep__?.getSystemPath('userData') ?? '');
+  if (cachedUserDataPath !== null) return cachedUserDataPath;
+  const path = toLocalPath(window.__adobe_cep__?.getSystemPath('userData') ?? '');
+  if (path) cachedUserDataPath = path;
+  return path;
 }
 
 /**
@@ -232,9 +255,16 @@ export function getUserDataPath(): string {
  * `getExtensionID`（大写 D 那个是 CSInterface 包装层的方法名），照大写写会抛
  * `TypeError: not a function` —— PS 事件订阅整条链就是被这一句打断的（2026-11-02）。
  */
+/** 扩展 ID 的进程内缓存：每次订阅事件都会问它，而它整个会话不变 */
+let cachedExtensionId: string | null = null;
+
 export function getExtensionId(): string {
+  if (cachedExtensionId !== null) return cachedExtensionId;
   const bridge = window.__adobe_cep__;
-  return typeof bridge?.getExtensionId === 'function' ? bridge.getExtensionId() : '';
+  const id = typeof bridge?.getExtensionId === 'function' ? bridge.getExtensionId() : '';
+  /* 空串不缓存：CEP 未就绪时问到的空值不能永久钉死 */
+  if (id) cachedExtensionId = id;
+  return id;
 }
 
 /**

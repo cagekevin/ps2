@@ -368,3 +368,67 @@ describe('droppedPathOf（路径归一化在通道层）', () => {
     expect(mod.droppedPathOf({ eventData: {} })).toBe(null);
   });
 });
+
+/**
+ * 异常路径：宿主拒绝 / 缺 API / 缺扩展 ID 时必须**返回失败并留痕**。
+ *
+ * 这三条守的是「不许静默」：曾经的写法是注册失败只回滚、回调挂不上仍置
+ * `callbackInstalled = true`，之后所有订阅一条也收不到且没有任何日志。
+ */
+describe('异常路径：失败必须上报，不许静默', () => {
+  it('宿主 dispatchEvent 抛异常 → 返回 PS_UNREADY，且回滚干净（同语义可再订阅成功）', async () => {
+    const { mod, bridge } = await load();
+    const original = bridge.api.dispatchEvent;
+    let thrown = false;
+    bridge.api.dispatchEvent = (event) => {
+      if (!thrown) {
+        thrown = true;
+        throw new Error('宿主拒绝注册');
+      }
+      original(event);
+    };
+
+    const first = await mod.subscribeHostEvent('layerChanged', () => undefined);
+    expect(first.status).toBe('error');
+    if (first.status === 'error') {
+      expect(first.code).toBe('PS_UNREADY');
+      expect(first.detail).toContain('register:');
+    }
+
+    /* 回滚干净：listener 与已注册 ID 都没留，同一语义能重新订阅并真的收到事件 */
+    const hits: unknown[] = [];
+    const second = await mod.subscribeHostEvent('layerChanged', (payload) => hits.push(payload));
+    expect(second.status).toBe('ok');
+    bridge.fire({ eventID: ID_SLCT, eventData: { layerID: [7] } });
+    expect(hits).toHaveLength(1);
+  });
+
+  it('宿主没有 addEventListener → 返回 PS_UNREADY，detail 指出 no-callback', async () => {
+    vi.resetModules();
+    const bridge = makeBridge();
+    setWindow({ ...bridge.api, addEventListener: undefined });
+    const mod = await import('./ps-events');
+
+    const result = await mod.subscribeHostEvent('layerChanged', () => undefined);
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('PS_UNREADY');
+      expect(result.detail).toContain('no-callback');
+    }
+  });
+
+  it('拿不到扩展 ID → 注册失败返回 PS_UNREADY（不是静默登记成功）', async () => {
+    vi.resetModules();
+    const bridge = makeBridge();
+    setWindow({ ...bridge.api, getExtensionId: () => '' });
+    const mod = await import('./ps-events');
+
+    const result = await mod.subscribeHostEvent('layerChanged', () => undefined);
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.code).toBe('PS_UNREADY');
+      /* 桥在、ID 缺：必须报 no-id，不能混成「非 CEP 环境」 */
+      expect(result.detail).toBe('subscribe:no-id');
+    }
+  });
+});
