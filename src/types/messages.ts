@@ -450,6 +450,32 @@ export const MSG = {
   },
 
   /**
+   * PS 通道自身的失败（事件订阅 / jsx 能力缺失）。
+   *
+   * 这些原因**由掌握真相的那一层给**：`ps-events` 知道是「注册被拒」还是「回调挂不上」，
+   * `capability` 知道是哪个函数缺失。不再借 `codeReason.PS_UNREADY` 那句「请稍后重试」——
+   * 这些场景重试永远不会好，通用文案在这里是撒谎。
+   */
+  ps: {
+    /** 非 CEP 环境（浏览器 dev / 单测） */
+    noCep: '当前不在 PS 面板里运行，事件订阅不成立',
+    /** 桥在、但拿不到扩展 ID */
+    noId: '扩展 ID 缺失，无法订阅 PS 事件',
+    /** 宿主拒绝注册事件 */
+    registerFailed: 'PS 事件注册被宿主拒绝',
+    /** 注册成功、但全局回调挂不上 */
+    noCallback: 'PS 事件回调无法挂载',
+    /** 旧 jsx 缺这个函数（部署版本不匹配），重试无效；函数名进 `detail` */
+    fnMissing: '扩展版本不匹配，缺少所需功能',
+    /** 扩展目录取不到（部署不全或宿主异常） */
+    noExtensionPath: '扩展目录取不到，请重新部署扩展',
+    /** 环境里没有 `CSEvent` / CEP 挂接，广播与订阅都做不了 */
+    eventUnavailable: '当前环境不支持 PS 事件',
+    /** 订阅过程抛异常（不是返回失败），已退订并清理 */
+    subscribeThrew: 'PS 事件订阅异常'
+  },
+
+  /**
    * DLSS 神经渲染（外部引擎 + NVIDIA 显卡）。
    *
    * 只收**已经用上**的句子：不可用态两条、进页自检一条、执行中一条、两条回执。
@@ -545,7 +571,9 @@ export const MSG = {
     PS_SKIPPED: '自动填充已关闭，请先在 PS 里打开',
     /* 中性句：DLSS 的「画幅超 64MP」也折这个码，跟选中图层无关 */
     PS_REJECTED: 'PS 拒绝执行',
-    PS_UNREADY: 'PS 还没准备好，请稍后重试',
+    /* 只剩「门不可用 / 没开文档」这类确实可能自愈的场景；具体原因由掌握真相的那层给
+       （`MSG.ps.*`、`MSG.dlss.probeFailed`），不再拿这句覆盖「重试永远不会好」的失败 */
+    PS_UNREADY: 'PS 侧能力暂不可用',
     PS_ERROR: 'PS 执行失败',
     PS_BAD_PAYLOAD: BAD_PAYLOAD,
     NETWORK: '网络请求失败',

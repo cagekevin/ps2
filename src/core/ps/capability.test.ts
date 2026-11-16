@@ -52,8 +52,8 @@ describe('callCapability', () => {
 
     const result = await callCapability(SPEC, [1]);
 
-    /* 函数名进 `detail`（`fn:zt_demo`），不再拼进文案 */
-    expect(result).toEqual(failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'fn:zt_demo'));
+    /* 函数名进 `detail`（`fn:zt_demo`），不再拼进文案；话由知道真相的这一层给（部署版本不匹配） */
+    expect(result).toEqual(failWithDetail('PS_UNREADY', MSG.ps.fnMissing, 'fn:zt_demo'));
     expect(callJsx).not.toHaveBeenCalled();
   });
 

@@ -157,10 +157,12 @@ async function probeUncached(runtimeDir: string): Promise<Result<DlssEngineInfo>
 
   const lines = run.value.lines;
   if (!/Neural Rendering RAN/i.test(lines.join('\n'))) {
-    /* 码在这里一次定死：消费者不许再换码（ADR-0003）。中文域文案由 commands/页面给 */
+    /* 码在这里一次定死：消费者不许再换码（ADR-0003）。
+       **话也在这里给**：本层知道自检没过（无 RTX / 驱动旧 / NGX 没装），
+       通用文案「请稍后重试」在这里是撒谎 —— 重试不会让显卡变成 RTX */
     return failWithDetail(
       'PS_UNREADY',
-      MSG.codeReason.PS_UNREADY,
+      MSG.dlss.probeFailed,
       `probe:no-ran\n${tail(lines, 12)}`
     );
   }

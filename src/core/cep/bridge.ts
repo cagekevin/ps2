@@ -74,7 +74,7 @@ function runScript(script: string, timeout: number): Promise<Result<string>> {
    */
   if (!cep) {
     log.error('CEP 宿主不可用，evalScript 未执行', { script: script.slice(0, 60) });
-    return Promise.resolve(failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, 'bridge:no-cep'));
+    return Promise.resolve(failWithDetail('PS_UNREADY', MSG.ps.noCep, 'bridge:no-cep'));
   }
 
   return new Promise<Result<string>>((resolve) => {
@@ -188,7 +188,8 @@ export async function callJsx(
 export async function loadJsx(relativePath: string): Promise<Result<void>> {
   /* Windows 路径含反斜杠，放进 evalScript 字符串会被当转义，必须转成正斜杠 */
   const base = getExtensionPath().replace(/\\/g, '/');
-  if (!base) return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `file:${relativePath}`);
+  /* 真相：扩展目录取不到（部署不全 / 宿主异常），不是「PS 还没准备好」 */
+  if (!base) return failWithDetail('PS_UNREADY', MSG.ps.noExtensionPath, `file:${relativePath}`);
   const result = await evalScript(`$.evalFile("${base}/${relativePath}")`);
   return result.status === 'error' ? result : ok(undefined);
 }
@@ -279,7 +280,7 @@ export function emitAppEvent(type: string, data: unknown): Result<void> {
   const cep = window.__adobe_cep__;
   if (!CSEventCtor || !cep) {
     log.warn('应用事件未广播（CEP 挂接不存在）', { type });
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `attach:none type:${type}`);
+    return failWithDetail('PS_UNREADY', MSG.ps.eventUnavailable, `attach:none type:${type}`);
   }
   const event = new CSEventCtor(type, 'APPLICATION');
   event.data = data;

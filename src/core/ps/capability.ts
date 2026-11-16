@@ -149,7 +149,9 @@ export async function callCapability<T>(
    * 不降级放行，否则真机上「为什么这个按钮没反应」就查不出来了。
    */
   if (await funcMissing(spec.fn)) {
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `fn:${spec.fn}`);
+    /* 真相在 `missing` 清单里：是**部署版本不匹配**，不是「PS 还没准备好」——
+       通用文案会让用户反复重试，而重试永远不会好 */
+    return failWithDetail('PS_UNREADY', MSG.ps.fnMissing, `fn:${spec.fn}`);
   }
 
   if (spec.require) {
@@ -187,7 +189,8 @@ export async function callDirect(
   if (!(await gate.ready())) return gateFailed(options.gate);
 
   if (await funcMissing(fn)) {
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `fn:${fn}`);
+    /* 与 `callCapability` 同一真相（部署版本不匹配），话也必须同一句 */
+    return failWithDetail('PS_UNREADY', MSG.ps.fnMissing, `fn:${fn}`);
   }
 
   return callJsx(fn, args, { timeout: options.timeout, silent: options.silent });

@@ -366,11 +366,9 @@ export async function subscribeHostEvent(
     /* 浏览器 dev / 单测：订阅不成立，调用方必须知情（否则只剩轮询，且无任何标记）。
        **两种原因要分开**：桥没有 ≠ 有桥但拿不到扩展 ID，混成一句会让排障时认错方向 */
     log.warn('无法订阅 PS 事件：CEP 桥或扩展 ID 缺失', { name, hasBridge: !!bridge, hasId: !!id });
-    return failWithDetail(
-      'PS_UNREADY',
-      MSG.codeReason.PS_UNREADY,
-      bridge ? 'subscribe:no-id' : 'subscribe:no-cep'
-    );
+    return bridge
+      ? failWithDetail('PS_UNREADY', MSG.ps.noId, 'subscribe:no-id')
+      : failWithDetail('PS_UNREADY', MSG.ps.noCep, 'subscribe:no-cep');
   }
 
   let set = listeners.get(name);
@@ -389,7 +387,7 @@ export async function subscribeHostEvent(
       set.delete(listener);
       if (set.size === 0) listeners.delete(name);
       log.error('PS 事件注册失败', { name, typeId: eventId });
-      return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `register:${name} typeId:${eventId}`);
+      return failWithDetail('PS_UNREADY', MSG.ps.registerFailed, `register:${name} typeId:${eventId}`);
     }
     registeredIds.add(eventId);
   }
@@ -398,7 +396,7 @@ export async function subscribeHostEvent(
   if (!ensureCallback()) {
     set.delete(listener);
     if (set.size === 0) listeners.delete(name);
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `subscribe:no-callback:${name}`);
+    return failWithDetail('PS_UNREADY', MSG.ps.noCallback, `subscribe:no-callback:${name}`);
   }
 
   log.info('PS 事件注册完成', { name, ids: spec.ids });
@@ -496,7 +494,7 @@ export async function startHostEventWait(
   } catch (error) {
     /* 订阅抛异常（不是返回失败）：已挂的语义必须退订、定时器必须清，再原样报失败并带原文 */
     release();
-    return failWithDetail('PS_UNREADY', MSG.codeReason.PS_UNREADY, `subscribe-throw:${String(error)}`);
+    return failWithDetail('PS_UNREADY', MSG.ps.subscribeThrew, `subscribe-throw:${String(error)}`);
   }
 
   timer = setTimeout(() => end({ kind: 'timeout' }), options.timeoutMs);
