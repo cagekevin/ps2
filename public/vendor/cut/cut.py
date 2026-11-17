@@ -20,12 +20,21 @@
    用错整张掩码会系统性偏亮或偏暗。
 3. 输出做 min-max 归一 —— 不做的话半透明边缘（玻璃、发丝）会糊成一片灰。
    实测：同图按 alpha bbox 裁切 549x352 vs 鲜艺 548x351，alpha 平均绝对差 1.06/255。
+
+**第 4 步是我们加的，故意偏离鲜艺**：`fill_enclosed` 把玻璃这类透明物体的内部
+抬到 `SOLID_FLOOR`（0.35）。原因：模型只看 RGB，玻璃内部 = 透过玻璃看到的背景，
+颜色与背景一样 → 被判成背景，结果只剩一圈空壳。鲜艺不补这一步，所以上面那句
+「1.06/255」只对**不透明物体**成立；透明物体上我们与它不同，这是刻意的。
 """
 
 import sys
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageOps
+
+# 被轮廓围住的内部（玻璃透光处）抬到这个 alpha 下限。
+# 行业区间是 0.2–0.4（「保留两三成背景灰」）：1.0 会变成塑料，0 就是现在「像被挖空」。
+SOLID_FLOOR = 0.35
 
 
 def fail(message):
@@ -52,6 +61,28 @@ def preprocess(image, width, height):
     data = data - 0.5
     # HWC → NCHW，onnxruntime 只吃 NCHW
     return data.transpose(2, 0, 1)[None, ...]
+
+
+def fill_enclosed(values, floor):
+    """把「被轮廓围住的内部」抬到 `floor`。
+
+    为什么需要：模型只看 RGB，玻璃内部是「透过玻璃看到的背景」，颜色和背景一样 →
+    判成背景（alpha≈0），结果只剩一圈空壳。边缘有折射 / 高光才被判成前景。
+
+    做法：外面补一圈背景 → 从四角 flood fill 标出「外部背景」→
+    既不是前景、也不是外部背景的 0 区域，就是被围住的内部。
+
+    前提：轮廓闭合。敞口容器会从缺口漏进去，内部填不上（此时行为与改前一致）。
+    """
+    height, width = values.shape
+    binary = Image.fromarray(((values > 0.5) * 255).astype(np.uint8))
+    # 补一圈 0：保证四角一定是背景，物体贴边时也不会把前景当成种子
+    padded = ImageOps.expand(binary, border=1, fill=0)
+    for corner in ((0, 0), (padded.width - 1, 0), (0, padded.height - 1), (padded.width - 1, padded.height - 1)):
+        ImageDraw.floodfill(padded, corner, 128)
+    outside = np.asarray(padded.crop((1, 1, width + 1, height + 1)), dtype=np.uint8)
+    inner = outside == 0
+    return np.maximum(values, np.where(inner, floor, 0.0))
 
 
 def main(argv):
@@ -98,6 +129,9 @@ def main(argv):
     if high > low:
         values = (values - low) / (high - low)
     values = np.clip(values, 0.0, 1.0)
+
+    # 内部填充必须在「乘原层 alpha」**之前**：原层本来就透明的地方不能被填回来
+    values = fill_enclosed(values, SOLID_FLOOR)
 
     # 原层自带的 alpha 乘进去：模型不知道原层哪里本来就是透明的
     source_alpha = np.asarray(source.convert("RGBA").getchannel("A"), dtype=np.float32) / 255.0
